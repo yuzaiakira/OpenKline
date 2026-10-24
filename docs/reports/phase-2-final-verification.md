@@ -138,5 +138,7 @@ gated and was not started.
 - No `.github/workflows/` directory exists.
 - No force-push or history rewrite was used.
 - Each successful commit is pushed immediately to `origin/work`.
-- Final local/remote SHA verification is recorded in the delivery after the
-  performance increment is committed.
+- Performance increment `e8a3c06` (`perf(chart): optimize append updates and
+  browser profiling`) was pushed immediately to `origin/work`.
+- The final local/remote SHA verification is repeated after this report
+  synchronization commit and is included in the delivery.
