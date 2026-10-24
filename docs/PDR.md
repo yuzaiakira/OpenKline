@@ -58,6 +58,10 @@ browser. The Canvas2D adapter is the only browser-facing layer in this slice.
 
 ## Deferred to Phase 2 or later
 
-Indicators, drawing tools, plugin SDK, ChartScript, accessibility UI, visual
-regression, vendor-specific adapters, and WebGL/WebGPU rendering remain future
-work. They are not represented as completed functionality here.
+The Phase 2.1 calculation engine is now implemented with SMA, EMA, RSI, MACD,
+Bollinger Bands, ATR, Stochastic, VWAP, independent instances, aligned
+multi-output results, correction-safe updates, and custom TypeScript
+registration. Multi-pane layout, drawing tools, plugin SDK, ChartScript,
+accessibility UI, visual regression, vendor-specific adapters, and WebGL/WebGPU
+rendering remain future work. They are not represented as completed
+functionality here.

@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 — Chart MVP foundation: **Complete**
+Phase 2.1 — Indicator calculation engine: **Complete**
 
 ## Completed
 
@@ -25,8 +25,15 @@ Phase 1 — Chart MVP foundation: **Complete**
 
 ## Phase 2 candidates
 
+- [Implemented] Added a framework-independent indicator registry and lifecycle
+  contract with deterministic custom TypeScript definitions.
+- [Implemented] Added SMA, EMA, RSI, MACD, Bollinger Bands, ATR, Stochastic,
+  and explicit-session VWAP with aligned warm-up values and edge-case handling.
+- [Implemented] Added correction-safe updates, append optimization for SMA/EMA,
+  disposal, independent instances, and mathematical reference fixtures.
+- [In Progress] Consume indicator outputs in a synchronized multi-pane layout
+  with independent scales and pane lifecycle.
 - [Not Started] Drawing tools and workspace serialization.
-- [Not Started] Indicator engine.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.

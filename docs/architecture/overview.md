@@ -11,6 +11,10 @@ CandleStore / PointStore -> SeriesCollection -> ChartModel -> CanvasRenderer
  REST / WebSocket / InMemory Datafeed             Chart browser adapter
                                                                |
                                                      React / Next.js adapters
+
+Validated Candle[] -> IndicatorRegistry -> independent IndicatorInstance(s)
+                                               |
+                                        aligned output series
 ```
 
 `CandleStore` and `PointStore` own validated, ordered series data. The
@@ -23,6 +27,10 @@ wheel listeners, resize observation, datafeed subscription, and teardown. REST
 and WebSocket adapters implement only the vendor-neutral `Datafeed` contract.
 The React adapter only owns component lifecycle; the Next.js example keeps
 chart construction in a Client Component.
+
+The indicator registry is a separate pure calculation boundary. It consumes
+validated candles and emits aligned, multi-output results; pane layout and
+Canvas rendering will consume those outputs in the next Phase 2 increment.
 
 ## Initial decisions
 
