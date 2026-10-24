@@ -13,7 +13,9 @@ npm run typecheck
 npm test
 npm run test:browser
 npm run benchmark
+npm run benchmark:browser
 npm run package:check
+npm run package:smoke
 ```
 
 `npm test` performs separate core/adapter and test builds, then executes the

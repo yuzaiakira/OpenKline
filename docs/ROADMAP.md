@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 — Chart MVP foundation: **In Progress**
+Phase 1 — Chart MVP foundation: **Complete**
 
 ## Completed
 
@@ -11,35 +11,36 @@ Phase 1 — Chart MVP foundation: **In Progress**
 - [Implemented] Added time/price scales and a pan/zoom viewport model.
 - [Implemented] Added a Canvas2D candlestick renderer and vanilla example.
 - [Implemented] Added historical/realtime datafeed contracts and an in-memory provider.
+- [Implemented] Added shared candlestick, line, area, and volume series with
+  dynamic lifecycle and crosshair/tooltip values.
+- [Implemented] Added reusable paginated REST and reconnecting WebSocket
+  datafeed reference adapters with normalization, validation, deduplication,
+  cancellation, and cleanup.
 - [Implemented] Added a thin React adapter and a Next.js App Router example.
-- [Implemented] Added unit, Playwright browser, benchmark, and package checks.
-- [Verified] Type checking, 8 unit tests, browser interaction, Next.js production build,
-  and package dry-run pass locally.
+- [Implemented] Added unit, adapter, React, Playwright browser, Canvas2D
+  benchmark, package-install, and Next.js production checks.
+- [Verified] Type checking, 13 unit tests, browser interaction, Next.js
+  production build, package installation, and 1k/10k/100k benchmarks pass
+  locally; measured values are recorded in the final verification report.
 
-## In progress
+## Phase 2 candidates
 
-- [In Progress] Expand the chart MVP with additional series, volume panes, and
-  accessibility coverage.
-
-## Pending
-
-- [Not Started] Volume and line/area series.
-- [Not Started] REST/WebSocket datafeed adapters and session normalization.
 - [Not Started] Drawing tools and workspace serialization.
 - [Not Started] Indicator engine.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
-- [Not Started] Canvas frame-time, memory, visual regression, and accessibility
-  performance suites.
+- [Not Started] Accessibility UI and visual regression baselines.
+- [Not Started] Vendor-specific datafeed packages and authentication helpers.
 
-## Known blockers
+## Known limitations
 
-- Browser interaction verification passes with Playwright, but there is not yet
-  a deterministic Canvas2D FPS/memory benchmark.
+- Browser heap readings are engine-specific and are observations, not leak-proof
+  release thresholds. The benchmark also verifies that chart destruction removes
+  the canvas and clears stored series state.
 - The environment draft must be published separately from the saved setup.
 
 ## Architectural follow-up
 
 - Finalize the public package name and license before the first public release.
-- Add a formal datafeed contract before connecting any external provider.
-- Establish browser reference hardware before setting FPS targets.
+- Keep the formal datafeed contract vendor-neutral as adapters evolve.
+- Establish reference hardware before setting Phase 2 rendering targets.

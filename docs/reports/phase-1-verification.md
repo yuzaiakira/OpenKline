@@ -1,8 +1,9 @@
-# Phase 1 Verification Report
+# Phase 1 Verification Report — Historical Baseline
 
 **Verification date:** 2026-10-24
-**Status:** Verified Phase 1 foundation release candidate; full product Phase 1
-remains incomplete for the deferred features listed below.
+**Status:** Superseded by [phase-1-final-verification.md](phase-1-final-verification.md).
+This report records the pre-finalization foundation snapshot and is retained as
+an audit trail; it is not the current acceptance decision.
 
 ## Implementation
 

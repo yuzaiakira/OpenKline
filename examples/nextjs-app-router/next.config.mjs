@@ -9,6 +9,10 @@ const nextConfig = {
       ...config.resolve.alias,
       openkline: resolve(process.cwd(), "../../dist/src/index.js"),
     };
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      ".js": [".js", ".ts", ".tsx"],
+    };
     return config;
   },
 };

@@ -29,7 +29,7 @@
       globalThis.__openklineChart = chart;
 
       const start = Date.UTC(2026, 0, 1);
-      chart.setData(Array.from({ length: 80 }, (_, index) => {
+      const candles = Array.from({ length: 80 }, (_, index) => {
         const close = 100 + Math.sin(index / 7) * 8 + index * 0.08;
         const open = close - Math.cos(index) * 1.8;
         return {
@@ -40,7 +40,15 @@
           close,
           volume: 1000 + index * 13,
         };
-      }));
+      });
+      const price = chart.addCandlestickSeries({ id: "price", title: "Price" });
+      price.setData(candles);
+      const trend = chart.addLineSeries({ id: "trend", title: "Trend", style: { color: "#f59e0b", lineWidth: 2 } });
+      trend.setData(candles.map((candle) => ({ time: candle.time, value: candle.close + 1.5 })));
+      const area = chart.addAreaSeries({ id: "area", title: "Area", style: { color: "#38bdf8", fillColor: "#38bdf8" } });
+      area.setData(candles.map((candle) => ({ time: candle.time, value: candle.close - 1.5 })));
+      const volume = chart.addVolumeSeries({ id: "volume", title: "Volume", style: { color: "#64748b" } });
+      volume.setData(candles.map((candle) => ({ time: candle.time, value: candle.volume ?? 0 })));
 
       chart.subscribe("crosshairMove", ({ time, price }) => {
         document.title = time === null || price === null

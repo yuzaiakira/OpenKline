@@ -81,6 +81,14 @@ export class CandleStore {
     return this.candles.slice(from, to).map((candle) => ({ ...candle }));
   }
 
+  public getRangeByTime(from: number, to: number): Candle[] {
+    return this.candles.slice(this.findInsertionIndex(from), this.findInsertionIndex(to)).map((candle) => ({ ...candle }));
+  }
+
+  public getTimes(): number[] {
+    return this.candles.map((candle) => candle.time);
+  }
+
   private findInsertionIndex(time: number): number {
     let low = 0;
     let high = this.candles.length;

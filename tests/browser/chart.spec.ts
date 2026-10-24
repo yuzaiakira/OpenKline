@@ -22,6 +22,16 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(initial.height).toBeGreaterThan(0);
   expect(initial.pixel.length).toBe(4);
 
+  const seriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
+  expect(seriesIds).toEqual(["price", "trend", "area", "volume"]);
+
+  await page.evaluate(() => {
+    const chart = (globalThis as unknown as { __openklineChart: { subscribe(name: string, handler: (event: unknown) => void): void } }).__openklineChart;
+    chart.subscribe("crosshairMove", (event) => {
+      (globalThis as unknown as { __lastCrosshair?: unknown }).__lastCrosshair = event;
+    });
+  });
+
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) {
@@ -30,6 +40,10 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
 
   await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.45);
   await expect(page).toHaveTitle(/OpenKline \d/);
+  await page.waitForFunction(() => {
+    const event = (globalThis as unknown as { __lastCrosshair?: { series?: unknown[] } }).__lastCrosshair;
+    return (event?.series?.length ?? 0) === 4;
+  });
 
   const beforeZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
   await page.mouse.wheel(0, -500);
@@ -49,9 +63,15 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(afterTheme).not.toEqual(beforeTheme);
 
   await page.evaluate(() => {
-    const chart = (globalThis as unknown as { __openklineChart: { update(candle: object): void; destroy(): void } }).__openklineChart;
+    const chart = (globalThis as unknown as { __openklineChart: { update(candle: object): void; addLineSeries(options: object): { setData(data: object[]): void; remove(): void }; destroy(): void } }).__openklineChart;
     chart.update({ time: Date.UTC(2026, 0, 1) + 79 * 60 * 60 * 1000, open: 101, high: 104, low: 99, close: 103 });
+    const temporary = chart.addLineSeries({ id: "temporary" });
+    temporary.setData([{ time: Date.UTC(2026, 0, 1), value: 100 }]);
+    temporary.remove();
   });
+
+  const finalSeriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
+  expect(finalSeriesIds).toEqual(["price", "trend", "area", "volume"]);
 
   const widthBeforeResize = await canvas.evaluate((element) => (element as HTMLCanvasElement).width);
   await page.setViewportSize({ width: 800, height: 700 });

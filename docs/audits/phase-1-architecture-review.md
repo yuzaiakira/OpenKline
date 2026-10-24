@@ -122,22 +122,32 @@ the repository root. The future plugin and KlineScript threat models remain
 open; Web Workers must not be treated as a complete sandbox when those features
 are implemented.
 
+## Follow-up status
+
+Phase 1 follow-up work completed the previously open chart foundation items:
+
+- `SeriesCollection` and `PointStore` now support candlestick, line, area, and
+  volume series on one shared viewport and price scale.
+- `RestDatafeed` and `WebSocketDatafeed` provide injected, vendor-neutral
+  reference adapters with pagination, normalization, validation, correction,
+  reconnection, and cleanup behavior.
+- `scripts/browser-benchmark.mjs` measures actual Canvas2D update work and
+  requestAnimationFrame loops for 1k/10k/100k datasets, with engine-specific
+  heap observations and destruction checks.
+- Public chart and datafeed contracts, React/Next guides, and package smoke
+  verification are documented and tested.
+
 ## Remaining technical debt
 
-- The current datafeed implementation is deterministic and in-memory; REST,
-  WebSocket, session calendars, duplicate/stale-bar policies, and timestamp
-  normalization need provider-facing contracts in a later increment.
-- The renderer supports candlesticks only. Volume, line/area series, panes,
-  drawings, indicators, and accessibility UI are not implemented.
-- Benchmarks measure the framework-independent model, not Canvas2D frame time,
-  memory, or browser FPS.
-- Public API documentation is now sufficient for the current slice but needs
-  versioned reference generation before package 1.0.
+- Browser heap readings are observations rather than portable leak thresholds;
+  reference hardware and visual regression baselines remain future work.
+- Session calendars, timezone-aware timeframe policy, authentication, and
+  vendor-specific protocol packages remain outside the core adapter scope.
+- Drawings, indicators, accessibility UI, plugin SDK, ChartScript, and
+  WebGL/WebGPU rendering remain Phase 2 or later work.
 
 ## Recommended next steps
 
-1. Add explicit timeframe/session normalization and a REST/WebSocket adapter
-   contract.
-2. Introduce a scene/layout layer before adding volume panes and drawings.
-3. Add browser performance fixtures and memory-leak mount/unmount tests.
-4. Freeze the public API and license before publishing the package.
+1. Add explicit session-calendar and timeframe policy packages.
+2. Add visual regression and accessibility coverage before expanding UI surface.
+3. Freeze the public API and license before publishing the package.

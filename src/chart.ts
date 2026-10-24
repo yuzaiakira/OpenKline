@@ -1,15 +1,23 @@
 import { ChartModel } from "./core/chart-model.js";
-import { PriceScale, TimeScale, getCandlePriceRange } from "./core/scales.js";
-import { CanvasRenderer, getPlotBounds } from "./renderer/canvas-renderer.js";
+import { PriceScale, TimeScale } from "./core/scales.js";
+import { CanvasRenderer, getPlotBounds, getPriceRange } from "./renderer/canvas-renderer.js";
+import type { SeriesData } from "./core/series-store.js";
 import type { Datafeed, GetBarsQuery } from "./types.js";
 import type {
   Candle,
+  AreaPoint,
   ChartEventHandler,
   ChartEventName,
   ChartEvents,
   ChartOptions,
   ChartTheme,
   CrosshairMoveEvent,
+  LinePoint,
+  SeriesApi,
+  SeriesOptions,
+  SeriesPoint,
+  SeriesType,
+  VolumePoint,
 } from "./types.js";
 
 const LIGHT_THEME: ChartTheme = {
@@ -20,6 +28,8 @@ const LIGHT_THEME: ChartTheme = {
   upCandle: "#16a34a",
   downCandle: "#dc2626",
   crosshair: "#64748b",
+  volumeUp: "#16a34a",
+  volumeDown: "#dc2626",
 };
 
 const DARK_THEME: ChartTheme = {
@@ -30,6 +40,8 @@ const DARK_THEME: ChartTheme = {
   upCandle: "#22c55e",
   downCandle: "#ef4444",
   crosshair: "#94a3b8",
+  volumeUp: "#22c55e",
+  volumeDown: "#ef4444",
 };
 
 export class Chart {
@@ -94,6 +106,34 @@ export class Chart {
     this.assertAlive();
     this.model.update(candle);
     this.render();
+  }
+
+  public addCandlestickSeries(options: SeriesOptions = {}): SeriesApi<Candle> {
+    return this.createSeriesApi("candlestick", options);
+  }
+
+  public addLineSeries(options: SeriesOptions = {}): SeriesApi<LinePoint> {
+    return this.createSeriesApi("line", options);
+  }
+
+  public addAreaSeries(options: SeriesOptions = {}): SeriesApi<AreaPoint> {
+    return this.createSeriesApi("area", options);
+  }
+
+  public addVolumeSeries(options: SeriesOptions = {}): SeriesApi<VolumePoint> {
+    return this.createSeriesApi("volume", options);
+  }
+
+  public removeSeries(id: string): void {
+    this.assertAlive();
+    this.model.removeSeries(id);
+    this.render();
+  }
+
+  /** Return the IDs of all live series in insertion order. */
+  public getSeriesIds(): string[] {
+    this.assertAlive();
+    return this.model.getSeriesIds();
   }
 
   /** Load historical bars and optionally subscribe to future bar updates. */
@@ -177,6 +217,20 @@ export class Chart {
     return { from, to };
   }
 
+  /** Pan the shared viewport by a number of bars and redraw. */
+  public pan(deltaBars: number): void {
+    this.assertAlive();
+    this.model.pan(deltaBars);
+    this.render();
+  }
+
+  /** Zoom the shared viewport around an anchor ratio and redraw. */
+  public zoom(scale: number, anchorRatio = 0.5): void {
+    this.assertAlive();
+    this.model.zoom(scale, anchorRatio);
+    this.render();
+  }
+
   /** Return a defensive copy of the currently stored candles. */
   public getData(): Candle[] {
     this.assertAlive();
@@ -196,6 +250,7 @@ export class Chart {
     }
     this.destroyed = true;
     this.stopDatafeed();
+    this.model.destroy();
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -257,9 +312,10 @@ export class Chart {
   }
 
   private emitCrosshair(x: number | null, y: number | null): void {
-    const event: CrosshairMoveEvent = { time: null, price: null, x: x ?? 0, y: y ?? 0 };
     const data = this.model.getVisibleData();
-    const bounds = getPlotBounds(this.width, this.height);
+    const event: CrosshairMoveEvent = { time: null, price: null, x: x ?? 0, y: y ?? 0, series: [] };
+    const hasVolume = data.series.some((series) => series.type === "volume");
+    const bounds = getPlotBounds(this.width, this.height, hasVolume);
     if (
       x !== null
       && y !== null
@@ -267,14 +323,22 @@ export class Chart {
       && x <= bounds.right
       && y >= bounds.top
       && y <= bounds.bottom
-      && data.candles.length > 0
+      && data.series.some((series) => series.data.length > 0)
     ) {
-      const prices = getCandlePriceRange(data.candles);
-      const scale = new PriceScale(prices.min, prices.max, { start: 14, end: Math.max(15, this.height - 30) });
-      const times = data.candles.map((candle) => candle.time);
-      const timeScale = new TimeScale(times, { start: 68, end: Math.max(69, this.width - 12) });
+      const prices = getPriceRange(data.series);
+      const scale = new PriceScale(prices.min, prices.max, { start: bounds.top, end: bounds.bottom });
+      const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right });
       event.time = Math.round(timeScale.timeForX(x));
-      event.price = scale.priceForY(y);
+      event.price = y <= bounds.bottom ? scale.priceForY(y) : null;
+      const nearest = nearestTime(data.times, event.time);
+      event.series = data.series.map((series) => ({
+        id: series.id,
+        type: series.type,
+        ...(series.title === undefined ? {} : { title: series.title }),
+        value: nearest === null
+          ? null
+          : series.data.find((point) => point.time === nearest) ?? null,
+      }));
     }
     this.emit("crosshairMove", event);
   }
@@ -294,6 +358,37 @@ export class Chart {
     );
   }
 
+  private createSeriesApi<T extends SeriesPoint>(type: SeriesType, options: SeriesOptions): SeriesApi<T> {
+    this.assertAlive();
+    const id = this.model.addSeries(type, options);
+    return {
+      id,
+      type,
+      setData: (data) => {
+        this.assertAlive();
+        this.model.setSeriesData(id, data as SeriesData);
+        this.render();
+      },
+      update: (point) => {
+        this.assertAlive();
+        this.model.updateSeries(id, point);
+        this.render();
+      },
+      getData: () => {
+        this.assertAlive();
+        return this.model.getSeries(id).data as T[];
+      },
+      setStyle: (style) => {
+        this.assertAlive();
+        this.model.setSeriesStyle(id, style);
+        this.render();
+      },
+      remove: () => {
+        this.removeSeries(id);
+      },
+    };
+  }
+
   private assertAlive(): void {
     if (this.destroyed) {
       throw new Error("Chart has been destroyed");
@@ -311,6 +406,11 @@ function normalizePricePrecision(value: number): number {
 function resolveTheme(theme: ChartOptions["theme"]): ChartTheme {
   const base = theme === "dark" ? DARK_THEME : LIGHT_THEME;
   return typeof theme === "object" && theme !== null ? { ...base, ...theme } : { ...base };
+}
+
+function nearestTime(times: readonly number[], target: number): number | null {
+  if (times.length === 0 || !Number.isFinite(target)) return null;
+  return times.reduce((nearest, time) => Math.abs(time - target) < Math.abs(nearest - target) ? time : nearest, times[0] ?? target);
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {
