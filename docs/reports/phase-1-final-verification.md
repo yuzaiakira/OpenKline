@@ -141,6 +141,7 @@ pushed immediately without force-push:
 | `d1fa5126c275fd7feb1d96cfd79c03089d400e78` | `test(phase1): cover REST cancellation` | Verified on `origin/work` |
 | `0616fa69be02eefe0fb76a9badba301b6a1bda9e` | `docs(phase1): add final verification report` | Verified on `origin/work` |
 | `7bd3c786f98c777c8e4b96acfc15dfd91ddfaa2d` | `chore(repo): ignore compiled test output` | Verified on `origin/work` |
+| `d1284584eca69678bc7e087084202bb82ad568a2` | `fix(preview): build vanilla example before serving` | Verified on `origin/work` |
 
 The final documentation-reference update is pushed immediately after this
 report edit. The same `git rev-parse HEAD` and `git ls-remote origin
