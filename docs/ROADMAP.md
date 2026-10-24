@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 2 foundation — **Implemented; acceptance remains open for documented compatibility and extension follow-up**
+Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by environment**
 
 ## Completed
 
@@ -44,10 +44,17 @@ Phase 2 foundation — **Implemented; acceptance remains open for documented com
 - [Hardened] Fixed indicator ID allocation after non-tail removal, disposed
   managed indicators during chart destruction, and applied pane `minHeight`
   constraints in renderer layout.
+- [Implemented] Added filled Bollinger Band rendering with configurable output
+  styles, clipping, warm-up handling, and browser pixel verification.
+- [Blocked] Firefox and WebKit Playwright installation returned `403 Domain
+  forbidden`; mobile/touch acceptance remains unverified. See
+  `docs/reports/phase-2-final-verification.md`.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
+- [Not Started] Phase 3 Plugin SDK and Customization Platform; gated on Phase 2
+  final browser verification.
 
 ## Known limitations
 

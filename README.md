@@ -28,7 +28,8 @@ implemented Phase 2 analysis foundation:
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope and
 [docs/reports/phase-2-verification.md](docs/reports/phase-2-verification.md)
-for the current acceptance status.
+for the baseline acceptance record. The current hardening gate is recorded in
+[docs/reports/phase-2-final-verification.md](docs/reports/phase-2-final-verification.md).
 See [docs/api/chart.md](docs/api/chart.md) and
 [docs/api/datafeed.md](docs/api/datafeed.md) for the public APIs.
 

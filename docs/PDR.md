@@ -71,4 +71,6 @@ accessibility UI, visual regression, vendor-specific adapters, and WebGL/WebGPU
 rendering remain future work. They are not represented as completed
 functionality here. The consolidated Phase 2 verification report records the
 remaining acceptance gaps; this PDR does not treat untested browser engines or
-future plugin/runtime work as complete.
+future plugin/runtime work as complete. Filled Bollinger Band rendering is now
+implemented; the current Phase 2 final verification report records the
+remaining Firefox/WebKit/mobile browser blockers.

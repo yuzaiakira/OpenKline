@@ -38,6 +38,23 @@ try {
       const loadStart = performance.now();
       chart.setData(candles);
       const loadMs = performance.now() - loadStart;
+      const first = candles[0];
+      const middle = candles[Math.floor(candles.length / 2)];
+      const last = candles[candles.length - 1];
+      const trend = chart.addDrawing("trend-line", {
+        points: [
+          { time: first.time, price: first.low },
+          { time: middle.time, price: middle.high },
+        ],
+        style: { color: "#f59e0b", lineWidth: 2 },
+      });
+      const rectangle = chart.addDrawing("rectangle", {
+        points: [
+          { time: middle.time, price: middle.low },
+          { time: last.time, price: last.high },
+        ],
+        style: { color: "#a78bfa", fillColor: "#a78bfa" },
+      });
       console.info(JSON.stringify({ benchmarkPrepared: { candles: size, visibleRange: chart.getVisibleRange() } }));
 
       const navigationStart = performance.now();
@@ -48,7 +65,6 @@ try {
       const navigationMs = performance.now() - navigationStart;
 
       const updateStart = performance.now();
-      const last = candles[candles.length - 1];
       let latestTime = last.time;
       for (let index = 0; index < 100; index += 1) {
         latestTime += 60_000;
@@ -91,6 +107,8 @@ try {
         candles: size,
         usedAfterUpdate: performance.memory?.usedJSHeapSize ?? null,
       });
+      trend.remove();
+      rectangle.remove();
       candles = [];
     }
     const memoryBeforeDestroy = performance.memory?.usedJSHeapSize ?? null;
