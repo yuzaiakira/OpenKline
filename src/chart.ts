@@ -3,6 +3,7 @@ import { PriceScale, TimeScale } from "./core/scales.js";
 import { CanvasRenderer, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
 import { DrawingEngine } from "./drawings/engine.js";
+import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
 import type {
   DrawingApi,
   DrawingCoordinateConverter,
@@ -76,6 +77,7 @@ export class Chart {
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
   private readonly drawingEngine = new DrawingEngine();
+  private readonly extensionDisposers = new Set<() => void>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
   private theme: ChartTheme;
@@ -197,6 +199,37 @@ export class Chart {
   public unregisterIndicator(id: string): boolean {
     this.assertAlive();
     return this.indicatorRegistry.unregister(id);
+  }
+
+  public installExtension(extension: OpenKlineExtension): ExtensionHandle {
+    this.assertAlive();
+    let disposed = false;
+    const cleanup = extension.activate({
+      apiVersion: 1,
+      registerIndicator: (definition) => {
+        this.registerIndicator(definition);
+        return () => {
+          if (!disposed) this.unregisterIndicator(definition.metadata.id);
+        };
+      },
+      registerDrawingTool: (definition) => {
+        this.registerDrawingTool(definition);
+        return () => {
+          if (!disposed) this.unregisterDrawingTool(definition.type);
+        };
+      },
+    });
+    const dispose = (): void => {
+      if (disposed) return;
+      cleanup?.();
+      disposed = true;
+      this.extensionDisposers.delete(dispose);
+    };
+    this.extensionDisposers.add(dispose);
+    return {
+      metadata: { ...extension.metadata },
+      dispose,
+    };
   }
 
   public addIndicator(indicatorId: string, options: IndicatorAddOptions = {}): ChartIndicatorApi {
@@ -462,6 +495,7 @@ export class Chart {
     if (this.destroyed) {
       return;
     }
+    for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
     this.stopDatafeed();
     this.model.destroy();

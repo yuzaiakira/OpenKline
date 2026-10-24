@@ -52,6 +52,9 @@ chart.destroy();
   TypeScript definitions. `addIndicator(id, options)` creates a calculation
   instance, maps its outputs to line/histogram series, and supports parameter
   changes and disposal through `ChartIndicatorApi`.
+- `installExtension(extension)` activates a trusted versioned extension and
+  returns an idempotent `ExtensionHandle`. The host currently exposes cleanup
+  registrations for custom indicators and drawing tools.
 - `registerDrawingTool(definition)` and `unregisterDrawingTool(type)` manage
   custom drawing definitions. `addDrawing` creates a typed analysis object;
   `startDrawing` creates one from pointer clicks. `getDrawings`,

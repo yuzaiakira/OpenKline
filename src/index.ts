@@ -60,6 +60,23 @@ export {
   stochasticDefinition,
   vwapDefinition,
 } from "./indicators/index.js";
+export type {
+  ExtensionHandle,
+  ExtensionHost,
+  ExtensionMetadata,
+  OpenKlineExtension,
+} from "./extensions/index.js";
+export type {
+  KlineScriptDeclaration,
+  KlineScriptDrawingDeclaration,
+  KlineScriptExpression,
+  KlineScriptExtensionBinding,
+  KlineScriptIndicatorDeclaration,
+  KlineScriptLiteral,
+  KlineScriptPlotDeclaration,
+  KlineScriptProgram,
+  KlineScriptSource,
+} from "./klinescript/index.js";
 export { DrawingEngine, DrawingLifecycleError, DrawingValidationError } from "./drawings/index.js";
 export {
   builtInDrawingTools,

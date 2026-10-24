@@ -46,7 +46,8 @@ export class DrawingEngine {
   public create(type: string, options: DrawingOptions): DrawingApi {
     this.assertAlive();
     const tool = this.requireTool(type);
-    const id = options.id ?? `drawing-${this.nextId++}`;
+    let id = options.id ?? `drawing-${this.nextId++}`;
+    while (this.drawings.has(id)) id = `drawing-${this.nextId++}`;
     if (this.drawings.has(id)) throw new Error(`Drawing id already exists: ${id}`);
     const snapshot: DrawingSnapshot = {
       id,
@@ -231,5 +232,34 @@ function isDocument(value: unknown): value is DrawingDocument {
 function isSnapshot(value: unknown): value is DrawingSnapshot {
   if (typeof value !== "object" || value === null) return false;
   if (!("id" in value) || !("type" in value) || !("points" in value) || !("style" in value) || !("zIndex" in value)) return false;
-  return typeof value.id === "string" && typeof value.type === "string" && typeof value.zIndex === "number" && Array.isArray(value.points);
+  return typeof value.id === "string"
+    && value.id.length > 0
+    && typeof value.type === "string"
+    && value.type.length > 0
+    && typeof value.zIndex === "number"
+    && Number.isFinite(value.zIndex)
+    && isStyle(value.style)
+    && Array.isArray(value.points)
+    && value.points.every(isPoint);
+}
+
+function isPoint(value: unknown): value is DrawingPoint {
+  if (typeof value !== "object" || value === null || !("time" in value) || !("price" in value)) return false;
+  const point = value as Record<string, unknown>;
+  return typeof point.time === "number"
+    && Number.isInteger(point.time)
+    && point.time >= 0
+    && typeof point.price === "number"
+    && Number.isFinite(point.price);
+}
+
+function isStyle(value: unknown): value is DrawingStyle {
+  if (typeof value !== "object" || value === null) return false;
+  const style = value as Record<string, unknown>;
+  return (style.color === undefined || typeof style.color === "string")
+    && (style.fillColor === undefined || typeof style.fillColor === "string")
+    && (style.textColor === undefined || typeof style.textColor === "string")
+    && (style.lineWidth === undefined || (typeof style.lineWidth === "number" && Number.isFinite(style.lineWidth)))
+    && (style.visible === undefined || typeof style.visible === "boolean")
+    && (style.locked === undefined || typeof style.locked === "boolean");
 }
