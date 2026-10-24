@@ -53,7 +53,9 @@ chart.destroy();
 - `registerIndicator(definition)` and `unregisterIndicator(id)` manage custom
   TypeScript definitions. `addIndicator(id, options)` creates a calculation
   instance, maps its outputs to line/histogram series, and supports parameter
-  changes and disposal through `ChartIndicatorApi`.
+  changes and disposal through `ChartIndicatorApi`. Band outputs are rendered
+  as an upper/lower filled region; `setOutputStyle(outputId, style)` changes
+  the output line and band fill color/opacity at runtime.
 - `installExtension(extension)` activates a trusted versioned extension and
   returns an idempotent `ExtensionHandle`. The host currently exposes cleanup
   registrations for custom indicators and drawing tools.

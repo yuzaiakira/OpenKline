@@ -78,8 +78,9 @@ unexecuted browser engines, or unmeasured release targets as complete.
   interactive drawing creation path; a full browser matrix for every drawing
   tool, anchor edit, pane resize, and framework Strict Mode combination is not
   yet present.
-- `IndicatorOutputKind` supports `band`, but the current chart mapping renders
-  Bollinger upper/lower outputs as line series rather than a filled band.
+- Filled Bollinger upper/lower band rendering is implemented and browser-tested.
+  General custom band pairs use the documented `bandRole` contract; band style
+  is controlled through `ChartIndicatorApi.setOutputStyle`.
 - The extension seam is a trusted in-process contract for indicators and
   drawing tools. It is not a package loader, permissions system, marketplace,
   remote-code sandbox, or custom series/panel renderer SDK.
@@ -242,15 +243,14 @@ The final handoff also checks that the remote `work` ref matches the final local
 | Unit, integration, browser, package, and benchmark checks pass | Command table above | Pass |
 | Performance and memory measurements are recorded | Node/Canvas2D tables above | Pass — 100k follow-up needed |
 | Phase 1 regression behavior remains green | Existing suites and package checks | Pass |
-| Public API documentation is complete for implemented scope | API/guides and declarations | Pass — band rendering caveat remains |
+| Public API documentation is complete for implemented scope | API/guides and declarations | Pass |
 | All new commits are pushed with required identity | Commit table and remote SHA check | Pass after final push |
 | No GitHub Actions were introduced | Workflow directory check | Pass |
 
-Because the partial rows are not yet fully verified, Phase 2 is intentionally
-kept open. The implemented foundation is suitable for controlled Phase 3
-planning after the browser compatibility matrix, full drawing interaction
-coverage, and 100k rendering budget are addressed. The deferred Plugin SDK and
-KlineScript runtime should remain separate milestones.
+Because the browser compatibility and full interaction rows are not yet fully
+verified, Phase 2 remains open until those checks are complete. The filled-band
+gap is closed. The deferred Plugin SDK and KlineScript runtime remain separate
+milestones.
 
 ## Phase 2 readiness assessment
 

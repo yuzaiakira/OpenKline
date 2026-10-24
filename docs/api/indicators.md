@@ -51,6 +51,33 @@ timestamps; SMA and EMA use this path. `getInput()` and `getResult()` return
 defensive copies. Calling any operation after `dispose()` throws
 `IndicatorLifecycleError`.
 
+## Filled band rendering
+
+The built-in Bollinger upper and lower outputs are marked as a band pair when
+created through `Chart.addIndicator`. The Canvas2D renderer fills the region
+between matching timestamps, clips it to the active pane, and leaves warm-up
+points undefined until both boundaries have values. Use the returned
+`ChartIndicatorApi` to customize the output at runtime:
+
+```ts
+const bands = chart.addIndicator("BOLLINGER_BANDS", {
+  period: 20,
+  standardDeviations: 2,
+  pane: "main",
+});
+
+bands.setOutputStyle("upper", {
+  color: "#60a5fa",
+  fillColor: "#60a5fa",
+  fillOpacity: 0.2,
+});
+bands.setOutputStyle("lower", { color: "#60a5fa" });
+```
+
+Custom indicator definitions can mark two `band` outputs with
+`bandRole: "upper"` and `bandRole: "lower"`; definitions without roles use
+output order.
+
 ## Registration
 
 `IndicatorDefinition` is the custom TypeScript extension contract. Register a

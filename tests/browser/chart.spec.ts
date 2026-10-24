@@ -24,7 +24,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
 
   const seriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
   expect(seriesIds.slice(0, 4)).toEqual(["price", "trend", "area", "volume"]);
-  expect(seriesIds).toHaveLength(10);
+  expect(seriesIds).toHaveLength(13);
   const paneIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getPaneIds(): string[] } }).__openklineChart.getPaneIds());
   expect(paneIds).toHaveLength(5);
 
@@ -45,7 +45,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   await expect(page).toHaveTitle(/OpenKline \d/);
   await page.waitForFunction(() => {
     const event = (globalThis as unknown as { __lastCrosshair?: { series?: unknown[] } }).__lastCrosshair;
-    return (event?.series?.length ?? 0) === 10;
+    return (event?.series?.length ?? 0) === 13;
   });
 
   const beforeZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
@@ -74,7 +74,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   });
 
   const finalSeriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
-  expect(finalSeriesIds).toHaveLength(10);
+  expect(finalSeriesIds).toHaveLength(13);
   expect(finalSeriesIds).not.toContain("temporary");
 
   const replacementIndicatorId = await page.evaluate(() => {
@@ -90,7 +90,28 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
     replacement.remove();
     return id;
   });
-  expect(replacementIndicatorId).toBe("indicator-4");
+  expect(replacementIndicatorId).toBe("indicator-5");
+
+  const filledBandPixels = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        addIndicator(id: string, options: object): { setOutputStyle(outputId: string, style: object): void; remove(): void };
+      };
+    }).__openklineChart;
+    const band = chart.addIndicator("BOLLINGER_BANDS", { period: 5, standardDeviations: 1, pane: "main" });
+    band.setOutputStyle("upper", { fillColor: "#ff00ff", fillOpacity: 0.5 });
+    band.setOutputStyle("lower", { color: "#ff00ff" });
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const pixels = canvas.getContext("2d")!.getImageData(68, 14, canvas.width - 80, canvas.height - 44).data;
+    const count = Array.from({ length: Math.floor(pixels.length / 4) }, (_, index) => index)
+      .filter((index) => {
+        const offset = index * 4;
+        return (pixels[offset] ?? 0) > 100 && (pixels[offset + 2] ?? 0) > 100 && (pixels[offset + 1] ?? 0) < 100;
+      }).length;
+    band.remove();
+    return count;
+  });
+  expect(filledBandPixels).toBeGreaterThan(0);
 
   const drawingState = await page.evaluate(() => {
     const chart = (globalThis as unknown as {

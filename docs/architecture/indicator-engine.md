@@ -34,7 +34,9 @@ predictably.
 Every output is aligned to the input timestamps and uses `{ time, value }`,
 where `value` is a number or explicit `null`. Warm-up periods therefore do not
 silently shorten or shift a series. Multi-output indicators return multiple
-named output series with a rendering kind (`line`, `histogram`, or `band`).
+named output series with a rendering kind (`line`, `histogram`, or `band`). Band
+outputs can declare `bandRole: "upper" | "lower"`; Chart maps matching
+boundaries to a clipped filled region while preserving the normal line outputs.
 
 Built-ins currently use closing prices unless their formula requires OHLCV:
 

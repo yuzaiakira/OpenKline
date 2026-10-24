@@ -56,6 +56,8 @@ const LIGHT_THEME: ChartTheme = {
   crosshair: "#64748b",
   volumeUp: "#16a34a",
   volumeDown: "#dc2626",
+  bandFill: "#2563eb",
+  bandFillOpacity: 0.16,
 };
 
 const DARK_THEME: ChartTheme = {
@@ -68,6 +70,8 @@ const DARK_THEME: ChartTheme = {
   crosshair: "#94a3b8",
   volumeUp: "#22c55e",
   volumeDown: "#ef4444",
+  bandFill: "#60a5fa",
+  bandFillOpacity: 0.2,
 };
 
 export class Chart {
@@ -244,12 +248,20 @@ export class Chart {
     const id = `indicator-${this.nextIndicatorId++}`;
     const state: ManagedChartIndicator = { id, indicatorId: instance.id, paneId, instance, outputSeriesIds: [] };
     instance.setInput(this.model.allCandles);
+    let bandIndex = 0;
     for (const output of instance.getResult().outputs) {
       const seriesId = `${id}:${output.id}`;
+      const band = output.kind === "band"
+        ? {
+            group: id,
+            role: output.bandRole ?? (bandIndex++ === 0 ? "upper" : "lower"),
+          }
+        : undefined;
       this.model.addSeries(output.kind === "histogram" ? "histogram" : "line", {
         id: seriesId,
         title: `${instance.metadata.name} ${output.title}`,
         pane: paneId,
+        ...(band === undefined ? {} : { band }),
       });
       state.outputSeriesIds.push(seriesId);
     }
@@ -268,6 +280,14 @@ export class Chart {
         this.assertAlive();
         instance.setParameters(nextParameters);
         this.syncIndicator(state);
+        this.render();
+      },
+      setOutputStyle: (outputId, style) => {
+        this.assertAlive();
+        const outputIndex = instance.metadata.outputs.findIndex((output) => output.id === outputId);
+        const seriesId = outputIndex < 0 ? undefined : state.outputSeriesIds[outputIndex];
+        if (seriesId === undefined) throw new Error(`Unknown indicator output: ${instance.id}:${outputId}`);
+        this.model.setSeriesStyle(seriesId, style);
         this.render();
       },
       remove: () => {

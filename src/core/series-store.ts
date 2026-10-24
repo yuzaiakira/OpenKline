@@ -2,6 +2,7 @@ import { CandleStore } from "./candle-store.js";
 import { PointStore, type TimeValuePoint } from "./point-store.js";
 import type {
   Candle,
+  SeriesBand,
   SeriesOptions,
   SeriesPoint,
   SeriesStyle,
@@ -16,6 +17,7 @@ export interface SeriesSnapshot {
   paneId: string;
   title?: string;
   style: SeriesStyle;
+  band?: SeriesBand;
   data: SeriesPoint[];
 }
 
@@ -25,6 +27,7 @@ interface StoredSeries {
   paneId: string;
   title?: string;
   style: SeriesStyle;
+  band?: SeriesBand;
   store: CandleStore | PointStore;
 }
 
@@ -45,6 +48,7 @@ export class SeriesCollection {
       paneId: options.pane ?? "main",
       ...(options.title === undefined ? {} : { title: options.title }),
       style: { ...options.style },
+      ...(options.band === undefined ? {} : { band: { ...options.band } }),
       store: type === "candlestick" ? new CandleStore() : new PointStore(),
     });
     this.invalidateTimes();
@@ -167,6 +171,7 @@ export class SeriesCollection {
       paneId: series.paneId,
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
+      ...(series.band === undefined ? {} : { band: { ...series.band } }),
       data: this.getRangeByTime(series, fromTime, toTime),
     }));
   }
@@ -186,6 +191,7 @@ export class SeriesCollection {
       paneId: series.paneId,
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
+      ...(series.band === undefined ? {} : { band: { ...series.band } }),
       data: series.store instanceof CandleStore ? series.store.getAll() : series.store.getAll(),
     };
   }

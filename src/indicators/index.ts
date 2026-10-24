@@ -19,6 +19,7 @@ export {
 } from "./types.js";
 export type {
   IndicatorDefinition,
+  IndicatorBandRole,
   IndicatorIncrementalContext,
   IndicatorIncrementalUpdate,
   IndicatorInstance,

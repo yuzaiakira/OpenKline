@@ -105,6 +105,7 @@ export class CanvasRenderer {
       context.beginPath();
       context.rect(pane.left, pane.top, pane.right - pane.left, pane.bottom - pane.top);
       context.clip();
+      this.drawBandRegions(context, series, timeScale, scale, theme);
       for (const item of series) {
         if (item.style.visible === false) continue;
         if (item.type === "candlestick") {
@@ -208,6 +209,53 @@ export class CanvasRenderer {
       context.globalAlpha = 1;
     }
     this.drawLine(context, points, timeScale, scale, color, lineWidth);
+  }
+
+  private drawBandRegions(context: CanvasRenderingContext2D, series: readonly SeriesSnapshot[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme): void {
+    const groups = new Map<string, { upper?: SeriesSnapshot; lower?: SeriesSnapshot }>();
+    for (const item of series) {
+      if (item.band === undefined) continue;
+      const group = groups.get(item.band.group) ?? {};
+      group[item.band.role] = item;
+      groups.set(item.band.group, group);
+    }
+
+    context.save();
+    for (const group of groups.values()) {
+      if (group.upper === undefined || group.lower === undefined) continue;
+      const lowerByTime = new Map(group.lower.data.filter(isPoint).map((point) => [point.time, point.value]));
+      const pairs = group.upper.data
+        .filter(isPoint)
+        .map((point) => ({ upper: point, lower: lowerByTime.get(point.time) }))
+        .filter((pair): pair is { upper: Exclude<SeriesPoint, Candle>; lower: number } => pair.lower !== undefined);
+      if (pairs.length < 2) continue;
+
+      context.beginPath();
+      pairs.forEach((pair, index) => {
+        const x = timeScale.xForTime(pair.upper.time);
+        const y = scale.yForPrice(pair.upper.value);
+        if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
+      });
+      for (let index = pairs.length - 1; index >= 0; index -= 1) {
+        const pair = pairs[index];
+        if (pair === undefined) continue;
+        context.lineTo(timeScale.xForTime(pair.upper.time), scale.yForPrice(pair.lower));
+      }
+      context.closePath();
+      context.fillStyle = group.upper.style.fillColor
+        ?? group.lower.style.fillColor
+        ?? theme.bandFill
+        ?? group.upper.style.color
+        ?? theme.upCandle;
+      context.globalAlpha = normalizeOpacity(
+        group.upper.style.fillOpacity
+        ?? group.lower.style.fillOpacity
+        ?? theme.bandFillOpacity
+        ?? 0.16,
+      );
+      context.fill();
+    }
+    context.restore();
   }
 
   private drawHistogram(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
@@ -407,6 +455,10 @@ function getBodyWidth(xs: readonly number[]): number {
 
 function normalizeLineWidth(value: number): number {
   return Number.isFinite(value) ? Math.max(1, Math.min(8, value)) : 2;
+}
+
+function normalizeOpacity(value: number): number {
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.16;
 }
 
 function isCandle(point: SeriesPoint): point is Candle {

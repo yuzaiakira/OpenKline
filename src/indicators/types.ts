@@ -9,10 +9,13 @@ export interface IndicatorPoint {
 
 export type IndicatorOutputKind = "line" | "histogram" | "band";
 
+export type IndicatorBandRole = "upper" | "lower";
+
 export interface IndicatorOutputDefinition {
   readonly id: string;
   readonly title: string;
   readonly kind: IndicatorOutputKind;
+  readonly bandRole?: IndicatorBandRole;
 }
 
 export type IndicatorParameterType = "integer" | "number" | "string" | "enum";
@@ -46,6 +49,7 @@ export interface IndicatorOutputSeries {
   readonly id: string;
   readonly title: string;
   readonly kind: IndicatorOutputKind;
+  readonly bandRole?: IndicatorBandRole;
   readonly points: readonly IndicatorPoint[];
 }
 

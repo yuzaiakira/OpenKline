@@ -130,8 +130,8 @@ export const bollingerBandsDefinition: IndicatorDefinition<BollingerParameters> 
     parameters: [periodParameter(), { name: "standardDeviations", type: "number", required: true, min: 0 }],
     outputs: [
       { id: "middle", title: "Middle", kind: "line" },
-      { id: "upper", title: "Upper", kind: "band" },
-      { id: "lower", title: "Lower", kind: "band" },
+      { id: "upper", title: "Upper", kind: "band", bandRole: "upper" },
+      { id: "lower", title: "Lower", kind: "band", bandRole: "lower" },
     ],
   },
   validateParameters: (parameters) => ({

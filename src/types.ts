@@ -30,9 +30,16 @@ export interface SeriesStyle {
   color?: string;
   lineWidth?: number;
   fillColor?: string;
+  fillOpacity?: number;
   upColor?: string;
   downColor?: string;
   visible?: boolean;
+}
+
+export interface SeriesBand {
+  /** Shared key for the upper/lower boundary pair rendered as a filled region. */
+  group: string;
+  role: "upper" | "lower";
 }
 
 export interface SeriesOptions {
@@ -41,6 +48,7 @@ export interface SeriesOptions {
   /** Existing pane ID. Omit for the main pane; volume defaults to a volume pane. */
   pane?: string;
   style?: SeriesStyle;
+  band?: SeriesBand;
 }
 
 export interface PaneOptions {
@@ -69,6 +77,7 @@ export interface ChartIndicatorApi {
   readonly paneId: string;
   getResult(): import("./indicators/types.js").IndicatorResult;
   setParameters(parameters: Record<string, unknown>): void;
+  setOutputStyle(outputId: string, style: SeriesStyle): void;
   remove(): void;
 }
 
@@ -82,6 +91,8 @@ export interface ChartTheme {
   crosshair: string;
   volumeUp: string;
   volumeDown: string;
+  bandFill?: string;
+  bandFillOpacity?: number;
 }
 
 export type ChartThemeName = "light" | "dark";
