@@ -5,6 +5,7 @@ import type { Candle, PaneOptions, SeriesOptions, SeriesPoint, SeriesType } from
 export interface VisiblePaneData {
   id: string;
   preferredHeight: number | null;
+  minHeight: number;
   series: SeriesSnapshot[];
 }
 
@@ -172,6 +173,7 @@ export class ChartModel {
     const panes = this.paneLayout.getConfigs().map((pane) => ({
       id: pane.id,
       preferredHeight: pane.preferredHeight,
+      minHeight: pane.minHeight,
       series: series.filter((item) => item.paneId === pane.id),
     }));
     return {

@@ -77,6 +77,21 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(finalSeriesIds).toHaveLength(10);
   expect(finalSeriesIds).not.toContain("temporary");
 
+  const replacementIndicatorId = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        removeIndicator(id: string): void;
+        addIndicator(id: string, options: object): { id: string; remove(): void };
+      };
+    }).__openklineChart;
+    chart.removeIndicator("indicator-1");
+    const replacement = chart.addIndicator("RSI", { period: 7 });
+    const id = replacement.id;
+    replacement.remove();
+    return id;
+  });
+  expect(replacementIndicatorId).toBe("indicator-4");
+
   const drawingState = await page.evaluate(() => {
     const chart = (globalThis as unknown as {
       __openklineChart: {

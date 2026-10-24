@@ -30,7 +30,7 @@ export interface PlotBounds extends PaneBounds {
 }
 
 export function getPaneBounds(width: number, height: number, panes: readonly VisiblePaneData[]): PaneBounds[] {
-  const layout = panes.length === 0 ? [{ id: "main", preferredHeight: null, series: [] }] : panes;
+  const layout = panes.length === 0 ? [{ id: "main", preferredHeight: null, minHeight: 80, series: [] }] : panes;
   const left = 68;
   const right = Math.max(left + 1, width - 12);
   const top = 14;
@@ -39,14 +39,17 @@ export function getPaneBounds(width: number, height: number, panes: readonly Vis
   const available = Math.max(1, bottom - top - gap * (layout.length - 1));
   const main = layout.find((pane) => pane.id === "main") ?? layout[0]!;
   const nonMain = layout.filter((pane) => pane.id !== main.id);
-  const minimumMain = 80;
-  const requestedNonMain = nonMain.reduce((sum, pane) => sum + (pane.preferredHeight ?? 140), 0);
-  const scale = requestedNonMain + minimumMain > available
-    ? available / Math.max(1, requestedNonMain + minimumMain)
-    : 1;
-  const mainHeight = scale === 1 ? Math.max(minimumMain, available - requestedNonMain) : minimumMain * scale;
+  const minimumMain = main.minHeight ?? 80;
+  const requestedNonMain = nonMain.reduce((sum, pane) => sum + Math.max(pane.preferredHeight ?? 140, pane.minHeight ?? 60), 0);
+  const requestedTotal = minimumMain + requestedNonMain;
+  const scale = requestedTotal > available ? available / Math.max(1, requestedTotal) : 1;
+  const mainHeight = scale === 1
+    ? Math.max(minimumMain, available - requestedNonMain)
+    : minimumMain * scale;
   const heights = new Map<string, number>([[main.id, mainHeight]]);
-  for (const pane of nonMain) heights.set(pane.id, (pane.preferredHeight ?? 140) * scale);
+  for (const pane of nonMain) {
+    heights.set(pane.id, Math.max(pane.preferredHeight ?? 140, pane.minHeight ?? 60) * scale);
+  }
 
   const bounds: PaneBounds[] = [];
   let cursor = top;
@@ -61,8 +64,8 @@ export function getPaneBounds(width: number, height: number, panes: readonly Vis
 /** Backwards-compatible main/volume bounds helper for interaction consumers. */
 export function getPlotBounds(width: number, height: number, hasVolume = false): PlotBounds {
   const panes: VisiblePaneData[] = [
-    { id: "main", preferredHeight: null, series: [] },
-    ...(hasVolume ? [{ id: "volume", preferredHeight: 120, series: [] }] : []),
+    { id: "main", preferredHeight: null, minHeight: 80, series: [] },
+    ...(hasVolume ? [{ id: "volume", preferredHeight: 120, minHeight: 60, series: [] }] : []),
   ];
   const bounds = getPaneBounds(width, height, panes);
   const main = bounds[0] ?? { id: "main", left: 68, right: width - 12, top: 14, bottom: height - 30 };

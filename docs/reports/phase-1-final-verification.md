@@ -65,6 +65,22 @@ Verified locally on Node.js v24.19.0:
 
 No GitHub Actions workflow was added or used.
 
+## Hardening addendum — 2026-10-25
+
+The subsequent architecture audit found and corrected three concrete issues
+without changing the stable public shape: indicator IDs were allocated from
+the current map size and could collide after removing a non-last indicator;
+`Chart.destroy()` did not dispose retained indicator instances; and the public
+`PaneOptions.minHeight` value was not applied by the renderer. The fixes are in
+`src/chart.ts`, `src/core/chart-model.ts`, and
+`src/renderer/canvas-renderer.ts`. The regression suite now passes 26 tests,
+including indicator replacement-ID and pane minimum-height checks; the
+Playwright interaction test also passes.
+
+The Phase 2 report is the current consolidated status for this repository, but
+this addendum keeps the Phase 1 acceptance record accurate about the later
+hardening work.
+
 ## Performance and memory measurements
 
 ### Node model baseline

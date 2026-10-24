@@ -46,8 +46,10 @@ chart.destroy();
   interaction model. Each series supports `setData`, `update`, `getData`,
   `setStyle`, and `remove`.
 - `addPane(options)` creates a pane with an independent vertical scale and
-  returns a `PaneApi` for height changes or removal. `getPaneIds()` returns
-  pane order. All panes share time navigation and the vertical crosshair.
+  returns a `PaneApi` for height changes or removal. `height` is the preferred
+  CSS-pixel height and `minHeight` is the minimum used by the renderer when
+  space permits. `getPaneIds()` returns pane order. All panes share time
+  navigation and the vertical crosshair.
 - `registerIndicator(definition)` and `unregisterIndicator(id)` manage custom
   TypeScript definitions. `addIndicator(id, options)` creates a calculation
   instance, maps its outputs to line/histogram series, and supports parameter

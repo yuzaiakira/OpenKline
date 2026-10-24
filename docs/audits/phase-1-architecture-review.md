@@ -1,5 +1,94 @@
 # Phase 1 Architecture Review
 
+## Current audit addendum — 2026-10-25
+
+This addendum is the current code-level review after the Phase 2 foundation was
+implemented. The earlier sections preserve the historical Phase 1 starting
+snapshot and its original resolutions. The repository was rechecked at
+`3c810bc` before the hardening changes below.
+
+### Current architecture assessment
+
+The dependency direction remains sound:
+
+```text
+Datafeed / stores -> ChartModel -> CanvasRenderer -> Chart browser adapter
+                         |                \-> DrawingEngine
+                         \-> IndicatorEngine -> chart-managed output series
+React adapter -> Chart API <- Next.js client boundary
+```
+
+The calculation, storage, pane, drawing, and renderer modules remain
+framework-independent. Browser ownership is concentrated in `Chart`; React
+only owns mounting and prop synchronization. The public root exports typed
+contracts and does not export the renderer implementation.
+
+### Current findings and resolutions
+
+#### P1-004 — Indicator instances were not disposed by chart destruction
+
+- **Affected file:** `src/chart.ts`
+- **Root cause:** `Chart.destroy()` cleared the model and drawing engine but did
+  not call `dispose()` on indicator instances held by `this.indicators`.
+- **Impact:** a long-lived chart with indicators could retain input/result
+  arrays and incremental state after its DOM canvas was removed.
+- **Resolution:** `destroy()` now disposes every managed indicator and clears
+  the registry before destroying the model.
+- **Status:** Resolved.
+- **Evidence:** source-level lifecycle review, `npm test`, and the browser
+  destruction path pass.
+
+#### P1-005 — Indicator IDs could collide after non-tail removal
+
+- **Affected file:** `src/chart.ts`
+- **Root cause:** IDs were generated from `this.indicators.size + 1`, so removing
+  `indicator-1` while `indicator-2` and `indicator-3` remained caused the next
+  indicator to reuse `indicator-3`.
+- **Impact:** valid indicator replacement could throw a duplicate series-ID
+  error and leave callers with an inconsistent lifecycle.
+- **Resolution:** a monotonic chart-local `nextIndicatorId` allocator is now
+  used.
+- **Status:** Resolved.
+- **Evidence:** Playwright regression removes `indicator-1`, creates a new RSI,
+  asserts `indicator-4`, and completes without page errors.
+
+#### P2-003 — Pane minimum height was accepted but ignored
+
+- **Affected files:** `src/core/chart-model.ts`,
+  `src/renderer/canvas-renderer.ts`
+- **Root cause:** `PaneConfig.minHeight` was not carried into visible pane data,
+  and the renderer allocated only preferred heights.
+- **Impact:** a documented layout constraint was silently ineffective when
+  panes were rendered.
+- **Resolution:** visible pane data now carries `minHeight`; layout honors the
+  minimum when the available space permits and scales deterministically when
+  the viewport is too small to satisfy every requested height.
+- **Status:** Resolved.
+- **Evidence:** `tests/series.test.ts` asserts the rendered pane height and
+  `npm test` passes.
+
+### Current security, performance, and test posture
+
+- No credentials, arbitrary code execution, `eval`, `new Function`, or GitHub
+  Actions were introduced. Extension activation remains explicitly trusted
+  in-process code.
+- Visible-data slicing, cached union timestamps, and incremental indicator
+  paths avoid repeated full-history work in the normal append path. The
+  100,000-candle Canvas2D result remains environment-specific and below a
+  60-FPS target; it is recorded as follow-up rather than hidden.
+- Local verification currently includes typecheck, 26 unit/integration tests,
+  one Chromium Playwright interaction test, package smoke checks, React pack
+  verification, Next.js production build, and Node/Canvas2D benchmarks.
+  Firefox, WebKit/Safari, mobile, and visual-regression runs remain open.
+
+### Current recommendation
+
+The Phase 1 chart foundation is stable for continued development, and the
+confirmed lifecycle/layout issues above are resolved. Keep the release gate
+open for the documented cross-browser matrix, full drawing interaction browser
+coverage, and large-dataset rendering budget. The consolidated acceptance
+record is `docs/reports/phase-2-verification.md`.
+
 **Review date:** 2026-10-24
 **Scope:** repository state at the start of the Phase 1 completion task and the
 verified fixes made in this increment.

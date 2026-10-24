@@ -76,6 +76,7 @@ export class Chart {
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
+  private nextIndicatorId = 1;
   private readonly drawingEngine = new DrawingEngine();
   private readonly extensionDisposers = new Set<() => void>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
@@ -240,7 +241,7 @@ export class Chart {
     const normalizedParameters = parameters ?? directParameters;
     const instance = this.indicatorRegistry.create(indicatorId, normalizedParameters);
     const paneId = pane === "new" ? this.model.addPane({ height: 180 }) : pane ?? "main";
-    const id = `indicator-${this.indicators.size + 1}`;
+    const id = `indicator-${this.nextIndicatorId++}`;
     const state: ManagedChartIndicator = { id, indicatorId: instance.id, paneId, instance, outputSeriesIds: [] };
     instance.setInput(this.model.allCandles);
     for (const output of instance.getResult().outputs) {
@@ -500,6 +501,8 @@ export class Chart {
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
     this.stopDatafeed();
+    for (const indicator of this.indicators.values()) indicator.instance.dispose();
+    this.indicators.clear();
     this.model.destroy();
     this.drawingEngine.dispose();
     this.resizeObserver?.disconnect();

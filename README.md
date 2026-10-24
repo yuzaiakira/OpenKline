@@ -7,7 +7,8 @@ integrations.
 
 ## Current status
 
-The repository currently contains the finalized Phase 1 chart foundation:
+The repository currently contains the Phase 1 chart foundation and the
+implemented Phase 2 analysis foundation:
 
 - strict TypeScript data and viewport model;
 - validated OHLCV candles with incremental updates;
@@ -17,11 +18,17 @@ The repository currently contains the finalized Phase 1 chart foundation:
   deterministic in-memory, paginated REST, and reconnecting WebSocket
   reference adapters;
 - optional React bindings and a Next.js App Router example;
+- typed technical indicators, synchronized analysis panes, and browser-neutral
+  drawing tools with serialization and undo/redo;
+- trusted in-process extension contracts for custom indicators and drawing
+  tools, plus a documented KlineScript boundary;
 - vanilla browser example with all supported series;
 - local unit, browser, Canvas2D benchmark, package-install, and integration
   verification scripts.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope and
+[docs/reports/phase-2-verification.md](docs/reports/phase-2-verification.md)
+for the current acceptance status.
 See [docs/api/chart.md](docs/api/chart.md) and
 [docs/api/datafeed.md](docs/api/datafeed.md) for the public APIs.
 

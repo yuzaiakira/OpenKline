@@ -19,7 +19,7 @@ Phase 2 foundation — **Implemented; acceptance remains open for documented com
 - [Implemented] Added a thin React adapter and a Next.js App Router example.
 - [Implemented] Added unit, adapter, React, Playwright browser, Canvas2D
   benchmark, package-install, and Next.js production checks.
-- [Verified] Type checking, 25 unit tests, browser interaction, Next.js
+- [Verified] Type checking, 26 unit tests, browser interaction, Next.js
   production build, package installation, and 1k/10k/100k benchmarks pass
   locally; measured values are recorded in the final verification report.
 
@@ -41,6 +41,9 @@ Phase 2 foundation — **Implemented; acceptance remains open for documented com
 - [Implemented] Added Canvas2D rendering and React/Next drawing props with
   deterministic browser coverage; final acceptance evidence is in
   `docs/reports/phase-2-verification.md`.
+- [Hardened] Fixed indicator ID allocation after non-tail removal, disposed
+  managed indicators during chart destruction, and applied pane `minHeight`
+  constraints in renderer layout.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.

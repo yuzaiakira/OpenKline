@@ -55,6 +55,8 @@ unexecuted browser engines, or unmeasured release targets as complete.
 - The Next.js App Router example builds as a production application.
 - The vanilla example uses the same public `createChart` API and includes
   series, panes, indicators, and interaction setup.
+- Phase 1 hardening also fixed monotonic indicator IDs, indicator disposal on
+  chart destruction, and enforcement of pane minimum heights.
 
 ### KlineScript boundary
 
@@ -69,7 +71,7 @@ unexecuted browser engines, or unmeasured release targets as complete.
   WebKit/Safari, mobile browsers, and device-pixel-ratio visual baselines were
   not executed in this environment.
 - The 100,000-candle Canvas2D run is measurable but not a 60 FPS target:
-  this run observed 19.29 FPS for the 30-frame update loop and 76.930 ms per
+  this run observed 19.95 FPS for the 30-frame update loop and 54.459 ms per
   append in the 100-update batch. Renderer profiling and a reference hardware
   budget remain follow-up work.
 - Browser interaction coverage exercises the chart lifecycle and an
@@ -115,7 +117,7 @@ All commands below completed successfully on Node.js v24.19.0 unless noted:
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | Pass — 25 tests |
+| `npm test` | Pass — 26 tests |
 | `npm run test:browser` | Pass — 1 Playwright test in Chromium |
 | `npm run benchmark` | Pass — 1k/10k/100k model runs |
 | `npm run benchmark:browser` | Pass — Canvas2D, updates, memory, cleanup |
@@ -147,9 +149,9 @@ The deterministic Node model run was:
 
 | Candles | Load (ms) | Navigation (ms) | Update (ms) |
 | ---: | ---: | ---: | ---: |
-| 1,000 | 2.065 | 0.156 | 0.147 |
-| 10,000 | 11.159 | 0.008 | 0.025 |
-| 100,000 | 93.835 | 0.041 | 0.168 |
+| 1,000 | 2.009 | 0.073 | 0.138 |
+| 10,000 | 7.788 | 0.008 | 0.025 |
+| 100,000 | 47.600 | 0.012 | 0.018 |
 
 The actual Canvas2D run used headless Chromium 154, a 1,200 × 520 viewport,
 `--disable-gpu`, the deterministic vanilla fixture, 100 new-timestamp appends,
@@ -157,16 +159,15 @@ five same-timestamp corrections, and a 30-frame update loop:
 
 | Candles | Load (ms) | Navigation (ms) | 100 appends (ms) | Append/update (ms) | 5 corrections (ms) | rAF frame (ms) | FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 20.8 | 11.5 | 130.5 | 1.305 | 91.3 | 23.410 | 42.72 |
-| 10,000 | 88.9 | 8.2 | 532.4 | 5.324 | 381.5 | 16.300 | 61.35 |
-| 100,000 | 1,403.2 | 6.5 | 7,693.0 | 76.930 | 4,489.3 | 51.840 | 19.29 |
+| 1,000 | 27.0 | 17.9 | 233.7 | 2.337 | 92.5 | 15.970 | 62.62 |
+| 10,000 | 281.3 | 11.1 | 702.7 | 7.027 | 274.6 | 16.017 | 62.43 |
+| 100,000 | 908.1 | 6.4 | 5,445.9 | 54.459 | 3,815.7 | 50.127 | 19.95 |
 
-Observed Chromium heap values were 1.39 MB before loading, 11.71 MB after
-1,000 candles, 34.73 MB after 10,000, and 205.31 MB after 100,000. The value
-observed after destruction was 62.25 MB. `remainingCanvasCount` was zero. Heap
-reservation after destruction is not treated as proof of a leak because the
-browser may retain heap capacity; the deterministic chart-owned resource check
-passed.
+Observed Chromium heap values were 1.39 MB before loading, 11.14 MB after
+1,000 candles, 37.59 MB after 10,000, and 426.52 MB after 100,000. The value
+observed after destruction was 1.55 MB in this run. `remainingCanvasCount` was
+zero. The deterministic chart-owned resource check passed; these heap values
+remain engine-specific observations rather than release thresholds.
 
 These are observations from one environment, not universal performance
 claims or release thresholds.

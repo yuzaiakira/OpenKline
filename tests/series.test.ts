@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ChartModel } from "../src/core/chart-model.js";
 import { PointStore, PointValidationError } from "../src/core/point-store.js";
+import { getPaneBounds } from "../src/renderer/canvas-renderer.js";
 
 test("ChartModel shares one viewport across candle, line, area, and volume series", () => {
   const model = new ChartModel();
@@ -66,5 +67,15 @@ test("ChartModel keeps panes independent while sharing one time viewport", () =>
   assert.equal(model.getSeries("rsi-value").paneId, "main");
   model.removeSeries(volume);
   assert.deepEqual(model.getPaneIds(), ["main"]);
+});
+
+test("pane minimum heights are carried into renderer layout", () => {
+  const model = new ChartModel();
+  model.resize(800);
+  model.addPane({ id: "oscillator", height: 120, minHeight: 96 });
+  const bounds = getPaneBounds(800, 420, model.getVisibleData().panes);
+  const oscillator = bounds.find((pane) => pane.id === "oscillator");
+  assert.ok(oscillator !== undefined);
+  assert.ok(oscillator.bottom - oscillator.top >= 96);
 });
 
