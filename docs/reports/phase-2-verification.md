@@ -221,9 +221,10 @@ Commits created in this increment:
 | `0d489d1` | `feat(extensions): define plugin and script boundaries` | Pushed |
 | `bf1a404` | `perf(chart): optimize realtime append updates` | Pushed |
 | `33d81a7` | `feat(drawings): support anchor editing and z-order` | Pushed |
+| `6f099fe` | `docs(phase2): add final verification report` | Pushed; remote branch advanced successfully |
 
-The final documentation/report commit will be recorded in this table after it
-is created and its remote SHA is checked against `HEAD`.
+The final handoff also checks that the remote `work` ref matches the final local
+`HEAD`; the verification output is included with the delivery.
 
 ## Phase 2 acceptance matrix
 
