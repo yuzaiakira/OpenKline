@@ -69,4 +69,6 @@ and movement, lock/visibility/style controls, undo/redo, serialization, custom
 tool registration, and React/Next drawing props. The plugin SDK, ChartScript,
 accessibility UI, visual regression, vendor-specific adapters, and WebGL/WebGPU
 rendering remain future work. They are not represented as completed
-functionality here.
+functionality here. The consolidated Phase 2 verification report records the
+remaining acceptance gaps; this PDR does not treat untested browser engines or
+future plugin/runtime work as complete.

@@ -27,9 +27,9 @@ One run on Node.js v24.19.0 produced these model timings:
 
 | Candles | Load (ms) | Navigation (ms) | Update (ms) |
 | ---: | ---: | ---: | ---: |
-| 1,000 | 2.220 | 0.067 | 0.140 |
-| 10,000 | 7.753 | 0.008 | 0.047 |
-| 100,000 | 64.909 | 0.011 | 0.021 |
+| 1,000 | 2.065 | 0.156 | 0.147 |
+| 10,000 | 11.159 | 0.008 | 0.025 |
+| 100,000 | 93.835 | 0.041 | 0.168 |
 
 ## Observed Chromium baseline
 
@@ -38,16 +38,17 @@ viewport, `--disable-gpu`, and the deterministic vanilla fixture:
 
 | Candles | Load (ms) | Navigation (ms) | 100 appends (ms) | Append/update (ms) | 5 corrections (ms) | rAF frame (ms) | rAF FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 20.6 | 14.4 | 122.7 | 1.227 | 32.1 | 15.493 | 64.54 |
-| 10,000 | 68.9 | 5.8 | 355.8 | 3.558 | 225.1 | 15.937 | 62.75 |
-| 100,000 | 1,193.4 | 6.2 | 5,713.3 | 57.133 | 3,319.9 | 55.940 | 17.88 |
+| 1,000 | 20.8 | 11.5 | 130.5 | 1.305 | 91.3 | 23.410 | 42.72 |
+| 10,000 | 88.9 | 8.2 | 532.4 | 5.324 | 381.5 | 16.300 | 61.35 |
+| 100,000 | 1,403.2 | 6.5 | 7,693.0 | 76.930 | 4,489.3 | 51.840 | 19.29 |
 
-Chromium reported heap observations of 1.39 MB before loading, 6.73 MB after
-1,000 candles, 53.53 MB after 10,000, and 194.35 MB after 100,000. The heap
-remained reserved after `destroy()` in this headless run; that is not by itself
-evidence of a retained chart leak because browser heaps are not necessarily
-returned to the OS. The deterministic cleanup assertion passed:
-`remainingCanvasCount = 0`, and `Chart.destroy()` clears stored series state.
+Chromium reported heap observations of 1.39 MB before loading, 11.71 MB after
+1,000 candles, 34.73 MB after 10,000, and 205.31 MB after 100,000. After
+`destroy()` the observed heap was 62.25 MB. The heap remaining reserved after
+destruction is not by itself evidence of a retained chart leak because browser
+heaps are not necessarily returned to the OS. The deterministic cleanup
+assertion passed: `remainingCanvasCount = 0`, and `Chart.destroy()` clears
+stored series state.
 
 These values are reproducible observations for this environment, not release
 targets or universal FPS guarantees. Repeat the benchmark on reference

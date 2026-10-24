@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 2.3 — Analysis drawings: **In progress; implementation landed, final verification pending**
+Phase 2 foundation — **Implemented; acceptance remains open for documented compatibility and extension follow-up**
 
 ## Completed
 
@@ -19,7 +19,7 @@ Phase 2.3 — Analysis drawings: **In progress; implementation landed, final ver
 - [Implemented] Added a thin React adapter and a Next.js App Router example.
 - [Implemented] Added unit, adapter, React, Playwright browser, Canvas2D
   benchmark, package-install, and Next.js production checks.
-- [Verified] Type checking, 13 unit tests, browser interaction, Next.js
+- [Verified] Type checking, 25 unit tests, browser interaction, Next.js
   production build, package installation, and 1k/10k/100k benchmarks pass
   locally; measured values are recorded in the final verification report.
 
@@ -39,8 +39,8 @@ Phase 2.3 — Analysis drawings: **In progress; implementation landed, final ver
   selection, pointer movement, styles, visibility, locking, z-order, hit
   testing, undo/redo, versioned serialization, and custom tool registration.
 - [Implemented] Added Canvas2D rendering and React/Next drawing props with
-  deterministic browser coverage; final phase acceptance remains pending the
-  consolidated verification report.
+  deterministic browser coverage; final acceptance evidence is in
+  `docs/reports/phase-2-verification.md`.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.
