@@ -2,7 +2,10 @@
 
 ## Current milestone
 
-Phase 2 final hardening — **Open; Chromium and Mobile Chrome verified, Firefox/WebKit/Mobile Safari blocked by environment**
+Phase 3 plugin SDK and customization platform — **Open under the explicitly
+documented Phase 2 environment exception**. Phase 2 acceptance remains open
+for Firefox, WebKit, and Mobile Safari; this roadmap does not treat those
+blocked runs as verified or change their gate.
 
 ## Completed
 
@@ -58,12 +61,24 @@ Phase 2 final hardening — **Open; Chromium and Mobile Chrome verified, Firefox
   path, and optimized strictly newer candle/point updates. The append run
   reached approximately 62–64 FPS in the recorded environment; historical
   corrections remain a documented full-recalculation cost.
-- [Not Started] Plugin SDK.
+- [Implemented] Phase 3 chart-scoped Plugin SDK with API-versioned metadata,
+  semver/dependency validation, activation rollback, deterministic disposal,
+  JSON state, typed events, commands/shortcuts, custom indicators/drawings,
+  controlled overlays, and public Chart integration.
+- [Implemented] Versioned workspace serialization/restoration for chart
+  configuration, panes, series, indicators, drawings, viewport, plugin state,
+  missing-extension policies, exact plugin-version checks, and persistence-
+  neutral JSON validation.
+- [Implemented] Theme, locale/timezone/precision, RTL time-axis foundation,
+  interaction configuration, and React plugin/workspace props.
+- [In Verification] Plugin SDK browser behavior, workspace round trips,
+  package/API checks, documentation, and Phase 3 acceptance report.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
-- [Not Started] Phase 3 Plugin SDK and Customization Platform; gated on Phase 2
-  final browser verification.
+- [Authorized Exception] Phase 3 work may proceed under the project owner's
+  narrow exception recorded in `docs/reports/phase-3-verification.md`. It does
+  not close Phase 2 or authorize Phase 4.
 
 ## Known limitations
 
@@ -77,6 +92,8 @@ Phase 2 final hardening — **Open; Chromium and Mobile Chrome verified, Firefox
   runs. The proposed next action is to rerun the existing projects from an
   environment with access to the official Playwright CDN or pinned official
   Docker image; the gate has not been relaxed.
+- Phase 3 plugins are trusted in-process modules. No remote loader, sandbox,
+  signature verifier, or marketplace is included.
 
 ## Architectural follow-up
 

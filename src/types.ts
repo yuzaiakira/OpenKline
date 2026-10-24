@@ -66,6 +66,7 @@ export interface PaneApi {
 }
 
 export interface IndicatorAddOptions {
+  id?: string;
   pane?: string | "new";
   parameters?: Record<string, unknown>;
   [parameter: string]: unknown;
@@ -96,6 +97,7 @@ export interface ChartTheme {
 }
 
 export type ChartThemeName = "light" | "dark";
+export type ChartDirection = "ltr" | "rtl";
 
 export interface ChartOptions {
   autoSize?: boolean;
@@ -105,6 +107,19 @@ export interface ChartOptions {
   locale?: string;
   timeZone?: string;
   pricePrecision?: number;
+  interaction?: ChartInteractionOptions;
+  direction?: ChartDirection;
+}
+
+export interface ChartInteractionOptions {
+  /** Enable wheel zoom; enabled by default. */
+  wheelZoom?: boolean;
+  /** Enable pointer/touch panning when no drawing is selected; enabled by default. */
+  pointerPan?: boolean;
+  /** Render and publish crosshair updates; enabled by default. */
+  crosshair?: boolean;
+  /** Allow plugin command shortcuts while the chart canvas is focused; enabled by default. */
+  keyboardShortcuts?: boolean;
 }
 
 export interface SymbolInfo {
@@ -146,6 +161,14 @@ export interface CrosshairMoveEvent {
 }
 
 export interface ChartEvents {
+  chartReady: { timestamp: number };
+  chartDestroy: { timestamp: number };
+  dataUpdated: { kind: "set" | "update"; time: number | null; appendOnly: boolean };
+  viewportChange: { from: number; to: number };
+  indicatorChange: { action: "add" | "remove" | "update"; id: string; indicatorId: string };
+  drawingSelection: { id: string | null };
+  toolActivation: { type: string; active: boolean };
+  themeChange: { theme: ChartTheme };
   crosshairMove: CrosshairMoveEvent;
   datafeedError: Error;
 }

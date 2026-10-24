@@ -19,6 +19,9 @@ Validated Candle[] -> IndicatorRegistry -> independent IndicatorInstance(s)
 Chart pointer events -> DrawingEngine -> versioned snapshots / pure geometry
                                              |
                                        Canvas2D renderer
+
+Chart -> PluginRegistry -> typed indicators/drawings/events/commands/state
+                       -> controlled overlay commands -> Canvas2D renderer
 ```
 
 `CandleStore` and `PointStore` own validated, ordered series data. The
@@ -37,6 +40,9 @@ validated candles and emits aligned, multi-output results that are mapped into
 independent panes. The drawing engine is another browser-neutral boundary: it
 owns analysis-object state and extension contracts while the chart adapter
 supplies coordinates and the Canvas renderer consumes pure geometry.
+The plugin registry composes those boundaries without exposing the chart DOM,
+Canvas2D context, or private model. Workspace documents capture public state
+without capturing executable plugin code.
 
 Strictly newer series updates use an append path through the stores and extend
 the shared timestamp cache without rebuilding the union. Equal-timestamp

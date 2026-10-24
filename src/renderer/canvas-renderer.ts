@@ -1,8 +1,9 @@
 import { PriceScale, TimeScale } from "../core/scales.js";
 import type { VisibleChartData, VisiblePaneData } from "../core/chart-model.js";
 import type { SeriesSnapshot } from "../core/series-store.js";
-import type { ChartTheme, Candle, SeriesPoint } from "../types.js";
+import type { ChartDirection, ChartTheme, Candle, SeriesPoint } from "../types.js";
 import type { DrawingRenderItem } from "../drawings/types.js";
+import type { PluginOverlayRenderItem } from "../extensions/types.js";
 
 export interface RenderSize {
   width: number;
@@ -14,6 +15,7 @@ export interface RenderOptions {
   locale: string;
   timeZone: string;
   pricePrecision: number;
+  direction: ChartDirection;
 }
 
 export interface PaneBounds {
@@ -84,6 +86,7 @@ export class CanvasRenderer {
     crosshair: { x: number; y: number } | null,
     drawings: readonly DrawingRenderItem[] = [],
     selectedDrawingId: string | null = null,
+    overlays: readonly PluginOverlayRenderItem[] = [],
   ): void {
     const context = this.canvas.getContext("2d");
     if (context === null) throw new Error("CanvasRenderingContext2D is unavailable");
@@ -95,7 +98,7 @@ export class CanvasRenderer {
     if (data.times.length === 0 || width <= 0 || height <= 0) return;
 
     const panes = getPaneBounds(width, height, data.panes);
-    const timeScale = new TimeScale(data.times, { start: panes[0]?.left ?? 68, end: panes[0]?.right ?? width - 12 });
+    const timeScale = new TimeScale(data.times, { start: panes[0]?.left ?? 68, end: panes[0]?.right ?? width - 12 }, options.direction);
     for (const pane of panes) {
       const paneData = data.panes.find((candidate) => candidate.id === pane.id);
       const series = paneData?.series ?? [];
@@ -132,6 +135,10 @@ export class CanvasRenderer {
         priceForY: (y: number) => scale.priceForY(y),
       };
       this.drawDrawings(context, drawings, converter, mainPane, theme, selectedDrawingId);
+    }
+    if (mainPane !== undefined && overlays.length > 0) {
+      const lastPane = panes[panes.length - 1] ?? mainPane;
+      this.drawPluginOverlays(context, overlays, mainPane, lastPane, theme);
     }
     const lastPane = panes[panes.length - 1];
     if (lastPane !== undefined) this.drawTimeLabels(context, data.times, timeScale, lastPane.bottom, theme, options);
@@ -332,6 +339,46 @@ export class CanvasRenderer {
           context.beginPath();
           context.arc(converter.xForTime(point.time), converter.yForPrice(point.price), 4, 0, Math.PI * 2);
           context.fill();
+        }
+      }
+    }
+    context.globalAlpha = 1;
+    context.restore();
+  }
+
+  private drawPluginOverlays(
+    context: CanvasRenderingContext2D,
+    overlays: readonly PluginOverlayRenderItem[],
+    firstPane: PaneBounds,
+    lastPane: PaneBounds,
+    theme: ChartTheme,
+  ): void {
+    context.save();
+    context.beginPath();
+    context.rect(firstPane.left, firstPane.top, firstPane.right - firstPane.left, lastPane.bottom - firstPane.top);
+    context.clip();
+    for (const overlay of overlays) {
+      for (const command of overlay.commands) {
+        context.globalAlpha = normalizeOpacity(command.alpha ?? 1);
+        if (command.kind === "line") {
+          context.strokeStyle = command.color ?? theme.crosshair;
+          context.lineWidth = normalizeLineWidth(command.lineWidth ?? 1.5);
+          context.beginPath();
+          context.moveTo(command.from.x, command.from.y);
+          context.lineTo(command.to.x, command.to.y);
+          context.stroke();
+        } else if (command.kind === "rectangle") {
+          context.strokeStyle = command.color ?? theme.crosshair;
+          context.fillStyle = command.fillColor ?? "transparent";
+          context.lineWidth = normalizeLineWidth(command.lineWidth ?? 1.5);
+          if (command.fillColor !== undefined) context.fillRect(command.left, command.top, command.width, command.height);
+          context.strokeRect(command.left, command.top, command.width, command.height);
+        } else {
+          context.fillStyle = command.color ?? theme.text;
+          context.font = command.font ?? "12px system-ui, sans-serif";
+          context.textAlign = "left";
+          context.textBaseline = "top";
+          context.fillText(command.text, command.x, command.y);
         }
       }
     }

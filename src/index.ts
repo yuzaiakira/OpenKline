@@ -5,6 +5,23 @@ export { PriceScale, TimeScale, getCandlePriceRange } from "./core/scales.js";
 export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";
+export {
+  OPENKLINE_WORKSPACE_VERSION,
+  WorkspaceCompatibilityError,
+  WorkspaceValidationError,
+  parseWorkspace,
+} from "./workspace.js";
+export type {
+  WorkspaceChartConfiguration,
+  WorkspaceDocument,
+  WorkspaceIndicator,
+  WorkspaceMetadata,
+  WorkspacePane,
+  WorkspacePluginState,
+  WorkspaceRestoreOptions,
+  WorkspaceRestoreResult,
+  WorkspaceSeries,
+} from "./workspace.js";
 export { PointStore, PointValidationError } from "./core/point-store.js";
 export { SeriesCollection } from "./core/series-store.js";
 export type {
@@ -13,6 +30,8 @@ export type {
   ChartEventName,
   ChartEvents,
   ChartIndicatorApi,
+  ChartInteractionOptions,
+  ChartDirection,
   ChartOptions,
   ChartTheme,
   ChartThemeName,
@@ -62,10 +81,44 @@ export {
   vwapDefinition,
 } from "./indicators/index.js";
 export type {
+  Disposable,
   ExtensionHandle,
   ExtensionHost,
   ExtensionMetadata,
+  InstalledPluginMetadata,
+  JsonPrimitive,
+  JsonValue,
+  OpenKlinePlugin,
   OpenKlineExtension,
+  PluginApiVersion,
+  PluginCommand,
+  PluginCommandApi,
+  PluginCommandMetadata,
+  PluginContext,
+  PluginDependency,
+  PluginDrawingApi,
+  PluginEventApi,
+  PluginHandle,
+  PluginHost,
+  PluginIndicatorApi,
+  PluginMetadata,
+  PluginOverlayApi,
+  PluginOverlayDefinition,
+  PluginOverlayRenderItem,
+  PluginPaneBounds,
+  PluginPaneRenderContext,
+  PluginRenderCommand,
+  PluginRenderContext,
+  PluginSeriesSnapshot,
+  PluginStateStore,
+} from "./extensions/index.js";
+export {
+  OPENKLINE_HOST_VERSION,
+  OPENKLINE_PLUGIN_API_VERSION,
+  PluginRegistry,
+  PluginValidationError,
+  PluginCompatibilityError,
+  PluginLifecycleError,
 } from "./extensions/index.js";
 export type {
   KlineScriptDeclaration,

@@ -38,3 +38,13 @@ dynamic import policy, permissions model, remote code execution, or a
 marketplace. Applications should import trusted extension modules and activate
 them explicitly. A future plugin SDK can add those concerns without changing
 the versioned indicator and drawing contracts.
+
+## Phase 3 plugin contract
+
+New integrations should use `OpenKlinePlugin` and `PluginRegistry`. The plugin
+API version is numeric and independent from the package version. A plugin is
+validated, dependency-checked, activated with rollback, and disposed in a
+chart-scoped lifecycle. It can register the same indicator/drawing contracts,
+plus typed events, JSON state, commands, and bounded overlay primitives. The
+legacy extension contract remains available for existing consumers but does
+not provide plugin state, dependencies, commands, or overlays.

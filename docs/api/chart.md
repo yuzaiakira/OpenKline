@@ -31,6 +31,9 @@ chart.setData(candles);
 chart.update(nextCandle); // replace the same timestamp or insert chronologically
 const unsubscribe = chart.subscribe("crosshairMove", console.log);
 
+const workspace = chart.serializeWorkspace({ symbol: "BTC-USD", timeframe: "1h" });
+chart.restoreWorkspace(workspace);
+
 unsubscribe();
 chart.destroy();
 ```
@@ -59,6 +62,13 @@ chart.destroy();
 - `installExtension(extension)` activates a trusted versioned extension and
   returns an idempotent `ExtensionHandle`. The host currently exposes cleanup
   registrations for custom indicators and drawing tools.
+- `installPlugin(plugin)`, `uninstallPlugin(id)`, `getPlugins()`,
+  `executeCommand(id)`, `executeShortcut(shortcut)`, and `getCommands()` expose
+  the chart-scoped Phase 3 plugin registry. Plugins can register indicators,
+  drawings, controlled overlays, typed events, commands, and JSON state.
+- `serializeWorkspace(metadata)` and `restoreWorkspace(document, options)` save
+  and restore versioned chart configuration, series, indicators, drawings,
+  viewport, and plugin state. See `docs/api/workspaces.md`.
 - `registerDrawingTool(definition)` and `unregisterDrawingTool(type)` manage
   custom drawing definitions. `addDrawing` creates a typed analysis object;
   `startDrawing` creates one from pointer clicks. `getDrawings`,
@@ -68,8 +78,8 @@ chart.destroy();
 - `pan(deltaBars)` and `zoom(scale, anchorRatio)` navigate the shared viewport.
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
   backing store.
-- `setOptions(options)` updates theme, locale, timezone, precision, or explicit
-  dimensions without recreating the chart.
+- `setOptions(options)` updates theme, locale, timezone, precision, direction,
+  interaction policy, or explicit dimensions without recreating the chart.
 - `setDatafeed(datafeed, query)` loads historical bars and subscribes to future
   bars when the provider exposes `subscribeBars`.
 - `stopDatafeed()` removes the active subscription and invalidates stale loads.
@@ -77,6 +87,10 @@ chart.destroy();
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, and stored series data. Other methods throw after
   destruction.
+
+`ChartEvents` includes `chartReady`, `chartDestroy`, `dataUpdated`,
+`viewportChange`, `indicatorChange`, `drawingSelection`, `toolActivation`,
+`themeChange`, `crosshairMove`, and `datafeedError`.
 
 ## Data contract
 
@@ -99,6 +113,10 @@ other series share the OHLC/point price scale.
 `crosshairMove` includes a `series` array with the nearest value for every
 series. Tooltip text uses the same values, so interaction behavior remains
 consistent as series are added or removed.
+
+`direction: "rtl"` reverses visual time coordinates while stored timestamps
+remain ascending. `locale` and `timeZone` use the platform `Intl` formatter;
+host-owned controls should provide their own translated strings.
 
 Indicator outputs can be assigned to `pane: "new"`, `pane: "main"`, or a
 named pane. RSI, MACD, and Stochastic therefore use independent scales while

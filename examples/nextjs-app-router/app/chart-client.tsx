@@ -1,6 +1,7 @@
 "use client";
 
 import { FinancialChart } from "@openkline/react";
+import { examplePlugin } from "./example-plugin";
 
 const candles = Array.from({ length: 80 }, (_, index) => {
   const close = 100 + Math.sin(index / 7) * 8 + index * 0.08;
@@ -36,6 +37,7 @@ export default function ChartClient() {
           style: { color: "#f59e0b", lineWidth: 2 },
         },
       }]}
+      plugins={[examplePlugin]}
     />
   );
 }

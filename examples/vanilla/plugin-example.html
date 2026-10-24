@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Plugin Example</title>
+    <style>
+      body { margin: 2rem; background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
+      #chart { height: 420px; border: 1px solid #334155; }
+    </style>
+  </head>
+  <body>
+    <h1>OpenKline plugin example</h1>
+    <div id="chart"></div>
+    <script type="module">
+      import { createChart } from "../../dist/src/index.js";
+      import { createExamplePlugin } from "./plugin-example.js";
+
+      const chart = createChart(document.querySelector("#chart"), { theme: "dark", autoSize: true });
+      chart.installPlugin(createExamplePlugin());
+      const start = Date.UTC(2026, 0, 1);
+      const candles = Array.from({ length: 40 }, (_, index) => {
+        const close = 100 + Math.sin(index / 5) * 4;
+        return { time: start + index * 60 * 60 * 1000, open: close - 1, high: close + 2, low: close - 2, close };
+      });
+      chart.setData(candles);
+      chart.addIndicator("EXAMPLE_CLOSE_OFFSET", { offset: 1 });
+      globalThis.__openklineChart = chart;
+    </script>
+  </body>
+</html>

@@ -50,6 +50,9 @@ test("scales map between data and pixels in both directions", () => {
   const timeScale = new TimeScale([0, 100], { start: 10, end: 210 });
   assert.equal(timeScale.xForTime(50), 110);
   assert.equal(timeScale.timeForX(110), 50);
+  const rtlTimeScale = new TimeScale([0, 100], { start: 10, end: 210 }, "rtl");
+  assert.equal(rtlTimeScale.xForTime(0), 210);
+  assert.equal(rtlTimeScale.timeForX(210), 0);
 
   const priceScale = new PriceScale(100, 200, { start: 0, end: 100 }, 0);
   assert.equal(priceScale.yForPrice(200), 0);

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import type { CSSProperties, ForwardedRef, ReactElement } from "react";
 import { createChart } from "openkline";
-import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, DrawingOptions, IndicatorAddOptions } from "openkline";
+import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, DrawingOptions, IndicatorAddOptions, OpenKlinePlugin, WorkspaceDocument } from "openkline";
 
 export interface FinancialChartIndicator {
   indicatorId: string;
@@ -17,8 +17,11 @@ export interface FinancialChartProps extends ChartOptions {
   candles?: readonly Candle[];
   indicators?: readonly FinancialChartIndicator[];
   drawings?: readonly FinancialChartDrawing[];
+  plugins?: readonly OpenKlinePlugin[];
+  workspace?: WorkspaceDocument;
   className?: string;
   onCrosshairMove?: (event: CrosshairMoveEvent) => void;
+  onChartReady?: (chart: Chart) => void;
   style?: CSSProperties;
 }
 
@@ -30,7 +33,7 @@ const FinancialChartImpl = (
   props: FinancialChartProps,
   ref: ForwardedRef<FinancialChartHandle>,
 ): ReactElement => {
-  const { candles, indicators, drawings, className, onCrosshairMove, style, ...options } = props;
+  const { candles, indicators, drawings, plugins, workspace, className, onCrosshairMove, onChartReady, style, ...options } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const crosshairHandlerRef = useRef(onCrosshairMove);
@@ -47,6 +50,7 @@ const FinancialChartImpl = (
 
     const chart = createChart(containerRef.current, options);
     chartRef.current = chart;
+    onChartReady?.(chart);
     const unsubscribe = chart.subscribe("crosshairMove", (event) => {
       crosshairHandlerRef.current?.(event);
     });
@@ -57,6 +61,20 @@ const FinancialChartImpl = (
       chartRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart === null) return undefined;
+    const handles = (plugins ?? []).map((plugin) => chart.installPlugin(plugin));
+    return () => {
+      if (chartRef.current !== chart) return;
+      for (const handle of handles) handle.dispose();
+    };
+  }, [plugins]);
+
+  useEffect(() => {
+    if (workspace !== undefined) chartRef.current?.restoreWorkspace(workspace);
+  }, [workspace]);
 
   useEffect(() => {
     chartRef.current?.setData(candles ?? []);
@@ -84,7 +102,7 @@ const FinancialChartImpl = (
 
   useEffect(() => {
     chartRef.current?.setOptions(options);
-  }, [options.autoSize, options.height, options.locale, options.pricePrecision, options.theme, options.timeZone, options.width]);
+  }, [options.autoSize, options.height, options.locale, options.pricePrecision, options.theme, options.timeZone, options.width, options.interaction]);
 
   return <div ref={containerRef} className={className} style={style} />;
 };

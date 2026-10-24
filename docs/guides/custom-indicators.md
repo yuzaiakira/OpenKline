@@ -50,6 +50,19 @@ const instance = registry.create("DOUBLE_CLOSE", { multiplier: 2 });
 instance.setInput(candles);
 ```
 
+For an application plugin, register the same definition through the chart
+scoped SDK so lifecycle cleanup is automatic:
+
+```ts
+chart.installPlugin({
+  metadata: { id: "example.double-close", name: "Double Close", version: "1.0.0", apiVersion: 1 },
+  setup(context) {
+    context.indicators.register(doubleClose);
+  },
+});
+const indicator = chart.addIndicator("DOUBLE_CLOSE", { multiplier: 2 });
+```
+
 Definitions should return aligned points, use `null` for unavailable values,
 validate every parameter, and avoid mutable module-level state. Implement
 `calculateIncremental` only when append-only correctness is proven; corrections
@@ -57,5 +70,7 @@ automatically use the full calculation path. Unregister definitions when a
 short-lived registry owns them, and dispose instances when their chart or
 analysis object is removed.
 
-The registry is a calculation extension point, not a plugin sandbox. Do not
-load untrusted code into the process and do not use `eval` or `new Function`.
+The registry is a calculation extension point, not a plugin sandbox. The
+chart-scoped SDK adds lifecycle and state but remains trusted in-process code.
+Do not load untrusted code into the process and do not use `eval` or
+`new Function`.

@@ -56,6 +56,21 @@ chart.addDrawing("ray", {
 });
 ```
 
+New application integrations can scope the registration to a plugin:
+
+```ts
+chart.installPlugin({
+  metadata: { id: "example.ray", name: "Ray Tool", version: "1.0.0", apiVersion: 1 },
+  setup(context) {
+    context.drawings.register(rayTool);
+  },
+});
+chart.addDrawing("ray", { points: [
+  { time: candles[5]!.time, price: candles[5]!.close },
+  { time: candles[20]!.time, price: candles[20]!.close },
+] });
+```
+
 `getGeometry` must only return the versioned `line`, `rectangle`, or `text`
 primitives. `hitTest` receives CSS-pixel coordinates and should use the
 provided tolerance. Tool definitions should validate finite, non-negative
@@ -63,5 +78,6 @@ timestamps and finite prices when those are part of their contract.
 
 The engine rejects duplicate tool names, unknown drawing types, invalid point
 counts, and invalid serialized documents. Keep custom definitions deterministic
-so the same document renders identically after restore. The full plugin SDK and
-server-side persistence protocol are intentionally outside the current phase.
+so the same document renders identically after restore. The plugin SDK does
+not expose raw Canvas2D; use the controlled overlay contract for lightweight
+custom visuals.

@@ -3,7 +3,18 @@ import { PriceScale, TimeScale } from "./core/scales.js";
 import { CanvasRenderer, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
 import { DrawingEngine } from "./drawings/engine.js";
+import { PluginRegistry } from "./extensions/registry.js";
 import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
+import type {
+  InstalledPluginMetadata,
+  OpenKlinePlugin,
+  PluginCommandMetadata,
+  PluginHandle,
+  PluginOverlayDefinition,
+  PluginOverlayRenderItem,
+  PluginPaneRenderContext,
+  PluginRenderContext,
+} from "./extensions/types.js";
 import type {
   DrawingApi,
   DrawingCoordinateConverter,
@@ -24,6 +35,8 @@ import type {
   ChartEventHandler,
   ChartEventName,
   ChartEvents,
+  ChartDirection,
+  ChartInteractionOptions,
   ChartOptions,
   ChartTheme,
   CrosshairMoveEvent,
@@ -37,6 +50,8 @@ import type {
   SeriesType,
   VolumePoint,
 } from "./types.js";
+import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
+import type { JsonValue } from "./extensions/types.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -44,6 +59,8 @@ interface ManagedChartIndicator {
   paneId: string;
   instance: IndicatorInstance;
   outputSeriesIds: string[];
+  parameters: Record<string, unknown>;
+  outputStyles: Record<string, import("./types.js").SeriesStyle>;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -82,6 +99,8 @@ export class Chart {
   private readonly indicators = new Map<string, ManagedChartIndicator>();
   private nextIndicatorId = 1;
   private readonly drawingEngine = new DrawingEngine();
+  private readonly overlays = new Map<string, PluginOverlayDefinition>();
+  private readonly pluginRegistry: PluginRegistry;
   private readonly extensionDisposers = new Set<() => void>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
@@ -89,6 +108,8 @@ export class Chart {
   private locale: string;
   private timeZone: string;
   private pricePrecision: number;
+  private direction: ChartDirection;
+  private interaction: Required<ChartInteractionOptions>;
   private width: number;
   private height: number;
   private devicePixelRatio = 1;
@@ -107,6 +128,8 @@ export class Chart {
     this.locale = options.locale ?? "en-US";
     this.timeZone = options.timeZone ?? "UTC";
     this.pricePrecision = normalizePricePrecision(options.pricePrecision ?? 2);
+    this.direction = options.direction ?? "ltr";
+    this.interaction = resolveInteraction(options.interaction);
     this.width = options.width ?? container.clientWidth;
     this.height = options.height ?? container.clientHeight;
 
@@ -119,6 +142,23 @@ export class Chart {
     this.canvas.style.height = "100%";
     this.container.appendChild(this.canvas);
     this.renderer = new CanvasRenderer(this.canvas);
+    this.pluginRegistry = new PluginRegistry({
+      registerIndicator: (definition) => {
+        this.registerIndicator(definition);
+        return () => {
+          if (this.indicatorRegistry.has(definition.metadata.id)) this.unregisterIndicator(definition.metadata.id);
+        };
+      },
+      registerDrawingTool: (definition) => {
+        this.registerDrawingTool(definition);
+        return () => this.unregisterDrawingTool(definition.type);
+      },
+      registerOverlay: (definition) => {
+        this.registerOverlay(definition);
+        return () => this.unregisterOverlay(definition.id);
+      },
+      subscribe: (name, handler) => this.subscribe(name, handler),
+    });
 
     this.attachInteractions();
     this.resize(this.width, this.height);
@@ -132,12 +172,16 @@ export class Chart {
           }
         });
     this.resizeObserver?.observe(this.container);
+    queueMicrotask(() => {
+      if (!this.destroyed) this.emit("chartReady", { timestamp: Date.now() });
+    });
   }
 
   public setData(candles: readonly Candle[]): void {
     this.assertAlive();
     this.model.setData(candles);
     this.refreshIndicatorsFromInput();
+    this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
     this.render();
   }
 
@@ -147,6 +191,7 @@ export class Chart {
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
+    this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
     this.render();
   }
 
@@ -239,14 +284,202 @@ export class Chart {
     };
   }
 
+  /** Install a scoped, trusted application plugin. */
+  public installPlugin(plugin: OpenKlinePlugin): PluginHandle {
+    this.assertAlive();
+    return this.pluginRegistry.install(plugin);
+  }
+
+  public uninstallPlugin(id: string): boolean {
+    this.assertAlive();
+    return this.pluginRegistry.uninstall(id);
+  }
+
+  public getPlugins(): InstalledPluginMetadata[] {
+    this.assertAlive();
+    return this.pluginRegistry.list();
+  }
+
+  public executeCommand(id: string, args?: unknown): unknown | Promise<unknown> {
+    this.assertAlive();
+    return this.pluginRegistry.executeCommand(id, args);
+  }
+
+  public executeShortcut(shortcut: string, args?: unknown): unknown | Promise<unknown> {
+    this.assertAlive();
+    return this.pluginRegistry.executeShortcut(shortcut, args);
+  }
+
+  public getCommands(): readonly PluginCommandMetadata[] {
+    this.assertAlive();
+    return this.pluginRegistry.listCommands();
+  }
+
+  public getPluginState(id: string): Readonly<Record<string, import("./extensions/types.js").JsonValue>> | undefined {
+    this.assertAlive();
+    return this.pluginRegistry.getStateSnapshot(id);
+  }
+
+  public restorePluginState(id: string, snapshot: unknown): boolean {
+    this.assertAlive();
+    return this.pluginRegistry.restoreState(id, snapshot);
+  }
+
+  /** Serialize chart data, layout, indicators, drawings, viewport, and plugin state. */
+  public serializeWorkspace(metadata?: WorkspaceMetadata): WorkspaceDocument {
+    this.assertAlive();
+    const indicatorSeriesIds = new Set(
+      [...this.indicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
+    );
+    const panes = this.model.getPaneConfigs().map((pane) => ({
+      id: pane.id,
+      height: pane.preferredHeight,
+      minHeight: pane.minHeight,
+    }));
+    const series = this.model.getAllSeries()
+      .filter((item) => !indicatorSeriesIds.has(item.id))
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        paneId: item.paneId,
+        ...(item.title === undefined ? {} : { title: item.title }),
+        style: { ...item.style },
+        ...(item.band === undefined ? {} : { band: { ...item.band } }),
+        data: item.data.map((point) => ({ ...point })),
+      }));
+    const indicators = [...this.indicators.values()].map((indicator) => ({
+      id: indicator.id,
+      indicatorId: indicator.indicatorId,
+      paneId: indicator.paneId,
+      parameters: toJsonObject(indicator.parameters, `indicator ${indicator.id} parameters`),
+      outputStyles: Object.fromEntries(
+        Object.entries(indicator.outputStyles).map(([outputId, style]) => [outputId, { ...style }]),
+      ),
+    }));
+    const plugins = this.pluginRegistry.list().map((plugin) => ({
+      id: plugin.id,
+      version: plugin.version,
+      state: this.pluginRegistry.getStateSnapshot(plugin.id) ?? {},
+    }));
+    const viewport = this.model.getViewportState();
+    return {
+      version: 1,
+      ...(metadata === undefined ? {} : { metadata: { ...metadata } }),
+      chart: {
+        theme: { ...this.theme },
+        locale: this.locale,
+        timeZone: this.timeZone,
+        pricePrecision: this.pricePrecision,
+        direction: this.direction,
+      },
+      panes,
+      series,
+      indicators,
+      drawings: this.drawingEngine.serialize(),
+      viewport,
+      plugins,
+    };
+  }
+
+  /** Validate and restore a versioned workspace document. */
+  public restoreWorkspace(document: unknown, options: WorkspaceRestoreOptions = {}): WorkspaceRestoreResult {
+    this.assertAlive();
+    const parsed = parseWorkspace(document);
+    const missingPlugins: string[] = [];
+    for (const plugin of parsed.plugins) {
+      const installed = this.pluginRegistry.get(plugin.id);
+      if (installed === undefined) {
+        if ((options.missingPlugins ?? "skip") === "error") {
+          throw new WorkspaceCompatibilityError(`Workspace requires missing plugin: ${plugin.id}`);
+        }
+        missingPlugins.push(plugin.id);
+      } else if (installed.version !== plugin.version) {
+        throw new WorkspaceCompatibilityError(`Workspace plugin version mismatch: ${plugin.id}; expected ${plugin.version}, found ${installed.version}`);
+      }
+    }
+    const missingIndicators: string[] = [];
+    for (const indicator of parsed.indicators) {
+      if (!this.indicatorRegistry.has(indicator.indicatorId)) {
+        if ((options.missingIndicators ?? "skip") === "error") {
+          throw new WorkspaceCompatibilityError(`Workspace requires missing indicator: ${indicator.indicatorId}`);
+        }
+        missingIndicators.push(indicator.id);
+      }
+    }
+    for (const drawing of parsed.drawings.drawings) this.drawingEngine.getTool(drawing.type);
+
+    this.stopDatafeed();
+    for (const indicator of this.indicators.values()) indicator.instance.dispose();
+    this.indicators.clear();
+    this.nextIndicatorId = 1;
+    this.model.destroy();
+    this.drawingEngine.restore({ version: 1, drawings: [] });
+    this.selectedDrawingId = null;
+    this.pendingDrawing = null;
+    this.activeDrawing = null;
+    this.crosshair = null;
+    this.theme = { ...parsed.chart.theme };
+    this.locale = parsed.chart.locale;
+    this.timeZone = parsed.chart.timeZone;
+    this.pricePrecision = normalizePricePrecision(parsed.chart.pricePrecision);
+    this.direction = parsed.chart.direction;
+
+    for (const pane of parsed.panes) {
+      if (pane.id !== "main") {
+        this.model.addPane({
+          id: pane.id,
+          ...(pane.height === null ? {} : { height: pane.height }),
+          minHeight: pane.minHeight,
+        });
+      }
+    }
+    for (const item of parsed.series) {
+      this.model.addSeries(item.type, {
+        id: item.id,
+        pane: item.paneId,
+        ...(item.title === undefined ? {} : { title: item.title }),
+        style: { ...item.style },
+        ...(item.band === undefined ? {} : { band: { ...item.band } }),
+      });
+      this.model.setSeriesData(item.id, item.data as SeriesData);
+    }
+    for (const indicator of parsed.indicators) {
+      if (missingIndicators.includes(indicator.id)) continue;
+      const api = this.addIndicator(indicator.indicatorId, {
+        id: indicator.id,
+        pane: indicator.paneId,
+        parameters: { ...indicator.parameters },
+      });
+      for (const [outputId, style] of Object.entries(indicator.outputStyles)) api.setOutputStyle(outputId, style);
+    }
+    this.drawingEngine.restore(parsed.drawings);
+    this.model.setViewportState(parsed.viewport);
+    for (const plugin of parsed.plugins) {
+      if (!missingPlugins.includes(plugin.id)) this.pluginRegistry.restoreState(plugin.id, plugin.state);
+    }
+    this.render();
+    return { skippedPlugins: missingPlugins, skippedIndicators: missingIndicators };
+  }
+
   public addIndicator(indicatorId: string, options: IndicatorAddOptions = {}): ChartIndicatorApi {
     this.assertAlive();
-    const { pane, parameters, ...directParameters } = options;
+    const { id: requestedId, pane, parameters, ...directParameters } = options;
     const normalizedParameters = parameters ?? directParameters;
+    const id = requestedId ?? this.nextIndicatorIdValue();
+    if (this.indicators.has(id)) throw new Error(`Indicator id already exists: ${id}`);
+    const explicitNumber = /^indicator-(\d+)$/.exec(id)?.[1];
+    if (explicitNumber !== undefined) this.nextIndicatorId = Math.max(this.nextIndicatorId, Number(explicitNumber) + 1);
     const instance = this.indicatorRegistry.create(indicatorId, normalizedParameters);
     const paneId = pane === "new" ? this.model.addPane({ height: 180 }) : pane ?? "main";
-    const id = `indicator-${this.nextIndicatorId++}`;
-    const state: ManagedChartIndicator = { id, indicatorId: instance.id, paneId, instance, outputSeriesIds: [] };
+    const state: ManagedChartIndicator = {
+      id,
+      indicatorId: instance.id,
+      paneId,
+      instance,
+      outputSeriesIds: [],
+      parameters: { ...instance.getResult().parameters },
+      outputStyles: {},
+    };
     instance.setInput(this.model.allCandles);
     let bandIndex = 0;
     for (const output of instance.getResult().outputs) {
@@ -267,6 +500,7 @@ export class Chart {
     }
     this.indicators.set(id, state);
     this.syncIndicator(state);
+    this.emit("indicatorChange", { action: "add", id, indicatorId: state.indicatorId });
     this.render();
     return {
       id,
@@ -279,7 +513,9 @@ export class Chart {
       setParameters: (nextParameters) => {
         this.assertAlive();
         instance.setParameters(nextParameters);
+        state.parameters = { ...instance.getResult().parameters };
         this.syncIndicator(state);
+        this.emit("indicatorChange", { action: "update", id, indicatorId: state.indicatorId });
         this.render();
       },
       setOutputStyle: (outputId, style) => {
@@ -288,6 +524,8 @@ export class Chart {
         const seriesId = outputIndex < 0 ? undefined : state.outputSeriesIds[outputIndex];
         if (seriesId === undefined) throw new Error(`Unknown indicator output: ${instance.id}:${outputId}`);
         this.model.setSeriesStyle(seriesId, style);
+        state.outputStyles[outputId] = { ...style };
+        this.emit("indicatorChange", { action: "update", id, indicatorId: state.indicatorId });
         this.render();
       },
       remove: () => {
@@ -305,6 +543,7 @@ export class Chart {
     }
     state.instance.dispose();
     this.indicators.delete(id);
+    this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
     this.render();
   }
 
@@ -322,6 +561,7 @@ export class Chart {
     this.assertAlive();
     const drawing = this.drawingEngine.create(type, options);
     this.selectedDrawingId = drawing.id;
+    this.emit("drawingSelection", { id: drawing.id });
     this.render();
     return drawing;
   }
@@ -330,6 +570,7 @@ export class Chart {
     this.assertAlive();
     this.drawingEngine.remove(id);
     if (this.selectedDrawingId === id) this.selectedDrawingId = null;
+    this.emit("drawingSelection", { id: this.selectedDrawingId });
     this.render();
   }
 
@@ -342,6 +583,7 @@ export class Chart {
     this.assertAlive();
     if (id !== null) this.drawingEngine.get(id);
     this.selectedDrawingId = id;
+    this.emit("drawingSelection", { id });
     this.render();
   }
 
@@ -355,6 +597,7 @@ export class Chart {
     this.assertAlive();
     const tool = this.drawingEngine.getTool(type);
     this.pendingDrawing = { type, options: { ...options }, points: [] };
+    this.emit("toolActivation", { type, active: true });
     if (tool.minPoints === 0) {
       throw new Error(`Drawing tool must require at least one point: ${type}`);
     }
@@ -456,6 +699,7 @@ export class Chart {
       this.canvas.height = pixelHeight;
     }
     this.model.resize(this.width);
+    this.emitViewportChange();
     this.render();
   }
 
@@ -473,6 +717,11 @@ export class Chart {
     if (options.pricePrecision !== undefined) {
       this.pricePrecision = normalizePricePrecision(options.pricePrecision);
     }
+    if (options.direction !== undefined) this.direction = options.direction;
+    if (options.interaction !== undefined) {
+      this.interaction = resolveInteraction({ ...this.interaction, ...options.interaction });
+    }
+    if (options.theme !== undefined) this.emit("themeChange", { theme: { ...this.theme } });
     if (options.width !== undefined || options.height !== undefined) {
       this.resize(options.width ?? this.width, options.height ?? this.height);
       return;
@@ -491,6 +740,7 @@ export class Chart {
   public pan(deltaBars: number): void {
     this.assertAlive();
     this.model.pan(deltaBars);
+    this.emitViewportChange();
     this.render();
   }
 
@@ -498,6 +748,7 @@ export class Chart {
   public zoom(scale: number, anchorRatio = 0.5): void {
     this.assertAlive();
     this.model.zoom(scale, anchorRatio);
+    this.emitViewportChange();
     this.render();
   }
 
@@ -518,6 +769,8 @@ export class Chart {
     if (this.destroyed) {
       return;
     }
+    this.emit("chartDestroy", { timestamp: Date.now() });
+    this.pluginRegistry.dispose();
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
     this.stopDatafeed();
@@ -525,6 +778,7 @@ export class Chart {
     this.indicators.clear();
     this.model.destroy();
     this.drawingEngine.dispose();
+    this.overlays.clear();
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -532,6 +786,7 @@ export class Chart {
     this.canvas.removeEventListener("pointercancel", this.handlePointerUp);
     this.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
     this.canvas.removeEventListener("wheel", this.handleWheel);
+    this.canvas.removeEventListener("keydown", this.handleKeyDown);
     this.canvas.remove();
     this.listeners.clear();
   }
@@ -554,6 +809,8 @@ export class Chart {
           ...(options.zIndex === undefined ? {} : { zIndex: options.zIndex }),
         });
         this.selectedDrawingId = drawing.id;
+        this.emit("drawingSelection", { id: drawing.id });
+        this.emit("toolActivation", { type, active: false });
         this.pendingDrawing = null;
       }
       this.render();
@@ -564,6 +821,7 @@ export class Chart {
       const hit = this.drawingEngine.hitTest(event.offsetX, event.offsetY, drawingContext.converter, drawingContext.bounds);
       if (hit !== null) {
         this.selectedDrawingId = hit.id;
+        this.emit("drawingSelection", { id: hit.id });
         const snapshot = this.drawingEngine.get(hit.id);
         if (snapshot.style.locked !== true) {
           this.activeDrawing = {
@@ -580,8 +838,9 @@ export class Chart {
     }
 
     this.selectedDrawingId = null;
+    this.emit("drawingSelection", { id: null });
     this.activeDrawing = null;
-    this.dragging = true;
+    this.dragging = this.interaction.pointerPan;
     this.lastPointerX = event.offsetX;
     this.canvas.setPointerCapture(event.pointerId);
   };
@@ -599,8 +858,10 @@ export class Chart {
         }
         this.activeDrawing = { ...this.activeDrawing, time, price };
       }
-      this.crosshair = { x: event.offsetX, y: event.offsetY };
-      this.emitCrosshair(event.offsetX, event.offsetY);
+      if (this.interaction.crosshair) {
+        this.crosshair = { x: event.offsetX, y: event.offsetY };
+        this.emitCrosshair(event.offsetX, event.offsetY);
+      }
       this.render();
       return;
     }
@@ -608,11 +869,14 @@ export class Chart {
     if (this.dragging) {
       const delta = event.offsetX - this.lastPointerX;
       this.model.pan(-delta / Math.max(this.model.barSpacing, 1));
+      this.emitViewportChange();
       this.lastPointerX = event.offsetX;
     }
 
-    this.crosshair = { x: event.offsetX, y: event.offsetY };
-    this.emitCrosshair(event.offsetX, event.offsetY);
+    if (this.interaction.crosshair) {
+      this.crosshair = { x: event.offsetX, y: event.offsetY };
+      this.emitCrosshair(event.offsetX, event.offsetY);
+    }
     this.render();
   };
 
@@ -627,16 +891,26 @@ export class Chart {
   private readonly handlePointerLeave = (): void => {
     if (!this.dragging) {
       this.crosshair = null;
-      this.emitCrosshair(null, null);
+      if (this.interaction.crosshair) this.emitCrosshair(null, null);
       this.render();
     }
   };
 
   private readonly handleWheel = (event: WheelEvent): void => {
+    if (!this.interaction.wheelZoom) return;
     event.preventDefault();
     const factor = event.deltaY < 0 ? 0.8 : 1.25;
     this.model.zoom(factor, event.offsetX / Math.max(this.width, 1));
+    this.emitViewportChange();
     this.render();
+  };
+
+  private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (!this.interaction.keyboardShortcuts) return;
+    const shortcut = keyboardShortcut(event);
+    if (shortcut === null) return;
+    const result = this.pluginRegistry.executeShortcut(shortcut);
+    if (result !== undefined) event.preventDefault();
   };
 
   private attachInteractions(): void {
@@ -646,6 +920,7 @@ export class Chart {
     this.canvas.addEventListener("pointercancel", this.handlePointerUp);
     this.canvas.addEventListener("pointerleave", this.handlePointerLeave);
     this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
+    this.canvas.addEventListener("keydown", this.handleKeyDown);
   }
 
   private emitCrosshair(x: number | null, y: number | null): void {
@@ -666,7 +941,7 @@ export class Chart {
       const paneData = data.panes.find((pane) => pane.id === activePane.id);
       const prices = getPaneScaleRange(paneData?.series ?? []);
       const scale = new PriceScale(prices.min, prices.max, { start: activePane.top, end: activePane.bottom });
-      const timeScale = new TimeScale(data.times, { start: firstPane.left, end: firstPane.right });
+      const timeScale = new TimeScale(data.times, { start: firstPane.left, end: firstPane.right }, this.direction);
       event.time = Math.round(timeScale.timeForX(x));
       event.price = scale.priceForY(y);
       const nearest = nearestTime(data.times, event.time);
@@ -682,6 +957,11 @@ export class Chart {
     this.emit("crosshairMove", event);
   }
 
+  private emitViewportChange(): void {
+    const { from, to } = this.model.getVisibleData();
+    this.emit("viewportChange", { from, to });
+  }
+
   private emit<Name extends ChartEventName>(name: Name, event: ChartEvents[Name]): void {
     const handlers = this.listeners.get(name);
     handlers?.forEach((handler) => handler(event as never));
@@ -693,11 +973,90 @@ export class Chart {
       this.model.getVisibleData(),
       { width: this.width, height: this.height, devicePixelRatio: this.devicePixelRatio },
       this.theme,
-      { locale: this.locale, timeZone: this.timeZone, pricePrecision: this.pricePrecision },
+      { locale: this.locale, timeZone: this.timeZone, pricePrecision: this.pricePrecision, direction: this.direction },
       this.crosshair,
       drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds),
       this.selectedDrawingId,
+      this.getPluginOverlayItems(),
     );
+  }
+
+  private registerOverlay(definition: PluginOverlayDefinition): void {
+    this.assertAlive();
+    if (!/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/.test(definition.id)) {
+      throw new Error(`Invalid plugin overlay id: ${definition.id}`);
+    }
+    if (this.overlays.has(definition.id)) throw new Error(`Plugin overlay already registered: ${definition.id}`);
+    if (definition.title.trim().length === 0 || typeof definition.render !== "function") {
+      throw new Error(`Invalid plugin overlay: ${definition.id}`);
+    }
+    this.overlays.set(definition.id, definition);
+  }
+
+  private unregisterOverlay(id: string): boolean {
+    return this.overlays.delete(id);
+  }
+
+  private getPluginOverlayItems(): PluginOverlayRenderItem[] {
+    if (this.overlays.size === 0) return [];
+    const context = this.getPluginRenderContext();
+    if (context === null) return [];
+    return [...this.overlays.values()]
+      .sort((left, right) => (left.zIndex ?? 0) - (right.zIndex ?? 0))
+      .map((definition) => {
+        try {
+          return {
+            id: definition.id,
+            zIndex: definition.zIndex ?? 0,
+            commands: normalizePluginCommands(definition.render(context)),
+          };
+        } catch {
+          // A faulty overlay must not take down chart rendering. The plugin can
+          // still be uninstalled or corrected by the host application.
+          return { id: definition.id, zIndex: definition.zIndex ?? 0, commands: [] };
+        }
+      });
+  }
+
+  private getPluginRenderContext(): PluginRenderContext | null {
+    const data = this.model.getVisibleData();
+    if (data.times.length === 0) return null;
+    const paneBounds = getPaneBounds(this.width, this.height, data.panes);
+    const firstPane = paneBounds[0];
+    if (firstPane === undefined) return null;
+    const timeScale = new TimeScale(data.times, { start: firstPane.left, end: firstPane.right }, this.direction);
+    const paneContexts = new Map<string, PluginPaneRenderContext>();
+    for (const pane of paneBounds) {
+      const paneData = data.panes.find((candidate) => candidate.id === pane.id);
+      const range = getPaneScaleRange(paneData?.series ?? []);
+      const priceScale = new PriceScale(range.min, range.max, { start: pane.top, end: pane.bottom });
+      paneContexts.set(pane.id, {
+        ...pane,
+        xForTime: (time) => timeScale.xForTime(time),
+        timeForX: (x) => timeScale.timeForX(x),
+        yForPrice: (price) => priceScale.yForPrice(price),
+        priceForY: (y) => priceScale.priceForY(y),
+      });
+    }
+    return {
+      width: this.width,
+      height: this.height,
+      devicePixelRatio: this.devicePixelRatio,
+      theme: { ...this.theme },
+      series: data.series.map((series) => ({
+        id: series.id,
+        type: series.type,
+        paneId: series.paneId,
+        ...(series.title === undefined ? {} : { title: series.title }),
+        style: { ...series.style },
+        data: series.data.map((point) => ({ ...point })),
+      })),
+      panes: paneBounds.map(({ id, left, right, top, bottom }) => ({ id, left, right, top, bottom })),
+      times: [...data.times],
+      xForTime: (time) => timeScale.xForTime(time),
+      timeForX: (x) => timeScale.timeForX(x),
+      pane: (id) => paneContexts.get(id ?? "main"),
+    };
   }
 
   private getDrawingContext(): { bounds: { left: number; right: number; top: number; bottom: number }; converter: DrawingCoordinateConverter } | null {
@@ -708,7 +1067,7 @@ export class Chart {
     if (bounds === undefined) return null;
     const mainSeries = data.panes.find((pane) => pane.id === bounds.id)?.series ?? data.series;
     const range = getPaneScaleRange(mainSeries);
-    const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right });
+    const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right }, this.direction);
     const priceScale = new PriceScale(range.min, range.max, { start: bounds.top, end: bounds.bottom });
     return {
       bounds,
@@ -731,6 +1090,7 @@ export class Chart {
         this.assertAlive();
         this.model.setSeriesData(id, data as SeriesData);
         this.refreshIndicatorsFromInput();
+        this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
         this.render();
       },
       update: (point) => {
@@ -739,6 +1099,7 @@ export class Chart {
         const appendOnly = type === "candlestick" && (lastTime === undefined || point.time > lastTime);
         this.model.updateSeries(id, point);
         if (type === "candlestick") this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+        this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
         this.render();
       },
       getData: () => {
@@ -754,6 +1115,12 @@ export class Chart {
         this.removeSeries(id);
       },
     };
+  }
+
+  private nextIndicatorIdValue(): string {
+    let id = `indicator-${this.nextIndicatorId++}`;
+    while (this.indicators.has(id)) id = `indicator-${this.nextIndicatorId++}`;
+    return id;
   }
 
   private assertAlive(): void {
@@ -803,6 +1170,23 @@ function normalizePricePrecision(value: number): number {
   return value;
 }
 
+function resolveInteraction(options: ChartInteractionOptions | undefined): Required<ChartInteractionOptions> {
+  return {
+    wheelZoom: options?.wheelZoom ?? true,
+    pointerPan: options?.pointerPan ?? true,
+    crosshair: options?.crosshair ?? true,
+    keyboardShortcuts: options?.keyboardShortcuts ?? true,
+  };
+}
+
+function keyboardShortcut(event: KeyboardEvent): string | null {
+  const key = event.key === " " ? "Space" : event.key.length === 1 ? event.key.toUpperCase() : event.key;
+  if (key === "Control" || key === "Shift" || key === "Alt" || key === "Meta") return null;
+  const modifiers = [event.ctrlKey ? "Ctrl" : null, event.metaKey ? "Meta" : null, event.altKey ? "Alt" : null, event.shiftKey ? "Shift" : null]
+    .filter((modifier): modifier is string => modifier !== null);
+  return [...modifiers, key].join("+");
+}
+
 function resolveTheme(theme: ChartOptions["theme"]): ChartTheme {
   const base = theme === "dark" ? DARK_THEME : LIGHT_THEME;
   return typeof theme === "object" && theme !== null ? { ...base, ...theme } : { ...base };
@@ -815,6 +1199,64 @@ function nearestTime(times: readonly number[], target: number): number | null {
 
 function isInsideBounds(x: number, y: number, bounds: { left: number; right: number; top: number; bottom: number }): boolean {
   return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
+}
+
+function toJsonObject(value: Readonly<Record<string, unknown>>, label: string): Record<string, JsonValue> {
+  const result: Record<string, JsonValue> = {};
+  for (const [key, item] of Object.entries(value)) result[key] = toJsonValue(item, `${label}.${key}`);
+  return result;
+}
+
+function toJsonValue(value: unknown, label: string): JsonValue {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (Array.isArray(value)) return value.map((item, index) => toJsonValue(item, `${label}[${index}]`));
+  if (typeof value === "object" && value !== null) {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype === Object.prototype || prototype === null) {
+      const result: Record<string, JsonValue> = {};
+      for (const [key, item] of Object.entries(value)) result[key] = toJsonValue(item, `${label}.${key}`);
+      return result;
+    }
+  }
+  throw new TypeError(`${label} must contain JSON-compatible values`);
+}
+
+function normalizePluginCommands(commands: readonly unknown[]): PluginOverlayRenderItem["commands"] {
+  if (!Array.isArray(commands)) return [];
+  return commands.filter(isPluginRenderCommand).slice(0, 10_000);
+}
+
+function isPluginRenderCommand(value: unknown): value is PluginOverlayRenderItem["commands"][number] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const command = value as Record<string, unknown>;
+  const finite = (item: unknown): item is number => typeof item === "number" && Number.isFinite(item);
+  const validAlpha = command.alpha === undefined || (finite(command.alpha) && command.alpha >= 0 && command.alpha <= 1);
+  const validWidth = command.lineWidth === undefined || (finite(command.lineWidth) && command.lineWidth >= 0 && command.lineWidth <= 32);
+  if (!validAlpha || !validWidth) return false;
+  if (command.kind === "line") {
+    return isPoint(command.from) && isPoint(command.to)
+      && (command.color === undefined || typeof command.color === "string");
+  }
+  if (command.kind === "rectangle") {
+    return finite(command.left) && finite(command.top) && finite(command.width) && finite(command.height)
+      && (command.color === undefined || typeof command.color === "string")
+      && (command.fillColor === undefined || typeof command.fillColor === "string");
+  }
+  if (command.kind === "text") {
+    return finite(command.x) && finite(command.y) && typeof command.text === "string"
+      && command.text.length <= 10_000
+      && (command.color === undefined || typeof command.color === "string")
+      && (command.font === undefined || typeof command.font === "string");
+  }
+  return false;
+}
+
+function isPoint(value: unknown): value is { x: number; y: number } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const point = value as Record<string, unknown>;
+  return typeof point.x === "number" && Number.isFinite(point.x)
+    && typeof point.y === "number" && Number.isFinite(point.y);
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {

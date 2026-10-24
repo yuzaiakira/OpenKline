@@ -170,10 +170,203 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
         || metrics.viewportWidth !== beforeResize.viewportWidth);
   }).toBe(true);
 
+  const pluginResult = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        installPlugin(plugin: object): { dispose(): void };
+        getPlugins(): Array<{ id: string }>;
+        getCommands(): Array<{ id: string }>;
+        getPluginState(id: string): Record<string, unknown> | undefined;
+        addIndicator(id: string, options: object): { id: string; remove(): void; getResult(): { outputs: unknown[] } };
+        addDrawing(type: string, options: object): { id: string };
+        getData(): Array<{ time: number; high: number; low: number }>;
+        startDrawing(type: string): void;
+        getDrawings(): Array<{ id: string; type: string }>;
+        removeDrawing(id: string): void;
+        uninstallPlugin(id: string): boolean;
+      };
+    }).__openklineChart;
+    chart.installPlugin({
+      metadata: {
+        id: "example.browser",
+        name: "Browser Plugin",
+        version: "1.0.0",
+        apiVersion: 1,
+        description: "Browser verification plugin",
+      },
+      setup: (context: {
+        state: { set(key: string, value: unknown): void };
+        indicators: { register(definition: object): void };
+        drawings: { register(definition: object): void };
+        overlays: { register(definition: object): void };
+        events: { on(name: string, handler: () => void): void };
+        commands: { register(command: object): void };
+      }) => {
+        context.state.set("mounted", true);
+        context.indicators.register({
+          metadata: {
+            id: "DOUBLE_CLOSE",
+            name: "Double Close",
+            version: 1,
+            description: "Plugin indicator",
+            parameters: [{ name: "multiplier", type: "number", required: true }],
+            outputs: [{ id: "value", title: "Value", kind: "line" }],
+          },
+          validateParameters: (parameters: unknown) => ({ multiplier: (parameters as { multiplier: number }).multiplier }),
+          calculate: (input: Array<{ time: number; close: number }>, parameters: { multiplier: number }) => ({
+            indicatorId: "DOUBLE_CLOSE",
+            parameters,
+            outputs: [{ id: "value", title: "Value", kind: "line", points: input.map((candle) => ({ time: candle.time, value: candle.close * parameters.multiplier })) }],
+          }),
+        });
+        context.drawings.register({
+          type: "ray-browser",
+          minPoints: 2,
+          maxPoints: 2,
+          validate: (snapshot: { points: unknown[] }) => {
+            if (snapshot.points.length !== 2) throw new Error("ray requires two points");
+          },
+          getGeometry: (snapshot: { points: Array<{ time: number; price: number }> }, converter: { xForTime(time: number): number; yForPrice(price: number): number }) => [{
+            kind: "line",
+            from: { x: converter.xForTime(snapshot.points[0]!.time), y: converter.yForPrice(snapshot.points[0]!.price) },
+            to: { x: converter.xForTime(snapshot.points[1]!.time) + 160, y: converter.yForPrice(snapshot.points[1]!.price) },
+          }],
+          hitTest: () => 0,
+        });
+        context.overlays.register({
+          id: "example.overlay",
+          title: "Browser Overlay",
+          render: (renderContext: { pane(id?: string): { left: number; right: number; top: number } | undefined }) => {
+            const pane = renderContext.pane();
+            return pane === undefined ? [] : [{ kind: "line", from: { x: pane.left, y: pane.top + 12 }, to: { x: pane.right, y: pane.top + 12 }, color: "#ff00ff", lineWidth: 3 }];
+          },
+        });
+        context.events.on("crosshairMove", () => undefined);
+        context.commands.register({ id: "example.browser.refresh", title: "Refresh", execute: () => "ok" });
+      },
+    });
+    const indicator = chart.addIndicator("DOUBLE_CLOSE", { multiplier: 1.2 });
+    const data = chart.getData();
+    const drawing = chart.addDrawing("ray-browser", {
+      points: [
+        { time: data[10]!.time, price: data[10]!.low },
+        { time: data[30]!.time, price: data[30]!.high },
+      ],
+      style: { color: "#ff00ff", lineWidth: 2 },
+    });
+    return {
+      pluginId: chart.getPlugins()[0]?.id,
+      commandId: chart.getCommands()[0]?.id,
+      state: chart.getPluginState("example.browser"),
+      indicatorOutputs: indicator.getResult().outputs.length,
+      indicatorId: indicator.id,
+      drawingId: drawing.id,
+    };
+  });
+  expect(pluginResult.pluginId).toBe("example.browser");
+  expect(pluginResult.commandId).toBe("example.browser.refresh");
+  expect(pluginResult.state).toEqual({ mounted: true });
+  expect(pluginResult.indicatorOutputs).toBe(1);
+  const pluginDrawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): Array<{ type: string }> } }).__openklineChart.getDrawings().filter((drawing) => drawing.type === "ray-browser").length);
+  expect(pluginDrawingCount).toBe(1);
+  const customDrawingBox = await canvas.boundingBox();
+  expect(customDrawingBox).not.toBeNull();
+  if (customDrawingBox !== null) {
+    await page.evaluate(() => (globalThis as unknown as { __openklineChart: { startDrawing(type: string): void } }).__openklineChart.startDrawing("ray-browser"));
+    await page.mouse.click(customDrawingBox.x + customDrawingBox.width * 0.35, customDrawingBox.y + 32);
+    await page.mouse.click(customDrawingBox.x + customDrawingBox.width * 0.6, customDrawingBox.y + 50);
+  }
+  const interactivePluginDrawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): Array<{ type: string }> } }).__openklineChart.getDrawings().filter((drawing) => drawing.type === "ray-browser").length);
+  expect(interactivePluginDrawingCount).toBe(2);
+  const overlayPixels = await page.evaluate(() => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+    return Array.from({ length: Math.floor(pixels.length / 4) }, (_, index) => index).filter((index) => {
+      const offset = index * 4;
+      return (pixels[offset] ?? 0) > 180 && (pixels[offset + 2] ?? 0) > 180 && (pixels[offset + 1] ?? 0) < 100;
+    }).length;
+  });
+  expect(overlayPixels).toBeGreaterThan(0);
+  const workspaceState = await page.evaluate(({ indicatorId, drawingId }) => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        serializeWorkspace(metadata?: object): { version: number; metadata?: object; indicators: unknown[]; drawings: { drawings: unknown[] }; plugins: unknown[] };
+        restoreWorkspace(document: unknown): { skippedPlugins: string[]; skippedIndicators: string[] };
+        removeDrawing(id: string): void;
+        removeIndicator(id: string): void;
+        getDrawings(): Array<{ id: string; type: string }>;
+        getPluginState(id: string): Record<string, unknown> | undefined;
+      };
+    }).__openklineChart;
+    const document = chart.serializeWorkspace({ symbol: "TEST", timeframe: "1h" });
+    chart.removeDrawing(drawingId);
+    chart.removeIndicator(indicatorId);
+    const restored = chart.restoreWorkspace(document);
+    return {
+      version: document.version,
+      metadata: document.metadata,
+      restored,
+      drawing: chart.getDrawings().some((drawing) => drawing.id === drawingId && drawing.type === "ray-browser"),
+      state: chart.getPluginState("example.browser"),
+    };
+  }, { indicatorId: pluginResult.indicatorId, drawingId: pluginResult.drawingId });
+  expect(workspaceState).toEqual({
+    version: 1,
+    metadata: { symbol: "TEST", timeframe: "1h" },
+    restored: { skippedPlugins: [], skippedIndicators: [] },
+    drawing: true,
+    state: { mounted: true },
+  });
+  await page.evaluate(({ indicatorId, drawingId }) => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getDrawings(): Array<{ id: string; type: string }>;
+        removeDrawing(id: string): void;
+        getSeriesIds(): string[];
+        removeIndicator(id: string): void;
+        getPlugins(): Array<{ id: string }>;
+        uninstallPlugin(id: string): boolean;
+      };
+    }).__openklineChart;
+    chart.removeDrawing(drawingId);
+    chart.removeIndicator(indicatorId);
+    chart.uninstallPlugin("example.browser");
+  }, { indicatorId: pluginResult.indicatorId, drawingId: pluginResult.drawingId });
+  const pluginCleanup = await page.evaluate(() => {
+    const chart = (globalThis as unknown as { __openklineChart: { getPlugins(): unknown[]; getCommands(): unknown[] } }).__openklineChart;
+    return { plugins: chart.getPlugins().length, commands: chart.getCommands().length };
+  });
+  expect(pluginCleanup).toEqual({ plugins: 0, commands: 0 });
+
   await page.evaluate(() => {
     const chart = (globalThis as unknown as { __openklineChart: { destroy(): void } }).__openklineChart;
     chart.destroy();
   });
   await expect(canvas).toHaveCount(0);
   expect(pageErrors).toEqual([]);
+});
+
+test("loads the standalone vanilla plugin example", async ({ page }) => {
+  await page.goto("/examples/vanilla/plugin-example.html");
+  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect.poll(async () => page.evaluate(() => {
+    const chart = (globalThis as unknown as { __openklineChart?: { getPlugins(): Array<{ id: string }>; getSeriesIds(): string[] } }).__openklineChart;
+    return chart === undefined ? null : { plugins: chart.getPlugins(), series: chart.getSeriesIds() };
+  })).toEqual({ plugins: [{ id: "example.vanilla", name: "Vanilla Example Plugin", version: "1.0.0", apiVersion: 1, description: "A deterministic public SDK example", active: true }], series: ["candlestick-1", "indicator-1:value"] });
+  const missingExtensionRestore = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        serializeWorkspace(): { indicators: unknown[]; plugins: unknown[]; drawings: { version: 1; drawings: unknown[] } };
+        uninstallPlugin(id: string): boolean;
+        restoreWorkspace(document: unknown, options: object): { skippedPlugins: string[]; skippedIndicators: string[] };
+        destroy(): void;
+      };
+    }).__openklineChart;
+    const saved = chart.serializeWorkspace();
+    chart.uninstallPlugin("example.vanilla");
+    const result = chart.restoreWorkspace({ ...saved, drawings: { version: 1, drawings: [] } }, { missingPlugins: "skip", missingIndicators: "skip" });
+    chart.destroy();
+    return result;
+  });
+  expect(missingExtensionRestore).toEqual({ skippedPlugins: ["example.vanilla"], skippedIndicators: ["indicator-1"] });
 });

@@ -1,4 +1,4 @@
-import { PaneLayout } from "./pane-layout.js";
+import { PaneLayout, type PaneConfig } from "./pane-layout.js";
 import { SeriesCollection, type SeriesData, type SeriesSnapshot } from "./series-store.js";
 import type { Candle, PaneOptions, SeriesOptions, SeriesPoint, SeriesType } from "../types.js";
 
@@ -110,6 +110,26 @@ export class ChartModel {
 
   public getSeriesIds(): string[] {
     return this.collection.getIds();
+  }
+
+  public getAllSeries(): SeriesSnapshot[] {
+    return this.collection.getIds().map((id) => this.collection.get(id));
+  }
+
+  public getPaneConfigs(): PaneConfig[] {
+    return this.paneLayout.getConfigs();
+  }
+
+  public getViewportState(): { readonly rangeStart: number; readonly visibleCount: number } {
+    return { rangeStart: this.rangeStart, visibleCount: this.visibleCount };
+  }
+
+  public setViewportState(state: { rangeStart: number; visibleCount: number }): void {
+    if (!Number.isInteger(state.rangeStart) || state.rangeStart < 0 || !Number.isInteger(state.visibleCount) || state.visibleCount < 1) {
+      throw new Error("Invalid viewport state");
+    }
+    this.visibleCount = Math.min(Math.max(1, state.visibleCount), Math.max(1, this.collection.getTimePointCount()));
+    this.rangeStart = this.clampStart(state.rangeStart);
   }
 
   /** Legacy convenience API: create/reuse the primary candlestick series. */

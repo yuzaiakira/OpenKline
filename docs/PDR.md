@@ -79,3 +79,24 @@ implemented; the current Phase 2 final verification report records the
 remaining Firefox/WebKit/mobile browser blockers. The current performance and
 compatibility evidence is in
 `docs/reports/phase-2-performance-and-compatibility.md`.
+
+## Phase 3 platform scope
+
+Phase 3 adds the implemented foundation for a professional plugin and
+workspace platform without beginning KlineScript. The public scope includes:
+
+- a chart-scoped, API-versioned `OpenKlinePlugin` SDK with metadata,
+  dependencies, activation rollback, deterministic lifecycle cleanup, JSON
+  state, typed events, commands/shortcuts, custom indicators, custom drawings,
+  and controlled overlay primitives;
+- public theme, locale/timezone/precision, interaction, and RTL time-axis
+  customization options;
+- versioned, persistence-neutral workspace serialization/restoration for
+  public chart state, with explicit missing-plugin/indicator policies;
+- React plugin/workspace integration and documentation/examples for trusted
+  application modules.
+
+Plugins remain trusted in-process code. The Phase 3 scope does not include a
+remote package loader, sandbox, marketplace, brokerage integration, or
+KlineScript runtime. Phase 2's unverified Firefox, WebKit, and Mobile Safari
+criteria remain open and are not reclassified by this work.

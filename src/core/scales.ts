@@ -1,4 +1,4 @@
-import type { Candle } from "../types.js";
+import type { Candle, ChartDirection } from "../types.js";
 
 export interface PixelRange {
   start: number;
@@ -11,7 +11,7 @@ export class TimeScale {
   private readonly pixelStart: number;
   private readonly pixelEnd: number;
 
-  public constructor(times: readonly number[], pixels: PixelRange) {
+  public constructor(times: readonly number[], pixels: PixelRange, private readonly direction: ChartDirection = "ltr") {
     if (times.length === 0) {
       throw new Error("TimeScale requires at least one timestamp");
     }
@@ -38,14 +38,16 @@ export class TimeScale {
       return (this.pixelStart + this.pixelEnd) / 2;
     }
     const ratio = (time - this.timeStart) / (this.timeEnd - this.timeStart);
-    return this.pixelStart + ratio * (this.pixelEnd - this.pixelStart);
+    const visualRatio = this.direction === "rtl" ? 1 - ratio : ratio;
+    return this.pixelStart + visualRatio * (this.pixelEnd - this.pixelStart);
   }
 
   public timeForX(x: number): number {
     if (this.pixelStart === this.pixelEnd) {
       return this.timeStart;
     }
-    const ratio = (x - this.pixelStart) / (this.pixelEnd - this.pixelStart);
+    const visualRatio = (x - this.pixelStart) / (this.pixelEnd - this.pixelStart);
+    const ratio = this.direction === "rtl" ? 1 - visualRatio : visualRatio;
     return this.timeStart + ratio * (this.timeEnd - this.timeStart);
   }
 }

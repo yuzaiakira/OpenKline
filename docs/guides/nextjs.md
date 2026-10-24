@@ -41,6 +41,10 @@ NodeNext-style compiled imports resolve correctly when Next processes the
 linked development packages. This is not required for a normal registry
 installation.
 
+Plugins and workspace documents are client-side props. Install trusted plugin
+modules in the Client Component and pass a validated workspace after mount;
+never import or execute plugin code in a Server Component.
+
 Do not create a chart in a Server Component, module initializer, or during
 server rendering. React cleanup destroys the chart on unmount and supports
 Strict Mode's mount/unmount probe.
