@@ -406,7 +406,7 @@ export class Chart {
         missingIndicators.push(indicator.id);
       }
     }
-    for (const drawing of parsed.drawings.drawings) this.drawingEngine.getTool(drawing.type);
+    this.drawingEngine.validate(parsed.drawings);
 
     this.stopDatafeed();
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
@@ -1010,9 +1010,10 @@ export class Chart {
             zIndex: definition.zIndex ?? 0,
             commands: normalizePluginCommands(definition.render(context)),
           };
-        } catch {
+        } catch (error) {
           // A faulty overlay must not take down chart rendering. The plugin can
           // still be uninstalled or corrected by the host application.
+          console.error(`OpenKline plugin overlay failed: ${definition.id}`, error);
           return { id: definition.id, zIndex: definition.zIndex ?? 0, commands: [] };
         }
       });

@@ -162,13 +162,23 @@ export class DrawingEngine {
     return { version: 1, drawings: this.getAll() };
   }
 
-  public restore(document: unknown): void {
+  public validate(document: unknown): void {
     this.assertAlive();
     if (!isDocument(document)) throw new DrawingValidationError("Unsupported drawing document version");
-    const next = new Map<string, DrawingSnapshot>();
+    const ids = new Set<string>();
     for (const drawing of document.drawings) {
-      if (next.has(drawing.id)) throw new DrawingValidationError(`Duplicate drawing id: ${drawing.id}`);
+      if (ids.has(drawing.id)) throw new DrawingValidationError(`Duplicate drawing id: ${drawing.id}`);
+      ids.add(drawing.id);
       this.requireTool(drawing.type).validate(drawing);
+    }
+  }
+
+  public restore(document: unknown): void {
+    this.assertAlive();
+    this.validate(document);
+    const validated = document as DrawingDocument;
+    const next = new Map<string, DrawingSnapshot>();
+    for (const drawing of validated.drawings) {
       next.set(drawing.id, cloneSnapshot(drawing));
     }
     this.recordHistory();
@@ -253,15 +263,17 @@ function isDocument(value: unknown): value is DrawingDocument {
 function isSnapshot(value: unknown): value is DrawingSnapshot {
   if (typeof value !== "object" || value === null) return false;
   if (!("id" in value) || !("type" in value) || !("points" in value) || !("style" in value) || !("zIndex" in value)) return false;
-  return typeof value.id === "string"
-    && value.id.length > 0
-    && typeof value.type === "string"
-    && value.type.length > 0
-    && typeof value.zIndex === "number"
-    && Number.isFinite(value.zIndex)
-    && isStyle(value.style)
-    && Array.isArray(value.points)
-    && value.points.every(isPoint);
+  const snapshot = value as Record<string, unknown>;
+  return typeof snapshot.id === "string"
+    && snapshot.id.length > 0
+    && typeof snapshot.type === "string"
+    && snapshot.type.length > 0
+    && (snapshot.text === undefined || typeof snapshot.text === "string")
+    && typeof snapshot.zIndex === "number"
+    && Number.isFinite(snapshot.zIndex)
+    && isStyle(snapshot.style)
+    && Array.isArray(snapshot.points)
+    && snapshot.points.every(isPoint);
 }
 
 function isPoint(value: unknown): value is DrawingPoint {

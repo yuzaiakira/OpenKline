@@ -2,7 +2,8 @@
 
 Date: 2026-10-24
 
-Implementation increment: `0cb2ba452c63936e2d9fbcf4e9df09d0e18363b7`
+Implementation increment: `0cb2ba452c63936e2d9fbcf4e9df09d0e18363b7`, followed
+by overlay-error reporting and pre-mutation drawing validation hardening.
 
 Branch: `work`
 
@@ -141,9 +142,10 @@ untrusted end-user scripts remain future work.
 
 Invalid plugin activation rolls back tracked registrations. Invalid workspace
 input is parsed before chart mutation. Overlay commands are bounded and
-validated; an overlay callback failure produces no overlay for that frame
-instead of aborting chart rendering. Plugin resource cleanup is chart-scoped
-and idempotent.
+validated; an overlay callback failure is reported through `console.error` and
+produces no overlay for that frame instead of aborting chart rendering. Drawing
+tool validation also completes before workspace mutation. Plugin resource
+cleanup is chart-scoped and idempotent.
 
 ## Acceptance matrix
 
@@ -210,12 +212,14 @@ security and language-runtime design.
   both author and committer.
 - `0cb2ba452c63936e2d9fbcf4e9df09d0e18363b7` was committed with Conventional
   Commit subject `feat(plugin): add extensible sdk and workspace platform`.
+- Overlay isolation and pre-mutation drawing validation were subsequently
+  committed and pushed as a separate Conventional Commit after the first
+  implementation increment.
 - `git push origin work` succeeded; `git ls-remote origin refs/heads/work`
   returned the same SHA.
 - The onboarding draft was saved with repository HEAD
-  `0cb2ba452c63936e2d9fbcf4e9df09d0e18363b7` and requires publication by the
+  `60bd5e357b4914a99c60474340bce3cbdd1c9c50` and requires publication by the
   user through environment settings. Saving the draft does not publish it.
 
-This report is itself the next documentation increment and will be committed
-and pushed after the final report review. Its commit can be verified with
+The final report commit can be verified with
 `git log -1 -- docs/reports/phase-3-verification.md`.
