@@ -138,10 +138,12 @@ pushed immediately without force-push:
 | --- | --- | --- |
 | `6d09f9270a7f12d5771640c67218dff4cc3abb78` | `feat(phase1): complete chart series and datafeed foundation` | Verified on `origin/work` |
 | `d1fa5126c275fd7feb1d96cfd79c03089d400e78` | `test(phase1): cover REST cancellation` | Verified on `origin/work` |
+| `0616fa69be02eefe0fb76a9badba301b6a1bda9e` | `docs(phase1): add final verification report` | Verified on `origin/work` |
+| `7bd3c786f98c777c8e4b96acfc15dfd91ddfaa2d` | `chore(repo): ignore compiled test output` | Verified on `origin/work` |
 
-At this verification point, `git rev-parse HEAD` and
-`git ls-remote origin refs/heads/work` both resolved to
-`d1fa5126c275fd7feb1d96cfd79c03089d400e78`.
+The final documentation-reference update is pushed immediately after this
+report edit. The same `git rev-parse HEAD` and `git ls-remote origin
+refs/heads/work` check is repeated before delivery.
 
 ## Phase 2 readiness assessment
 
