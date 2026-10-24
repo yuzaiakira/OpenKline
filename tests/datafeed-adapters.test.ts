@@ -32,6 +32,26 @@ test("RestDatafeed paginates, normalizes timestamps, deduplicates, and sorts", a
   assert.match(requests[1] ?? "", /cursor=page-2/);
 });
 
+test("RestDatafeed stops paginated loading when its signal is aborted", async () => {
+  const controller = new AbortController();
+  let requests = 0;
+  const datafeed = new RestDatafeed({
+    baseUrl: "https://prices.example.test",
+    symbols: { TEST: { symbol: "TEST", timezone: "UTC", pricePrecision: 2 } },
+    fetcher: async () => {
+      requests += 1;
+      controller.abort();
+      return new Response(JSON.stringify({ bars: [], next: "page-2" }), { status: 200 });
+    },
+  });
+
+  await assert.rejects(
+    datafeed.getBars({ symbol: "TEST", timeframe: "1m", from: 0, to: 10, signal: controller.signal }),
+    (error: unknown) => error instanceof Error && error.name === "AbortError",
+  );
+  assert.equal(requests, 1);
+});
+
 test("WebSocketDatafeed reconnects with a bounded schedule and unsubscribes", async () => {
   const sockets: FakeSocket[] = [];
   const historical = new InMemoryDatafeed({ symbol: "TEST", timezone: "UTC", pricePrecision: 2 });
