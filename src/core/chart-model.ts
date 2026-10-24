@@ -81,7 +81,7 @@ export class ChartModel {
     if (this.store.length === 0) {
       return 2;
     }
-    return Math.max(2, Math.min(this.store.length, Math.floor(this.viewportWidth / 8)));
+    return Math.min(this.store.length, Math.max(1, Math.floor(this.viewportWidth / 8)));
   }
 
   private clampStart(start: number): number {

@@ -10,32 +10,33 @@ Phase 1 — Chart MVP foundation: **In Progress**
 - [Implemented] Added validated OHLCV storage with incremental updates.
 - [Implemented] Added time/price scales and a pan/zoom viewport model.
 - [Implemented] Added a Canvas2D candlestick renderer and vanilla example.
-- [Implemented] Added unit tests for data validation, scales, and viewport behavior.
-- [Verified] Type checking and unit tests pass locally.
+- [Implemented] Added historical/realtime datafeed contracts and an in-memory provider.
+- [Implemented] Added a thin React adapter and a Next.js App Router example.
+- [Implemented] Added unit, Playwright browser, benchmark, and package checks.
+- [Verified] Type checking, 8 unit tests, browser interaction, Next.js production build,
+  and package dry-run pass locally.
 
 ## In progress
 
-- [In Progress] Expand the chart MVP with a formal datafeed contract and richer
-  interaction/accessibility tests.
+- [In Progress] Expand the chart MVP with additional series, volume panes, and
+  accessibility coverage.
 
 ## Pending
 
 - [Not Started] Volume and line/area series.
-- [Not Started] Historical/streaming datafeed adapters.
-- [Not Started] React and Next.js adapters.
+- [Not Started] REST/WebSocket datafeed adapters and session normalization.
 - [Not Started] Drawing tools and workspace serialization.
 - [Not Started] Indicator engine.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
-- [Not Started] Browser, visual, and performance test suites.
+- [Not Started] Canvas frame-time, memory, visual regression, and accessibility
+  performance suites.
 
 ## Known blockers
 
-- The initial checkout was empty, but the foundation commit is now pushed to
-  `origin/work` and its SHA has been verified remotely.
-- Chromium loaded the vanilla example and all compiled modules in the cloud
-  container, but its headless dump process did not terminate; full browser
-  interaction and visual regression coverage remains unverified.
+- Browser interaction verification passes with Playwright, but there is not yet
+  a deterministic Canvas2D FPS/memory benchmark.
+- The environment draft must be published separately from the saved setup.
 
 ## Architectural follow-up
 

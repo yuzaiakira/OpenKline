@@ -1,6 +1,7 @@
 import { ChartModel } from "./core/chart-model.js";
 import { PriceScale, TimeScale, getCandlePriceRange } from "./core/scales.js";
-import { CanvasRenderer } from "./renderer/canvas-renderer.js";
+import { CanvasRenderer, getPlotBounds } from "./renderer/canvas-renderer.js";
+import type { Datafeed, GetBarsQuery } from "./types.js";
 import type {
   Candle,
   ChartEventHandler,
@@ -47,12 +48,15 @@ export class Chart {
   private crosshair: { x: number; y: number } | null = null;
   private dragging = false;
   private lastPointerX = 0;
+  private datafeedCleanup: (() => void) | null = null;
+  private datafeedRequestId = 0;
+  private destroyed = false;
 
   public constructor(private readonly container: HTMLElement, options: ChartOptions = {}) {
     this.theme = resolveTheme(options.theme);
     this.locale = options.locale ?? "en-US";
     this.timeZone = options.timeZone ?? "UTC";
-    this.pricePrecision = options.pricePrecision ?? 2;
+    this.pricePrecision = normalizePricePrecision(options.pricePrecision ?? 2);
     this.width = options.width ?? container.clientWidth;
     this.height = options.height ?? container.clientHeight;
 
@@ -81,26 +85,72 @@ export class Chart {
   }
 
   public setData(candles: readonly Candle[]): void {
+    this.assertAlive();
     this.model.setData(candles);
     this.render();
   }
 
   public update(candle: Candle): void {
+    this.assertAlive();
     this.model.update(candle);
     this.render();
   }
 
+  /** Load historical bars and optionally subscribe to future bar updates. */
+  public async setDatafeed(datafeed: Datafeed, query: GetBarsQuery): Promise<void> {
+    this.assertAlive();
+    this.stopDatafeed();
+    const requestId = this.datafeedRequestId;
+    try {
+      const bars = await datafeed.getBars(query);
+      if (this.destroyed || requestId !== this.datafeedRequestId) {
+        return;
+      }
+      this.setData(bars);
+      if (datafeed.subscribeBars !== undefined) {
+        this.datafeedCleanup = datafeed.subscribeBars({
+          symbol: query.symbol,
+          timeframe: query.timeframe,
+          onBar: (bar) => this.update(bar),
+          onError: (error) => this.emit("datafeedError", error),
+        });
+      }
+    } catch (error) {
+      const normalized = error instanceof Error ? error : new Error(String(error));
+      if (this.destroyed || requestId !== this.datafeedRequestId) {
+        return;
+      }
+      this.emit("datafeedError", normalized);
+      throw normalized;
+    }
+  }
+
+  /** Stop any active datafeed subscription. */
+  public stopDatafeed(): void {
+    this.datafeedRequestId += 1;
+    this.datafeedCleanup?.();
+    this.datafeedCleanup = null;
+  }
+
   public resize(width: number, height: number): void {
+    this.assertAlive();
     this.width = Math.max(0, Math.floor(width));
     this.height = Math.max(0, Math.floor(height));
     this.devicePixelRatio = typeof window === "undefined" ? 1 : Math.max(1, window.devicePixelRatio || 1);
-    this.canvas.width = Math.max(1, Math.floor(this.width * this.devicePixelRatio));
-    this.canvas.height = Math.max(1, Math.floor(this.height * this.devicePixelRatio));
+    const pixelWidth = Math.max(1, Math.floor(this.width * this.devicePixelRatio));
+    const pixelHeight = Math.max(1, Math.floor(this.height * this.devicePixelRatio));
+    if (this.canvas.width !== pixelWidth) {
+      this.canvas.width = pixelWidth;
+    }
+    if (this.canvas.height !== pixelHeight) {
+      this.canvas.height = pixelHeight;
+    }
     this.model.resize(this.width);
     this.render();
   }
 
   public setOptions(options: ChartOptions): void {
+    this.assertAlive();
     if (options.theme !== undefined) {
       this.theme = resolveTheme(options.theme);
     }
@@ -111,9 +161,26 @@ export class Chart {
       this.timeZone = options.timeZone;
     }
     if (options.pricePrecision !== undefined) {
-      this.pricePrecision = options.pricePrecision;
+      this.pricePrecision = normalizePricePrecision(options.pricePrecision);
+    }
+    if (options.width !== undefined || options.height !== undefined) {
+      this.resize(options.width ?? this.width, options.height ?? this.height);
+      return;
     }
     this.render();
+  }
+
+  /** Return the current visible bar indexes for interaction and diagnostics. */
+  public getVisibleRange(): { from: number; to: number } {
+    this.assertAlive();
+    const { from, to } = this.model.getVisibleData();
+    return { from, to };
+  }
+
+  /** Return a defensive copy of the currently stored candles. */
+  public getData(): Candle[] {
+    this.assertAlive();
+    return this.model.allCandles;
   }
 
   public subscribe<Name extends ChartEventName>(name: Name, handler: ChartEventHandler<Name>): () => void {
@@ -124,6 +191,11 @@ export class Chart {
   }
 
   public destroy(): void {
+    if (this.destroyed) {
+      return;
+    }
+    this.destroyed = true;
+    this.stopDatafeed();
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -146,7 +218,6 @@ export class Chart {
       const delta = event.offsetX - this.lastPointerX;
       this.model.pan(-delta / Math.max(this.model.barSpacing, 1));
       this.lastPointerX = event.offsetX;
-      this.render();
     }
 
     this.crosshair = { x: event.offsetX, y: event.offsetY };
@@ -188,7 +259,16 @@ export class Chart {
   private emitCrosshair(x: number | null, y: number | null): void {
     const event: CrosshairMoveEvent = { time: null, price: null, x: x ?? 0, y: y ?? 0 };
     const data = this.model.getVisibleData();
-    if (x !== null && y !== null && data.candles.length > 0) {
+    const bounds = getPlotBounds(this.width, this.height);
+    if (
+      x !== null
+      && y !== null
+      && x >= bounds.left
+      && x <= bounds.right
+      && y >= bounds.top
+      && y <= bounds.bottom
+      && data.candles.length > 0
+    ) {
       const prices = getCandlePriceRange(data.candles);
       const scale = new PriceScale(prices.min, prices.max, { start: 14, end: Math.max(15, this.height - 30) });
       const times = data.candles.map((candle) => candle.time);
@@ -213,6 +293,19 @@ export class Chart {
       this.crosshair,
     );
   }
+
+  private assertAlive(): void {
+    if (this.destroyed) {
+      throw new Error("Chart has been destroyed");
+    }
+  }
+}
+
+function normalizePricePrecision(value: number): number {
+  if (!Number.isInteger(value) || value < 0 || value > 100) {
+    throw new RangeError("pricePrecision must be an integer between 0 and 100");
+  }
+  return value;
 }
 
 function resolveTheme(theme: ChartOptions["theme"]): ChartTheme {

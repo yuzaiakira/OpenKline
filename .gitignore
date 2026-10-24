@@ -3,3 +3,8 @@ dist/
 coverage/
 .DS_Store
 *.log
+.next/
+test-results/
+playwright-report/
+*.tsbuildinfo
+*.tgz

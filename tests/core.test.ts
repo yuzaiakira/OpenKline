@@ -47,6 +47,16 @@ test("scales map between data and pixels in both directions", () => {
   assert.equal(priceScale.yForPrice(200), 0);
   assert.equal(priceScale.yForPrice(100), 100);
   assert.equal(priceScale.priceForY(50), 150);
+  assert.throws(() => new TimeScale([0, 100, 50], { start: 0, end: 100 }), /ascending/);
+});
+
+test("ChartModel keeps a single candle visible without inventing a second bar", () => {
+  const model = new ChartModel();
+  model.resize(1);
+  model.setData([{ time: 1, open: 10, high: 12, low: 8, close: 11 }]);
+  assert.deepEqual(model.getVisibleData().candles.map((candle) => candle.time), [1]);
+  model.zoom(0.5);
+  assert.deepEqual(model.getVisibleData().candles.map((candle) => candle.time), [1]);
 });
 
 test("ChartModel supports latest data, pan, and zoom", () => {

@@ -14,6 +14,26 @@ export interface RenderOptions {
   pricePrecision: number;
 }
 
+export interface PlotBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export function getPlotBounds(width: number, height: number): PlotBounds {
+  const left = 68;
+  const right = 12;
+  const top = 14;
+  const bottom = 30;
+  return {
+    left,
+    right: Math.max(left + 1, width - right),
+    top,
+    bottom: Math.max(top + 1, height - bottom),
+  };
+}
+
 export class CanvasRenderer {
   public constructor(private readonly canvas: HTMLCanvasElement) {}
 
@@ -39,9 +59,9 @@ export class CanvasRenderer {
       return;
     }
 
-    const layout = { left: 68, right: 12, top: 14, bottom: 30 };
-    const plotRight = Math.max(layout.left + 1, width - layout.right);
-    const plotBottom = Math.max(layout.top + 1, height - layout.bottom);
+    const layout = getPlotBounds(width, height);
+    const plotRight = layout.right;
+    const plotBottom = layout.bottom;
     const prices = getCandlePriceRange(data.candles);
     const priceScale = new PriceScale(prices.min, prices.max, { start: layout.top, end: plotBottom });
     const timeScale = new TimeScale(
@@ -50,7 +70,12 @@ export class CanvasRenderer {
     );
 
     this.drawGrid(context, layout.left, plotRight, layout.top, plotBottom, priceScale, theme, options);
+    context.save();
+    context.beginPath();
+    context.rect(layout.left, layout.top, plotRight - layout.left, plotBottom - layout.top);
+    context.clip();
     this.drawCandles(context, data.candles, timeScale, priceScale, theme);
+    context.restore();
     this.drawTimeLabels(context, data.candles, timeScale, plotBottom, theme, options);
 
     if (crosshair !== null) {
@@ -94,9 +119,23 @@ export class CanvasRenderer {
     priceScale: PriceScale,
     theme: ChartTheme,
   ): void {
-    const candleSpacing = candles.length > 1
-      ? Math.abs(timeScale.xForTime(candles[1]?.time ?? candles[0]?.time ?? 0) - timeScale.xForTime(candles[0]?.time ?? 0))
-      : 12;
+    let candleSpacing = 12;
+    if (candles.length > 1) {
+      candleSpacing = Number.POSITIVE_INFINITY;
+      for (let index = 1; index < candles.length; index += 1) {
+        const current = candles[index];
+        const previous = candles[index - 1];
+        if (current !== undefined && previous !== undefined) {
+          candleSpacing = Math.min(
+            candleSpacing,
+            Math.abs(timeScale.xForTime(current.time) - timeScale.xForTime(previous.time)),
+          );
+        }
+      }
+      if (!Number.isFinite(candleSpacing)) {
+        candleSpacing = 12;
+      }
+    }
     const bodyWidth = Math.max(1, Math.min(18, candleSpacing * 0.7));
 
     for (const candle of candles) {
@@ -160,6 +199,10 @@ export class CanvasRenderer {
     bottom: number,
     theme: ChartTheme,
   ): void {
+    context.save();
+    context.beginPath();
+    context.rect(left, top, right - left, bottom - top);
+    context.clip();
     context.strokeStyle = theme.crosshair;
     context.setLineDash([4, 4]);
     context.beginPath();
@@ -169,5 +212,6 @@ export class CanvasRenderer {
     context.lineTo(right, Math.round(crosshair.y) + 0.5);
     context.stroke();
     context.setLineDash([]);
+    context.restore();
   }
 }

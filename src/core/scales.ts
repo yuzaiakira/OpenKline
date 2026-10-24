@@ -16,8 +16,19 @@ export class TimeScale {
       throw new Error("TimeScale requires at least one timestamp");
     }
 
+    validatePixelRange(pixels);
     this.timeStart = times[0] ?? 0;
     this.timeEnd = times[times.length - 1] ?? this.timeStart;
+    if (!Number.isFinite(this.timeStart) || !Number.isFinite(this.timeEnd) || this.timeEnd < this.timeStart) {
+      throw new Error("TimeScale timestamps must be finite and ascending");
+    }
+    for (let index = 1; index < times.length; index += 1) {
+      const previous = times[index - 1];
+      const current = times[index];
+      if (previous === undefined || current === undefined || !Number.isFinite(current) || current < previous) {
+        throw new Error("TimeScale timestamps must be finite and ascending");
+      }
+    }
     this.pixelStart = pixels.start;
     this.pixelEnd = pixels.end;
   }
@@ -50,6 +61,11 @@ export class PriceScale {
       throw new Error("PriceScale requires a finite ascending range");
     }
 
+    validatePixelRange(pixels);
+    if (!Number.isFinite(paddingRatio) || paddingRatio < 0) {
+      throw new Error("PriceScale paddingRatio must be a non-negative finite number");
+    }
+
     const sourceRange = max - min;
     const padding = sourceRange === 0 ? Math.max(Math.abs(min) * paddingRatio, 1) : sourceRange * paddingRatio;
     this.priceMin = min - padding;
@@ -74,6 +90,12 @@ export class PriceScale {
 
   public get max(): number {
     return this.priceMax;
+  }
+}
+
+function validatePixelRange(pixels: PixelRange): void {
+  if (!Number.isFinite(pixels.start) || !Number.isFinite(pixels.end) || pixels.end <= pixels.start) {
+    throw new Error("Pixel range must be finite and have a positive size");
   }
 }
 

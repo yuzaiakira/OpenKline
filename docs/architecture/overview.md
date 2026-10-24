@@ -7,14 +7,19 @@ boundaries needed for later packages.
 CandleStore -> ChartModel -> CanvasRenderer
      |             |              |
  validation     viewport      Canvas2D adapter
-                 scales
+     |             |              |
+ Datafeed   data lifecycle   browser events
+                                   |
+                         React / Next.js adapters
 ```
 
 `CandleStore` owns ordered OHLCV data and rejects malformed input. `ChartModel`
 owns visible-range state, pan, and zoom without knowing about the DOM. The
 Canvas2D renderer maps visible data through time and price scales and owns no
 data mutation. `Chart` is the browser adapter that owns the canvas, pointer and
-wheel listeners, resize observation, and teardown.
+wheel listeners, resize observation, datafeed subscription, and teardown. The
+React adapter only owns component lifecycle; the Next.js example keeps chart
+construction in a Client Component.
 
 ## Initial decisions
 

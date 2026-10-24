@@ -10,13 +10,17 @@ export class CandleValidationError extends Error {
   }
 }
 
-function validateCandle(candle: Candle, index: number): void {
+export function validateCandle(candle: Candle, index = 0): void {
   if (!Number.isFinite(candle.time) || candle.time < 0 || !Number.isInteger(candle.time)) {
     throw new CandleValidationError(index, "time must be a non-negative integer in milliseconds");
   }
 
-  const prices = [candle.open, candle.high, candle.low, candle.close];
-  if (prices.some((price) => !Number.isFinite(price))) {
+  if (
+    !Number.isFinite(candle.open)
+    || !Number.isFinite(candle.high)
+    || !Number.isFinite(candle.low)
+    || !Number.isFinite(candle.close)
+  ) {
     throw new CandleValidationError(index, "OHLC values must be finite numbers");
   }
 
@@ -33,24 +37,27 @@ function validateCandle(candle: Candle, index: number): void {
   }
 }
 
+export function validateCandles(candles: readonly Candle[]): void {
+  let previousTime: number | undefined;
+  candles.forEach((candle, index) => {
+    validateCandle(candle, index);
+    if (previousTime !== undefined && candle.time <= previousTime) {
+      throw new CandleValidationError(index, "timestamps must be strictly increasing");
+    }
+    previousTime = candle.time;
+  });
+}
+
 export class CandleStore {
   private candles: Candle[] = [];
 
   public setData(candles: readonly Candle[]): void {
-    let previousTime: number | undefined;
-    candles.forEach((candle, index) => {
-      validateCandle(candle, index);
-      if (previousTime !== undefined && candle.time <= previousTime) {
-        throw new CandleValidationError(index, "timestamps must be strictly increasing");
-      }
-      previousTime = candle.time;
-    });
-
+    validateCandles(candles);
     this.candles = candles.map((candle) => ({ ...candle }));
   }
 
   public update(candle: Candle): void {
-    validateCandle(candle, 0);
+    validateCandle(candle, this.candles.length);
     const index = this.findInsertionIndex(candle.time);
     const current = this.candles[index];
 

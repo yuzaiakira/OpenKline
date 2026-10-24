@@ -26,6 +26,7 @@
         timeZone: "UTC",
         pricePrecision: 2,
       });
+      globalThis.__openklineChart = chart;
 
       const start = Date.UTC(2026, 0, 1);
       chart.setData(Array.from({ length: 80 }, (_, index) => {

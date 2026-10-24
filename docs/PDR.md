@@ -20,7 +20,14 @@ The first milestone includes:
 - a viewport model with pan and zoom;
 - a Canvas2D candlestick renderer with themes and HiDPI sizing;
 - a browser-neutral `createChart` API with resize, update, and lifecycle cleanup;
+- a typed historical/realtime datafeed contract with a deterministic in-memory
+  provider;
+- an optional React adapter and a verified Next.js App Router example;
 - a vanilla browser example and executable unit tests.
+
+Browser interaction tests and model benchmarks are also part of the current
+verification surface; their scope and limitations are documented in
+`docs/development/testing.md` and `docs/development/benchmarks.md`.
 
 The core calculation and data model do not depend on React, Next.js, or a
 browser. The Canvas2D adapter is the only browser-facing layer in this slice.
