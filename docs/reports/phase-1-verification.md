@@ -80,7 +80,7 @@ visual regression baselines, and reference-hardware targets remain unverified.
 ## Git
 
 - Branch: `work`
-- Implementation commit: `fa320ab1d9884a427bc8c823f9ef23cd95da2162`
+- Implementation commit: `360695933c1c54e567ff60d8f939e30ef69dc584`
 - Commit message: `feat(phase1): complete chart integration foundation`
 - Author and committer: `Thomas Bell <yuzai.akira@gmail.com>`
 - Push: verified at `origin/work` with the same SHA
