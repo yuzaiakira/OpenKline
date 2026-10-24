@@ -61,6 +61,7 @@ Verified locally on Node.js v24.19.0:
 | `npm run package:smoke` | Passed; packed ESM package installed into a clean temporary consumer |
 | `npm pack --dry-run --prefix packages/react` | Passed |
 | `npm run build` in `examples/nextjs-app-router` | Passed with Next.js 15.5.28 |
+| Missing-build preview recovery | Passed; server built `dist/` automatically and Chromium loaded one canvas plus four series |
 
 No GitHub Actions workflow was added or used.
 

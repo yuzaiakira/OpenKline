@@ -24,9 +24,10 @@ contents have their own explicit commands; see [testing.md](testing.md).
 
 ## View the example
 
-Build the package, then serve the repository root with any static HTTP server
-and open `examples/vanilla/index.html`. The example imports the compiled ESM
-entry point from `dist/src/index.js`.
+Run `npm run dev` and open
+`http://127.0.0.1:4173/examples/vanilla/index.html`. The command builds the
+package before serving it. `node scripts/serve-example.mjs` also performs a
+build automatically when the compiled entry point is missing.
 
 To verify the App Router integration:
 

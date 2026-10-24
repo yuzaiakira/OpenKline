@@ -2,6 +2,9 @@
 
 The project uses local checks and does not use GitHub Actions.
 
+For a manual browser preview, run `npm run dev` and open the vanilla example at
+`http://127.0.0.1:4173/examples/vanilla/index.html`.
+
 ```bash
 npm run typecheck
 npm test

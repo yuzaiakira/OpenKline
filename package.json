@@ -17,6 +17,8 @@
     "clean": "node scripts/clean.mjs",
     "build:core": "tsc -p tsconfig.build.json",
     "build": "npm run clean && npm run build:core && tsc -p packages/react/tsconfig.json",
+    "dev": "npm run build && node scripts/serve-example.mjs",
+    "preview": "npm run dev",
     "typecheck": "tsc --noEmit -p tsconfig.json && npm run build:core && tsc --noEmit -p packages/react/tsconfig.json",
     "test": "npm run build && tsc -p tsconfig.test.json && node --test test-dist/tests/core.test.js test-dist/tests/datafeed.test.js test-dist/tests/datafeed-adapters.test.js test-dist/tests/series.test.js test-dist/tests/react.test.js",
     "test:browser": "npm run build && playwright test",
