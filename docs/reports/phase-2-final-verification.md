@@ -129,9 +129,11 @@ start with the existing trusted extension seam as its compatibility boundary.
 - Previous hardening commit: `f032342`
 - Author and committer: `Akira Yuzai <yuzai.akira@gmail.com>`
 - Both commits were pushed immediately after successful verification.
+- This final verification report is included in commit `5a99f33` and that
+  commit was pushed to `origin/work`.
 - No force-push, history rewrite, or GitHub Actions was used.
-- The final documentation commit for this report will be recorded after the
-  report is committed and the remote SHA is checked against `HEAD`.
+- The final handoff repeats the remote SHA check after the follow-up report
+  metadata commit.
 
 ## Documentation updated
 
