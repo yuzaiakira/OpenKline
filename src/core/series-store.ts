@@ -13,6 +13,7 @@ export type SeriesData = readonly Candle[] | readonly TimeValuePoint[];
 export interface SeriesSnapshot {
   id: string;
   type: SeriesType;
+  paneId: string;
   title?: string;
   style: SeriesStyle;
   data: SeriesPoint[];
@@ -21,6 +22,7 @@ export interface SeriesSnapshot {
 interface StoredSeries {
   id: string;
   type: SeriesType;
+  paneId: string;
   title?: string;
   style: SeriesStyle;
   store: CandleStore | PointStore;
@@ -39,6 +41,7 @@ export class SeriesCollection {
     this.series.set(id, {
       id,
       type,
+      paneId: options.pane ?? "main",
       ...(options.title === undefined ? {} : { title: options.title }),
       style: { ...options.style },
       store: type === "candlestick" ? new CandleStore() : new PointStore(),
@@ -96,6 +99,15 @@ export class SeriesCollection {
     series.style = { ...series.style, ...style };
   }
 
+  public setPane(id: string, paneId: string): void {
+    const series = this.require(id);
+    series.paneId = paneId;
+  }
+
+  public getPaneId(id: string): string {
+    return this.require(id).paneId;
+  }
+
   public get(id: string): SeriesSnapshot {
     const series = this.require(id);
     return this.snapshot(series);
@@ -123,6 +135,7 @@ export class SeriesCollection {
     return [...this.series.values()].map((series) => ({
       id: series.id,
       type: series.type,
+      paneId: series.paneId,
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
       data: this.getRangeByTime(series, fromTime, toTime),
@@ -141,6 +154,7 @@ export class SeriesCollection {
     return {
       id: series.id,
       type: series.type,
+      paneId: series.paneId,
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
       data: series.store instanceof CandleStore ? series.store.getAll() : series.store.getAll(),

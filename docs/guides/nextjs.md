@@ -10,7 +10,15 @@ mounts because it creates a canvas and observes the DOM.
 import { FinancialChart } from "@openkline/react";
 
 export default function ChartClient() {
-  return <FinancialChart candles={candles} theme="dark" autoSize style={{ height: 520 }} />;
+  return (
+    <FinancialChart
+      candles={candles}
+      indicators={[{ indicatorId: "RSI", options: { period: 14, pane: "new" } }]}
+      theme="dark"
+      autoSize
+      style={{ height: 520 }}
+    />
+  );
 }
 ```
 

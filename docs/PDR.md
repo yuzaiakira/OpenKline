@@ -56,12 +56,14 @@ browser. The Canvas2D adapter is the only browser-facing layer in this slice.
 9. Benchmark output records Canvas2D work and memory observations without
    turning one environment into a universal performance claim.
 
-## Deferred to Phase 2 or later
+## Phase 2 status and deferred scope
 
 The Phase 2.1 calculation engine is now implemented with SMA, EMA, RSI, MACD,
 Bollinger Bands, ATR, Stochastic, VWAP, independent instances, aligned
 multi-output results, correction-safe updates, and custom TypeScript
-registration. Multi-pane layout, drawing tools, plugin SDK, ChartScript,
+registration. Phase 2.2 now includes synchronized multi-pane layout,
+independent pane scales, RSI/MACD/Stochastic chart mappings, pane lifecycle,
+and React/Next indicator props. Drawing tools, plugin SDK, ChartScript,
 accessibility UI, visual regression, vendor-specific adapters, and WebGL/WebGPU
 rendering remain future work. They are not represented as completed
 functionality here.

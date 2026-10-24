@@ -23,7 +23,10 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(initial.pixel.length).toBe(4);
 
   const seriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
-  expect(seriesIds).toEqual(["price", "trend", "area", "volume"]);
+  expect(seriesIds.slice(0, 4)).toEqual(["price", "trend", "area", "volume"]);
+  expect(seriesIds).toHaveLength(10);
+  const paneIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getPaneIds(): string[] } }).__openklineChart.getPaneIds());
+  expect(paneIds).toHaveLength(5);
 
   await page.evaluate(() => {
     const chart = (globalThis as unknown as { __openklineChart: { subscribe(name: string, handler: (event: unknown) => void): void } }).__openklineChart;
@@ -42,7 +45,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   await expect(page).toHaveTitle(/OpenKline \d/);
   await page.waitForFunction(() => {
     const event = (globalThis as unknown as { __lastCrosshair?: { series?: unknown[] } }).__lastCrosshair;
-    return (event?.series?.length ?? 0) === 4;
+    return (event?.series?.length ?? 0) === 10;
   });
 
   const beforeZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
@@ -71,7 +74,8 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   });
 
   const finalSeriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
-  expect(finalSeriesIds).toEqual(["price", "trend", "area", "volume"]);
+  expect(finalSeriesIds).toHaveLength(10);
+  expect(finalSeriesIds).not.toContain("temporary");
 
   const widthBeforeResize = await canvas.evaluate((element) => (element as HTMLCanvasElement).width);
   await page.setViewportSize({ width: 800, height: 700 });

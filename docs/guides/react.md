@@ -13,6 +13,7 @@ export function PriceChart({ candles }: { candles: Candle[] }) {
   return (
     <FinancialChart
       candles={candles}
+      indicators={[{ indicatorId: "RSI", options: { period: 14, pane: "new" } }]}
       theme="dark"
       autoSize
       onCrosshairMove={(event) => console.log(event.time, event.price)}
@@ -26,7 +27,7 @@ The component is designed to work with React Strict Mode. The imperative
 handle exposes `getChart()` for integrations that need to call `resize`,
 `update`, `addLineSeries`, or `setDatafeed` directly; consumers must not retain
 the chart after unmount. The cleanup effect unsubscribes crosshair listeners,
-destroys the chart, and clears its series data.
+removes mounted indicators, destroys the chart, and clears its series data.
 
 For a data-driven integration, keep the `candles` prop immutable and replace it
 when historical data changes. Use the imperative handle for streaming updates

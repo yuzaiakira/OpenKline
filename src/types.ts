@@ -8,7 +8,7 @@ export interface Candle {
   volume?: number;
 }
 
-export type SeriesType = "candlestick" | "line" | "area" | "volume";
+export type SeriesType = "candlestick" | "line" | "area" | "volume" | "histogram";
 
 export interface LinePoint {
   time: number;
@@ -38,7 +38,38 @@ export interface SeriesStyle {
 export interface SeriesOptions {
   id?: string;
   title?: string;
+  /** Existing pane ID. Omit for the main pane; volume defaults to a volume pane. */
+  pane?: string;
   style?: SeriesStyle;
+}
+
+export interface PaneOptions {
+  id?: string;
+  /** Preferred CSS-pixel height for non-main panes. */
+  height?: number;
+  minHeight?: number;
+}
+
+export interface PaneApi {
+  readonly id: string;
+  setHeight(height: number): void;
+  getHeight(): number | null;
+  remove(): void;
+}
+
+export interface IndicatorAddOptions {
+  pane?: string | "new";
+  parameters?: Record<string, unknown>;
+  [parameter: string]: unknown;
+}
+
+export interface ChartIndicatorApi {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  getResult(): import("./indicators/types.js").IndicatorResult;
+  setParameters(parameters: Record<string, unknown>): void;
+  remove(): void;
 }
 
 export interface ChartTheme {

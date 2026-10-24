@@ -46,3 +46,25 @@ test("PointStore rejects malformed and duplicate time/value data", () => {
   assert.deepEqual(store.getAll(), [{ time: 1, value: 2 }]);
 });
 
+test("ChartModel keeps panes independent while sharing one time viewport", () => {
+  const model = new ChartModel();
+  model.resize(32);
+  const candles = model.addSeries("candlestick", { id: "price" });
+  const rsiPane = model.addPane({ id: "rsi", height: 140 });
+  const rsi = model.addSeries("line", { id: "rsi-value", pane: rsiPane });
+  const volume = model.addSeries("volume", { id: "volume" });
+  const times = [1, 2, 3, 4, 5];
+  model.setSeriesData(candles, times.map((time) => ({ time, open: 10, high: 12, low: 8, close: 11 })));
+  model.setSeriesData(rsi, times.map((time, index) => ({ time, value: 30 + index * 10 })));
+  model.setSeriesData(volume, times.map((time) => ({ time, value: 100 })));
+
+  const visible = model.getVisibleData();
+  assert.deepEqual(visible.panes.map((pane) => pane.id), ["main", "rsi", "volume"]);
+  assert.deepEqual(visible.panes.find((pane) => pane.id === "rsi")?.series.map((series) => series.id), ["rsi-value"]);
+  assert.deepEqual(visible.panes.find((pane) => pane.id === "volume")?.series.map((series) => series.id), ["volume"]);
+  model.removePane(rsiPane);
+  assert.equal(model.getSeries("rsi-value").paneId, "main");
+  model.removeSeries(volume);
+  assert.deepEqual(model.getPaneIds(), ["main"]);
+});
+

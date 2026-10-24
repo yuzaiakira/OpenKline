@@ -1,5 +1,5 @@
 import { PriceScale, TimeScale } from "../core/scales.js";
-import type { VisibleChartData } from "../core/chart-model.js";
+import type { VisibleChartData, VisiblePaneData } from "../core/chart-model.js";
 import type { SeriesSnapshot } from "../core/series-store.js";
 import type { ChartTheme, Candle, SeriesPoint } from "../types.js";
 
@@ -8,205 +8,173 @@ export interface RenderSize {
   height: number;
   devicePixelRatio: number;
 }
+
 export interface RenderOptions {
   locale: string;
   timeZone: string;
   pricePrecision: number;
 }
 
-export interface PlotBounds {
+export interface PaneBounds {
+  id: string;
   left: number;
   right: number;
   top: number;
   bottom: number;
+}
+
+export interface PlotBounds extends PaneBounds {
   volumeTop: number;
   volumeBottom: number;
 }
 
-export function getPlotBounds(width: number, height: number, hasVolume = false): PlotBounds {
+export function getPaneBounds(width: number, height: number, panes: readonly VisiblePaneData[]): PaneBounds[] {
+  const layout = panes.length === 0 ? [{ id: "main", preferredHeight: null, series: [] }] : panes;
   const left = 68;
   const right = Math.max(left + 1, width - 12);
   const top = 14;
   const bottom = Math.max(top + 1, height - 30);
-  const volumeTop = hasVolume ? top + Math.max(1, (bottom - top) * 0.78) : bottom;
-  return {
-    left,
-    right,
-    top,
-    bottom: hasVolume ? Math.max(top + 1, volumeTop - 8) : bottom,
-    volumeTop,
-    volumeBottom: bottom,
-  };
+  const gap = layout.length > 1 ? 8 : 0;
+  const available = Math.max(1, bottom - top - gap * (layout.length - 1));
+  const main = layout.find((pane) => pane.id === "main") ?? layout[0]!;
+  const nonMain = layout.filter((pane) => pane.id !== main.id);
+  const minimumMain = 80;
+  const requestedNonMain = nonMain.reduce((sum, pane) => sum + (pane.preferredHeight ?? 140), 0);
+  const scale = requestedNonMain + minimumMain > available
+    ? available / Math.max(1, requestedNonMain + minimumMain)
+    : 1;
+  const mainHeight = scale === 1 ? Math.max(minimumMain, available - requestedNonMain) : minimumMain * scale;
+  const heights = new Map<string, number>([[main.id, mainHeight]]);
+  for (const pane of nonMain) heights.set(pane.id, (pane.preferredHeight ?? 140) * scale);
+
+  const bounds: PaneBounds[] = [];
+  let cursor = top;
+  for (const pane of layout) {
+    const paneHeight = Math.max(1, heights.get(pane.id) ?? available / layout.length);
+    bounds.push({ id: pane.id, left, right, top: cursor, bottom: cursor + paneHeight });
+    cursor += paneHeight + gap;
+  }
+  return bounds;
+}
+
+/** Backwards-compatible main/volume bounds helper for interaction consumers. */
+export function getPlotBounds(width: number, height: number, hasVolume = false): PlotBounds {
+  const panes: VisiblePaneData[] = [
+    { id: "main", preferredHeight: null, series: [] },
+    ...(hasVolume ? [{ id: "volume", preferredHeight: 120, series: [] }] : []),
+  ];
+  const bounds = getPaneBounds(width, height, panes);
+  const main = bounds[0] ?? { id: "main", left: 68, right: width - 12, top: 14, bottom: height - 30 };
+  const volume = bounds.find((pane) => pane.id === "volume");
+  return { ...main, volumeTop: volume?.top ?? main.bottom, volumeBottom: volume?.bottom ?? main.bottom };
 }
 
 export class CanvasRenderer {
   public constructor(private readonly canvas: HTMLCanvasElement) {}
 
-  public render(
-    data: VisibleChartData,
-    size: RenderSize,
-    theme: ChartTheme,
-    options: RenderOptions,
-    crosshair: { x: number; y: number } | null,
-  ): void {
+  public render(data: VisibleChartData, size: RenderSize, theme: ChartTheme, options: RenderOptions, crosshair: { x: number; y: number } | null): void {
     const context = this.canvas.getContext("2d");
-    if (context === null) {
-      throw new Error("CanvasRenderingContext2D is unavailable");
-    }
-
+    if (context === null) throw new Error("CanvasRenderingContext2D is unavailable");
     const { width, height, devicePixelRatio } = size;
     context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     context.clearRect(0, 0, width, height);
     context.fillStyle = theme.background;
     context.fillRect(0, 0, width, height);
+    if (data.times.length === 0 || width <= 0 || height <= 0) return;
 
-    if (data.times.length === 0 || width <= 0 || height <= 0) {
-      return;
-    }
-
-    const hasVolume = data.series.some((series) => series.type === "volume");
-    const layout = getPlotBounds(width, height, hasVolume);
-    const timeScale = new TimeScale(data.times, { start: layout.left, end: layout.right });
-    const prices = getPriceRange(data.series);
-    const priceScale = new PriceScale(prices.min, prices.max, { start: layout.top, end: layout.bottom });
-
-    this.drawGrid(context, layout.left, layout.right, layout.top, layout.bottom, priceScale, theme, options);
-    context.save();
-    context.beginPath();
-    context.rect(layout.left, layout.top, layout.right - layout.left, layout.bottom - layout.top);
-    context.clip();
-    for (const series of data.series) {
-      if (series.style.visible === false) {
-        continue;
-      }
-      if (series.type === "candlestick") {
-        this.drawCandles(context, series.data.filter(isCandle), timeScale, priceScale, theme, series.style);
-      } else if (series.type === "line") {
-        this.drawLine(context, series.data.filter(isPoint), timeScale, priceScale, series.style.color ?? theme.upCandle, series.style.lineWidth ?? 2);
-      } else if (series.type === "area") {
-        this.drawArea(context, series.data.filter(isPoint), timeScale, priceScale, layout.bottom, series.style.color ?? theme.upCandle, series.style.fillColor, series.style.lineWidth ?? 2);
-      }
-    }
-    context.restore();
-
-    if (hasVolume) {
-      const volumeMax = getVolumeMax(data.series);
-      const volumeScale = new PriceScale(0, Math.max(volumeMax, 1), { start: layout.volumeTop, end: layout.volumeBottom }, 0);
+    const panes = getPaneBounds(width, height, data.panes);
+    const timeScale = new TimeScale(data.times, { start: panes[0]?.left ?? 68, end: panes[0]?.right ?? width - 12 });
+    for (const pane of panes) {
+      const paneData = data.panes.find((candidate) => candidate.id === pane.id);
+      const series = paneData?.series ?? [];
+      const scale = new PriceScaleForPane(series, pane);
+      this.drawGrid(context, pane, scale, theme, options);
       context.save();
       context.beginPath();
-      context.rect(layout.left, layout.volumeTop, layout.right - layout.left, layout.volumeBottom - layout.volumeTop);
+      context.rect(pane.left, pane.top, pane.right - pane.left, pane.bottom - pane.top);
       context.clip();
-      for (const series of data.series) {
-        if (series.type === "volume" && series.style.visible !== false) {
-          this.drawVolume(context, series.data.filter(isPoint), timeScale, volumeScale, theme, series.style);
+      for (const item of series) {
+        if (item.style.visible === false) continue;
+        if (item.type === "candlestick") {
+          this.drawCandles(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
+        } else if (item.type === "line") {
+          this.drawLine(context, item.data.filter(isPoint), timeScale, scale, item.style.color ?? theme.upCandle, item.style.lineWidth ?? 2);
+        } else if (item.type === "area") {
+          this.drawArea(context, item.data.filter(isPoint), timeScale, scale, pane, item.style.color ?? theme.upCandle, item.style.fillColor, item.style.lineWidth ?? 2);
+        } else if (item.type === "volume" || item.type === "histogram") {
+          this.drawHistogram(context, item.data.filter(isPoint), timeScale, scale, pane, theme, item.style);
         }
       }
       context.restore();
-      this.drawVolumeDivider(context, layout, theme);
+      if (pane.id !== panes[panes.length - 1]?.id) this.drawPaneDivider(context, pane, theme);
     }
-
-    this.drawTimeLabels(context, data.times, timeScale, layout.volumeBottom, theme, options);
+    const lastPane = panes[panes.length - 1];
+    if (lastPane !== undefined) this.drawTimeLabels(context, data.times, timeScale, lastPane.bottom, theme, options);
     if (crosshair !== null) {
-      this.drawCrosshair(context, crosshair, layout.left, layout.right, layout.top, layout.volumeBottom, theme);
-      this.drawTooltip(context, data, timeScale, priceScale, crosshair, layout, theme, options);
+      this.drawCrosshair(context, crosshair, panes, theme);
+      this.drawTooltip(context, data, timeScale, crosshair, panes, theme, options);
     }
   }
 
-  private drawGrid(
-    context: CanvasRenderingContext2D,
-    left: number,
-    right: number,
-    top: number,
-    bottom: number,
-    priceScale: PriceScale,
-    theme: ChartTheme,
-    options: RenderOptions,
-  ): void {
+  private drawGrid(context: CanvasRenderingContext2D, pane: PaneBounds, scale: PriceScale, theme: ChartTheme, options: RenderOptions): void {
     context.strokeStyle = theme.grid;
     context.fillStyle = theme.text;
     context.lineWidth = 1;
     context.font = "12px system-ui, sans-serif";
     context.textAlign = "right";
     context.textBaseline = "middle";
-    for (let index = 0; index <= 4; index += 1) {
-      const ratio = index / 4;
-      const y = top + ratio * (bottom - top);
+    for (let index = 0; index <= 3; index += 1) {
+      const y = pane.top + index / 3 * (pane.bottom - pane.top);
       context.beginPath();
-      context.moveTo(left, y + 0.5);
-      context.lineTo(right, y + 0.5);
+      context.moveTo(pane.left, y + 0.5);
+      context.lineTo(pane.right, y + 0.5);
       context.stroke();
-      context.fillText(priceScale.priceForY(y).toFixed(options.pricePrecision), left - 8, y);
+      context.fillText(scale.priceForY(y).toFixed(options.pricePrecision), pane.left - 8, y);
     }
   }
 
-  private drawCandles(
-    context: CanvasRenderingContext2D,
-    candles: readonly Candle[],
-    timeScale: TimeScale,
-    priceScale: PriceScale,
-    theme: ChartTheme,
-    style: SeriesSnapshot["style"],
-  ): void {
+  private drawCandles(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
     const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
     for (const candle of candles) {
       const x = timeScale.xForTime(candle.time);
-      const openY = priceScale.yForPrice(candle.open);
-      const closeY = priceScale.yForPrice(candle.close);
-      const color = candle.close >= candle.open
-        ? style.upColor ?? theme.upCandle
-        : style.downColor ?? theme.downCandle;
+      const openY = scale.yForPrice(candle.open);
+      const closeY = scale.yForPrice(candle.close);
+      const color = candle.close >= candle.open ? style.upColor ?? theme.upCandle : style.downColor ?? theme.downCandle;
       context.strokeStyle = color;
       context.fillStyle = color;
       context.lineWidth = 1;
       context.beginPath();
-      context.moveTo(Math.round(x) + 0.5, priceScale.yForPrice(candle.high));
-      context.lineTo(Math.round(x) + 0.5, priceScale.yForPrice(candle.low));
+      context.moveTo(Math.round(x) + 0.5, scale.yForPrice(candle.high));
+      context.lineTo(Math.round(x) + 0.5, scale.yForPrice(candle.low));
       context.stroke();
       context.fillRect(x - bodyWidth / 2, Math.min(openY, closeY), bodyWidth, Math.max(1, Math.abs(closeY - openY)));
     }
   }
 
-  private drawLine(
-    context: CanvasRenderingContext2D,
-    points: readonly Exclude<SeriesPoint, Candle>[],
-    timeScale: TimeScale,
-    priceScale: PriceScale,
-    color: string,
-    lineWidth: number,
-  ): void {
+  private drawLine(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, color: string, lineWidth: number): void {
     context.strokeStyle = color;
     context.lineWidth = normalizeLineWidth(lineWidth);
     context.beginPath();
     points.forEach((point, index) => {
       const x = timeScale.xForTime(point.time);
-      const y = priceScale.yForPrice(point.value);
-      if (index === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
+      const y = scale.yForPrice(point.value);
+      if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
     });
     context.stroke();
   }
 
-  private drawArea(
-    context: CanvasRenderingContext2D,
-    points: readonly Exclude<SeriesPoint, Candle>[],
-    timeScale: TimeScale,
-    priceScale: PriceScale,
-    baseline: number,
-    color: string,
-    fillColor: string | undefined,
-    lineWidth: number,
-  ): void {
+  private drawArea(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, color: string, fillColor: string | undefined, lineWidth: number): void {
     if (points.length === 0) return;
     context.beginPath();
     points.forEach((point, index) => {
       const x = timeScale.xForTime(point.time);
-      const y = priceScale.yForPrice(point.value);
-      if (index === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
+      const y = scale.yForPrice(point.value);
+      if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
     });
     const last = points[points.length - 1];
     const first = points[0];
     if (last !== undefined && first !== undefined) {
+      const baseline = Math.max(pane.top, Math.min(pane.bottom, scale.yForPrice(0)));
       context.lineTo(timeScale.xForTime(last.time), baseline);
       context.lineTo(timeScale.xForTime(first.time), baseline);
       context.closePath();
@@ -215,92 +183,67 @@ export class CanvasRenderer {
       context.fill();
       context.globalAlpha = 1;
     }
-    this.drawLine(context, points, timeScale, priceScale, color, lineWidth);
+    this.drawLine(context, points, timeScale, scale, color, lineWidth);
   }
 
-  private drawVolume(
-    context: CanvasRenderingContext2D,
-    points: readonly Exclude<SeriesPoint, Candle>[],
-    timeScale: TimeScale,
-    volumeScale: PriceScale,
-    theme: ChartTheme,
-    style: SeriesSnapshot["style"],
-  ): void {
+  private drawHistogram(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
     const bodyWidth = getBodyWidth(points.map((point) => timeScale.xForTime(point.time)));
+    const baseline = Math.max(pane.top, Math.min(pane.bottom, scale.yForPrice(0)));
     for (const point of points) {
-      const volumePoint = point as { time: number; value: number; color?: string };
-      const x = timeScale.xForTime(point.time);
-      context.fillStyle = volumePoint.color ?? style.color ?? theme.volumeUp;
-      const y = volumeScale.yForPrice(point.value);
-      context.fillRect(x - bodyWidth / 2, y, bodyWidth, volumeScale.yForPrice(0) - y);
+      const y = scale.yForPrice(point.value);
+      const color = "color" in point && point.color !== undefined
+        ? point.color
+        : point.value >= 0 ? style.upColor ?? style.color ?? theme.volumeUp : style.downColor ?? style.color ?? theme.volumeDown;
+      context.fillStyle = color;
+      context.fillRect(timeScale.xForTime(point.time) - bodyWidth / 2, Math.min(y, baseline), bodyWidth, Math.max(1, Math.abs(y - baseline)));
     }
   }
 
-  private drawVolumeDivider(context: CanvasRenderingContext2D, layout: PlotBounds, theme: ChartTheme): void {
+  private drawPaneDivider(context: CanvasRenderingContext2D, pane: PaneBounds, theme: ChartTheme): void {
     context.strokeStyle = theme.border;
     context.beginPath();
-    context.moveTo(layout.left, layout.volumeTop - 4);
-    context.lineTo(layout.right, layout.volumeTop - 4);
+    context.moveTo(pane.left, pane.bottom + 4);
+    context.lineTo(pane.right, pane.bottom + 4);
     context.stroke();
   }
 
-  private drawTimeLabels(
-    context: CanvasRenderingContext2D,
-    times: readonly number[],
-    timeScale: TimeScale,
-    y: number,
-    theme: ChartTheme,
-    options: RenderOptions,
-  ): void {
+  private drawTimeLabels(context: CanvasRenderingContext2D, times: readonly number[], timeScale: TimeScale, y: number, theme: ChartTheme, options: RenderOptions): void {
     context.fillStyle = theme.text;
     context.font = "12px system-ui, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "top";
     const labelIndexes = [0, Math.floor((times.length - 1) / 2), times.length - 1];
-    const formatter = new Intl.DateTimeFormat(options.locale, {
-      month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: options.timeZone,
-    });
+    const formatter = new Intl.DateTimeFormat(options.locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: options.timeZone });
     for (const index of labelIndexes) {
       const time = times[index];
       if (time !== undefined) context.fillText(formatter.format(new Date(time)), timeScale.xForTime(time), y + 8);
     }
   }
 
-  private drawCrosshair(
-    context: CanvasRenderingContext2D,
-    crosshair: { x: number; y: number },
-    left: number,
-    right: number,
-    top: number,
-    bottom: number,
-    theme: ChartTheme,
-  ): void {
+  private drawCrosshair(context: CanvasRenderingContext2D, crosshair: { x: number; y: number }, panes: readonly PaneBounds[], theme: ChartTheme): void {
+    const first = panes[0];
+    const last = panes[panes.length - 1];
+    if (first === undefined || last === undefined) return;
     context.save();
     context.beginPath();
-    context.rect(left, top, right - left, bottom - top);
+    context.rect(first.left, first.top, first.right - first.left, last.bottom - first.top);
     context.clip();
     context.strokeStyle = theme.crosshair;
     context.setLineDash([4, 4]);
     context.beginPath();
-    context.moveTo(Math.round(crosshair.x) + 0.5, top);
-    context.lineTo(Math.round(crosshair.x) + 0.5, bottom);
-    context.moveTo(left, Math.round(crosshair.y) + 0.5);
-    context.lineTo(right, Math.round(crosshair.y) + 0.5);
+    context.moveTo(Math.round(crosshair.x) + 0.5, first.top);
+    context.lineTo(Math.round(crosshair.x) + 0.5, last.bottom);
+    const activePane = panes.find((pane) => crosshair.y >= pane.top && crosshair.y <= pane.bottom);
+    if (activePane !== undefined) {
+      context.moveTo(activePane.left, Math.round(crosshair.y) + 0.5);
+      context.lineTo(activePane.right, Math.round(crosshair.y) + 0.5);
+    }
     context.stroke();
     context.setLineDash([]);
     context.restore();
   }
 
-  private drawTooltip(
-    context: CanvasRenderingContext2D,
-    data: VisibleChartData,
-    timeScale: TimeScale,
-    priceScale: PriceScale,
-    crosshair: { x: number; y: number },
-    layout: PlotBounds,
-    theme: ChartTheme,
-    options: RenderOptions,
-  ): void {
+  private drawTooltip(context: CanvasRenderingContext2D, data: VisibleChartData, timeScale: TimeScale, crosshair: { x: number; y: number }, panes: readonly PaneBounds[], theme: ChartTheme, options: RenderOptions): void {
     const time = nearestTime(data.times, timeScale.timeForX(crosshair.x));
     if (time === null) return;
     const formatter = new Intl.DateTimeFormat(options.locale, { dateStyle: "short", timeStyle: "short", timeZone: options.timeZone });
@@ -311,10 +254,12 @@ export class CanvasRenderer {
       const text = isCandle(value) ? value.close.toFixed(options.pricePrecision) : value.value.toFixed(options.pricePrecision);
       lines.push(`${series.title ?? series.id}: ${text}`);
     }
-    const boxWidth = Math.min(220, Math.max(120, ...lines.map((line) => context.measureText(line).width + 20)));
+    const activePane = panes.find((pane) => crosshair.y >= pane.top && crosshair.y <= pane.bottom) ?? panes[0];
+    if (activePane === undefined) return;
+    const boxWidth = Math.min(240, Math.max(120, ...lines.map((line) => context.measureText(line).width + 20)));
     const boxHeight = lines.length * 16 + 12;
-    const x = crosshair.x + boxWidth + 8 < layout.right ? crosshair.x + 8 : crosshair.x - boxWidth - 8;
-    const y = Math.max(layout.top, Math.min(layout.bottom - boxHeight, crosshair.y - boxHeight - 8));
+    const x = crosshair.x + boxWidth + 8 < activePane.right ? crosshair.x + 8 : crosshair.x - boxWidth - 8;
+    const y = Math.max(activePane.top, Math.min(activePane.bottom - boxHeight, crosshair.y - boxHeight - 8));
     context.fillStyle = theme.background;
     context.globalAlpha = 0.94;
     context.fillRect(x, y, boxWidth, boxHeight);
@@ -325,17 +270,28 @@ export class CanvasRenderer {
     context.textAlign = "left";
     context.textBaseline = "top";
     lines.forEach((line, index) => context.fillText(line, x + 8, y + 6 + index * 16));
-    // Keep the price scale referenced here so future tooltip extensions can use
-    // the exact plotted coordinate without creating a second transform.
-    void priceScale;
+  }
+}
+
+class PriceScaleForPane extends PriceScale {
+  public constructor(series: readonly SeriesSnapshot[], pane: PaneBounds) {
+    const range = getPaneRange(series);
+    super(range.min, range.max, { start: pane.top, end: pane.bottom });
   }
 }
 
 export function getPriceRange(series: readonly SeriesSnapshot[]): { min: number; max: number } {
+  return getPaneRange(series.filter((item) => item.type !== "volume"));
+}
+
+export function getPaneScaleRange(series: readonly SeriesSnapshot[]): { min: number; max: number } {
+  return getPaneRange(series);
+}
+
+function getPaneRange(series: readonly SeriesSnapshot[]): { min: number; max: number } {
   let min = Number.POSITIVE_INFINITY;
   let max = Number.NEGATIVE_INFINITY;
   for (const item of series) {
-    if (item.type === "volume") continue;
     for (const point of item.data) {
       if (isCandle(point)) {
         min = Math.min(min, point.low);
@@ -347,19 +303,8 @@ export function getPriceRange(series: readonly SeriesSnapshot[]): { min: number;
     }
   }
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 1 };
+  if (min === max) return { min: min - 0.5, max: max + 0.5 };
   return { min, max };
-}
-
-function getVolumeMax(series: readonly SeriesSnapshot[]): number {
-  let max = 0;
-  for (const item of series) {
-    if (item.type === "volume") {
-      for (const point of item.data) {
-        if (!isCandle(point)) max = Math.max(max, point.value);
-      }
-    }
-  }
-  return max;
 }
 
 function getBodyWidth(xs: readonly number[]): number {
@@ -392,4 +337,3 @@ function nearestTime(times: readonly number[], target: number): number | null {
   if (times.length === 0 || !Number.isFinite(target)) return null;
   return times.reduce((nearest, time) => Math.abs(time - target) < Math.abs(nearest - target) ? time : nearest, times[0] ?? target);
 }
-

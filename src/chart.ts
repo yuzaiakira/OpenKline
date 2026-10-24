@@ -1,24 +1,38 @@
 import { ChartModel } from "./core/chart-model.js";
 import { PriceScale, TimeScale } from "./core/scales.js";
-import { CanvasRenderer, getPlotBounds, getPriceRange } from "./renderer/canvas-renderer.js";
+import { CanvasRenderer, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
+import { createDefaultIndicatorRegistry } from "./indicators/index.js";
+import type { IndicatorDefinition, IndicatorInstance } from "./indicators/types.js";
 import type { SeriesData } from "./core/series-store.js";
 import type { Datafeed, GetBarsQuery } from "./types.js";
 import type {
   Candle,
   AreaPoint,
+  ChartIndicatorApi,
   ChartEventHandler,
   ChartEventName,
   ChartEvents,
   ChartOptions,
   ChartTheme,
   CrosshairMoveEvent,
+  IndicatorAddOptions,
   LinePoint,
+  PaneApi,
+  PaneOptions,
   SeriesApi,
   SeriesOptions,
   SeriesPoint,
   SeriesType,
   VolumePoint,
 } from "./types.js";
+
+interface ManagedChartIndicator {
+  id: string;
+  indicatorId: string;
+  paneId: string;
+  instance: IndicatorInstance;
+  outputSeriesIds: string[];
+}
 
 const LIGHT_THEME: ChartTheme = {
   background: "#ffffff",
@@ -48,6 +62,8 @@ export class Chart {
   private readonly canvas: HTMLCanvasElement;
   private readonly model = new ChartModel();
   private readonly renderer: CanvasRenderer;
+  private readonly indicatorRegistry = createDefaultIndicatorRegistry();
+  private readonly indicators = new Map<string, ManagedChartIndicator>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
   private theme: ChartTheme;
@@ -99,12 +115,14 @@ export class Chart {
   public setData(candles: readonly Candle[]): void {
     this.assertAlive();
     this.model.setData(candles);
+    this.refreshIndicatorsFromInput();
     this.render();
   }
 
   public update(candle: Candle): void {
     this.assertAlive();
     this.model.update(candle);
+    this.refreshIndicatorsFromUpdate(candle);
     this.render();
   }
 
@@ -124,6 +142,101 @@ export class Chart {
     return this.createSeriesApi("volume", options);
   }
 
+  public addHistogramSeries(options: SeriesOptions = {}): SeriesApi<VolumePoint> {
+    return this.createSeriesApi("histogram", options);
+  }
+
+  public addPane(options: PaneOptions = {}): PaneApi {
+    this.assertAlive();
+    const id = this.model.addPane(options);
+    this.render();
+    return {
+      id,
+      setHeight: (height) => {
+        this.assertAlive();
+        this.model.setPaneHeight(id, height);
+        this.render();
+      },
+      getHeight: () => {
+        this.assertAlive();
+        return this.model.getPaneHeight(id);
+      },
+      remove: () => {
+        this.assertAlive();
+        this.model.removePane(id);
+        this.render();
+      },
+    };
+  }
+
+  public getPaneIds(): string[] {
+    this.assertAlive();
+    return this.model.getPaneIds();
+  }
+
+  public registerIndicator(definition: IndicatorDefinition): void {
+    this.assertAlive();
+    this.indicatorRegistry.register(definition);
+  }
+
+  public unregisterIndicator(id: string): boolean {
+    this.assertAlive();
+    return this.indicatorRegistry.unregister(id);
+  }
+
+  public addIndicator(indicatorId: string, options: IndicatorAddOptions = {}): ChartIndicatorApi {
+    this.assertAlive();
+    const { pane, parameters, ...directParameters } = options;
+    const normalizedParameters = parameters ?? directParameters;
+    const instance = this.indicatorRegistry.create(indicatorId, normalizedParameters);
+    const paneId = pane === "new" ? this.model.addPane({ height: 180 }) : pane ?? "main";
+    const id = `indicator-${this.indicators.size + 1}`;
+    const state: ManagedChartIndicator = { id, indicatorId: instance.id, paneId, instance, outputSeriesIds: [] };
+    instance.setInput(this.model.allCandles);
+    for (const output of instance.getResult().outputs) {
+      const seriesId = `${id}:${output.id}`;
+      this.model.addSeries(output.kind === "histogram" ? "histogram" : "line", {
+        id: seriesId,
+        title: `${instance.metadata.name} ${output.title}`,
+        pane: paneId,
+      });
+      state.outputSeriesIds.push(seriesId);
+    }
+    this.indicators.set(id, state);
+    this.syncIndicator(state);
+    this.render();
+    return {
+      id,
+      indicatorId: instance.id,
+      paneId,
+      getResult: () => {
+        this.assertAlive();
+        return instance.getResult();
+      },
+      setParameters: (nextParameters) => {
+        this.assertAlive();
+        instance.setParameters(nextParameters);
+        this.syncIndicator(state);
+        this.render();
+      },
+      remove: () => {
+        this.removeIndicator(id);
+      },
+    };
+  }
+
+  public removeIndicator(id: string): void {
+    this.assertAlive();
+    const state = this.indicators.get(id);
+    if (state === undefined) throw new Error(`Unknown indicator: ${id}`);
+    for (const seriesId of state.outputSeriesIds) {
+      if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    }
+    state.instance.dispose();
+    this.indicators.delete(id);
+    this.render();
+  }
+
   public removeSeries(id: string): void {
     this.assertAlive();
     this.model.removeSeries(id);
@@ -140,6 +253,8 @@ export class Chart {
   public async setDatafeed(datafeed: Datafeed, query: GetBarsQuery): Promise<void> {
     this.assertAlive();
     this.stopDatafeed();
+    for (const indicator of this.indicators.values()) indicator.instance.dispose();
+    this.indicators.clear();
     const requestId = this.datafeedRequestId;
     try {
       const bars = await datafeed.getBars(query);
@@ -314,22 +429,24 @@ export class Chart {
   private emitCrosshair(x: number | null, y: number | null): void {
     const data = this.model.getVisibleData();
     const event: CrosshairMoveEvent = { time: null, price: null, x: x ?? 0, y: y ?? 0, series: [] };
-    const hasVolume = data.series.some((series) => series.type === "volume");
-    const bounds = getPlotBounds(this.width, this.height, hasVolume);
+    const bounds = getPaneBounds(this.width, this.height, data.panes);
+    const firstPane = bounds[0];
+    const activePane = bounds.find((pane) => y !== null && y >= pane.top && y <= pane.bottom);
     if (
       x !== null
       && y !== null
-      && x >= bounds.left
-      && x <= bounds.right
-      && y >= bounds.top
-      && y <= bounds.bottom
+      && firstPane !== undefined
+      && x >= firstPane.left
+      && x <= firstPane.right
+      && activePane !== undefined
       && data.series.some((series) => series.data.length > 0)
     ) {
-      const prices = getPriceRange(data.series);
-      const scale = new PriceScale(prices.min, prices.max, { start: bounds.top, end: bounds.bottom });
-      const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right });
+      const paneData = data.panes.find((pane) => pane.id === activePane.id);
+      const prices = getPaneScaleRange(paneData?.series ?? []);
+      const scale = new PriceScale(prices.min, prices.max, { start: activePane.top, end: activePane.bottom });
+      const timeScale = new TimeScale(data.times, { start: firstPane.left, end: firstPane.right });
       event.time = Math.round(timeScale.timeForX(x));
-      event.price = y <= bounds.bottom ? scale.priceForY(y) : null;
+      event.price = scale.priceForY(y);
       const nearest = nearestTime(data.times, event.time);
       event.series = data.series.map((series) => ({
         id: series.id,
@@ -367,11 +484,13 @@ export class Chart {
       setData: (data) => {
         this.assertAlive();
         this.model.setSeriesData(id, data as SeriesData);
+        this.refreshIndicatorsFromInput();
         this.render();
       },
       update: (point) => {
         this.assertAlive();
         this.model.updateSeries(id, point);
+        this.refreshIndicatorsFromInput();
         this.render();
       },
       getData: () => {
@@ -393,6 +512,32 @@ export class Chart {
     if (this.destroyed) {
       throw new Error("Chart has been destroyed");
     }
+  }
+
+  private refreshIndicatorsFromInput(): void {
+    const input = this.model.allCandles;
+    for (const state of this.indicators.values()) {
+      state.instance.setInput(input);
+      this.syncIndicator(state);
+    }
+  }
+
+  private refreshIndicatorsFromUpdate(candle: Candle): void {
+    for (const state of this.indicators.values()) {
+      state.instance.update(candle);
+      this.syncIndicator(state);
+    }
+  }
+
+  private syncIndicator(state: ManagedChartIndicator): void {
+    const outputs = state.instance.getResult().outputs;
+    state.outputSeriesIds.forEach((seriesId, index) => {
+      const output = outputs[index];
+      const data = output?.points
+        .filter((point): point is { time: number; value: number } => point.value !== null)
+        .map((point) => ({ time: point.time, value: point.value })) ?? [];
+      if (this.model.getSeriesIds().includes(seriesId)) this.model.setSeriesData(seriesId, data);
+    });
   }
 }
 

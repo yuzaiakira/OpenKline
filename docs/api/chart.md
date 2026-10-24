@@ -20,6 +20,7 @@ const trend = chart.addLineSeries({ id: "trend", style: { color: "#f59e0b" } });
 trend.setData(candles.map(({ time, close }) => ({ time, value: close })));
 const volume = chart.addVolumeSeries({ id: "volume" });
 volume.setData(candles.map(({ time, volume = 0 }) => ({ time, value: volume })));
+const rsi = chart.addIndicator("RSI", { period: 14, pane: "new" });
 
 // Legacy convenience methods target the primary candlestick series.
 chart.setData(candles);
@@ -37,9 +38,16 @@ chart.destroy();
 - `update(candle)` replaces an existing timestamp or inserts a corrected bar
   in chronological order.
 - `addCandlestickSeries`, `addLineSeries`, `addAreaSeries`, and
-  `addVolumeSeries` create typed series backed by the same viewport and
+  `addVolumeSeries`/`addHistogramSeries` create typed series backed by the same viewport and
   interaction model. Each series supports `setData`, `update`, `getData`,
   `setStyle`, and `remove`.
+- `addPane(options)` creates a pane with an independent vertical scale and
+  returns a `PaneApi` for height changes or removal. `getPaneIds()` returns
+  pane order. All panes share time navigation and the vertical crosshair.
+- `registerIndicator(definition)` and `unregisterIndicator(id)` manage custom
+  TypeScript definitions. `addIndicator(id, options)` creates a calculation
+  instance, maps its outputs to line/histogram series, and supports parameter
+  changes and disposal through `ChartIndicatorApi`.
 - `getSeriesIds()` lists live series. `removeSeries(id)` disposes one series.
 - `pan(deltaBars)` and `zoom(scale, anchorRatio)` navigate the shared viewport.
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
@@ -73,3 +81,7 @@ other series share the OHLC/point price scale.
 `crosshairMove` includes a `series` array with the nearest value for every
 series. Tooltip text uses the same values, so interaction behavior remains
 consistent as series are added or removed.
+
+Indicator outputs can be assigned to `pane: "new"`, `pane: "main"`, or a
+named pane. RSI, MACD, and Stochastic therefore use independent scales while
+remaining synchronized with price and volume.

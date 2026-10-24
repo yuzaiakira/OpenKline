@@ -31,8 +31,10 @@ Phase 2.1 — Indicator calculation engine: **Complete**
   and explicit-session VWAP with aligned warm-up values and edge-case handling.
 - [Implemented] Added correction-safe updates, append optimization for SMA/EMA,
   disposal, independent instances, and mathematical reference fixtures.
-- [In Progress] Consume indicator outputs in a synchronized multi-pane layout
-  with independent scales and pane lifecycle.
+- [Implemented] Added synchronized multi-pane layout with independent scales,
+  pane height/removal lifecycle, indicator output mapping, and React/Next
+  indicator props; browser and Next production checks pass.
+- [In Progress] Add interactive drawing tools and analysis-object serialization.
 - [Not Started] Drawing tools and workspace serialization.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.

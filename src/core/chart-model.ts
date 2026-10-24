@@ -1,8 +1,16 @@
+import { PaneLayout } from "./pane-layout.js";
 import { SeriesCollection, type SeriesData, type SeriesSnapshot } from "./series-store.js";
-import type { Candle, SeriesOptions, SeriesPoint, SeriesType } from "../types.js";
+import type { Candle, PaneOptions, SeriesOptions, SeriesPoint, SeriesType } from "../types.js";
+
+export interface VisiblePaneData {
+  id: string;
+  preferredHeight: number | null;
+  series: SeriesSnapshot[];
+}
 
 export interface VisibleChartData {
   series: SeriesSnapshot[];
+  panes: VisiblePaneData[];
   times: number[];
   candles: Candle[];
   from: number;
@@ -11,13 +19,15 @@ export interface VisibleChartData {
 /** Shared time/viewport model used by every chart series type. */
 export class ChartModel {
   private readonly collection = new SeriesCollection();
+  private readonly paneLayout = new PaneLayout();
   private viewportWidth = 800;
   private visibleCount = 100;
   private rangeStart = 0;
   private primaryCandleId: string | null = null;
 
   public addSeries(type: SeriesType, options: SeriesOptions = {}): string {
-    const id = this.collection.add(type, options);
+    const paneId = this.resolvePane(type, options.pane);
+    const id = this.collection.add(type, { ...options, pane: paneId });
     if (type === "candlestick" && this.primaryCandleId === null) {
       this.primaryCandleId = id;
     }
@@ -26,16 +36,50 @@ export class ChartModel {
   }
 
   public removeSeries(id: string): void {
+    const paneId = this.collection.getPaneId(id);
     this.collection.remove(id);
     if (this.primaryCandleId === id) {
       this.primaryCandleId = this.collection.getIds().find((seriesId) => this.collection.get(seriesId).type === "candlestick") ?? null;
     }
     this.visibleCount = this.calculateVisibleCount();
     this.rangeStart = this.clampStart(this.rangeStart);
+    if (paneId !== "main" && !this.collection.getIds().some((seriesId) => this.collection.getPaneId(seriesId) === paneId)) {
+      this.paneLayout.remove(paneId);
+    }
+  }
+
+  public addPane(options: PaneOptions = {}): string {
+    return this.paneLayout.add(options);
+  }
+
+  public removePane(id: string): void {
+    if (id === "main") throw new Error("The main pane cannot be removed");
+    for (const seriesId of this.collection.getIds()) {
+      if (this.collection.getPaneId(seriesId) === id) this.collection.setPane(seriesId, "main");
+    }
+    this.paneLayout.remove(id);
+  }
+
+  public setPaneHeight(id: string, height: number): void {
+    this.paneLayout.setHeight(id, height);
+  }
+
+  public getPaneHeight(id: string): number | null {
+    return this.paneLayout.getHeight(id);
+  }
+
+  public getPaneIds(): string[] {
+    return this.paneLayout.getIds();
+  }
+
+  public setSeriesPane(id: string, paneId: string): void {
+    if (!this.paneLayout.has(paneId)) throw new Error(`Unknown pane id: ${paneId}`);
+    this.collection.setPane(id, paneId);
   }
 
   public destroy(): void {
     this.collection.clear();
+    this.paneLayout.clearAdditional();
     this.primaryCandleId = null;
     this.rangeStart = 0;
     this.visibleCount = 1;
@@ -126,8 +170,14 @@ export class ChartModel {
       ? []
       : this.collection.getVisible(firstTime, Math.min(Number.MAX_SAFE_INTEGER, lastTime + 1));
     const primary = this.primaryCandleId === null ? undefined : series.find((item) => item.id === this.primaryCandleId);
+    const panes = this.paneLayout.getConfigs().map((pane) => ({
+      id: pane.id,
+      preferredHeight: pane.preferredHeight,
+      series: series.filter((item) => item.paneId === pane.id),
+    }));
     return {
       series,
+      panes,
       times: visibleTimes,
       candles: primary?.data.filter(isCandle) ?? [],
       from,
@@ -149,6 +199,17 @@ export class ChartModel {
     }
     this.primaryCandleId = this.collection.add("candlestick");
     return this.primaryCandleId;
+  }
+
+  private resolvePane(type: SeriesType, requestedPane: string | undefined): string {
+    if (requestedPane === "new") {
+      return this.paneLayout.add({ height: 160 });
+    }
+    const paneId = requestedPane ?? (type === "volume" || type === "histogram" ? "volume" : "main");
+    if (!this.paneLayout.has(paneId)) {
+      this.paneLayout.add({ id: paneId, height: type === "volume" || type === "histogram" ? 120 : 160 });
+    }
+    return paneId;
   }
 
   private resetToLatest(): void {

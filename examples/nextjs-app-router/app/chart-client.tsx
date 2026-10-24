@@ -15,5 +15,16 @@ const candles = Array.from({ length: 80 }, (_, index) => {
 });
 
 export default function ChartClient() {
-  return <FinancialChart candles={candles} theme="dark" autoSize style={{ height: 520 }} />;
+  return (
+    <FinancialChart
+      candles={candles}
+      theme="dark"
+      autoSize
+      style={{ height: 520 }}
+      indicators={[
+        { indicatorId: "RSI", options: { period: 14, pane: "new" } },
+        { indicatorId: "MACD", options: { fastPeriod: 5, slowPeriod: 12, signalPeriod: 4, pane: "new" } },
+      ]}
+    />
+  );
 }

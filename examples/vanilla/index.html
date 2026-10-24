@@ -49,6 +49,9 @@
       area.setData(candles.map((candle) => ({ time: candle.time, value: candle.close - 1.5 })));
       const volume = chart.addVolumeSeries({ id: "volume", title: "Volume", style: { color: "#64748b" } });
       volume.setData(candles.map((candle) => ({ time: candle.time, value: candle.volume ?? 0 })));
+      chart.addIndicator("RSI", { period: 14, pane: "new" });
+      chart.addIndicator("MACD", { fastPeriod: 5, slowPeriod: 12, signalPeriod: 4, pane: "new" });
+      chart.addIndicator("STOCHASTIC", { kPeriod: 14, dPeriod: 3, pane: "new" });
 
       chart.subscribe("crosshairMove", ({ time, price }) => {
         document.title = time === null || price === null
