@@ -86,8 +86,10 @@ export class DrawingEngine {
     for (const drawing of candidates) {
       if (drawing.style.visible === false) continue;
       const tool = this.requireTool(drawing.type);
-      const pointIndex = tool.hitTest(drawing, x, y, converter, bounds, tolerance);
+      const pointIndex = drawing.points.findIndex((point) => Math.hypot(x - converter.xForTime(point.time), y - converter.yForPrice(point.price)) <= tolerance);
       if (pointIndex >= 0) return { id: drawing.id, pointIndex };
+      const geometryHit = tool.hitTest(drawing, x, y, converter, bounds, tolerance);
+      if (geometryHit >= 0) return { id: drawing.id, pointIndex: null };
     }
     return null;
   }
@@ -119,6 +121,23 @@ export class DrawingEngine {
 
   public setVisible(id: string, visible: boolean): void { this.setStyle(id, { visible }); }
   public setLocked(id: string, locked: boolean): void { this.setStyle(id, { locked }); }
+
+  public setText(id: string, text: string): void {
+    this.assertAlive();
+    const current = this.require(id);
+    if (current.style.locked === true) return;
+    const next = { ...current, text };
+    this.requireTool(current.type).validate(next);
+    this.mutate(() => this.drawings.set(id, next));
+  }
+
+  public setZIndex(id: string, zIndex: number): void {
+    this.assertAlive();
+    if (!Number.isFinite(zIndex)) throw new DrawingValidationError("Drawing zIndex must be finite");
+    const current = this.require(id);
+    if (current.style.locked === true) return;
+    this.mutate(() => this.drawings.set(id, { ...current, zIndex }));
+  }
 
   public move(id: string, deltaTime: number, deltaPrice: number): void {
     this.assertAlive();
@@ -178,6 +197,8 @@ export class DrawingEngine {
       setStyle: (style) => this.setStyle(id, style),
       setVisible: (visible) => this.setVisible(id, visible),
       setLocked: (locked) => this.setLocked(id, locked),
+      setText: (text) => this.setText(id, text),
+      setZIndex: (zIndex) => this.setZIndex(id, zIndex),
       remove: () => this.remove(id),
     };
   }

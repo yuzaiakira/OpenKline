@@ -92,7 +92,7 @@ export class Chart {
   private lastPointerX = 0;
   private selectedDrawingId: string | null = null;
   private pendingDrawing: { type: string; options: DrawingStartOptions; points: DrawingPoint[] } | null = null;
-  private activeDrawing: { id: string; time: number; price: number } | null = null;
+  private activeDrawing: { id: string; pointIndex: number | null; time: number; price: number } | null = null;
   private datafeedCleanup: (() => void) | null = null;
   private datafeedRequestId = 0;
   private destroyed = false;
@@ -545,6 +545,7 @@ export class Chart {
         if (snapshot.style.locked !== true) {
           this.activeDrawing = {
             id: hit.id,
+            pointIndex: hit.pointIndex,
             time: drawingContext.converter.timeForX(event.offsetX),
             price: drawingContext.converter.priceForY(event.offsetY),
           };
@@ -568,7 +569,11 @@ export class Chart {
       if (drawingContext !== null) {
         const time = drawingContext.converter.timeForX(event.offsetX);
         const price = drawingContext.converter.priceForY(event.offsetY);
-        this.drawingEngine.move(this.activeDrawing.id, time - this.activeDrawing.time, price - this.activeDrawing.price);
+        if (this.activeDrawing.pointIndex === null) {
+          this.drawingEngine.move(this.activeDrawing.id, time - this.activeDrawing.time, price - this.activeDrawing.price);
+        } else {
+          this.drawingEngine.movePoint(this.activeDrawing.id, this.activeDrawing.pointIndex, { time, price });
+        }
         this.activeDrawing = { ...this.activeDrawing, time, price };
       }
       this.crosshair = { x: event.offsetX, y: event.offsetY };

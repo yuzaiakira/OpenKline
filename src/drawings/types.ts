@@ -89,6 +89,8 @@ export interface DrawingApi {
   setStyle(style: DrawingStyle): void;
   setVisible(visible: boolean): void;
   setLocked(locked: boolean): void;
+  setText(text: string): void;
+  setZIndex(zIndex: number): void;
   remove(): void;
 }
 

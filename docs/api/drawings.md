@@ -49,7 +49,9 @@ objects can still be selected and serialized, but pointer movement and point
 updates are ignored. Higher `zIndex` objects are rendered and hit-tested later.
 
 `DrawingApi` exposes `getSnapshot`, `setPoints`, `setStyle`, `setVisible`,
-`setLocked`, and `remove`. Snapshots are copied at the API boundary.
+`setLocked`, `setText`, `setZIndex`, and `remove`. Pointer selection near an
+anchor moves that anchor (resize/edit); selection on the geometry moves the
+whole object. Snapshots are copied at the API boundary.
 
 ## Custom tools
 

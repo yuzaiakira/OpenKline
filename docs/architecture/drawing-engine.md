@@ -23,8 +23,9 @@ pixel hit testing. Fibonacci levels are deterministic at 0%, 23.6%, 38.2%,
 
 Drawings are anchored to UTC millisecond timestamps and prices. The chart maps
 them through the main pane's time and price scales, so zoom and pan preserve
-their data coordinates. Selected drawings show anchor handles; locked drawings
-remain selectable but cannot be moved or edited.
+their data coordinates. Selected drawings show anchor handles; dragging an
+anchor resizes/edits that point, while dragging geometry moves the whole object.
+Locked drawings remain selectable but cannot be moved or edited.
 
 ## Lifecycle and persistence
 

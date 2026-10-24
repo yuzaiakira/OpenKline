@@ -46,6 +46,14 @@ test("drawings support locked editing, undo/redo, and versioned round trips", ()
   assert.equal(engine.getAll().length, 0);
 
   const second = engine.create("vertical-line", { points: [{ time: 33, price: 10 }] });
+  const editable = engine.create("trend-line", { points: [{ time: 20, price: 20 }, { time: 80, price: 80 }] });
+  engine.movePoint(editable.id, 1, { time: 90, price: 90 });
+  assert.equal(engine.get(editable.id).points[1]?.time, 90);
+  const note = engine.create("text", { points: [{ time: 40, price: 50 }], text: "old" });
+  note.setText("new");
+  note.setZIndex(10);
+  assert.equal(engine.get(note.id).text, "new");
+  assert.equal(engine.getAll().at(-1)?.id, note.id);
   const serialized = engine.serialize();
   engine.restore({ version: 1, drawings: [] });
   assert.equal(engine.getAll().length, 0);
