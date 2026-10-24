@@ -51,9 +51,9 @@ append-store optimization:
 
 | Candles | Load (ms) | Nav p50/p95 (ms) | Crosshair p50/p95 (ms) | 100 appends (ms) | Append/update (ms) | 5 corrections (ms) | Frame interval p50/p95 (ms) | Frame-work p50/p95 (ms) | rAF FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 28.7 | 1.2 / 2.3 | 0.1 / 0.2 | 157.0 | 1.570 | 52.4 | 16.7 / 17.1 | 1.0 / 1.5 | 63.86 |
-| 10,000 | 116.4 | 0.9 / 5.6 | 0.1 / 0.4 | 78.7 | 0.787 | 515.0 | 16.7 / 18.4 | 0.9 / 4.4 | 62.19 |
-| 100,000 | 1,678.9 | 0.9 / 11.4 | 0.1 / 0.4 | 54.5 | 0.545 | 6,980.7 | 16.6 / 16.8 | 0.8 / 1.3 | 63.09 |
+| 1,000 | 24.9 | 1.6 / 3.9 | 0.1 / 0.7 | 144.5 | 1.445 | 48.0 | 16.6 / 16.9 | 1.0 / 1.5 | 64.79 |
+| 10,000 | 95.0 | 1.0 / 5.0 | 0.1 / 0.4 | 63.6 | 0.636 | 373.9 | 16.7 / 16.9 | 1.1 / 1.4 | 62.62 |
+| 100,000 | 1,306.0 | 0.8 / 7.5 | 0.2 / 0.4 | 52.5 | 0.525 | 5,403.3 | 16.6 / 16.9 | 0.7 / 1.3 | 61.97 |
 
 The browser loop reached approximately 60 FPS for this run's append workload;
 that is an observation, not a release target. Frame intervals measure the
@@ -61,21 +61,23 @@ browser scheduler, while frame-work measures synchronous JavaScript/chart work.
 Crosshair values are the public runtime's event/calculation path; they do not
 claim a full physical-pointer paint cost.
 
-Chromium heap observations were 1.47 MB before loading, 11.18 MB after 1,000
-candles, 57.21 MB after 10,000, and 305.32 MB before destruction after 100,000.
-After `destroy()` and an explicit GC opportunity the observed heap was 1.69 MB;
-`remainingCanvasCount` was zero. These are engine-specific observations, not
-memory limits or proof of leak-freedom.
+Chromium heap observations in this compatibility-gate rerun were 1.47 MB
+before loading, 9.07 MB after 1,000 candles, 60.20 MB after 10,000, and 751.48
+MB before destruction after 100,000. After `destroy()` and an explicit GC
+opportunity the observed heap was 1.69 MB; `remainingCanvasCount` was zero.
+The peak differs from the earlier 305.32 MB observation because these are
+allocation/GC-sensitive engine measurements. They are observations, not memory
+limits or proof of leak-freedom.
 
 ## Profile observations
 
-The corrected 100,000-candle append profile measured approximately 7.6 ms in
-visible-data snapshots, 35.8 ms in renderer calls, 7.2 ms in series updates,
-6.5 ms in collection updates, 5.5 ms in store updates, 16.4 ms in indicator
-updates, and no append-time shared-time-cache invalidation after the initial
-cache was built. Historical corrections still intentionally use the slower
-full-recalculation path; optimizing that path further requires a correctness
-preserving incremental strategy and is tracked as technical debt.
+The compatibility-gate 100,000-candle append profile measured approximately
+3.8 ms in visible-data snapshots, 18.2 ms in renderer calls, 4.6 ms in series
+updates, 3.3 ms in collection updates, 2.6 ms in store updates, 6.3 ms in
+indicator updates, and no append-time shared-time-cache invalidation after the
+initial cache was built. Historical corrections still intentionally use the
+slower full-recalculation path; optimizing that path further requires a
+correctness-preserving incremental strategy and is tracked as technical debt.
 
 An earlier run reported approximately 12.88 FPS and 719 MB for 100,000 candles.
 That result was invalid for the append claim: the benchmark's primary candle

@@ -12,6 +12,7 @@ npm ci
 npm run typecheck
 npm test
 npm run test:browser
+npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
 npm run profile:browser

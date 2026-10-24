@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by environment**
+Phase 2 final hardening — **Open; Chromium and Mobile Chrome verified, Firefox/WebKit/Mobile Safari blocked by environment**
 
 ## Completed
 
@@ -46,8 +46,11 @@ Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by
   constraints in renderer layout.
 - [Implemented] Added filled Bollinger Band rendering with configurable output
   styles, clipping, warm-up handling, and browser pixel verification.
+- [Verified] Added explicit Playwright projects for Chromium, Firefox, WebKit,
+  Pixel 7 mobile Chrome, and iPhone 13 mobile Safari. Chromium and Mobile
+  Chrome passed, including a touch drawing assertion.
 - [Blocked] Firefox and WebKit Playwright installation returned `403 Domain
-  forbidden`; mobile/touch acceptance remains unverified. See
+  forbidden`; Mobile Safari cannot launch without WebKit. See
   `docs/reports/phase-2-performance-and-compatibility.md` and
   `docs/reports/phase-2-final-verification.md`.
 - [Hardened] Corrected the Canvas2D benchmark fixture, added median/p95
@@ -70,6 +73,10 @@ Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by
 - The corrected benchmark's append and correction paths are measured
   separately; no universal 60 FPS or memory guarantee is claimed.
 - The environment draft must be published separately from the saved setup.
+- Phase 2 acceptance remains gated on real Firefox, WebKit, and Mobile Safari
+  runs. The proposed next action is to rerun the existing projects from an
+  environment with access to the official Playwright CDN or pinned official
+  Docker image; the gate has not been relaxed.
 
 ## Architectural follow-up
 

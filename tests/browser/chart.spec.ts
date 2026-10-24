@@ -140,9 +140,35 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   const interactiveDrawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): unknown[] } }).__openklineChart.getDrawings().length);
   expect(interactiveDrawingCount).toBe(2);
 
-  const widthBeforeResize = await canvas.evaluate((element) => (element as HTMLCanvasElement).width);
+  if (test.info().project.name.startsWith("mobile-")) {
+    await page.evaluate(() => (globalThis as unknown as { __openklineChart: { startDrawing(type: string): void } }).__openklineChart.startDrawing("vertical-line"));
+    await page.touchscreen.tap(box.x + 160, box.y + 48);
+    const touchDrawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): unknown[] } }).__openklineChart.getDrawings().length);
+    expect(touchDrawingCount).toBe(3);
+  }
+
+  const beforeResize = await canvas.evaluate((element) => ({
+    cssWidth: element.getBoundingClientRect().width,
+    cssHeight: element.getBoundingClientRect().height,
+    backingWidth: (element as HTMLCanvasElement).width,
+    backingHeight: (element as HTMLCanvasElement).height,
+    viewportWidth: window.innerWidth,
+  }));
   await page.setViewportSize({ width: 800, height: 700 });
-  await expect.poll(() => canvas.evaluate((element) => (element as HTMLCanvasElement).width)).toBeLessThan(widthBeforeResize);
+  await expect.poll(async () => {
+    const metrics = await canvas.evaluate((element) => ({
+      cssWidth: element.getBoundingClientRect().width,
+      cssHeight: element.getBoundingClientRect().height,
+      backingWidth: (element as HTMLCanvasElement).width,
+      backingHeight: (element as HTMLCanvasElement).height,
+      viewportWidth: window.innerWidth,
+    }));
+    return metrics.backingWidth >= metrics.cssWidth
+      && metrics.backingHeight >= metrics.cssHeight
+      && (metrics.backingWidth !== beforeResize.backingWidth
+        || metrics.backingHeight !== beforeResize.backingHeight
+        || metrics.viewportWidth !== beforeResize.viewportWidth);
+  }).toBe(true);
 
   await page.evaluate(() => {
     const chart = (globalThis as unknown as { __openklineChart: { destroy(): void } }).__openklineChart;

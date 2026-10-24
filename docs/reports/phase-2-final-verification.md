@@ -1,10 +1,10 @@
 # OpenKline Phase 2 Final Verification
 
-Date: 2026-10-24 UTC
+Date: 2026-10-25 Asia/Tehran
 
-Status: **Open — Chromium and local production checks pass, but Phase 2 is not
-closed because Firefox, WebKit, and mobile verification are blocked or
-unavailable in this environment.**
+Status: **Open — Chromium and Mobile Chrome emulation pass, but Phase 2 is not
+closed because Firefox, WebKit, and Mobile Safari are blocked before launch by
+the environment.**
 
 Phase 3 Plugin SDK work was intentionally not started. The milestone gate
 requires Phase 2 verification to close before Phase 3 begins.
@@ -27,6 +27,9 @@ requires Phase 2 verification to close before Phase 3 begins.
   navigation, crosshair event work, frame intervals, synchronous frame work,
   memory, and destruction cleanup. `profile:browser` records diagnostic hot
   spots for the 100,000-candle append path.
+- Playwright projects now explicitly cover Chromium, Firefox, WebKit, Pixel 7
+  mobile Chrome, and iPhone 13 mobile Safari. Mobile Chrome includes a real
+  Playwright touch-tap drawing assertion.
 
 ## Verification commands
 
@@ -35,6 +38,10 @@ requires Phase 2 verification to close before Phase 3 begins.
 | `npm run typecheck` | Pass |
 | `npm test` | Pass — 26 tests |
 | `npm run test:browser` | Pass — Chromium 154, 1 Playwright test |
+| `npx playwright test --project=mobile-chrome` | Pass — Chromium 154, Pixel 7 emulation, touch assertion |
+| `npx playwright test --project=firefox` | Blocked — missing `firefox-1555` executable |
+| `npx playwright test --project=webkit` | Blocked — missing `webkit-2370/pw_run.sh` |
+| `npx playwright test --project=mobile-safari` | Blocked — missing `webkit-2370/pw_run.sh` |
 | `npm run benchmark` | Pass — Node 1k/10k/100k |
 | `npm run benchmark:browser` | Pass — Canvas2D 1k/10k/100k |
 | `npm run profile:browser` | Pass — 100k append instrumentation |
@@ -51,9 +58,10 @@ serialization, resize, and chart destruction.
 
 ## Cross-browser status and blocker
 
-Chromium 154 is available at `/usr/bin/chromium` and passed. Firefox and
-WebKit binaries are not installed. Playwright 1.64.1 installation was tried
-with a task-local cache:
+Chromium 154 is available at `/usr/bin/chromium` and passed. Mobile Chrome
+emulation also passed, including a touch-created drawing. Firefox and WebKit
+binaries are not installed. Playwright 1.64.1 installation was tried with a
+task-local cache:
 
 ```text
 PLAYWRIGHT_BROWSERS_PATH=/tmp/openkline-playwright-browsers npx playwright install firefox webkit
@@ -63,10 +71,13 @@ https://playwright.download.prss.microsoft.com/...
 ```
 
 The same official installation was retried with elevated local execution
-permission and returned the same 403. The system has no `firefox` executable.
-Firefox, WebKit/Safari, mobile emulation, and physical mobile-device testing
-are therefore **unverified**, not silently treated as passing. No test was
-disabled.
+permission and returned the same 403. The pinned official Docker image
+`mcr.microsoft.com/playwright:v1.64.1-noble` was also attempted twice and
+failed with `Forbidden` while pulling its image configuration. The system has
+no `firefox` executable and no compatible Playwright browser cache. Firefox,
+WebKit/Safari, and Mobile Safari are therefore **blocked**, not silently
+treated as passing. No test was disabled and no arbitrary browser binary was
+used.
 
 ## Performance and memory
 
@@ -79,14 +90,15 @@ drawings, 100 appends, five corrections, and a 30-frame update loop:
 
 | Candles | Load (ms) | Append/update (ms) | 5 corrections (ms) | Frame interval p50/p95 (ms) | Frame-work p50/p95 (ms) | rAF FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 28.7 | 1.570 | 52.4 | 16.7 / 17.1 | 1.0 / 1.5 | 63.86 |
-| 10,000 | 116.4 | 0.787 | 515.0 | 16.7 / 18.4 | 0.9 / 4.4 | 62.19 |
-| 100,000 | 1,678.9 | 0.545 | 6,980.7 | 16.6 / 16.8 | 0.8 / 1.3 | 63.09 |
+| 1,000 | 24.9 | 1.445 | 48.0 | 16.6 / 16.9 | 1.0 / 1.5 | 64.79 |
+| 10,000 | 95.0 | 0.636 | 373.9 | 16.7 / 16.9 | 1.1 / 1.4 | 62.62 |
+| 100,000 | 1,306.0 | 0.525 | 5,403.3 | 16.6 / 16.9 | 0.7 / 1.3 | 61.97 |
 
-Observed heap was 1.47 MB before loading, 11.18 MB after 1,000 candles, 57.21
-MB after 10,000, and 305.32 MB before destruction after 100,000. After
-`destroy()` and an explicit GC opportunity it was 1.69 MB; remaining canvas
-count was zero. These are engine-specific observations, not memory limits.
+Observed heap in this rerun was 1.47 MB before loading, 9.07 MB after 1,000
+candles, 60.20 MB after 10,000, and 751.48 MB before destruction after
+100,000. After `destroy()` and an explicit GC opportunity it was 1.69 MB;
+remaining canvas count was zero. The peak is allocation/GC-sensitive and is
+not treated as a leak or a memory limit; post-destroy cleanup remained stable.
 
 The earlier approximately 12.88 FPS / 719 MB result was diagnosed as an
 invalid append fixture: primary and secondary series used different timestamp
@@ -104,16 +116,20 @@ claim.
 | Drawing creation, editing, serialization, undo/redo | Engine tests and Chromium interaction | Pass with full browser matrix open |
 | Filled Bollinger Bands | Renderer contract and pixel assertion | Pass |
 | Chromium browser interaction | `npm run test:browser` | Pass |
-| Firefox browser interaction | Playwright binary download blocked with 403 | Open |
-| WebKit browser interaction | Playwright binary download blocked with 403 | Open |
-| Mobile/touch verification | No mobile browser/device available | Open |
+| Firefox browser interaction | Playwright binary download and launch blocked with 403 / missing `firefox-1555` | Open |
+| WebKit browser interaction | Playwright binary download and launch blocked with 403 / missing `webkit-2370` | Open |
+| Mobile Chrome/touch verification | Pixel 7 emulation on Chromium 154 with touch assertion | Pass |
+| Mobile Safari/touch verification | WebKit binary unavailable | Open |
 | Performance and memory with indicators/drawings | Corrected Canvas2D benchmark and profiler | Pass with correction debt documented |
 | React and Next.js compatibility | React checks and Next production build | Pass in available environment |
 | Package installation and declarations | Package dry run and ESM smoke consumer | Pass |
 | No GitHub Actions | No `.github/workflows/` directory | Pass |
 
-Phase 2 cannot be marked complete while the open browser and mobile rows
-remain. The exact blocker and rerun command are preserved above.
+Phase 2 cannot be marked complete while the open browser rows remain. Proposed
+owner action: rerun the unchanged Firefox, WebKit, and Mobile Safari projects
+from an environment with access to the official Playwright CDN or pinned
+official Docker image. This preserves the existing gate and does not change
+acceptance criteria unilaterally.
 
 ## Public API and documentation status
 
