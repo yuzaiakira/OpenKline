@@ -29,11 +29,19 @@ test("CandleStore validates ordered OHLCV data", () => {
 test("CandleStore replaces updates and inserts corrected historical bars", () => {
   const store = new CandleStore();
   store.setData(candles);
+  store.update({ time: 1_700_000_180_000, open: 101, high: 104, low: 100, close: 103 });
   store.update({ ...candles[2]!, close: 103 });
   store.update({ time: 1_700_000_090_000, open: 108, high: 111, low: 107, close: 110 });
 
   const result = store.getAll();
-  assert.equal(result.length, 4);
+  assert.equal(result.length, 5);
+  assert.deepEqual(result.map((candle) => candle.time), [
+    1_700_000_000_000,
+    1_700_000_060_000,
+    1_700_000_090_000,
+    1_700_000_120_000,
+    1_700_000_180_000,
+  ]);
   assert.equal(result[2]?.close, 110);
   assert.equal(result[3]?.close, 103);
 });

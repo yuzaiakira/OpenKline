@@ -14,6 +14,7 @@ npm test
 npm run test:browser
 npm run benchmark
 npm run benchmark:browser
+npm run profile:browser
 npm run package:check
 npm run package:smoke
 ```

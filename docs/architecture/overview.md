@@ -38,6 +38,13 @@ independent panes. The drawing engine is another browser-neutral boundary: it
 owns analysis-object state and extension contracts while the chart adapter
 supplies coordinates and the Canvas renderer consumes pure geometry.
 
+Strictly newer series updates use an append path through the stores and extend
+the shared timestamp cache without rebuilding the union. Equal-timestamp
+replacements and historical insertions retain the correction-safe ordered path;
+historical indicator corrections intentionally use full recalculation. The
+Canvas2D benchmark and profiler record these paths separately in
+`docs/reports/phase-2-performance-and-compatibility.md`.
+
 ## Initial decisions
 
 - TypeScript strict mode is required.

@@ -9,6 +9,11 @@ This report records what is present in the repository and what was actually
 verified locally. It does not treat planned Plugin SDK, KlineScript runtime,
 unexecuted browser engines, or unmeasured release targets as complete.
 
+The performance table in this historical report predates the Phase 2.9
+timestamp-aligned benchmark fixture and append optimization. Use
+`phase-2-performance-and-compatibility.md` for the current reproducible
+Canvas2D, profiler, memory, and cross-browser evidence.
+
 ## Implemented capabilities
 
 ### Indicator calculation engine

@@ -43,8 +43,9 @@ test("PointStore rejects malformed and duplicate time/value data", () => {
     PointValidationError,
   );
   store.setData([{ time: 1, value: 1 }]);
+  store.update({ time: 2, value: 3 });
   store.update({ time: 1, value: 2 });
-  assert.deepEqual(store.getAll(), [{ time: 1, value: 2 }]);
+  assert.deepEqual(store.getAll(), [{ time: 1, value: 2 }, { time: 2, value: 3 }]);
 });
 
 test("ChartModel keeps panes independent while sharing one time viewport", () => {

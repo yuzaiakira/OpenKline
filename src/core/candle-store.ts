@@ -58,6 +58,11 @@ export class CandleStore {
 
   public update(candle: Candle): void {
     validateCandle(candle, this.candles.length);
+    const latest = this.candles[this.candles.length - 1];
+    if (latest !== undefined && candle.time > latest.time) {
+      this.candles.push({ ...candle });
+      return;
+    }
     const index = this.findInsertionIndex(candle.time);
     const current = this.candles[index];
 

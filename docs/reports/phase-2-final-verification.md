@@ -1,29 +1,32 @@
 # OpenKline Phase 2 Final Verification
 
-Date: 2026-10-25 (Asia/Tehran)
+Date: 2026-10-24 UTC
 
-Status: **Open — hardening implementation is complete, but Phase 2 is not
-closed because Firefox and WebKit verification is blocked by the environment.**
+Status: **Open — Chromium and local production checks pass, but Phase 2 is not
+closed because Firefox, WebKit, and mobile verification are blocked or
+unavailable in this environment.**
 
-Phase 3 Plugin SDK work was intentionally not started. The execution brief
-requires Phase 2 to close before Phase 3 begins, and this report preserves that
-gate.
+Phase 3 Plugin SDK work was intentionally not started. The milestone gate
+requires Phase 2 verification to close before Phase 3 begins.
 
-## Scope completed in this increment
+## Implemented and hardened scope
 
-- Filled Bollinger Bands are now a reusable Canvas2D band-region rendering
-  contract rather than three unrelated lines.
-- Band outputs support `upper`/`lower` roles, matching timestamps, warm-up
-  gaps, pane clipping, zoom/pan, realtime updates, HiDPI rendering, theme
-  defaults, and configurable `fillColor`/`fillOpacity` through
-  `ChartIndicatorApi.setOutputStyle`.
-- The vanilla example demonstrates a filled Bollinger band.
-- Playwright verifies visible filled-band pixels, output styling, and the
-  existing interaction/lifecycle surface.
-- The browser benchmark now runs with four indicators, a filled Bollinger
-  band, and two active drawings during the measured workload.
-- Earlier hardening fixed indicator ID collisions after non-tail removal,
-  indicator disposal during chart destruction, and pane `minHeight` handling.
+- Technical indicators, synchronized analysis panes, independent scales, and
+  correction-safe lifecycle remain implemented and tested.
+- Browser-neutral drawings support creation, selection, editing, styling,
+  visibility, locking, z-order, hit testing, undo/redo, and serialization.
+- Filled Bollinger Bands use the reusable band rendering contract with output
+  roles and configurable fill styling.
+- Candlestick, line, area, and volume series share one viewport, crosshair,
+  tooltip, style, dynamic lifecycle, and Canvas2D renderer.
+- Historical/realtime datafeed contracts and deterministic REST/WebSocket
+  reference adapters remain vendor-neutral and tested.
+- `CandleStore` and `PointStore` use an O(1) strictly-newer append path while
+  preserving binary-search replacement and historical correction semantics.
+- The browser benchmark now uses aligned timestamps, measures median/p95
+  navigation, crosshair event work, frame intervals, synchronous frame work,
+  memory, and destruction cleanup. `profile:browser` records diagnostic hot
+  spots for the 100,000-candle append path.
 
 ## Verification commands
 
@@ -32,24 +35,25 @@ gate.
 | `npm run typecheck` | Pass |
 | `npm test` | Pass — 26 tests |
 | `npm run test:browser` | Pass — Chromium 154, 1 Playwright test |
-| `npm run benchmark` | Pass — Node model 1k/10k/100k |
-| `npm run benchmark:browser` | Pass — Canvas2D indicators/drawings 1k/10k/100k |
+| `npm run benchmark` | Pass — Node 1k/10k/100k |
+| `npm run benchmark:browser` | Pass — Canvas2D 1k/10k/100k |
+| `npm run profile:browser` | Pass — 100k append instrumentation |
 | `npm run package:check` | Pass |
 | `npm run package:smoke` | Pass — packed ESM consumer |
 | React package dry run | Pass |
 | Next.js production build | Pass — Next.js 15.5.28 |
 | `git diff --check` | Pass |
 
-The Chromium test covers candles, line/area/volume series, indicator panes,
-filled bands, crosshair, zoom, pan, theme changes, realtime correction,
-dynamic series and indicator lifecycle, drawing creation/serialization,
-resize, and chart destruction.
+The Chromium test covers candles, line/area/volume series, multiple series,
+indicator panes, filled bands, crosshair, zoom, pan, theme changes, realtime
+correction, dynamic series and indicator lifecycle, drawing creation and
+serialization, resize, and chart destruction.
 
 ## Cross-browser status and blocker
 
 Chromium 154 is available at `/usr/bin/chromium` and passed. Firefox and
-WebKit binaries are not installed in this environment. Both installation
-attempts were made with Playwright 1.64.1 using a task-local browser cache:
+WebKit binaries are not installed. Playwright 1.64.1 installation was tried
+with a task-local cache:
 
 ```text
 PLAYWRIGHT_BROWSERS_PATH=/tmp/openkline-playwright-browsers npx playwright install firefox webkit
@@ -58,91 +62,81 @@ https://cdn.playwright.dev/...
 https://playwright.download.prss.microsoft.com/...
 ```
 
-The retry with elevated local execution permission produced the same 403, and
-the system has no `firefox` executable. Consequently Firefox, WebKit/Safari,
-mobile emulation, and actual mobile-device testing are **unverified**, not
-silently treated as passing. No failing browser test was disabled.
+The same official installation was retried with elevated local execution
+permission and returned the same 403. The system has no `firefox` executable.
+Firefox, WebKit/Safari, mobile emulation, and physical mobile-device testing
+are therefore **unverified**, not silently treated as passing. No test was
+disabled.
 
-## Performance and memory measurements
+## Performance and memory
 
-Node.js v24.19.0 model baseline:
+See the detailed reproducible report:
+[phase-2-performance-and-compatibility.md](phase-2-performance-and-compatibility.md).
 
-| Candles | Load (ms) | Navigation (ms) | Update (ms) |
-| ---: | ---: | ---: | ---: |
-| 1,000 | 1.949 | 0.066 | 0.134 |
-| 10,000 | 8.041 | 0.008 | 0.024 |
-| 100,000 | 68.261 | 0.011 | 0.020 |
+The reference run used Linux headless Chromium 154, a 1,200 × 520 viewport,
+`--disable-gpu`, four indicators including a filled Bollinger band, two
+drawings, 100 appends, five corrections, and a 30-frame update loop:
 
-Canvas2D baseline: headless Chromium 154, Linux, 1,200 × 520 viewport,
-`--disable-gpu`, four indicators including filled Bollinger Bands, two active
-drawings, 100 append updates, five corrections, and a 30-frame update loop:
+| Candles | Load (ms) | Append/update (ms) | 5 corrections (ms) | Frame interval p50/p95 (ms) | Frame-work p50/p95 (ms) | rAF FPS |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 28.7 | 1.570 | 52.4 | 16.7 / 17.1 | 1.0 / 1.5 | 63.86 |
+| 10,000 | 116.4 | 0.787 | 515.0 | 16.7 / 18.4 | 0.9 / 4.4 | 62.19 |
+| 100,000 | 1,678.9 | 0.545 | 6,980.7 | 16.6 / 16.8 | 0.8 / 1.3 | 63.09 |
 
-| Candles | Load (ms) | Navigation (ms) | 100 appends (ms) | Append/update (ms) | 5 corrections (ms) | rAF frame (ms) | FPS |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 22.9 | 12.3 | 126.0 | 1.260 | 44.1 | 15.540 | 64.35 |
-| 10,000 | 103.3 | 10.1 | 466.6 | 4.666 | 414.4 | 16.337 | 61.21 |
-| 100,000 | 1,453.1 | 8.1 | 6,679.0 | 66.790 | 5,800.5 | 77.630 | 12.88 |
+Observed heap was 1.47 MB before loading, 11.18 MB after 1,000 candles, 57.21
+MB after 10,000, and 305.32 MB before destruction after 100,000. After
+`destroy()` and an explicit GC opportunity it was 1.69 MB; remaining canvas
+count was zero. These are engine-specific observations, not memory limits.
 
-Observed Chromium heap values were 1.47 MB before loading, 8.64 MB after 1,000
-candles, 72.48 MB after 10,000, and 719.33 MB after 100,000. The observed
-value after destruction was 1.65 MB and `remainingCanvasCount` was zero. These
-are environment-specific observations, not release limits. The 100,000-candle
-workload is below a 60 FPS target and remains a measurable performance debt;
-the benchmark does not hide that result or alter OHLCV semantics through
-downsampling.
+The earlier approximately 12.88 FPS / 719 MB result was diagnosed as an
+invalid append fixture: primary and secondary series used different timestamp
+epochs, forcing historical union-time invalidation. It is not used as the
+current append result. The corrected benchmark still records the slower
+full-recalculation correction path separately and makes no universal 60 FPS
+claim.
 
 ## Acceptance matrix
 
 | Mandatory Phase 2 requirement | Evidence | Status |
 | --- | --- | --- |
-| Technical indicators and correction-safe lifecycle | 26 unit/integration tests | Pass |
+| Technical indicators and correction-safe lifecycle | Unit/integration tests | Pass |
 | Synchronized panes and independent scales | Model tests and Chromium interaction | Pass |
-| Drawing creation, selection, editing, serialization, undo/redo | Engine tests and Chromium interaction | Partial — full browser matrix blocked |
-| Filled Bollinger Bands | Renderer contract, API docs, pixel assertion in Playwright | Pass |
+| Drawing creation, editing, serialization, undo/redo | Engine tests and Chromium interaction | Pass with full browser matrix open |
+| Filled Bollinger Bands | Renderer contract and pixel assertion | Pass |
 | Chromium browser interaction | `npm run test:browser` | Pass |
 | Firefox browser interaction | Playwright binary download blocked with 403 | Open |
 | WebKit browser interaction | Playwright binary download blocked with 403 | Open |
-| Mobile/touch verification | No actual mobile device; no mobile browser binary | Open |
-| Performance and memory with indicators/drawings | Reproducible Node/Canvas2D benchmark above | Pass with 100k debt |
-| React and Next.js compatibility | React tests/package and Next production build | Pass — Chromium-only client behavior |
+| Mobile/touch verification | No mobile browser/device available | Open |
+| Performance and memory with indicators/drawings | Corrected Canvas2D benchmark and profiler | Pass with correction debt documented |
+| React and Next.js compatibility | React checks and Next production build | Pass in available environment |
 | Package installation and declarations | Package dry run and ESM smoke consumer | Pass |
 | No GitHub Actions | No `.github/workflows/` directory | Pass |
 
-Phase 2 cannot be marked complete while the Open rows remain. The exact
-environment blocker is recorded so a later environment with permitted browser
-downloads can rerun the same local Playwright suite without changing the
-acceptance definition.
+Phase 2 cannot be marked complete while the open browser and mobile rows
+remain. The exact blocker and rerun command are preserved above.
 
-## Phase 3 gate
+## Public API and documentation status
 
-The Plugin SDK and Customization Platform were not implemented in this
-increment. This is deliberate: beginning Phase 3 while the required Phase 2
-browser matrix is unverified would violate the milestone gate. Once Firefox,
-WebKit, and the agreed mobile/touch scope are available and pass, Phase 3 can
-start with the existing trusted extension seam as its compatibility boundary.
+The public TypeScript API remains framework-independent; the append optimization
+and profiler instrumentation are internal and do not expose implementation
+details. API and architecture documentation covers the implemented series,
+indicators, panes, drawings, datafeeds, extension boundary, lifecycle, and
+integration examples. The PDR and roadmap explicitly keep Plugin SDK,
+KlineScript runtime, accessibility UI, visual regression baselines,
+vendor-specific adapters, and WebGL/WebGPU deferred.
+
+## Phase 2 readiness assessment
+
+**Ready for continued engineering and a rerun in an environment with permitted
+Firefox/WebKit downloads; not a closed release milestone.** Phase 3 remains
+gated and was not started.
 
 ## Git verification
 
-- Branch: `work`
-- Latest implementation commit: `b4411de` (`feat(indicators): render filled
-  band regions`)
-- Previous hardening commit: `f032342`
-- Author and committer: `Akira Yuzai <yuzai.akira@gmail.com>`
-- Both commits were pushed immediately after successful verification.
-- This final verification report is included in commit `5a99f33` and that
-  commit was pushed to `origin/work`.
-- No force-push, history rewrite, or GitHub Actions was used.
-- The final handoff repeats the remote SHA check after the follow-up report
-  metadata commit.
-
-## Documentation updated
-
-- `docs/api/chart.md`
-- `docs/api/indicators.md`
-- `docs/architecture/indicator-engine.md`
-- `docs/development/benchmarks.md`
-- `docs/reports/phase-2-verification.md`
-- this report
-
-The roadmap remains open for Phase 2 final browser verification. No Plugin SDK
-or KlineScript runtime is documented as implemented.
+- All commits in this increment use `Akira Yuzai <yuzai.akira@gmail.com>` as
+  author and committer.
+- No `.github/workflows/` directory exists.
+- No force-push or history rewrite was used.
+- Each successful commit is pushed immediately to `origin/work`.
+- Final local/remote SHA verification is recorded in the delivery after the
+  performance increment is committed.

@@ -48,7 +48,13 @@ Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by
   styles, clipping, warm-up handling, and browser pixel verification.
 - [Blocked] Firefox and WebKit Playwright installation returned `403 Domain
   forbidden`; mobile/touch acceptance remains unverified. See
+  `docs/reports/phase-2-performance-and-compatibility.md` and
   `docs/reports/phase-2-final-verification.md`.
+- [Hardened] Corrected the Canvas2D benchmark fixture, added median/p95
+  navigation/crosshair/frame measurements, profiled the 100,000-candle append
+  path, and optimized strictly newer candle/point updates. The append run
+  reached approximately 62–64 FPS in the recorded environment; historical
+  corrections remain a documented full-recalculation cost.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.
@@ -61,6 +67,8 @@ Phase 2 final hardening — **Open; Chromium verified, Firefox/WebKit blocked by
 - Browser heap readings are engine-specific and are observations, not leak-proof
   release thresholds. The benchmark also verifies that chart destruction removes
   the canvas and clears stored series state.
+- The corrected benchmark's append and correction paths are measured
+  separately; no universal 60 FPS or memory guarantee is claimed.
 - The environment draft must be published separately from the saved setup.
 
 ## Architectural follow-up

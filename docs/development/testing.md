@@ -11,6 +11,7 @@ npm test
 npm run test:browser
 npm run benchmark
 npm run benchmark:browser
+npm run profile:browser
 npm run package:check
 npm run package:smoke
 ```
@@ -26,8 +27,11 @@ cleanup. It is intentionally interaction-focused rather than screenshot-only.
 
 `npm run benchmark:browser` measures synchronous Canvas2D rendering work and
 requestAnimationFrame update loops for 1,000, 10,000, and 100,000 candles. It
-also records engine-specific heap observations and confirms that chart
-destruction removes the canvas. `npm run package:smoke` installs the packed
+also records median/p95 navigation, crosshair event-path, frame interval and
+frame-work samples, engine-specific heap observations, and confirms that chart
+destruction removes the canvas. `npm run profile:browser` instruments the
+100,000-candle append path to identify renderer, series, indicator, and shared
+time-cache costs. `npm run package:smoke` installs the packed
 core tarball into a clean temporary consumer and imports its public ESM entry.
 
 If Chromium is unavailable, set `executablePath` in `playwright.config.ts` to a

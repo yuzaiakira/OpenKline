@@ -45,6 +45,11 @@ export class PointStore<T extends TimeValuePoint = TimeValuePoint> {
 
   public update(point: T): void {
     validatePoint(point, this.points.length);
+    const latest = this.points[this.points.length - 1];
+    if (latest !== undefined && point.time > latest.time) {
+      this.points.push({ ...point });
+      return;
+    }
     const index = this.findInsertionIndex(point.time);
     const current = this.points[index];
     if (current !== undefined && current.time === point.time) {

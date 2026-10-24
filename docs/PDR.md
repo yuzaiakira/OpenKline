@@ -33,6 +33,9 @@ The first milestone includes:
 Browser interaction tests and model benchmarks are also part of the current
 verification surface; their scope and limitations are documented in
 `docs/development/testing.md` and `docs/development/benchmarks.md`.
+The Phase 2.9 performance report records the corrected append benchmark,
+profiler evidence, memory cleanup observation, and the Firefox/WebKit
+environment blocker.
 
 The core calculation and data model do not depend on React, Next.js, or a
 browser. The Canvas2D adapter is the only browser-facing layer in this slice.
@@ -73,4 +76,6 @@ functionality here. The consolidated Phase 2 verification report records the
 remaining acceptance gaps; this PDR does not treat untested browser engines or
 future plugin/runtime work as complete. Filled Bollinger Band rendering is now
 implemented; the current Phase 2 final verification report records the
-remaining Firefox/WebKit/mobile browser blockers.
+remaining Firefox/WebKit/mobile browser blockers. The current performance and
+compatibility evidence is in
+`docs/reports/phase-2-performance-and-compatibility.md`.

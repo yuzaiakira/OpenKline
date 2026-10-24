@@ -29,6 +29,12 @@ validated at the appended point and full results are validated on replacement.
 `dispose()` clears the input/result and makes later operations fail
 predictably.
 
+The chart-side series stores use the same distinction: strictly newer points
+are appended, while equal timestamps and historical timestamps use the ordered
+correction path. This keeps realtime updates cheap without weakening correction
+semantics. The measurable browser evidence and the remaining full-recalculation
+cost are recorded in the Phase 2.9 performance report.
+
 ## Result model
 
 Every output is aligned to the input timestamps and uses `{ time, value }`,

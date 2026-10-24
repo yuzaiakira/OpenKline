@@ -90,7 +90,9 @@ ascending; updates may replace or insert a timestamp.
 `LinePoint` and `AreaPoint` use `{ time, value }`. `VolumePoint` uses the same
 shape and may provide a per-bar `color`. Times are UTC Unix milliseconds and
 must be strictly ascending in `setData`; `update` accepts an out-of-order point
-and inserts it in order. `SeriesStyle` supports visibility, line/fill colors,
+and inserts it in order. Strictly newer updates use the realtime append path;
+equal or historical timestamps retain replacement/correction semantics.
+`SeriesStyle` supports visibility, line/fill colors,
 line width, and candlestick up/down colors. Volume renders in a lower pane;
 other series share the OHLC/point price scale.
 
