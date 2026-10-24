@@ -31,8 +31,11 @@ Phase 1 — Chart MVP foundation: **In Progress**
 
 ## Known blockers
 
-- The configured GitHub repository currently has no visible refs and the
-  checkout is unborn, so remote synchronization cannot yet be verified.
+- The initial checkout was empty, but the foundation commit is now pushed to
+  `origin/work` and its SHA has been verified remotely.
+- Chromium loaded the vanilla example and all compiled modules in the cloud
+  container, but its headless dump process did not terminate; full browser
+  interaction and visual regression coverage remains unverified.
 
 ## Architectural follow-up
 
