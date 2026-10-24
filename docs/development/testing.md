@@ -12,6 +12,7 @@ npm run test:browser
 npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
+npm run benchmark:plugins
 npm run profile:browser
 npm run package:check
 npm run package:smoke
@@ -40,6 +41,13 @@ destruction removes the canvas. `npm run profile:browser` instruments the
 100,000-candle append path to identify renderer, series, indicator, and shared
 time-cache costs. `npm run package:smoke` installs the packed
 core tarball into a clean temporary consumer and imports its public ESM entry.
+
+Plugin tests cover metadata and dependency validation, activation rollback,
+resource ownership, state validation, shortcut conflicts, chart-scoped custom
+indicators/drawings/overlays, workspace round trips, and missing-extension
+policies. The standalone plugin example is served at
+`/examples/vanilla/plugin-example.html`; the Next.js example installs a typed
+plugin in its Client Component.
 
 If Chromium is unavailable, set `executablePath` in `playwright.config.ts` to a
 maintained browser installation. A browser test that times out is a failed or

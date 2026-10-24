@@ -6,6 +6,7 @@ Run the deterministic model and browser measurements with:
 npm run benchmark
 npm run benchmark:browser
 npm run profile:browser
+npm run benchmark:plugins
 ```
 
 `benchmark` measures the framework-independent model. `benchmark:browser`
@@ -31,6 +32,11 @@ and shared time-cache operations. The profiler is diagnostic, not a release
 benchmark.
 
 Do not turn one machine's timings into universal performance guarantees.
+
+`benchmark:plugins` is a deterministic Node microbenchmark for registry
+activation/command/disposal, a 100,000-candle indicator initialization path,
+and JSON workspace parsing. It is intentionally reported separately from the
+Canvas2D benchmark and is not a cross-device performance claim.
 
 ## Observed Node baseline
 
