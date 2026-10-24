@@ -95,7 +95,7 @@ export class ChartModel {
     this.collection.update(id, point);
     this.visibleCount = this.calculateVisibleCount();
     this.rangeStart = wasAtLatest
-      ? Math.max(0, this.collection.getTimePoints().length - this.visibleCount)
+      ? Math.max(0, this.collection.getTimePointCount() - this.visibleCount)
       : this.clampStart(this.rangeStart);
   }
 
@@ -131,7 +131,7 @@ export class ChartModel {
     const oldEnd = this.rangeStart + this.visibleCount;
     this.viewportWidth = width;
     this.visibleCount = this.calculateVisibleCount();
-    const length = this.collection.getTimePoints().length;
+    const length = this.collection.getTimePointCount();
     if (oldEnd >= length) {
       this.rangeStart = Math.max(0, length - this.visibleCount);
     } else {
@@ -147,7 +147,7 @@ export class ChartModel {
   }
 
   public zoom(scale: number, anchorRatio = 0.5): void {
-    const length = this.collection.getTimePoints().length;
+    const length = this.collection.getTimePointCount();
     if (!Number.isFinite(scale) || scale <= 0 || length === 0) {
       return;
     }
@@ -160,10 +160,9 @@ export class ChartModel {
   }
 
   public getVisibleData(): VisibleChartData {
-    const times = this.collection.getTimePoints();
     const from = this.clampStart(this.rangeStart);
-    const to = Math.min(times.length, from + this.visibleCount);
-    const visibleTimes = times.slice(from, to);
+    const to = Math.min(this.collection.getTimePointCount(), from + this.visibleCount);
+    const visibleTimes = this.collection.getTimePointsRange(from, to);
     const firstTime = visibleTimes[0];
     const lastTime = visibleTimes[visibleTimes.length - 1];
     const series = firstTime === undefined || lastTime === undefined
@@ -187,6 +186,10 @@ export class ChartModel {
 
   public get allCandles(): Candle[] {
     return this.primaryCandleId === null ? [] : this.collection.get(this.primaryCandleId).data.filter(isCandle);
+  }
+
+  public getLatestCandleTime(): number | undefined {
+    return this.primaryCandleId === null ? undefined : this.collection.getLatestTime(this.primaryCandleId);
   }
 
   public get barSpacing(): number {
@@ -214,15 +217,15 @@ export class ChartModel {
 
   private resetToLatest(): void {
     this.visibleCount = this.calculateVisibleCount();
-    this.rangeStart = Math.max(0, this.collection.getTimePoints().length - this.visibleCount);
+    this.rangeStart = Math.max(0, this.collection.getTimePointCount() - this.visibleCount);
   }
 
   private isAtLatest(): boolean {
-    return this.rangeStart + this.visibleCount >= this.collection.getTimePoints().length;
+    return this.rangeStart + this.visibleCount >= this.collection.getTimePointCount();
   }
 
   private calculateVisibleCount(): number {
-    const length = this.collection.getTimePoints().length;
+    const length = this.collection.getTimePointCount();
     if (length === 0) {
       return 1;
     }
@@ -230,7 +233,7 @@ export class ChartModel {
   }
 
   private clampStart(start: number): number {
-    const length = this.collection.getTimePoints().length;
+    const length = this.collection.getTimePointCount();
     return Math.max(0, Math.min(Math.max(0, length - this.visibleCount), Math.round(start)));
   }
 }

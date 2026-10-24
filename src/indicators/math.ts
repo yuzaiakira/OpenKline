@@ -16,7 +16,7 @@ export function output(
   return {
     indicatorId,
     parameters: { ...parameters },
-    outputs: [{ id, title, kind, points: [...points] }],
+    outputs: [{ id, title, kind, points: points as IndicatorPoint[] }],
   };
 }
 

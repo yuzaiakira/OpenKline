@@ -20,6 +20,7 @@ export {
 export type {
   IndicatorDefinition,
   IndicatorIncrementalContext,
+  IndicatorIncrementalUpdate,
   IndicatorInstance,
   IndicatorMetadata,
   IndicatorOutputDefinition,

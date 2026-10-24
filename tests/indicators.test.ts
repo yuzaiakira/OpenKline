@@ -92,6 +92,29 @@ test("indicator updates support append optimization and correction recalculation
   assert.deepEqual(incremental.getResult(), corrected.getResult());
 });
 
+test("built-in append updates match full calculations across all stateful indicators", () => {
+  const closes = Array.from({ length: 24 }, (_, index) => 100 + Math.sin(index / 2) * 4 + index * 0.2);
+  const input = candles(closes.slice(0, 20));
+  const next = candles([closes[20]!])[0]!;
+  next.time = input[input.length - 1]!.time + 60_000;
+  const cases: Array<[string, Record<string, unknown>]> = [
+    ["RSI", { period: 5 }],
+    ["MACD", { fastPeriod: 3, slowPeriod: 7, signalPeriod: 3 }],
+    ["BOLLINGER_BANDS", { period: 5, standardDeviations: 2 }],
+    ["ATR", { period: 5 }],
+    ["STOCHASTIC", { kPeriod: 5, dPeriod: 3 }],
+    ["VWAP", { session: "none" }],
+  ];
+  for (const [id, parameters] of cases) {
+    const incremental = registry.create(id, parameters);
+    incremental.setInput(input);
+    incremental.update(next);
+    const full = registry.create(id, parameters);
+    full.setInput([...input, next]);
+    assert.deepEqual(incremental.getResult(), full.getResult(), `${id} append result differs from full calculation`);
+  }
+});
+
 test("registry supports independent custom indicators and disposal", () => {
   const custom: IndicatorDefinition<{ multiplier: number }> = {
     metadata: {

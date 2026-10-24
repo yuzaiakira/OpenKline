@@ -32,6 +32,7 @@ export class SeriesCollection {
   private readonly series = new Map<string, StoredSeries>();
   private nextId = 1;
   private timesCache: number[] | null = null;
+  private timesSetCache: Set<number> | null = null;
 
   public add(type: SeriesType, options: SeriesOptions = {}): string {
     const id = options.id ?? `${type}-${this.nextId++}`;
@@ -80,6 +81,8 @@ export class SeriesCollection {
 
   public update(id: string, point: SeriesPoint): void {
     const series = this.require(id);
+    const cachedTimes = this.timesCache;
+    const cachedSet = this.timesSetCache;
     if (series.type === "candlestick") {
       if (!isCandle(point)) {
         throw new Error(`Series ${id} requires a candlestick update`);
@@ -91,7 +94,17 @@ export class SeriesCollection {
       }
       (series.store as PointStore).update(point);
     }
-    this.invalidateTimes();
+    if (cachedTimes === null || cachedSet === null) {
+      this.invalidateTimes();
+    } else if (cachedSet.has(point.time)) {
+      // Replacing an existing timestamp does not change the shared time axis.
+    } else if (point.time > (cachedTimes[cachedTimes.length - 1] ?? Number.NEGATIVE_INFINITY)) {
+      cachedTimes.push(point.time);
+      cachedSet.add(point.time);
+    } else {
+      // Historical insertion may belong anywhere in the sorted union.
+      this.invalidateTimes();
+    }
   }
 
   public setStyle(id: string, style: SeriesStyle): void {
@@ -106,6 +119,11 @@ export class SeriesCollection {
 
   public getPaneId(id: string): string {
     return this.require(id).paneId;
+  }
+
+  public getLatestTime(id: string): number | undefined {
+    const series = this.require(id);
+    return series.store.getLatestTime();
   }
 
   public get(id: string): SeriesSnapshot {
@@ -128,7 +146,18 @@ export class SeriesCollection {
       }
     }
     this.timesCache = [...times].sort((left, right) => left - right);
+    this.timesSetCache = new Set(this.timesCache);
     return [...this.timesCache];
+  }
+
+  public getTimePointCount(): number {
+    if (this.timesCache === null) this.getTimePoints();
+    return this.timesCache?.length ?? 0;
+  }
+
+  public getTimePointsRange(from: number, to: number): number[] {
+    if (this.timesCache === null) this.getTimePoints();
+    return this.timesCache?.slice(from, to) ?? [];
   }
 
   public getVisible(fromTime: number, toTime: number): SeriesSnapshot[] {
@@ -175,6 +204,7 @@ export class SeriesCollection {
 
   private invalidateTimes(): void {
     this.timesCache = null;
+    this.timesSetCache = null;
   }
 }
 

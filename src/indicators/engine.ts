@@ -4,6 +4,7 @@ import {
   IndicatorLifecycleError,
   type IndicatorDefinition,
   type IndicatorInstance,
+  type IndicatorIncrementalUpdate,
   type IndicatorMetadata,
   type IndicatorResult,
 } from "./types.js";
@@ -55,12 +56,14 @@ class ManagedIndicator implements IndicatorInstance {
   private readonly store = new CandleStore();
   private parameters: Record<string, unknown>;
   private result: IndicatorResult;
+  private incrementalState: unknown;
   private disposed = false;
 
   public constructor(private readonly definition: IndicatorDefinition, parameters: unknown) {
     this.parameters = cloneParameters(definition.validateParameters(parameters));
     this.result = definition.calculate([], this.parameters);
     validateResult(this.result, definition.metadata);
+    this.incrementalState = definition.initializeIncrementalState?.([], this.parameters);
   }
 
   public get id(): string {
@@ -79,26 +82,36 @@ class ManagedIndicator implements IndicatorInstance {
 
   public update(candle: Candle): void {
     this.assertAlive();
-    const previousInput = this.store.getAll();
-    const last = previousInput[previousInput.length - 1];
+    const previousInputLength = this.store.length;
+    const last = previousInputLength === 0 ? undefined : this.store.getRange(previousInputLength - 1, previousInputLength)[0];
     this.store.update(candle);
-    const nextInput = this.store.getAll();
     const isAppend = last === undefined || candle.time > last.time;
     if (isAppend && this.definition.calculateIncremental !== undefined) {
+      const previousOutputLengths = this.result.outputs.map((output) => output.points.length);
+      const requestedLength = this.definition.incrementalInputLength?.(this.parameters);
+      const previousInput = requestedLength === undefined
+        ? this.store.getRange(0, previousInputLength)
+        : this.store.getRange(Math.max(0, previousInputLength - Math.max(0, Math.floor(requestedLength))), previousInputLength);
       const incremental = this.definition.calculateIncremental({
         previousInput,
+        previousInputLength,
         previousResult: this.result,
+        ...(this.incrementalState === undefined ? {} : { previousState: this.incrementalState }),
         candle: { ...candle },
         parameters: this.parameters,
       });
       if (incremental !== undefined) {
-        validateResult(incremental, this.definition.metadata);
-        this.result = cloneResult(incremental);
+        const update = isIncrementalUpdate(incremental) ? incremental : { result: incremental };
+        validateIncrementalResult(update.result, this.definition.metadata, previousOutputLengths);
+        this.result = update.result;
+        if ("state" in update) this.incrementalState = update.state;
         return;
       }
     }
+    const nextInput = this.store.getAll();
     this.result = cloneResult(this.definition.calculate(nextInput, this.parameters));
     validateResult(this.result, this.definition.metadata);
+    this.incrementalState = this.definition.initializeIncrementalState?.(nextInput, this.parameters);
   }
 
   public setParameters(parameters: unknown): void {
@@ -117,16 +130,23 @@ class ManagedIndicator implements IndicatorInstance {
     return cloneResult(this.result);
   }
 
+  public getResultReference(): IndicatorResult {
+    this.assertAlive();
+    return this.result;
+  }
+
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.store.setData([]);
     this.result = emptyResult(this.definition.metadata.id, this.parameters);
+    this.incrementalState = undefined;
   }
 
   private recalculate(): void {
     this.result = cloneResult(this.definition.calculate(this.store.getAll(), this.parameters));
     validateResult(this.result, this.definition.metadata);
+    this.incrementalState = this.definition.initializeIncrementalState?.(this.store.getAll(), this.parameters);
   }
 
   private assertAlive(): void {
@@ -134,6 +154,10 @@ class ManagedIndicator implements IndicatorInstance {
       throw new IndicatorLifecycleError(`Indicator has been disposed: ${this.definition.metadata.id}`);
     }
   }
+}
+
+function isIncrementalUpdate(value: IndicatorResult | IndicatorIncrementalUpdate): value is IndicatorIncrementalUpdate {
+  return typeof value === "object" && value !== null && "result" in value;
 }
 
 function normalizeId(id: string): string {
@@ -185,4 +209,25 @@ function validateResult(result: IndicatorResult, metadata: IndicatorMetadata): v
       previousTime = point.time;
     }
   }
+}
+
+function validateIncrementalResult(result: IndicatorResult, metadata: IndicatorMetadata, previousOutputLengths: readonly number[]): void {
+  if (result.indicatorId !== metadata.id || result.outputs.length !== metadata.outputs.length) {
+    throw new Error(`Invalid incremental result for ${metadata.id}`);
+  }
+  result.outputs.forEach((output, index) => {
+    const definition = metadata.outputs[index];
+    const previousLength = previousOutputLengths[index];
+    const last = output.points[output.points.length - 1];
+    const previous = output.points[output.points.length - 2];
+    if (definition === undefined || output.id !== definition.id || previousLength === undefined || output.points.length !== previousLength + 1 || last === undefined) {
+      throw new Error(`Incremental output length mismatch for ${metadata.id}:${output.id}`);
+    }
+    if (!Number.isInteger(last.time) || last.time < 0 || (last.value !== null && !Number.isFinite(last.value))) {
+      throw new Error(`Invalid incremental output point for ${metadata.id}:${output.id}`);
+    }
+    if (previous !== undefined && last.time <= previous.time) {
+      throw new Error(`Incremental output timestamps are not ascending for ${metadata.id}:${output.id}`);
+    }
+  });
 }

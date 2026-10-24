@@ -58,6 +58,10 @@ export class PointStore<T extends TimeValuePoint = TimeValuePoint> {
     return this.points.length;
   }
 
+  public getLatestTime(): number | undefined {
+    return this.points[this.points.length - 1]?.time;
+  }
+
   public getAll(): T[] {
     return this.points.map((point) => ({ ...point }));
   }

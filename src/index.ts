@@ -107,6 +107,7 @@ export type {
   BollingerParameters,
   IndicatorDefinition,
   IndicatorIncrementalContext,
+  IndicatorIncrementalUpdate,
   IndicatorInstance,
   IndicatorMetadata,
   IndicatorOutputDefinition,

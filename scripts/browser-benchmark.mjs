@@ -12,6 +12,9 @@ try {
     args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--js-flags=--expose-gc"],
   });
   const page = await browser.newPage({ viewport: { width: 1_200, height: 520 } });
+  page.on("console", (message) => {
+    if (message.type() === "info") console.log(message.text());
+  });
   await page.goto("http://127.0.0.1:4173/examples/vanilla/index.html");
   const report = await page.evaluate(async () => {
     const chart = globalThis.__openklineChart;
@@ -35,6 +38,7 @@ try {
       const loadStart = performance.now();
       chart.setData(candles);
       const loadMs = performance.now() - loadStart;
+      console.info(JSON.stringify({ benchmarkPrepared: { candles: size, visibleRange: chart.getVisibleRange() } }));
 
       const navigationStart = performance.now();
       for (let index = 0; index < 10; index += 1) {
@@ -45,15 +49,23 @@ try {
 
       const updateStart = performance.now();
       const last = candles[candles.length - 1];
+      let latestTime = last.time;
       for (let index = 0; index < 100; index += 1) {
-        chart.update({ ...last, close: last.close + index / 1_000 });
+        latestTime += 60_000;
+        chart.update({ ...last, time: latestTime, close: last.close + index / 1_000 });
       }
       const updateMs = performance.now() - updateStart;
+      const correctionStart = performance.now();
+      for (let index = 0; index < 5; index += 1) {
+        chart.update({ ...last, close: last.close + index / 10_000 });
+      }
+      const correctionMs = performance.now() - correctionStart;
       const frameStart = performance.now();
       let frameCount = 0;
       await new Promise((resolve) => {
         const renderFrame = () => {
-          chart.update({ ...last, close: last.close + frameCount / 10_000 });
+          latestTime += 60_000;
+          chart.update({ ...last, time: latestTime, close: last.close + frameCount / 10_000 });
           frameCount += 1;
           if (frameCount >= 30) {
             resolve();
@@ -70,9 +82,11 @@ try {
         navigationMs: Number(navigationMs.toFixed(3)),
         updateMs: Number(updateMs.toFixed(3)),
         updateFrameMs: Number((updateMs / 100).toFixed(3)),
+        correctionMs: Number(correctionMs.toFixed(3)),
         rafFrameMs: Number((frameElapsedMs / frameCount).toFixed(3)),
         rafFps: Number((frameCount / (frameElapsedMs / 1_000)).toFixed(2)),
       });
+      console.info(JSON.stringify({ benchmarkProgress: results[results.length - 1] }));
       memorySamples.push({
         candles: size,
         usedAfterUpdate: performance.memory?.usedJSHeapSize ?? null,

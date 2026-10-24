@@ -138,8 +138,10 @@ export class Chart {
 
   public update(candle: Candle): void {
     this.assertAlive();
+    const lastTime = this.model.getLatestCandleTime();
+    const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
-    this.refreshIndicatorsFromUpdate(candle);
+    this.refreshIndicatorsFromUpdate(candle, appendOnly);
     this.render();
   }
 
@@ -705,8 +707,10 @@ export class Chart {
       },
       update: (point) => {
         this.assertAlive();
+        const lastTime = type === "candlestick" ? this.model.getLatestCandleTime() : undefined;
+        const appendOnly = type === "candlestick" && (lastTime === undefined || point.time > lastTime);
         this.model.updateSeries(id, point);
-        this.refreshIndicatorsFromInput();
+        if (type === "candlestick") this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
         this.render();
       },
       getData: () => {
@@ -738,17 +742,24 @@ export class Chart {
     }
   }
 
-  private refreshIndicatorsFromUpdate(candle: Candle): void {
+  private refreshIndicatorsFromUpdate(candle: Candle, appendOnly: boolean): void {
     for (const state of this.indicators.values()) {
       state.instance.update(candle);
-      this.syncIndicator(state);
+      this.syncIndicator(state, appendOnly, state.instance.getResultReference?.() ?? state.instance.getResult());
     }
   }
 
-  private syncIndicator(state: ManagedChartIndicator): void {
-    const outputs = state.instance.getResult().outputs;
+  private syncIndicator(state: ManagedChartIndicator, appendOnly = false, result = state.instance.getResult()): void {
+    const outputs = result.outputs;
     state.outputSeriesIds.forEach((seriesId, index) => {
       const output = outputs[index];
+      if (appendOnly && output !== undefined) {
+        const lastPoint = output.points[output.points.length - 1];
+        if (lastPoint?.value !== null && lastPoint !== undefined) {
+          this.model.updateSeries(seriesId, { time: lastPoint.time, value: lastPoint.value });
+        }
+        return;
+      }
       const data = output?.points
         .filter((point): point is { time: number; value: number } => point.value !== null)
         .map((point) => ({ time: point.time, value: point.value })) ?? [];

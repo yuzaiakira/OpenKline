@@ -50,10 +50,18 @@ export interface IndicatorOutputSeries {
 }
 
 export interface IndicatorIncrementalContext<P extends Record<string, unknown>> {
+  /** Full history unless the definition supplies incrementalInputLength. */
   readonly previousInput: readonly Candle[];
+  readonly previousInputLength: number;
   readonly previousResult: IndicatorResult;
+  readonly previousState?: unknown;
   readonly candle: Candle;
   readonly parameters: P;
+}
+
+export interface IndicatorIncrementalUpdate {
+  readonly result: IndicatorResult;
+  readonly state?: unknown;
 }
 
 export interface IndicatorDefinition<P extends Record<string, unknown> = Record<string, unknown>> {
@@ -61,7 +69,11 @@ export interface IndicatorDefinition<P extends Record<string, unknown> = Record<
   validateParameters(parameters: unknown): P;
   calculate(input: readonly Candle[], parameters: P): IndicatorResult;
   /** Optional append-only optimization. Returning undefined requests a full recalculation. */
-  calculateIncremental?(context: IndicatorIncrementalContext<P>): IndicatorResult | undefined;
+  calculateIncremental?(context: IndicatorIncrementalContext<P>): IndicatorResult | IndicatorIncrementalUpdate | undefined;
+  /** If provided, only this trailing window is copied into incremental context. */
+  incrementalInputLength?(parameters: P): number;
+  /** Optional opaque state used only by the append-only optimization. */
+  initializeIncrementalState?(input: readonly Candle[], parameters: P): unknown;
 }
 
 export interface IndicatorInstance {
@@ -72,6 +84,8 @@ export interface IndicatorInstance {
   setParameters(parameters: unknown): void;
   getInput(): Candle[];
   getResult(): IndicatorResult;
+  /** @internal Renderer-side read-only reference; callers must not mutate it. */
+  getResultReference?(): IndicatorResult;
   dispose(): void;
 }
 

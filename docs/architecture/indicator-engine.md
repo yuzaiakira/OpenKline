@@ -22,9 +22,12 @@ No calculation state is shared between instances.
 
 `setInput()` validates and replaces the full ordered candle input.
 `update(candle)` replaces or inserts a timestamp. Append-only updates use a
-definition's optional incremental path; historical corrections and definitions
-without that path use deterministic full recalculation. `dispose()` clears the
-input/result and makes later operations fail predictably.
+definition's optional incremental path, including opaque state and a bounded
+trailing input window where appropriate; historical corrections and definitions
+without that path use deterministic full recalculation. Incremental results are
+validated at the appended point and full results are validated on replacement.
+`dispose()` clears the input/result and makes later operations fail
+predictably.
 
 ## Result model
 
@@ -60,6 +63,10 @@ trading session from a timestamp or exchange.
 5. KlineScript can later call registered definitions through the same typed
    `IndicatorDefinition` contract; no dynamic code execution is used.
 
+Append-only engine state is never shared between instances. The public
+`getResult()` remains defensive; the renderer may use the internal reference
+only during a synchronous chart update and must not mutate it.
+
 Pane assignment and rendering are intentionally not part of this layer. The
-future multi-pane system will consume `IndicatorResult.outputs` and own pane
-layout without duplicating formula or input alignment logic.
+multi-pane chart consumes `IndicatorResult.outputs` and owns pane layout without
+duplicating formula or input alignment logic.

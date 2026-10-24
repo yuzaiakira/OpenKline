@@ -73,6 +73,10 @@ export class CandleStore {
     return this.candles.length;
   }
 
+  public getLatestTime(): number | undefined {
+    return this.candles[this.candles.length - 1]?.time;
+  }
+
   public getAll(): Candle[] {
     return this.candles.map((candle) => ({ ...candle }));
   }
