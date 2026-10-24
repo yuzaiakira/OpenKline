@@ -14,6 +14,15 @@ export default function ChartClient() {
     <FinancialChart
       candles={candles}
       indicators={[{ indicatorId: "RSI", options: { period: 14, pane: "new" } }]}
+      drawings={[{
+        type: "trend-line",
+        options: {
+          points: [
+            { time: candles[10].time, price: candles[10].low },
+            { time: candles[35].time, price: candles[35].high },
+          ],
+        },
+      }]}
       theme="dark"
       autoSize
       style={{ height: 520 }}

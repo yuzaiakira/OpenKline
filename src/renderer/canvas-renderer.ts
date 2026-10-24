@@ -2,6 +2,7 @@ import { PriceScale, TimeScale } from "../core/scales.js";
 import type { VisibleChartData, VisiblePaneData } from "../core/chart-model.js";
 import type { SeriesSnapshot } from "../core/series-store.js";
 import type { ChartTheme, Candle, SeriesPoint } from "../types.js";
+import type { DrawingRenderItem } from "../drawings/types.js";
 
 export interface RenderSize {
   width: number;
@@ -72,7 +73,15 @@ export function getPlotBounds(width: number, height: number, hasVolume = false):
 export class CanvasRenderer {
   public constructor(private readonly canvas: HTMLCanvasElement) {}
 
-  public render(data: VisibleChartData, size: RenderSize, theme: ChartTheme, options: RenderOptions, crosshair: { x: number; y: number } | null): void {
+  public render(
+    data: VisibleChartData,
+    size: RenderSize,
+    theme: ChartTheme,
+    options: RenderOptions,
+    crosshair: { x: number; y: number } | null,
+    drawings: readonly DrawingRenderItem[] = [],
+    selectedDrawingId: string | null = null,
+  ): void {
     const context = this.canvas.getContext("2d");
     if (context === null) throw new Error("CanvasRenderingContext2D is unavailable");
     const { width, height, devicePixelRatio } = size;
@@ -107,6 +116,18 @@ export class CanvasRenderer {
       }
       context.restore();
       if (pane.id !== panes[panes.length - 1]?.id) this.drawPaneDivider(context, pane, theme);
+    }
+    const mainPane = panes.find((pane) => pane.id === "main") ?? panes[0];
+    const mainData = data.panes.find((pane) => pane.id === mainPane?.id);
+    if (mainPane !== undefined && mainData !== undefined && drawings.length > 0) {
+      const scale = new PriceScaleForPane(mainData.series, mainPane);
+      const converter = {
+        xForTime: (time: number) => timeScale.xForTime(time),
+        yForPrice: (price: number) => scale.yForPrice(price),
+        timeForX: (x: number) => timeScale.timeForX(x),
+        priceForY: (y: number) => scale.priceForY(y),
+      };
+      this.drawDrawings(context, drawings, converter, mainPane, theme, selectedDrawingId);
     }
     const lastPane = panes[panes.length - 1];
     if (lastPane !== undefined) this.drawTimeLabels(context, data.times, timeScale, lastPane.bottom, theme, options);
@@ -205,6 +226,66 @@ export class CanvasRenderer {
     context.moveTo(pane.left, pane.bottom + 4);
     context.lineTo(pane.right, pane.bottom + 4);
     context.stroke();
+  }
+
+  private drawDrawings(
+    context: CanvasRenderingContext2D,
+    drawings: readonly DrawingRenderItem[],
+    converter: { xForTime(time: number): number; yForPrice(price: number): number },
+    pane: PaneBounds,
+    theme: ChartTheme,
+    selectedDrawingId: string | null,
+  ): void {
+    context.save();
+    context.beginPath();
+    context.rect(pane.left, pane.top, pane.right - pane.left, pane.bottom - pane.top);
+    context.clip();
+    for (const item of drawings) {
+      const style = item.snapshot.style;
+      const color = style.color ?? theme.crosshair;
+      context.strokeStyle = color;
+      context.fillStyle = style.fillColor ?? color;
+      context.lineWidth = normalizeLineWidth(style.lineWidth ?? 1.5);
+      context.globalAlpha = 0.9;
+      for (const geometry of item.geometries) {
+        if (geometry.kind === "line") {
+          context.beginPath();
+          context.moveTo(geometry.from.x, geometry.from.y);
+          context.lineTo(geometry.to.x, geometry.to.y);
+          context.stroke();
+          if (geometry.label !== undefined) {
+            context.fillStyle = style.textColor ?? color;
+            context.font = "11px system-ui, sans-serif";
+            context.textAlign = "left";
+            context.textBaseline = "bottom";
+            context.fillText(geometry.label, geometry.from.x + 4, geometry.from.y - 3);
+          }
+        } else if (geometry.kind === "rectangle") {
+          context.strokeRect(geometry.left, geometry.top, geometry.width, geometry.height);
+          if (style.fillColor !== undefined) {
+            context.globalAlpha = 0.14;
+            context.fillRect(geometry.left, geometry.top, geometry.width, geometry.height);
+            context.globalAlpha = 0.9;
+          }
+        } else {
+          context.fillStyle = style.textColor ?? color;
+          context.font = "13px system-ui, sans-serif";
+          context.textAlign = "left";
+          context.textBaseline = "top";
+          context.fillText(geometry.text, geometry.x, geometry.y);
+        }
+      }
+      if (item.snapshot.id === selectedDrawingId) {
+        context.fillStyle = style.textColor ?? color;
+        for (const point of item.snapshot.points) {
+          context.beginPath();
+          context.arc(converter.xForTime(point.time), converter.yForPrice(point.price), 4, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+    }
+    context.globalAlpha = 1;
+    context.restore();
   }
 
   private drawTimeLabels(context: CanvasRenderingContext2D, times: readonly number[], timeScale: TimeScale, y: number, theme: ChartTheme, options: RenderOptions): void {

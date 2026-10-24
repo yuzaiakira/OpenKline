@@ -2,6 +2,17 @@ import { ChartModel } from "./core/chart-model.js";
 import { PriceScale, TimeScale } from "./core/scales.js";
 import { CanvasRenderer, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
+import { DrawingEngine } from "./drawings/engine.js";
+import type {
+  DrawingApi,
+  DrawingCoordinateConverter,
+  DrawingDocument,
+  DrawingOptions,
+  DrawingPoint,
+  DrawingSnapshot,
+  DrawingStartOptions,
+  DrawingToolDefinition,
+} from "./drawings/types.js";
 import type { IndicatorDefinition, IndicatorInstance } from "./indicators/types.js";
 import type { SeriesData } from "./core/series-store.js";
 import type { Datafeed, GetBarsQuery } from "./types.js";
@@ -64,6 +75,7 @@ export class Chart {
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
+  private readonly drawingEngine = new DrawingEngine();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
   private theme: ChartTheme;
@@ -76,6 +88,9 @@ export class Chart {
   private crosshair: { x: number; y: number } | null = null;
   private dragging = false;
   private lastPointerX = 0;
+  private selectedDrawingId: string | null = null;
+  private pendingDrawing: { type: string; options: DrawingStartOptions; points: DrawingPoint[] } | null = null;
+  private activeDrawing: { id: string; time: number; price: number } | null = null;
   private datafeedCleanup: (() => void) | null = null;
   private datafeedRequestId = 0;
   private destroyed = false;
@@ -237,6 +252,90 @@ export class Chart {
     this.render();
   }
 
+  public registerDrawingTool(tool: DrawingToolDefinition): void {
+    this.assertAlive();
+    this.drawingEngine.registerTool(tool);
+  }
+
+  public unregisterDrawingTool(type: string): boolean {
+    this.assertAlive();
+    return this.drawingEngine.unregisterTool(type);
+  }
+
+  public addDrawing(type: string, options: DrawingOptions): DrawingApi {
+    this.assertAlive();
+    const drawing = this.drawingEngine.create(type, options);
+    this.selectedDrawingId = drawing.id;
+    this.render();
+    return drawing;
+  }
+
+  public removeDrawing(id: string): void {
+    this.assertAlive();
+    this.drawingEngine.remove(id);
+    if (this.selectedDrawingId === id) this.selectedDrawingId = null;
+    this.render();
+  }
+
+  public getDrawings(): DrawingSnapshot[] {
+    this.assertAlive();
+    return this.drawingEngine.getAll();
+  }
+
+  public selectDrawing(id: string | null): void {
+    this.assertAlive();
+    if (id !== null) this.drawingEngine.get(id);
+    this.selectedDrawingId = id;
+    this.render();
+  }
+
+  public getSelectedDrawingId(): string | null {
+    this.assertAlive();
+    return this.selectedDrawingId;
+  }
+
+  /** Start an interactive drawing; the next one or two clicks create its anchors. */
+  public startDrawing(type: string, options: DrawingStartOptions = {}): void {
+    this.assertAlive();
+    const tool = this.drawingEngine.getTool(type);
+    this.pendingDrawing = { type, options: { ...options }, points: [] };
+    if (tool.minPoints === 0) {
+      throw new Error(`Drawing tool must require at least one point: ${type}`);
+    }
+  }
+
+  public undoDrawing(): boolean {
+    this.assertAlive();
+    const changed = this.drawingEngine.undo();
+    if (this.selectedDrawingId !== null && !this.getDrawings().some((drawing) => drawing.id === this.selectedDrawingId)) {
+      this.selectedDrawingId = null;
+    }
+    if (changed) this.render();
+    return changed;
+  }
+
+  public redoDrawing(): boolean {
+    this.assertAlive();
+    const changed = this.drawingEngine.redo();
+    if (this.selectedDrawingId !== null && !this.getDrawings().some((drawing) => drawing.id === this.selectedDrawingId)) {
+      this.selectedDrawingId = null;
+    }
+    if (changed) this.render();
+    return changed;
+  }
+
+  public serializeDrawings(): DrawingDocument {
+    this.assertAlive();
+    return this.drawingEngine.serialize();
+  }
+
+  public restoreDrawings(document: unknown): void {
+    this.assertAlive();
+    this.drawingEngine.restore(document);
+    this.selectedDrawingId = null;
+    this.render();
+  }
+
   public removeSeries(id: string): void {
     this.assertAlive();
     this.model.removeSeries(id);
@@ -366,6 +465,7 @@ export class Chart {
     this.destroyed = true;
     this.stopDatafeed();
     this.model.destroy();
+    this.drawingEngine.dispose();
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -378,12 +478,69 @@ export class Chart {
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
+    const drawingContext = this.getDrawingContext();
+    if (drawingContext !== null && this.pendingDrawing !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
+      const point = {
+        time: Math.max(0, Math.round(drawingContext.converter.timeForX(event.offsetX))),
+        price: drawingContext.converter.priceForY(event.offsetY),
+      };
+      this.pendingDrawing.points.push(point);
+      const tool = this.drawingEngine.getTool(this.pendingDrawing.type);
+      if (this.pendingDrawing.points.length >= tool.minPoints) {
+        const { type, options, points } = this.pendingDrawing;
+        const drawing = this.drawingEngine.create(type, {
+          points,
+          ...(options.style === undefined ? {} : { style: { ...options.style } }),
+          ...(options.text === undefined ? {} : { text: options.text }),
+          ...(options.zIndex === undefined ? {} : { zIndex: options.zIndex }),
+        });
+        this.selectedDrawingId = drawing.id;
+        this.pendingDrawing = null;
+      }
+      this.render();
+      return;
+    }
+
+    if (drawingContext !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
+      const hit = this.drawingEngine.hitTest(event.offsetX, event.offsetY, drawingContext.converter, drawingContext.bounds);
+      if (hit !== null) {
+        this.selectedDrawingId = hit.id;
+        const snapshot = this.drawingEngine.get(hit.id);
+        if (snapshot.style.locked !== true) {
+          this.activeDrawing = {
+            id: hit.id,
+            time: drawingContext.converter.timeForX(event.offsetX),
+            price: drawingContext.converter.priceForY(event.offsetY),
+          };
+          this.canvas.setPointerCapture(event.pointerId);
+        }
+        this.render();
+        return;
+      }
+    }
+
+    this.selectedDrawingId = null;
+    this.activeDrawing = null;
     this.dragging = true;
     this.lastPointerX = event.offsetX;
     this.canvas.setPointerCapture(event.pointerId);
   };
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
+    if (this.activeDrawing !== null) {
+      const drawingContext = this.getDrawingContext();
+      if (drawingContext !== null) {
+        const time = drawingContext.converter.timeForX(event.offsetX);
+        const price = drawingContext.converter.priceForY(event.offsetY);
+        this.drawingEngine.move(this.activeDrawing.id, time - this.activeDrawing.time, price - this.activeDrawing.price);
+        this.activeDrawing = { ...this.activeDrawing, time, price };
+      }
+      this.crosshair = { x: event.offsetX, y: event.offsetY };
+      this.emitCrosshair(event.offsetX, event.offsetY);
+      this.render();
+      return;
+    }
+
     if (this.dragging) {
       const delta = event.offsetX - this.lastPointerX;
       this.model.pan(-delta / Math.max(this.model.barSpacing, 1));
@@ -397,6 +554,7 @@ export class Chart {
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
     this.dragging = false;
+    this.activeDrawing = null;
     if (this.canvas.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
@@ -466,13 +624,37 @@ export class Chart {
   }
 
   private render(): void {
+    const drawingContext = this.getDrawingContext();
     this.renderer.render(
       this.model.getVisibleData(),
       { width: this.width, height: this.height, devicePixelRatio: this.devicePixelRatio },
       this.theme,
       { locale: this.locale, timeZone: this.timeZone, pricePrecision: this.pricePrecision },
       this.crosshair,
+      drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds),
+      this.selectedDrawingId,
     );
+  }
+
+  private getDrawingContext(): { bounds: { left: number; right: number; top: number; bottom: number }; converter: DrawingCoordinateConverter } | null {
+    const data = this.model.getVisibleData();
+    if (data.times.length === 0) return null;
+    const paneBounds = getPaneBounds(this.width, this.height, data.panes);
+    const bounds = paneBounds.find((pane) => pane.id === "main") ?? paneBounds[0];
+    if (bounds === undefined) return null;
+    const mainSeries = data.panes.find((pane) => pane.id === bounds.id)?.series ?? data.series;
+    const range = getPaneScaleRange(mainSeries);
+    const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right });
+    const priceScale = new PriceScale(range.min, range.max, { start: bounds.top, end: bounds.bottom });
+    return {
+      bounds,
+      converter: {
+        xForTime: (time) => timeScale.xForTime(time),
+        yForPrice: (price) => priceScale.yForPrice(price),
+        timeForX: (x) => timeScale.timeForX(x),
+        priceForY: (y) => priceScale.priceForY(y),
+      },
+    };
   }
 
   private createSeriesApi<T extends SeriesPoint>(type: SeriesType, options: SeriesOptions): SeriesApi<T> {
@@ -556,6 +738,10 @@ function resolveTheme(theme: ChartOptions["theme"]): ChartTheme {
 function nearestTime(times: readonly number[], target: number): number | null {
   if (times.length === 0 || !Number.isFinite(target)) return null;
   return times.reduce((nearest, time) => Math.abs(time - target) < Math.abs(nearest - target) ? time : nearest, times[0] ?? target);
+}
+
+function isInsideBounds(x: number, y: number, bounds: { left: number; right: number; top: number; bottom: number }): boolean {
+  return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {

@@ -15,6 +15,10 @@ CandleStore / PointStore -> SeriesCollection -> ChartModel -> CanvasRenderer
 Validated Candle[] -> IndicatorRegistry -> independent IndicatorInstance(s)
                                                |
                                         aligned output series
+
+Chart pointer events -> DrawingEngine -> versioned snapshots / pure geometry
+                                             |
+                                       Canvas2D renderer
 ```
 
 `CandleStore` and `PointStore` own validated, ordered series data. The
@@ -29,8 +33,10 @@ The React adapter only owns component lifecycle; the Next.js example keeps
 chart construction in a Client Component.
 
 The indicator registry is a separate pure calculation boundary. It consumes
-validated candles and emits aligned, multi-output results; pane layout and
-Canvas rendering will consume those outputs in the next Phase 2 increment.
+validated candles and emits aligned, multi-output results that are mapped into
+independent panes. The drawing engine is another browser-neutral boundary: it
+owns analysis-object state and extension contracts while the chart adapter
+supplies coordinates and the Canvas renderer consumes pure geometry.
 
 ## Initial decisions
 
@@ -45,4 +51,6 @@ Canvas rendering will consume those outputs in the next Phase 2 increment.
   lifecycle code.
 - REST and WebSocket adapters accept injected fetch/socket functions so tests
   are deterministic and vendor protocol mapping stays outside the core.
+- Indicator calculations and drawing tools are registered through typed,
+  independent contracts; neither boundary depends on React or vendor APIs.
 - GitHub Actions are intentionally not used; validation is local and scripted.

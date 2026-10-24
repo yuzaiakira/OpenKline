@@ -60,6 +60,32 @@ export {
   stochasticDefinition,
   vwapDefinition,
 } from "./indicators/index.js";
+export { DrawingEngine, DrawingLifecycleError, DrawingValidationError } from "./drawings/index.js";
+export {
+  builtInDrawingTools,
+  fibonacciRetracementTool,
+  horizontalLineTool,
+  rectangleTool,
+  textTool,
+  trendLineTool,
+  verticalLineTool,
+} from "./drawings/index.js";
+export type {
+  DrawingApi,
+  DrawingBounds,
+  DrawingCoordinateConverter,
+  DrawingDocument,
+  DrawingGeometry,
+  DrawingRenderItem,
+  DrawingHit,
+  DrawingOptions,
+  DrawingPoint,
+  DrawingSnapshot,
+  DrawingStartOptions,
+  DrawingStyle,
+  DrawingToolDefinition,
+  DrawingToolType,
+} from "./drawings/index.js";
 export type {
   BollingerParameters,
   IndicatorDefinition,

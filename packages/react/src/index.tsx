@@ -1,16 +1,22 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import type { CSSProperties, ForwardedRef, ReactElement } from "react";
 import { createChart } from "openkline";
-import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, IndicatorAddOptions } from "openkline";
+import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, DrawingOptions, IndicatorAddOptions } from "openkline";
 
 export interface FinancialChartIndicator {
   indicatorId: string;
   options?: IndicatorAddOptions;
 }
 
+export interface FinancialChartDrawing {
+  type: string;
+  options: DrawingOptions;
+}
+
 export interface FinancialChartProps extends ChartOptions {
   candles?: readonly Candle[];
   indicators?: readonly FinancialChartIndicator[];
+  drawings?: readonly FinancialChartDrawing[];
   className?: string;
   onCrosshairMove?: (event: CrosshairMoveEvent) => void;
   style?: CSSProperties;
@@ -24,7 +30,7 @@ const FinancialChartImpl = (
   props: FinancialChartProps,
   ref: ForwardedRef<FinancialChartHandle>,
 ): ReactElement => {
-  const { candles, indicators, className, onCrosshairMove, style, ...options } = props;
+  const { candles, indicators, drawings, className, onCrosshairMove, style, ...options } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const crosshairHandlerRef = useRef(onCrosshairMove);
@@ -65,6 +71,16 @@ const FinancialChartImpl = (
       for (const indicator of mounted) indicator.remove();
     };
   }, [indicators]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart === null) return undefined;
+    const mounted = (drawings ?? []).map((drawing) => chart.addDrawing(drawing.type, drawing.options));
+    return () => {
+      if (chartRef.current !== chart) return;
+      for (const drawing of mounted) drawing.remove();
+    };
+  }, [drawings]);
 
   useEffect(() => {
     chartRef.current?.setOptions(options);

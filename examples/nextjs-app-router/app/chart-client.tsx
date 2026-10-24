@@ -25,6 +25,17 @@ export default function ChartClient() {
         { indicatorId: "RSI", options: { period: 14, pane: "new" } },
         { indicatorId: "MACD", options: { fastPeriod: 5, slowPeriod: 12, signalPeriod: 4, pane: "new" } },
       ]}
+      drawings={[{
+        type: "trend-line",
+        options: {
+          id: "next-example-trend",
+          points: [
+            { time: candles[12]!.time, price: candles[12]!.low },
+            { time: candles[42]!.time, price: candles[42]!.high },
+          ],
+          style: { color: "#f59e0b", lineWidth: 2 },
+        },
+      }]}
     />
   );
 }

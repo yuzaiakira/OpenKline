@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 2.1 — Indicator calculation engine: **Complete**
+Phase 2.3 — Analysis drawings: **In progress; implementation landed, final verification pending**
 
 ## Completed
 
@@ -34,8 +34,13 @@ Phase 2.1 — Indicator calculation engine: **Complete**
 - [Implemented] Added synchronized multi-pane layout with independent scales,
   pane height/removal lifecycle, indicator output mapping, and React/Next
   indicator props; browser and Next production checks pass.
-- [In Progress] Add interactive drawing tools and analysis-object serialization.
-- [Not Started] Drawing tools and workspace serialization.
+- [Implemented] Added a browser-neutral drawing engine with horizontal/vertical
+  lines, trend lines, rectangles, Fibonacci retracements, anchored text,
+  selection, pointer movement, styles, visibility, locking, z-order, hit
+  testing, undo/redo, versioned serialization, and custom tool registration.
+- [Implemented] Added Canvas2D rendering and React/Next drawing props with
+  deterministic browser coverage; final phase acceptance remains pending the
+  consolidated verification report.
 - [Not Started] Plugin SDK.
 - [Not Started] ChartScript parser/runtime.
 - [Not Started] Accessibility UI and visual regression baselines.

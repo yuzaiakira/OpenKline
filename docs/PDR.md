@@ -63,7 +63,10 @@ Bollinger Bands, ATR, Stochastic, VWAP, independent instances, aligned
 multi-output results, correction-safe updates, and custom TypeScript
 registration. Phase 2.2 now includes synchronized multi-pane layout,
 independent pane scales, RSI/MACD/Stochastic chart mappings, pane lifecycle,
-and React/Next indicator props. Drawing tools, plugin SDK, ChartScript,
+and React/Next indicator props. Phase 2.3 now includes the browser-neutral
+drawing engine, built-in analysis objects, Canvas rendering, pointer selection
+and movement, lock/visibility/style controls, undo/redo, serialization, custom
+tool registration, and React/Next drawing props. The plugin SDK, ChartScript,
 accessibility UI, visual regression, vendor-specific adapters, and WebGL/WebGPU
 rendering remain future work. They are not represented as completed
 functionality here.

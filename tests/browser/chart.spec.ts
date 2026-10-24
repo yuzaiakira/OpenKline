@@ -77,6 +77,33 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(finalSeriesIds).toHaveLength(10);
   expect(finalSeriesIds).not.toContain("temporary");
 
+  const drawingState = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getData(): Array<{ time: number; high: number; low: number }>;
+        addDrawing(type: string, options: object): { id: string };
+        getDrawings(): Array<{ id: string; type: string }>;
+        serializeDrawings(): { version: number; drawings: unknown[] };
+      };
+    }).__openklineChart;
+    const data = chart.getData();
+    chart.addDrawing("trend-line", {
+      id: "browser-trend",
+      points: [
+        { time: data[10]!.time, price: data[10]!.low },
+        { time: data[30]!.time, price: data[30]!.high },
+      ],
+      style: { color: "#f59e0b", lineWidth: 2 },
+    });
+    return { count: chart.getDrawings().length, document: chart.serializeDrawings() };
+  });
+  expect(drawingState.count).toBe(1);
+  expect(drawingState.document.version).toBe(1);
+  await page.evaluate(() => (globalThis as unknown as { __openklineChart: { startDrawing(type: string): void } }).__openklineChart.startDrawing("vertical-line"));
+  await page.mouse.click(box.x + 120, box.y + 42);
+  const interactiveDrawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): unknown[] } }).__openklineChart.getDrawings().length);
+  expect(interactiveDrawingCount).toBe(2);
+
   const widthBeforeResize = await canvas.evaluate((element) => (element as HTMLCanvasElement).width);
   await page.setViewportSize({ width: 800, height: 700 });
   await expect.poll(() => canvas.evaluate((element) => (element as HTMLCanvasElement).width)).toBeLessThan(widthBeforeResize);

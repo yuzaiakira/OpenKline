@@ -21,6 +21,10 @@ trend.setData(candles.map(({ time, close }) => ({ time, value: close })));
 const volume = chart.addVolumeSeries({ id: "volume" });
 volume.setData(candles.map(({ time, volume = 0 }) => ({ time, value: volume })));
 const rsi = chart.addIndicator("RSI", { period: 14, pane: "new" });
+const support = chart.addDrawing("horizontal-line", {
+  points: [{ time: candles.at(-1)!.time, price: candles.at(-1)!.close }],
+  style: { color: "#f59e0b" },
+});
 
 // Legacy convenience methods target the primary candlestick series.
 chart.setData(candles);
@@ -48,6 +52,11 @@ chart.destroy();
   TypeScript definitions. `addIndicator(id, options)` creates a calculation
   instance, maps its outputs to line/histogram series, and supports parameter
   changes and disposal through `ChartIndicatorApi`.
+- `registerDrawingTool(definition)` and `unregisterDrawingTool(type)` manage
+  custom drawing definitions. `addDrawing` creates a typed analysis object;
+  `startDrawing` creates one from pointer clicks. `getDrawings`,
+  `selectDrawing`, `removeDrawing`, `undoDrawing`, `redoDrawing`,
+  `serializeDrawings`, and `restoreDrawings` manage the drawing lifecycle.
 - `getSeriesIds()` lists live series. `removeSeries(id)` disposes one series.
 - `pan(deltaBars)` and `zoom(scale, anchorRatio)` navigate the shared viewport.
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
@@ -85,3 +94,9 @@ consistent as series are added or removed.
 Indicator outputs can be assigned to `pane: "new"`, `pane: "main"`, or a
 named pane. RSI, MACD, and Stochastic therefore use independent scales while
 remaining synchronized with price and volume.
+
+Drawing anchors use UTC millisecond timestamps and prices in the main pane.
+Built-in tools are horizontal/vertical lines, trend lines, rectangles,
+Fibonacci retracements, and text. Drawing styles support color, fill, line
+width, visibility, and locking. See `docs/api/drawings.md` for the complete
+contract and `docs/guides/custom-drawing-tools.md` for extensions.
