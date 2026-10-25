@@ -95,7 +95,11 @@ export function executeKlineScript(
   const limits = { ...DEFAULT_LIMITS, ...options };
   const validatedParameters = validateParameters(program.metadata.inputs, parameters);
   if (input.length > limits.maxDatasetLength) throw runtimeInput(`Dataset exceeds the ${limits.maxDatasetLength}-bar runtime limit`);
-  validateCandles(input);
+  try {
+    validateCandles(input);
+  } catch (error) {
+    throw runtimeInput(error instanceof Error ? error.message : "Input candles are invalid");
+  }
   const budget = new Budget(limits, options.signal);
   const environment = new Map<string, RuntimeValue>();
   environment.set("open", input.map((candle) => candle.open));
@@ -370,7 +374,7 @@ function validateParameters(inputs: readonly KlineScriptInputMetadata[], paramet
   for (const name of Object.keys(supplied)) if (!known.has(name)) throw runtimeInput(`Unknown input parameter '${name}'`);
   const result: Record<string, unknown> = {};
   for (const input of inputs) {
-    const value = supplied[input.name] ?? input.defaultValue;
+    const value = Object.prototype.hasOwnProperty.call(supplied, input.name) ? supplied[input.name] : input.defaultValue;
     if (input.type === "int" && (typeof value !== "number" || !Number.isInteger(value))) throw runtimeInput(`Input '${input.name}' must be an integer`);
     if (input.type === "float" && (typeof value !== "number" || !Number.isFinite(value))) throw runtimeInput(`Input '${input.name}' must be finite`);
     if (input.type === "bool" && typeof value !== "boolean") throw runtimeInput(`Input '${input.name}' must be boolean`);
@@ -485,13 +489,14 @@ function isMacd(value: RuntimeValue): value is MacdValue {
 
 class Budget {
   public operations = 0;
+  private outputPoints = 0;
 
   public constructor(private readonly limits: Required<KlineScriptRuntimeLimits>, private readonly signal?: AbortSignal) {}
 
-  public tick(units = 1): void {
+  public tick(units = 1, enforcePerBar = true): void {
     this.operations += units;
     if (this.operations > this.limits.maxOperations) throw runtimeBudget("KlineScript operation budget exhausted");
-    if (units > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
+    if (enforcePerBar && units > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
     this.check();
   }
 
@@ -500,8 +505,9 @@ class Budget {
   }
 
   public addOutput(points: number): void {
-    this.tick(points);
-    if (points > this.limits.maxOutputPoints) throw runtimeBudget("KlineScript output allocation exceeds the limit");
+    this.tick(points, false);
+    this.outputPoints += points;
+    if (this.outputPoints > this.limits.maxOutputPoints) throw runtimeBudget("KlineScript output allocation exceeds the limit");
   }
 
   public check(): void {

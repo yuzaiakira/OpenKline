@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import type { CSSProperties, ForwardedRef, ReactElement } from "react";
 import { createChart } from "openkline";
-import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, DrawingOptions, IndicatorAddOptions, OpenKlinePlugin, WorkspaceDocument } from "openkline";
+import type { Candle, Chart, ChartOptions, CrosshairMoveEvent, DrawingOptions, IndicatorAddOptions, KlineScriptCompiledProgram, OpenKlinePlugin, WorkspaceDocument } from "openkline";
 
 export interface FinancialChartIndicator {
   indicatorId: string;
@@ -13,9 +13,15 @@ export interface FinancialChartDrawing {
   options: DrawingOptions;
 }
 
+export interface FinancialChartScriptIndicator {
+  program: KlineScriptCompiledProgram;
+  options?: IndicatorAddOptions;
+}
+
 export interface FinancialChartProps extends ChartOptions {
   candles?: readonly Candle[];
   indicators?: readonly FinancialChartIndicator[];
+  scriptIndicators?: readonly FinancialChartScriptIndicator[];
   drawings?: readonly FinancialChartDrawing[];
   plugins?: readonly OpenKlinePlugin[];
   workspace?: WorkspaceDocument;
@@ -33,7 +39,7 @@ const FinancialChartImpl = (
   props: FinancialChartProps,
   ref: ForwardedRef<FinancialChartHandle>,
 ): ReactElement => {
-  const { candles, indicators, drawings, plugins, workspace, className, onCrosshairMove, onChartReady, style, ...options } = props;
+  const { candles, indicators, scriptIndicators, drawings, plugins, workspace, className, onCrosshairMove, onChartReady, style, ...options } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const crosshairHandlerRef = useRef(onCrosshairMove);
@@ -89,6 +95,16 @@ const FinancialChartImpl = (
       for (const indicator of mounted) indicator.remove();
     };
   }, [indicators]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart === null) return undefined;
+    const mounted = (scriptIndicators ?? []).map((indicator) => chart.addScriptIndicator(indicator.program, indicator.options));
+    return () => {
+      if (chartRef.current !== chart) return;
+      for (const indicator of mounted) indicator.remove();
+    };
+  }, [scriptIndicators]);
 
   useEffect(() => {
     const chart = chartRef.current;

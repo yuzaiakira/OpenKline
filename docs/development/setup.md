@@ -31,6 +31,10 @@ Run `npm run dev` and open
 package before serving it. `node scripts/serve-example.mjs` also performs a
 build automatically when the compiled entry point is missing.
 
+Open `/examples/vanilla/klinescript.html` for the local editor/playground. It
+uses the package's public `compileKlineScript` and `Chart.addScriptIndicator`
+APIs and requires no editor dependency or network service.
+
 To verify the App Router integration:
 
 ```bash

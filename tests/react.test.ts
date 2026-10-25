@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 import * as React from "react";
 import { renderToString } from "react-dom/server";
+import { compileKlineScript } from "../src/index.js";
 
 test("React binding is independently importable and SSR-safe", async () => {
   const localPackagePath = resolve("node_modules/openkline");
@@ -14,8 +15,11 @@ test("React binding is independently importable and SSR-safe", async () => {
   try {
   type ReactPackage = typeof import("../packages/react/dist/index.js");
   const reactPackage = await import(pathToFileURL(resolve("packages/react/dist/index.js")).href) as ReactPackage;
+  const compiled = compileKlineScript('indicator("SSR Script")\nplot(close)');
+  assert.equal(compiled.success, true);
   const markup = renderToString(React.createElement(reactPackage.FinancialChart, {
     candles: [],
+    ...(compiled.success ? { scriptIndicators: [{ program: compiled.program }] } : {}),
     style: { height: 240 },
   }));
 

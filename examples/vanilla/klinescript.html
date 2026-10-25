@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline KlineScript Playground</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+      .toolbar, .input-row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+      textarea { width: 100%; min-height: 260px; box-sizing: border-box; margin: .75rem 0; padding: .75rem; color: #e2e8f0; background: #111827; border: 1px solid #334155; border-radius: 6px; font: 14px/1.5 ui-monospace, monospace; }
+      button { color: #e2e8f0; background: #334155; border: 0; border-radius: 5px; padding: .55rem .8rem; cursor: pointer; }
+      button:hover { background: #475569; }
+      #diagnostics { min-height: 1.5rem; color: #fca5a5; white-space: pre-wrap; }
+      #status { color: #86efac; min-height: 1.5rem; }
+      #inputs { margin: .75rem 0; }
+      #chart { height: 520px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+      label { display: inline-flex; gap: .35rem; align-items: center; }
+      input { width: 90px; color: #e2e8f0; background: #1e293b; border: 1px solid #475569; border-radius: 4px; padding: .35rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>KlineScript Playground</h1>
+      <p>Compile a restricted indicator, inspect diagnostics and preview it through the normal OpenKline indicator lifecycle.</p>
+      <textarea id="source" aria-label="KlineScript source">indicator("EMA", overlay=True)
+period = input.int("Period", default=14, min=1, max=100)
+value = ta.ema(close, period)
+plot(value, title="EMA", color="#8B5CF6", width=2)</textarea>
+      <div class="toolbar">
+        <button id="compile" type="button">Compile / reload</button>
+        <button id="remove" type="button">Remove indicator</button>
+      </div>
+      <div id="diagnostics" role="alert"></div>
+      <div id="status" role="status"></div>
+      <div id="inputs" class="input-row"></div>
+      <div id="chart"></div>
+    </main>
+    <script type="module">
+      import { compileKlineScript, createChart } from "../../dist/src/index.js";
+
+      const sourceElement = document.querySelector("#source");
+      const diagnosticsElement = document.querySelector("#diagnostics");
+      const statusElement = document.querySelector("#status");
+      const inputsElement = document.querySelector("#inputs");
+      const chart = createChart(document.querySelector("#chart"), { theme: "dark", autoSize: true, timeZone: "UTC" });
+      const candles = Array.from({ length: 120 }, (_, index) => {
+        const close = 100 + Math.sin(index / 8) * 7 + index * .05;
+        const open = close - Math.cos(index) * 1.5;
+        return { time: Date.UTC(2026, 0, 1) + index * 60 * 60 * 1000, open, high: Math.max(open, close) + 2, low: Math.min(open, close) - 2, close, volume: 1000 + index * 10 };
+      });
+      const price = chart.addCandlestickSeries({ id: "price" });
+      price.setData(candles);
+      let indicator = null;
+      let compiled = null;
+
+      function removeIndicator() {
+        indicator?.remove();
+        indicator = null;
+        compiled = null;
+        inputsElement.replaceChildren();
+      }
+
+      function compile() {
+        removeIndicator();
+        diagnosticsElement.textContent = "";
+        statusElement.textContent = "";
+        const result = compileKlineScript(sourceElement.value);
+        if (!result.success) {
+          diagnosticsElement.textContent = result.diagnostics.map((item) => `${item.code} (${item.span.start.line}:${item.span.start.column}): ${item.message}`).join("\n");
+          return;
+        }
+        compiled = result.program;
+        indicator = chart.addScriptIndicator(compiled);
+        for (const input of compiled.metadata.inputs) {
+          const label = document.createElement("label");
+          label.textContent = input.label;
+          const control = document.createElement("input");
+          control.type = input.type === "bool" ? "checkbox" : "number";
+          if (input.type !== "bool") {
+            control.value = String(input.defaultValue);
+            if (input.min !== undefined) control.min = String(input.min);
+            if (input.max !== undefined) control.max = String(input.max);
+            control.step = input.type === "int" ? "1" : "any";
+          } else control.checked = input.defaultValue === true;
+          control.addEventListener("change", () => {
+            if (indicator === null) return;
+            const value = input.type === "bool" ? control.checked : input.type === "int" ? Number.parseInt(control.value, 10) : Number(control.value);
+            indicator.setParameters({ [input.name]: value });
+          });
+          label.append(control);
+          inputsElement.append(label);
+        }
+        statusElement.textContent = `Compiled ${compiled.metadata.name} (${compiled.metadata.outputs.length} output${compiled.metadata.outputs.length === 1 ? "" : "s"})`;
+      }
+
+      document.querySelector("#compile").addEventListener("click", compile);
+      document.querySelector("#remove").addEventListener("click", () => {
+        removeIndicator();
+        statusElement.textContent = "Indicator removed";
+      });
+      globalThis.__openklineScriptPlayground = { chart, compile, removeIndicator };
+      compile();
+    </script>
+  </body>
+</html>

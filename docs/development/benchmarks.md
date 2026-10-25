@@ -7,6 +7,7 @@ npm run benchmark
 npm run benchmark:browser
 npm run profile:browser
 npm run benchmark:plugins
+npm run benchmark:klinescript
 ```
 
 `benchmark` measures the framework-independent model. `benchmark:browser`
@@ -37,6 +38,13 @@ Do not turn one machine's timings into universal performance guarantees.
 activation/command/disposal, a 100,000-candle indicator initialization path,
 and JSON workspace parsing. It is intentionally reported separately from the
 Canvas2D benchmark and is not a cross-device performance claim.
+
+`benchmark:klinescript` measures compile time, full historical execution at
+1,000/10,000/100,000 candles, ten update calls through the existing Indicator
+Engine lifecycle, four concurrent 10,000-bar instances, operation counts,
+pre-cancelled execution, and disposal. These are local observations for the
+printed Node/runtime environment; the script makes no universal FPS, memory,
+or latency claim.
 
 ## Observed Node baseline
 

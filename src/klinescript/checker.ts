@@ -59,11 +59,13 @@ export interface CheckedProgram {
 
 export interface CheckOptions {
   readonly maxAstNodes?: number;
+  readonly maxAstDepth?: number;
   readonly maxDeclarations?: number;
   readonly maxLookback?: number;
 }
 
 const DEFAULT_MAX_AST_NODES = 20_000;
+const DEFAULT_MAX_AST_DEPTH = 128;
 const DEFAULT_MAX_DECLARATIONS = 256;
 const DEFAULT_MAX_LOOKBACK = 5_000;
 
@@ -104,6 +106,9 @@ class Checker {
 
     for (const statement of this.ast.statements) {
       this.nodeCount += countNodes(statement);
+      if (maxDepth(statement) > (this.options.maxAstDepth ?? DEFAULT_MAX_AST_DEPTH)) {
+        this.fail("KS3007", `Expression nesting exceeds the ${(this.options.maxAstDepth ?? DEFAULT_MAX_AST_DEPTH)}-level limit`, statement.span);
+      }
       if (this.nodeCount > (this.options.maxAstNodes ?? DEFAULT_MAX_AST_NODES)) {
         this.fail("KS3004", `The AST exceeds the ${(this.options.maxAstNodes ?? DEFAULT_MAX_AST_NODES)}-node limit`, statement.span);
         break;
@@ -567,4 +572,12 @@ function countNodes(value: unknown, seen = new Set<object>()): number {
   let count = 1;
   for (const child of Object.values(value)) count += countNodes(child, seen);
   return count;
+}
+
+function maxDepth(value: unknown, depth = 0, seen = new Set<object>()): number {
+  if (value === null || typeof value !== "object" || seen.has(value)) return depth;
+  seen.add(value);
+  let result = depth + 1;
+  for (const child of Object.values(value)) result = Math.max(result, maxDepth(child, depth + 1, seen));
+  return result;
 }

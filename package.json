@@ -26,6 +26,7 @@
     "benchmark": "npm run build && node scripts/benchmark.mjs",
     "benchmark:browser": "npm run build && node scripts/browser-benchmark.mjs",
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
+    "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",
     "package:check": "npm run build && NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm pack --dry-run --ignore-scripts",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs"

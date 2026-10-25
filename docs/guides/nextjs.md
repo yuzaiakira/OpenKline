@@ -45,6 +45,20 @@ Plugins and workspace documents are client-side props. Install trusted plugin
 modules in the Client Component and pass a validated workspace after mount;
 never import or execute plugin code in a Server Component.
 
+KlineScript can be compiled in a server-safe module and passed to the React
+adapter as a validated program:
+
+```tsx
+<FinancialChart
+  candles={candles}
+  scriptIndicators={[{ program: compiledProgram, options: { pane: "main" } }]}
+/>
+```
+
+The adapter owns script indicator installation and removes each handle during
+effect cleanup. Check compile diagnostics before passing a program to the
+component.
+
 Do not create a chart in a Server Component, module initializer, or during
 server rendering. React cleanup destroys the chart on unmount and supports
 Strict Mode's mount/unmount probe.

@@ -5,6 +5,11 @@ The project uses local checks and does not use GitHub Actions.
 For a manual browser preview, run `npm run dev` and open the vanilla example at
 `http://127.0.0.1:4173/examples/vanilla/index.html`.
 
+The framework-independent KlineScript editor is at
+`http://127.0.0.1:4173/examples/vanilla/klinescript.html`. Its browser test
+compiles a valid script, displays a source diagnostic for an invalid call,
+changes an input, verifies an oscillator pane, and removes the script indicator.
+
 ```bash
 npm run typecheck
 npm test
@@ -48,6 +53,11 @@ indicators/drawings/overlays, workspace round trips, and missing-extension
 policies. The standalone plugin example is served at
 `/examples/vanilla/plugin-example.html`; the Next.js example installs a typed
 plugin in its Client Component.
+
+KlineScript tests cover source spans, forbidden calls, immutable metadata,
+historical indexing, warm-up/missing values, native EMA equivalence, MACD
+projections, hlines, input validation, correction recomputation, cancellation,
+budgets, and the playground lifecycle.
 
 If Chromium is unavailable, set `executablePath` in `playwright.config.ts` to a
 maintained browser installation. A browser test that times out is a failed or

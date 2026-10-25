@@ -2,6 +2,7 @@
 
 import { FinancialChart } from "@openkline/react";
 import { examplePlugin } from "./example-plugin";
+import { exampleScript } from "./example-script";
 
 const candles = Array.from({ length: 80 }, (_, index) => {
   const close = 100 + Math.sin(index / 7) * 8 + index * 0.08;
@@ -26,6 +27,7 @@ export default function ChartClient() {
         { indicatorId: "RSI", options: { period: 14, pane: "new" } },
         { indicatorId: "MACD", options: { fastPeriod: 5, slowPeriod: 12, signalPeriod: 4, pane: "new" } },
       ]}
+      scriptIndicators={[{ program: exampleScript, options: { pane: "main" } }]}
       drawings={[{
         type: "trend-line",
         options: {
