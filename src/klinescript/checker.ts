@@ -36,7 +36,6 @@ export interface KlineScriptOutputMetadata {
   readonly id: string;
   readonly title: string;
   readonly kind: "line" | "histogram";
-  readonly expression: Expression;
   readonly color?: string;
   readonly width?: number;
   readonly visible?: boolean;
@@ -252,7 +251,6 @@ class Checker {
       id: `plot-${this.outputs.length + 1}`,
       title,
       kind: "line",
-      expression: series.expression,
       ...(color === undefined ? {} : { color }),
       ...(width === undefined ? {} : { width }),
       ...(visible === undefined ? {} : { visible }),
@@ -271,7 +269,6 @@ class Checker {
       id: `hline-${this.outputs.length + 1}`,
       title: "Reference",
       kind: "line",
-      expression: value.expression,
       ...(color === undefined ? {} : { color }),
     });
   }
@@ -296,7 +293,7 @@ class Checker {
           if (!isBoolean(operand)) this.fail("KS3051", `not expects bool or series<bool>, received ${typeName(operand)}`, expression.span);
           type = isSeries(operand) ? seriesBool : "bool";
         } else {
-          if (!isNumeric(operand)) this.fail("KS3052", `Unary ${expression.operator} expects a number`, expression.span);
+          if (!isNumericLike(operand)) this.fail("KS3052", `Unary ${expression.operator} expects a number`, expression.span);
           type = operand;
         }
         break;
@@ -352,7 +349,7 @@ class Checker {
       if (!areComparable(left, right)) this.fail("KS3060", `Cannot compare ${typeName(left)} with ${typeName(right)}`, span);
       return isSeries(left) || isSeries(right) ? seriesBool : "bool";
     }
-    if (!isNumeric(left) || !isNumeric(right)) this.fail("KS3061", `${operator} expects numeric operands`, span);
+    if (!isNumericLike(left) || !isNumericLike(right)) this.fail("KS3061", `${operator} expects numeric operands`, span);
     if (isSeries(left) || isSeries(right)) return { kind: "series", element: leftSeriesElement(left, right) };
     return left === "float" || right === "float" || operator === "/" ? "float" : "int";
   }
@@ -511,6 +508,10 @@ function isSeries(type: KlineScriptType): type is KlineScriptSeriesType {
 
 function isNumeric(type: KlineScriptType): boolean {
   return type === "int" || type === "float" || type === "missing";
+}
+
+function isNumericLike(type: KlineScriptType): boolean {
+  return isNumeric(type) || isNumericSeries(type);
 }
 
 function isNumericSeries(type: KlineScriptType): boolean {

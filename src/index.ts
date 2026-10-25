@@ -135,7 +135,6 @@ export {
   compileKlineScript,
   KlineScriptCompileError,
   KlineScriptRuntimeError,
-  executeKlineScript,
 } from "./klinescript/index.js";
 export type {
   KlineScriptCompileOptions,

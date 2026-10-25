@@ -164,12 +164,13 @@ function evaluate(
   switch (expression.kind) {
     case "literal": result = expression.value; break;
     case "identifier": result = environment.get(expression.name) ?? null; break;
-    case "unary": result = unary(expression.operator, evaluate(expression.expression, environment, cache, input, budget)); break;
-    case "binary": result = binary(expression.operator, evaluate(expression.left, environment, cache, input, budget), evaluate(expression.right, environment, cache, input, budget)); break;
+    case "unary": result = unary(expression.operator, evaluate(expression.expression, environment, cache, input, budget), budget); break;
+    case "binary": result = binary(expression.operator, evaluate(expression.left, environment, cache, input, budget), evaluate(expression.right, environment, cache, input, budget), budget); break;
     case "conditional": result = conditional(
       evaluate(expression.condition, environment, cache, input, budget),
       evaluate(expression.whenTrue, environment, cache, input, budget),
       evaluate(expression.whenFalse, environment, cache, input, budget),
+      budget,
     ); break;
     case "index": {
       const target = evaluate(expression.target, environment, cache, input, budget);
@@ -177,7 +178,10 @@ function evaluate(
       if (typeof index !== "number" || !Number.isInteger(index) || index < 0) throw runtimeInput("Historical index must be a non-negative integer");
       budget.checkLookback(index);
       if (!Array.isArray(target)) throw runtimeCalculation("Historical indexing requires a series");
-      result = target.map((_, bar) => bar < index ? null : target[bar - index] ?? null);
+      result = target.map((_, bar) => {
+        budget.tickAtBar(1, bar);
+        return bar < index ? null : target[bar - index] ?? null;
+      });
       break;
     }
     case "member": {
@@ -215,20 +219,26 @@ function evaluateCall(
       const fast = scalarInteger(args.get("fastPeriod"), environment, cache, input, budget);
       const slow = scalarInteger(args.get("slowPeriod"), environment, cache, input, budget);
       const signal = scalarInteger(args.get("signalPeriod"), environment, cache, input, budget);
-      const values = toNumberSeries(source);
+      const values = toNumberSeries(source, budget);
       const fastValues = emaValues(values, fast, budget);
       const slowValues = emaValues(values, slow, budget);
-      const macd = values.map((_, index) => numberOrNull(fastValues[index] ?? null) !== null && numberOrNull(slowValues[index] ?? null) !== null ? (fastValues[index] as number) - (slowValues[index] as number) : null);
+      const macd = values.map((_, index) => {
+        budget.tickAtBar(1, index);
+        return numberOrNull(fastValues[index] ?? null) !== null && numberOrNull(slowValues[index] ?? null) !== null ? (fastValues[index] as number) - (slowValues[index] as number) : null;
+      });
       const signalValues = emaValues(macd, signal, budget);
       return {
         kind: "macd",
         macd,
         signal: signalValues,
-        histogram: macd.map((value, index) => value !== null && signalValues[index] !== null ? value - (signalValues[index] as number) : null),
+        histogram: macd.map((value, index) => {
+          budget.tickAtBar(1, index);
+          return value !== null && signalValues[index] !== null ? value - (signalValues[index] as number) : null;
+        }),
       };
     }
     if (source === undefined) throw runtimeCalculation(`ta.${expression.name} requires a source`);
-    const values = toNumberSeries(source);
+    const values = toNumberSeries(source, budget);
     switch (expression.name) {
       case "sma": return smaValues(values, period!, budget);
       case "ema": return emaValues(values, period!, budget);
@@ -270,18 +280,24 @@ function evaluateScalar(
   return value;
 }
 
-function unary(operator: "+" | "-" | "not", value: RuntimeValue): RuntimeValue {
-  if (Array.isArray(value)) return value.map((item) => unary(operator, item) as Scalar) as Series;
+function unary(operator: "+" | "-" | "not", value: RuntimeValue, budget: Budget): RuntimeValue {
+  if (Array.isArray(value)) return value.map((item, index) => {
+    budget.tickAtBar(1, index);
+    return unary(operator, item, budget) as Scalar;
+  }) as Series;
   if (value === null) return null;
   if (operator === "not") return typeof value === "boolean" ? !value : null;
   if (typeof value !== "number") return null;
   return operator === "-" ? -value : value;
 }
 
-function binary(operator: string, left: RuntimeValue, right: RuntimeValue): RuntimeValue {
+function binary(operator: string, left: RuntimeValue, right: RuntimeValue, budget: Budget): RuntimeValue {
   if (Array.isArray(left) || Array.isArray(right)) {
     const length = Array.isArray(left) ? left.length : Array.isArray(right) ? right.length : 0;
-    return Array.from({ length }, (_, index) => binary(operator, Array.isArray(left) ? left[index] ?? null : left, Array.isArray(right) ? right[index] ?? null : right) as Scalar) as Series;
+    return Array.from({ length }, (_, index) => {
+      budget.tickAtBar(1, index);
+      return binary(operator, Array.isArray(left) ? left[index] ?? null : left, Array.isArray(right) ? right[index] ?? null : right, budget) as Scalar;
+    }) as Series;
   }
   if (left === null || right === null) return null;
   if (operator === "and" || operator === "or") return typeof left === "boolean" && typeof right === "boolean" ? operator === "and" ? left && right : left || right : null;
@@ -302,10 +318,13 @@ function binary(operator: string, left: RuntimeValue, right: RuntimeValue): Runt
   return right === 0 ? null : left % right;
 }
 
-function conditional(condition: RuntimeValue, whenTrue: RuntimeValue, whenFalse: RuntimeValue): RuntimeValue {
+function conditional(condition: RuntimeValue, whenTrue: RuntimeValue, whenFalse: RuntimeValue, budget: Budget): RuntimeValue {
   if (Array.isArray(condition)) {
     const length = condition.length;
-    return Array.from({ length }, (_, index) => conditional(condition[index] ?? null, valueAt(whenTrue, index), valueAt(whenFalse, index)) as Scalar) as Series;
+    return Array.from({ length }, (_, index) => {
+      budget.tickAtBar(1, index);
+      return conditional(condition[index] ?? null, valueAt(whenTrue, index), valueAt(whenFalse, index), budget) as Scalar;
+    }) as Series;
   }
   if (condition === null || typeof condition !== "boolean") return null;
   return condition ? whenTrue : whenFalse;
@@ -315,13 +334,16 @@ function valueAt(value: RuntimeValue, index: number): RuntimeValue {
   return Array.isArray(value) ? value[index] ?? null : value;
 }
 
-function toNumberSeries(value: RuntimeValue): (number | null)[] {
+function toNumberSeries(value: RuntimeValue, budget: Budget): (number | null)[] {
   if (!Array.isArray(value)) throw runtimeCalculation("Expected a numeric series");
-  return value.map((item) => typeof item === "number" && Number.isFinite(item) ? item : null);
+  return value.map((item, index) => {
+    budget.tickAtBar(1, index);
+    return typeof item === "number" && Number.isFinite(item) ? item : null;
+  });
 }
 
 function toPoints(value: RuntimeValue, input: readonly Candle[], budget: Budget): Array<{ time: number; value: number | null }> {
-  const values = toNumberSeries(value);
+  const values = toNumberSeries(value, budget);
   if (values.length !== input.length) throw runtimeCalculation("Series length does not match input data");
   budget.addOutput(values.length);
   return values.map((item, index) => ({ time: input[index]!.time, value: item }));
@@ -391,8 +413,8 @@ function validateParameters(inputs: readonly KlineScriptInputMetadata[], paramet
 function smaValues(values: readonly (number | null)[], period: number, budget: Budget): (number | null)[] {
   const result: (number | null)[] = [];
   for (let index = 0; index < values.length; index += 1) {
-    budget.tickAtBar(1, index);
     const window = values.slice(Math.max(0, index - period + 1), index + 1);
+    budget.tickAtBar(Math.max(1, window.length), index);
     result.push(window.length === period && window.every((item) => item !== null) ? (window as number[]).reduce((sum, item) => sum + item, 0) / period : null);
   }
   return result;
@@ -402,8 +424,8 @@ function emaValues(values: readonly (number | null)[], period: number, budget: B
   const result: (number | null)[] = [];
   let previous: number | null = null;
   for (let index = 0; index < values.length; index += 1) {
-    budget.tickAtBar(1, index);
     const window = values.slice(Math.max(0, index - period + 1), index + 1);
+    budget.tickAtBar(Math.max(1, window.length), index);
     if (window.length < period || window.some((item) => item === null)) {
       result.push(null);
       continue;
@@ -453,8 +475,8 @@ function rsiValues(values: readonly (number | null)[], period: number, budget: B
 function stdevValues(values: readonly (number | null)[], period: number, budget: Budget): (number | null)[] {
   const means = smaValues(values, period, budget);
   return means.map((mean, index) => {
-    budget.tickAtBar(1, index);
     const window = values.slice(index - period + 1, index + 1);
+    budget.tickAtBar(Math.max(1, window.length), index);
     if (mean === null || window.length !== period || window.some((item) => item === null)) return null;
     const numericWindow = window as number[];
     return Math.sqrt(numericWindow.reduce((sum, item) => sum + (item - mean) ** 2, 0) / period);
@@ -463,8 +485,8 @@ function stdevValues(values: readonly (number | null)[], period: number, budget:
 
 function extremeValues(values: readonly (number | null)[], period: number, mode: "min" | "max", budget: Budget): (number | null)[] {
   return values.map((_, index) => {
-    budget.tickAtBar(1, index);
     const window = values.slice(index - period + 1, index + 1);
+    budget.tickAtBar(Math.max(1, window.length), index);
     if (window.length !== period || window.some((item) => item === null)) return null;
     return mode === "min" ? Math.min(...window as number[]) : Math.max(...window as number[]);
   });
@@ -483,9 +505,10 @@ function atrValues(input: readonly Candle[], period: number, budget: Budget): (n
 function emaLikeWilder(values: readonly number[], period: number, budget: Budget): (number | null)[] {
   let previous: number | null = null;
   return values.map((value, index) => {
-    budget.tickAtBar(1, index);
     if (index < period - 1) return null;
-    previous = previous === null ? values.slice(index - period + 1, index + 1).reduce((sum, item) => sum + item, 0) / period : (previous * (period - 1) + value) / period;
+    const window = values.slice(index - period + 1, index + 1);
+    budget.tickAtBar(Math.max(1, window.length), index);
+    previous = previous === null ? window.reduce((sum, item) => sum + item, 0) / period : (previous * (period - 1) + value) / period;
     return previous;
   });
 }
@@ -501,8 +524,7 @@ function isMacd(value: RuntimeValue): value is MacdValue {
 class Budget {
   public operations = 0;
   private outputPoints = 0;
-  private currentBar = -1;
-  private operationsAtBar = 0;
+  private readonly operationsAtBar = new Map<number, number>();
 
   public constructor(private readonly limits: Required<KlineScriptRuntimeLimits>, private readonly signal?: AbortSignal) {}
 
@@ -514,12 +536,9 @@ class Budget {
   }
 
   public tickAtBar(units: number, bar: number): void {
-    if (this.currentBar !== bar) {
-      this.currentBar = bar;
-      this.operationsAtBar = 0;
-    }
-    this.operationsAtBar += units;
-    if (this.operationsAtBar > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
+    const operations = (this.operationsAtBar.get(bar) ?? 0) + units;
+    if (operations > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
+    this.operationsAtBar.set(bar, operations);
     this.tick(units, false);
   }
 

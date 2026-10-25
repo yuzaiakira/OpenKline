@@ -11,7 +11,7 @@ export type {
 } from "./types.js";
 export { compileKlineScript } from "./compiler.js";
 export { KlineScriptCompileError } from "./diagnostics.js";
-export { KlineScriptRuntimeError, executeKlineScript } from "./runtime.js";
+export { KlineScriptRuntimeError } from "./runtime.js";
 export type {
   KlineScriptCompileOptions,
   KlineScriptCompileResult,

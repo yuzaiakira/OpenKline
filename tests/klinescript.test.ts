@@ -6,6 +6,7 @@ import {
   KlineScriptRuntimeError,
   type Candle,
 } from "../src/index.js";
+import * as OpenKline from "../src/index.js";
 
 function candles(closes: readonly number[]): Candle[] {
   return closes.map((close, index) => ({
@@ -30,6 +31,7 @@ test("KlineScript compiles the documented EMA grammar and exposes immutable meta
   assert.equal(result.program.metadata.name, "My EMA");
   assert.equal(result.program.metadata.inputs[0]?.defaultValue, 3);
   assert.equal(result.program.metadata.outputs[0]?.color, "#8B5CF6");
+  assert.equal("expression" in (result.program.metadata.outputs[0] ?? {}), false);
   assert.throws(() => {
     (result.program.metadata.inputs as unknown as Array<{ name: string }>)[0]!.name = "changed";
   }, TypeError);
@@ -104,6 +106,27 @@ test("script SMA, RSI, and ATR match native indicator fixtures", () => {
   });
 });
 
+test("script window functions and safe math preserve deterministic fixtures", () => {
+  const result = compileKlineScript([
+    'indicator("Window fixtures")',
+    "deviation = ta.stdev(close, 3)",
+    "upper = ta.highest(close, 3)",
+    "lower = ta.lowest(close, 3)",
+    "safe = close / 0",
+    "plot(deviation, title=\"Deviation\")",
+    "plot(upper, title=\"Highest\")",
+    "plot(lower, title=\"Lowest\")",
+    "plot(safe, title=\"Safe math\")",
+  ].join("\n"));
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  const execution = result.program.execute(candles([1, 2, 3, 4]));
+  assert.deepEqual(execution.outputs[0]?.points.map((point) => point.value), [null, null, Math.sqrt(2 / 3), Math.sqrt(2 / 3)]);
+  assert.deepEqual(execution.outputs[1]?.points.map((point) => point.value), [null, null, 3, 4]);
+  assert.deepEqual(execution.outputs[2]?.points.map((point) => point.value), [null, null, 1, 2]);
+  assert.deepEqual(execution.outputs[3]?.points.map((point) => point.value), [null, null, null, null]);
+});
+
 test("script inputs, MACD projections, hline outputs, and correction recompute work", () => {
   const result = compileKlineScript([
     'indicator("Oscillator", overlay=False)',
@@ -142,4 +165,39 @@ test("runtime enforces cancellation and operation budgets", () => {
   assert.throws(() => result.program.execute(candles([1, 2]), {}, { signal: controller.signal }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_CANCELLED");
   assert.throws(() => result.program.execute(candles([1, 2, 3]), {}, { maxOperations: 1 }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET");
   assert.throws(() => result.program.execute(candles([1, 2, 3]), {}, { maxOperationsPerBar: 0 }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET");
+});
+
+test("runtime charges actual window work before completing an expensive scan", () => {
+  const result = compileKlineScript([
+    'indicator("Expensive window")',
+    "value = ta.highest(close, 5000)",
+    "plot(value)",
+  ].join("\n"));
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  const input = candles(Array.from({ length: 10_000 }, (_, index) => index + 1));
+  assert.throws(
+    () => result.program.execute(input, {}, { maxOperations: 10_000 }),
+    (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET",
+  );
+});
+
+test("runtime aggregates per-bar work across multiple series calculations", () => {
+  const result = compileKlineScript([
+    'indicator("Per-bar budget")',
+    "first = ta.highest(close, 3)",
+    "second = ta.highest(close, 3)",
+    "plot(first)",
+    "plot(second)",
+  ].join("\n"));
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.throws(
+    () => result.program.execute(candles([1, 2, 3]), {}, { maxOperationsPerBar: 5 }),
+    (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET",
+  );
+});
+
+test("internal checked-program execution is not part of the public package surface", () => {
+  assert.equal("executeKlineScript" in OpenKline, false);
 });

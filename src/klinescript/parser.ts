@@ -19,8 +19,14 @@ export interface ParseResult {
   readonly diagnostics: readonly KlineScriptDiagnostic[];
 }
 
-export function parseKlineScript(tokens: readonly KlineScriptToken[]): ParseResult {
-  return new Parser(tokens).parse();
+export interface ParserOptions {
+  readonly maxExpressionDepth?: number;
+}
+
+const DEFAULT_MAX_EXPRESSION_DEPTH = 128;
+
+export function parseKlineScript(tokens: readonly KlineScriptToken[], options: ParserOptions = {}): ParseResult {
+  return new Parser(tokens, options).parse();
 }
 
 class Parser {
@@ -28,8 +34,13 @@ class Parser {
   private readonly statements: Statement[] = [];
   private cursor = 0;
   private nextNodeId = 1;
+  private expressionDepth = 0;
+  private unaryDepth = 0;
+  private readonly maxExpressionDepth: number;
 
-  public constructor(private readonly tokens: readonly KlineScriptToken[]) {}
+  public constructor(private readonly tokens: readonly KlineScriptToken[], options: ParserOptions) {
+    this.maxExpressionDepth = options.maxExpressionDepth ?? DEFAULT_MAX_EXPRESSION_DEPTH;
+  }
 
   public parse(): ParseResult {
     while (!this.is("eof")) {
@@ -86,7 +97,16 @@ class Parser {
   }
 
   private parseExpression(): Expression | null {
-    return this.parseConditional();
+    if (this.expressionDepth >= this.maxExpressionDepth) {
+      this.error("KS2013", `Expression nesting exceeds the ${this.maxExpressionDepth}-level parser limit`, this.current().span);
+      return null;
+    }
+    this.expressionDepth += 1;
+    try {
+      return this.parseConditional();
+    } finally {
+      this.expressionDepth -= 1;
+    }
   }
 
   private parseConditional(): Expression | null {
@@ -132,8 +152,14 @@ class Parser {
   private parseUnary(): Expression | null {
     const token = this.current();
     if (token.value === "+" || token.value === "-" || (token.kind === "identifier" && token.value === "not")) {
+      if (this.unaryDepth >= this.maxExpressionDepth) {
+        this.error("KS2014", `Unary nesting exceeds the ${this.maxExpressionDepth}-level parser limit`, token.span);
+        return null;
+      }
       this.advance();
+      this.unaryDepth += 1;
       const expression = this.parseUnary();
+      this.unaryDepth -= 1;
       if (expression === null) return null;
       return {
         kind: "unary",
