@@ -5,6 +5,11 @@ Playwright-managed browsers for the repository's pinned Playwright version. It
 does not use GitHub Actions, a proprietary cloud service, system Firefox, or
 system Safari/WebKit substitutes.
 
+The current cloud host also has a separate **local diagnostic** workflow. It
+exists to make the provenance of the configured `/usr/bin/chromium` explicit;
+it is not a substitute for this managed-browser workflow and cannot clear the
+formal cross-browser gate.
+
 ## Requirements
 
 - Node.js 20 or newer; record `node --version` and `npm --version`.
@@ -41,8 +46,11 @@ node scripts/browser-verification.mjs \
 The runner uses `playwright.portable.config.ts`, runs Chromium, Firefox,
 WebKit, Pixel 7 Mobile Chrome emulation, and iPhone 13 Mobile Safari emulation
 against the same behavioral suite. It records the commit, Node/npm/Playwright
-versions, platform, requested projects, expected managed executable locations,
-command, JSON result, stderr, and Playwright test artifacts.
+versions, operating system, requested projects, expected managed executable
+locations, managed-browser version and actual user agent when launch succeeds,
+launch configuration, command, JSON result, stderr, and Playwright test
+artifacts. The final `summary.json` includes SHA-256 and byte size for each
+evidence artifact other than itself.
 
 Copy the generated report directory (not browser executables) back to the
 development environment. Preserve these files together:
@@ -56,6 +64,24 @@ development environment. Preserve these files together:
 Mark a missing managed executable as **Blocked**, a failing test with a
 launched managed browser as **Failed**, and a passing project as **Verified**.
 Mobile projects are browser emulation; they are not physical-device testing.
+
+## Local Chromium diagnostic evidence
+
+On this cloud host the checked-in `playwright.config.ts` deliberately sets
+`/usr/bin/chromium` for the `chromium` and `mobile-chrome` projects. Run the
+following only to record that local diagnostic evidence:
+
+```bash
+npm run browser:diagnostic
+```
+
+It writes the same JSON/stderr/test-artifact structure below
+`artifacts/browser-diagnostic/`, plus the configured and resolved executable
+paths, `chromium --version`, Playwright browser version, actual desktop and
+Pixel 7-emulation user agents, exact launch flags, OS metadata, result totals,
+and SHA-256 artifact hashes. Its status is `verified-local-diagnostic`, never
+`verified` for the managed-browser policy. It does not run Firefox, WebKit, or
+Mobile Safari and must not be used to claim those projects.
 
 ## Behavior covered
 

@@ -139,3 +139,14 @@ license or completed third-party notice review; formal Firefox, WebKit, and
 Mobile Safari verification remains blocked until a trusted machine obtains the
 official artifacts. The exact acceptance matrix is in
 `docs/reports/phase-5-2-verification.md`.
+
+## Phase 5.3 owner-review decision package
+
+Phase 5.3 records the provenance of local Chromium evidence separately from
+the required Playwright-managed workflow and prepares a limited-alpha
+owner-review package: license/ownership decisions, exact browser support
+matrix, proposed developer-preview notes, candidate integrity evidence, and a
+publication checklist. It does not approve Apache-2.0, change effective
+package metadata, publish a package, create a tag/release, change visibility,
+or relax Firefox/WebKit/Mobile Safari requirements. The owner decision and
+remaining evidence are recorded in `docs/reports/phase-5-3-verification.md`.

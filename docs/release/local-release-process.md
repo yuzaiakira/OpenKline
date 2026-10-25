@@ -29,7 +29,7 @@ From the repository root:
 npm ci --ignore-scripts --no-audit --no-fund
 npm run typecheck
 npm test
-npm run test:browser
+npm run browser:diagnostic
 npm run benchmark:klinescript
 npm run benchmark:browser
 npm run benchmark:plugins
@@ -62,6 +62,11 @@ npm run release:check
 It is expected to exit non-zero while Firefox, WebKit, or Mobile Safari
 artifacts are unavailable. That status is a release blocker, not a passing
 compatibility result.
+
+`browser:diagnostic` records the host Chromium executable path, version,
+distribution, launch flags, user agents, result totals, and evidence hashes.
+It is intentionally a system-browser diagnostic, not portable managed-browser
+acceptance. Use `npm run browser:verify` on a trusted host for that acceptance.
 
 ## Local preview candidate
 

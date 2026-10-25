@@ -109,6 +109,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   React/Next/browser verification. Legal approval, attribution review, and
   managed Firefox/WebKit/Mobile Safari evidence remain open; no public release
   action is authorized. See `docs/reports/phase-5-2-verification.md`.
+- [Implemented / Owner Decision Required] Phase 5.3 distinguishes the local
+  system-Chromium diagnostic from Playwright-managed evidence, records browser
+  provenance/hashes, and adds an owner approval package, alpha support matrix,
+  proposed release notes, and publication checklist. No package, tag, release,
+  visibility, license, or onboarding setting is published by this work. See
+  `docs/reports/phase-5-3-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

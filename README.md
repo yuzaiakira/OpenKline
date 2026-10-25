@@ -38,6 +38,9 @@ production-readiness audit, and
 for the Phase 5.1 release gate, license, package, and browser evidence. The
 [Phase 5.2 verification](docs/reports/phase-5-2-verification.md) records the
 portable browser workflow and local preview-candidate evidence. The
+[Phase 5.3 verification](docs/reports/phase-5-3-verification.md) and
+[owner approval package](docs/release/owner-approval.md) record the proposed
+developer-preview decision without authorizing publication. The
 [license inventory](docs/audits/license-inventory.md) and
 [developer-preview plan](docs/release/developer-preview-plan.md) describe the
 current distribution boundary; the proposed license is not effective. The
@@ -89,7 +92,8 @@ must provide an appropriate process or Worker termination boundary.
   TypeScript React consumers.
 - `npm run preview:prepare` produces ignored local review tarballs, and
   `npm run browser:verify` produces a portable official-Playwright browser
-  report. Neither command publishes a package.
+  report. `npm run browser:diagnostic` records the local system-Chromium test
+  provenance separately. None of these commands publishes a package.
 - Firefox, WebKit, and Mobile Safari remain open compatibility gates when the
   official Playwright-managed binaries are unavailable; see the Phase 2 and
   Phase 4 reports.

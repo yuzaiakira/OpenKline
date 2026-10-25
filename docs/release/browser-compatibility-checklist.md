@@ -8,10 +8,10 @@ are evidence for this environment only.
 
 | Project | Required artifact | Current status |
 | --- | --- | --- |
-| Chromium | Playwright Chromium 154 | Local configured Chromium: 3/3 tests; managed artifact is unavailable here |
+| Chromium | Playwright Chromium 154 | Verified only as a local system-Chromium diagnostic; managed artifact is unavailable here |
 | Firefox | Playwright Firefox build 1555 (Firefox 157) | Blocked: official executable unavailable |
 | WebKit | Playwright WebKit build 2370 (WebKit 27.2) | Blocked: official executable unavailable |
-| Mobile Chrome | Chromium 154 with Pixel 7 emulation | Local configured Chromium: 3/3 tests; managed artifact is unavailable here |
+| Mobile Chrome | Chromium 154 with Pixel 7 emulation | Verified only as local system-Chromium emulation; managed artifact is unavailable here |
 | Mobile Safari | WebKit build 2370 with iPhone 13 emulation | Blocked with WebKit |
 
 ## Behavior checklist
@@ -25,12 +25,17 @@ the other projects have not been run successfully in this environment.
 ```bash
 npm run test:browser
 npm run test:browser:compat
+npm run browser:diagnostic
 ```
 
 Those local commands retain the cloud's configured Chromium diagnostic setup.
 For portable formal evidence use `npm run browser:verify`, which has no system
 browser executable path and writes a transfer-ready report. See
 [`browser-verification.md`](./browser-verification.md).
+
+`browser:diagnostic` is the provenance record for the current system Chromium
+tests. Its `verified-local-diagnostic` result must remain distinct from a
+Playwright-managed result.
 
 The compatibility command must be run with the exact managed artifacts. It is
 not acceptable to replace Firefox/WebKit with system browsers, pretend Safari

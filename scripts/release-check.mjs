@@ -31,11 +31,16 @@ function validateRepository() {
     "docs/reports/phase-5-readiness.md",
     "docs/reports/phase-5-release-readiness.md",
     "docs/reports/phase-5-2-verification.md",
+    "docs/reports/phase-5-3-verification.md",
     "docs/release/release-gates.md",
     "docs/release/license-approval-checklist.md",
     "docs/release/browser-verification.md",
     "docs/release/developer-preview-plan.md",
     "docs/release/developer-preview-checklist.md",
+    "docs/release/owner-approval.md",
+    "docs/release/alpha-support-matrix.md",
+    "docs/release/alpha-release-notes.md",
+    "docs/release/alpha-publication-checklist.md",
     "docs/release/local-release-process.md",
     "docs/release/browser-compatibility-checklist.md",
   ];
@@ -53,7 +58,7 @@ function validateRepository() {
 try {
   run("typecheck", "npm", ["run", "typecheck"]);
   run("unit and integration tests", "npm", ["test"]);
-  run("Chromium browser tests", "npm", ["run", "test:browser"]);
+  run("local Chromium browser provenance", "npm", ["run", "browser:diagnostic"]);
   run("model benchmark", "npm", ["run", "benchmark"]);
   run("KlineScript benchmark", "npm", ["run", "benchmark:klinescript"]);
   run("Canvas2D benchmark", "npm", ["run", "benchmark:browser"]);

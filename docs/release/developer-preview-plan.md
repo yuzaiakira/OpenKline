@@ -56,6 +56,13 @@ only the staged archives into fresh Vanilla, TypeScript, React, Next.js, and
 browser fixtures. Do not distribute an artifact as a licensed package while
 the legal decision is pending.
 
+The owner-review package is in
+[`owner-approval.md`](./owner-approval.md), the evidence-qualified platform
+claims are in [`alpha-support-matrix.md`](./alpha-support-matrix.md), and the
+proposed developer-preview notes are in
+[`alpha-release-notes.md`](./alpha-release-notes.md). None authorizes
+publication.
+
 For a future owner-approved registry preview, record the exact package
 versions, tarball checksums, git commit, Node/npm versions, browser results, and
 release notes. Rollback means deprecating the affected preview version and

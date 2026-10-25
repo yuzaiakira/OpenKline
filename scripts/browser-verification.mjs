@@ -1,8 +1,10 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { release } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, firefox, webkit } from "playwright";
+import { chromium, devices, firefox, webkit } from "playwright";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const projectNames = new Set(["chromium", "firefox", "webkit", "mobile-chrome", "mobile-safari"]);
@@ -54,10 +56,89 @@ function executableMetadata() {
   };
 }
 
-function classify(result) {
-  if (result.status === 0) return "verified";
+const browserProjects = {
+  chromium: { browser: chromium, browserName: "chromium", device: null },
+  firefox: { browser: firefox, browserName: "firefox", device: null },
+  webkit: { browser: webkit, browserName: "webkit", device: null },
+  "mobile-chrome": { browser: chromium, browserName: "chromium", device: devices["Pixel 7"] },
+  "mobile-safari": { browser: webkit, browserName: "webkit", device: devices["iPhone 13"] },
+};
+
+async function inspectManagedBrowser(project) {
+  const definition = browserProjects[project];
+  const executablePath = definition.browser.executablePath();
+  const descriptor = {
+    project,
+    browserName: definition.browserName,
+    distribution: "Playwright-managed",
+    executablePath,
+    launchOptions: { headless: true },
+    deviceEmulation: definition.device === null ? null : project,
+  };
+  if (!existsSync(executablePath)) {
+    return {
+      ...descriptor,
+      status: "blocked-missing-managed-executable",
+      diagnostic: `Executable does not exist: ${executablePath}`,
+    };
+  }
+  let browser;
+  let context;
+  try {
+    browser = await definition.browser.launch({ headless: true });
+    context = await browser.newContext(definition.device ?? undefined);
+    const page = await context.newPage();
+    return {
+      ...descriptor,
+      status: "available",
+      browserVersion: browser.version(),
+      userAgent: await page.evaluate(() => navigator.userAgent),
+    };
+  } catch (error) {
+    return {
+      ...descriptor,
+      status: "failed-managed-launch",
+      diagnostic: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    await context?.close();
+    await browser?.close();
+  }
+}
+
+function testResultSummary(stdout) {
+  try {
+    const result = JSON.parse(stdout);
+    return { parsed: true, stats: result.stats ?? null };
+  } catch {
+    return { parsed: false, stats: null };
+  }
+}
+
+function artifactHashes(directory) {
+  const hashes = {};
+  function visit(current) {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (path.endsWith("summary.json")) continue;
+      if (entry.isDirectory()) visit(path);
+      else if (entry.isFile()) {
+        hashes[path.slice(directory.length + 1)] = {
+          sha256: createHash("sha256").update(readFileSync(path)).digest("hex"),
+          bytes: statSync(path).size,
+        };
+      }
+    }
+  }
+  visit(directory);
+  return hashes;
+}
+
+function classify(result, browsers) {
+  if (result.status === 0 && browsers.every((browser) => browser.status === "available")) return "verified";
   const combined = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-  return /Executable doesn't exist|Please run the following command to download new browsers/.test(combined)
+  return browsers.some((browser) => browser.status === "blocked-missing-managed-executable")
+    || /Executable doesn't exist|Please run the following command to download new browsers/.test(combined)
     ? "blocked-missing-official-browser"
     : "failed";
 }
@@ -66,6 +147,7 @@ const options = parseArguments(process.argv.slice(2));
 ensureNewOutput(options.output);
 const browserOutput = join(options.output, "test-results");
 const playwright = join(root, "node_modules", ".bin", "playwright");
+const browsers = await Promise.all(options.projects.map(inspectManagedBrowser));
 const command = [
   "test",
   "--config", "playwright.portable.config.ts",
@@ -80,10 +162,10 @@ const metadata = {
   node: process.version,
   npm: commandVersion("npm", ["--version"]),
   playwright: JSON.parse(readFileSync(join(root, "node_modules", "@playwright", "test", "package.json"), "utf8")).version,
-  platform: process.platform,
-  arch: process.arch,
+  operatingSystem: { platform: process.platform, arch: process.arch, release: release() },
   projects: options.projects,
   executablePaths: executableMetadata(),
+  browsers,
   browserBinaryPolicy: "Playwright-managed binaries only; no system-browser override is accepted by this workflow.",
   command: [playwright, ...command],
 };
@@ -99,14 +181,16 @@ writeFileSync(join(options.output, "playwright-results.json"), result.stdout ?? 
 writeFileSync(join(options.output, "playwright-stderr.log"), result.stderr ?? "");
 const summary = {
   ...metadata,
-  status: classify(result),
+  status: classify(result, browsers),
   exitCode: result.status,
+  testResult: testResultSummary(result.stdout ?? ""),
   artifacts: {
     environment: "environment.json",
     playwrightResults: "playwright-results.json",
     stderr: "playwright-stderr.log",
     testResultsDirectory: "test-results",
   },
+  artifactHashes: artifactHashes(options.output),
 };
 writeFileSync(join(options.output, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
 console.log(JSON.stringify(summary, null, 2));

@@ -10,13 +10,16 @@ npm run typecheck
 npm test
 npm run package:audit
 npm run package:smoke
-npm run preview:prepare
+node scripts/preview-candidate.mjs prepare \
+  --output artifacts/developer-preview/0.1.0-alpha.1-REVIEW-ID
 ```
 
 `npm run preview:prepare` builds two tarballs below the ignored
-`artifacts/developer-preview/0.1.0-alpha.1/` directory and writes
-`manifest.json` with package names, source/candidate versions, contents, and
-SHA-256 hashes. It never publishes, tags, or modifies tracked package versions.
+`artifacts/developer-preview/` directory and writes `manifest.json` with
+package names, source/candidate versions, contents, and SHA-256 hashes. Use a
+new output directory for every rebuilt candidate; the script refuses to
+overwrite an existing manifest. It never publishes, tags, or modifies tracked
+package versions.
 
 ## Independent consumption
 
