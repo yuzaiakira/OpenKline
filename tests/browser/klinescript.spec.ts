@@ -87,7 +87,7 @@ test("Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecyc
     type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
     type Indicator = { id: string; getResult(): { outputs: Array<{ id: string; points: Array<{ value: number | null }> }> }; remove(): void };
     type Chart = {
-      addScriptIndicatorAsync(source: string, options?: { id?: string; timeoutMs?: number }): Promise<Indicator>;
+      addScriptIndicatorAsync(source: string, options?: { id?: string; timeoutMs?: number; signal?: AbortSignal }): Promise<Indicator>;
       update(candle: Candle): void;
       getSeriesInfo(): Array<{ id: string; dataLength: number }>;
       getData(): Candle[];
