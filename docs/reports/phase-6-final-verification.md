@@ -23,3 +23,9 @@ The current work does not alter licensing, package license metadata, registry
 publication, Git tags, releases, GitHub Actions, or the established
 cross-browser acceptance criteria. Final owner acceptance requires resolving or
 explicitly excepting the remaining gates.
+
+Implementation evidence is in
+`f86fcae210ee3cbb140c0f05a223debc5274fdb6`
+(`feat(studio): add local chart workspace`) and the preceding core-reliability
+increment `ba642d7e164b577a9d2117758d370975041d29d7`; both were pushed to
+`origin/work` and verified against `FETCH_HEAD` without a history rewrite.

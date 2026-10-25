@@ -52,8 +52,15 @@ this single local measurement. These figures are reproducible local evidence,
 not universal performance promises.
 
 It does not claim Firefox, WebKit, Mobile Safari, external market-data, or
-production SaaS verification. Git commit/remote synchronization is recorded
-after the Studio increment is committed.
+production SaaS verification.
+
+## Git verification
+
+Studio is committed as `f86fcae210ee3cbb140c0f05a223debc5274fdb6`
+(`feat(studio): add local chart workspace`) with both author and committer
+recorded as `Akira Yuzai <yuzai.akira@gmail.com>`. It was pushed directly to
+`origin/work`; a post-push `git fetch origin work` resolved `FETCH_HEAD` to the
+same commit. No history rewrite or GitHub Actions workflow was used.
 
 ## Open acceptance work
 
