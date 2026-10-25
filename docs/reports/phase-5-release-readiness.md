@@ -75,8 +75,8 @@ The following commands passed in this workspace after the Phase 5.1 changes:
 | `npm run test:browser:compat` | Blocked for Firefox/WebKit/Mobile Safari; Mobile Chrome passed |
 | `npm run release:check` | Intentionally blocked at the official compatibility gate after earlier checks pass |
 
-The root package dry-run measured 142 files, 128,884 bytes compressed, and
-730,254 bytes unpacked. It contained build output and package documentation,
+The root package dry-run measured 142 files, 129,067 bytes compressed, and
+730,852 bytes unpacked. It contained build output and package documentation,
 not dependency tarballs, credentials, or a `NOTICE` file.
 
 ## Browser compatibility
@@ -101,19 +101,20 @@ normal frame-time variance, so these are not release budgets.
 
 | Candles | FPS | Frame p50/p95 (ms) | Frame work p50/p95 (ms) | Append/update (ms) | Correction (ms) |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 64.10 | 16.6 / 17.2 | 1.0 / 1.3 | 1.146 | 39.1 |
-| 10,000 | 61.68 | 16.7 / 16.8 | 0.8 / 3.1 | 0.590 | 460.2 |
-| 100,000 | 62.29 | 16.7 / 16.9 | 0.7 / 1.2 | 0.652 | 6168.3 |
+| 1,000 | 65.50 | 16.6 / 17.0 | 1.3 / 1.5 | 1.379 | 44.5 |
+| 10,000 | 62.91 | 16.7 / 17.0 | 0.7 / 1.0 | 0.660 | 366.5 |
+| 100,000 | 61.96 | 16.6 / 17.4 | 0.7 / 2.4 | 0.704 | 5943.3 |
 
-The same run observed 620.65 MB heap before chart destruction, 1.90 MB after
-destruction, and zero remaining chart canvases. Heap readings are engine and
-fixture dependent. Historical correction remains a full-recalculation path;
-the optimized append path is preserved.
+The same run observed 664,689,317 bytes (633.90 MiB) heap before chart
+destruction, 1,915,154 bytes (1.83 MiB) after destruction, and zero remaining
+chart canvases. Heap readings are engine and fixture dependent. Historical
+correction remains a full-recalculation path; the optimized append path is
+preserved.
 
 The KlineScript benchmark on Node.js v24.19.0/Linux x64 measured compilation
-at 3.255 ms; historical p50/p95 at 1.524/1.524 ms for 1k, 4.910/4.910 ms for
-10k, and 52.608/52.608 ms for 100k. It measured 8.055 ms for append and
-26.077 ms for the concurrent case in that fixture. Operations were
+at 3.311 ms; historical p50/p95 at 1.515/1.515 ms for 1k, 5.090/5.090 ms for
+10k, and 60.985/60.985 ms for 100k. It measured 9.101 ms for append and
+27.598 ms for the concurrent case in that fixture. Operations were
 26,794/269,794/2,699,794 respectively. These measurements do not establish a
 general performance guarantee.
 
@@ -154,9 +155,10 @@ this report.
 
 ## Git and publication verification
 
-All commits made for this increment use `Akira Yuzai
-<yuzai.akira@gmail.com>` as author and committer, use Conventional Commit
-messages, and are pushed without force-push or history rewriting. The final
-commit IDs and remote synchronization are recorded in the delivery summary
-after the verification commits. No npm publication, public tag, GitHub Action,
+The implementation increment is commit
+`caa1adf9b866dd32fdb598bd3fa414deaefd6ba3`, with author and committer
+`Akira Yuzai <yuzai.akira@gmail.com>`. It was pushed without force-push or
+history rewriting, and `origin/work` resolved to the same commit during this
+verification. The documentation update containing this report is committed
+separately after these checks. No npm publication, public tag, GitHub Action,
 or external CI run was performed.
