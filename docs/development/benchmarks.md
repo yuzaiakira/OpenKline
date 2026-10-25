@@ -10,6 +10,7 @@ npm run benchmark:alerts
 npm run profile:browser
 npm run benchmark:plugins
 npm run benchmark:klinescript
+npm run benchmark:studio
 ```
 
 `benchmark` measures the framework-independent model. `benchmark:browser`
@@ -35,6 +36,13 @@ and shared time-cache operations. The profiler is diagnostic, not a release
 benchmark.
 
 Do not turn one machine's timings into universal performance guarantees.
+
+`benchmark:studio` starts the private Next.js host in local Chromium and
+measures the layout transition and visible Canvas2D count for single, two
+horizontal, two vertical, and four-grid layouts. It also reports the remaining
+canvas count after returning to a single panel. The result is a DOM/lifecycle
+smoke benchmark, not an FPS target or a cross-browser claim; run it separately
+from `benchmark:browser` when comparing chart-engine frame performance.
 
 `benchmark:plugins` is a deterministic Node microbenchmark for registry
 activation/command/disposal, a 100,000-candle indicator initialization path,

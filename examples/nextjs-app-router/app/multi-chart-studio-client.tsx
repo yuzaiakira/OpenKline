@@ -1,0 +1,463 @@
+"use client";
+
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { FinancialChart } from "@openkline/react";
+import type { FinancialChartHandle } from "@openkline/react";
+import {
+  WatchlistModel,
+  createDeterministicDemoQuoteProvider,
+  migrateLegacyWorkspace,
+  parseStudioWorkspace,
+  type AlertDefinition,
+  type AlertEvent,
+  type AlertFrequency,
+  type Candle,
+  type Chart,
+  type ChartSeriesInfo,
+  type CrosshairMoveEvent,
+  type DrawingSnapshot,
+  type PriceScaleMode,
+  type ReplayApi,
+  type ReplayStatus,
+  type StudioLayout,
+  type StudioWorkspaceDocument,
+  type WatchlistDocument,
+  type WatchlistQuote,
+  type WorkspaceDocument,
+} from "openkline";
+import styles from "./studio.module.css";
+import { KlineScriptStudioEditor } from "./klinescript-studio-editor";
+
+type Timeframe = "5m" | "1h" | "4h" | "1D";
+type Presentation = "candles" | "ohlc" | "hollow" | "heikin-ashi" | "line" | "area" | "baseline";
+
+interface PanelState {
+  readonly panelId: string;
+  readonly symbol: string;
+  readonly timeframe: Timeframe;
+}
+
+interface PanelSnapshot {
+  readonly series: readonly ChartSeriesInfo[];
+  readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string }>;
+  readonly drawings: readonly DrawingSnapshot[];
+  readonly alerts: readonly AlertDefinition[];
+  readonly alertHistory: readonly AlertEvent[];
+  readonly replayStatus: ReplayStatus;
+  readonly replaySourceLength: number;
+  readonly replayStartIndex: number;
+}
+
+interface ChartPanelHandle {
+  getChart(): Chart | null;
+  refresh(): void;
+  getSnapshot(): PanelSnapshot;
+  replaceMarketData(symbol: string, timeframe: Timeframe): void;
+  restoreWorkspace(document: WorkspaceDocument): void;
+  enterReplay(): void;
+  replayCommand(command: (replay: ReplayApi) => void): void;
+  exitReplay(): void;
+  setReplayStartIndex(index: number): void;
+}
+
+interface ChartPanelProps {
+  readonly panel: PanelState;
+  readonly active: boolean;
+  readonly initialWorkspace?: WorkspaceDocument;
+  readonly onActivate: (panelId: string) => void;
+  readonly onReady: (panelId: string, chart: Chart) => void;
+  readonly onSnapshot: (panelId: string, snapshot: PanelSnapshot) => void;
+  readonly onCrosshair: (panelId: string, event: CrosshairMoveEvent) => void;
+  readonly onViewport: (panelId: string, range: { from: number; to: number }) => void;
+  readonly onNotice: (message: string) => void;
+}
+
+const WORKSPACES_KEY = "openkline-studio-workspaces-v1";
+const LEGACY_WORKSPACE_KEY = "openkline-studio-workspace-v1";
+const DEFAULT_WORKSPACE_ID = "studio-default";
+const symbols = ["BTC-USD", "ETH-USD", "AAPL"] as const;
+const timeframes: readonly Timeframe[] = ["5m", "1h", "4h", "1D"];
+const layoutChoices: ReadonlyArray<readonly [StudioLayout, string]> = [
+  ["single", "Single chart"],
+  ["two-horizontal", "Two side by side"],
+  ["two-vertical", "Two vertical"],
+  ["four-grid", "Four chart grid"],
+];
+const indicatorChoices = [
+  ["SMA", "SMA · 20"], ["EMA", "EMA · 20"], ["RSI", "RSI · 14"],
+  ["MACD", "MACD · 12/26/9"], ["BOLLINGER_BANDS", "Bollinger Bands · 20"],
+  ["ATR", "ATR · 14"], ["STOCHASTIC", "Stochastic · 14/3"], ["VWAP", "VWAP · UTC day"],
+] as const;
+const drawingTools = [["trend-line", "Trend"], ["horizontal-line", "Horizontal"], ["vertical-line", "Vertical"], ["rectangle", "Rectangle"], ["fibonacci-retracement", "Fib"], ["text", "Text"]] as const;
+const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
+  ["candles", "Candles"], ["ohlc", "OHLC"], ["hollow", "Hollow"], ["heikin-ashi", "Heikin-Ashi"], ["line", "Line"], ["area", "Area"], ["baseline", "Baseline"],
+];
+const scaleModes: ReadonlyArray<readonly [PriceScaleMode, string]> = [["linear", "Linear"], ["logarithmic", "Log"], ["percentage", "%"], ["indexed", "Index 100"]];
+const defaultScript = ['indicator("Studio EMA")', 'period = input.int("Period", default=21, min=1, max=200)', "value = ta.ema(close, period)", 'plot(value, title="EMA", color="#a78bfa")'].join("\n");
+const IDLE_REPLAY_STATUS: ReplayStatus = { state: "idle", currentIndex: null, currentTimestamp: null, totalBars: 0, speed: 1 };
+
+function intervalFor(timeframe: Timeframe): number {
+  return { "5m": 5 * 60_000, "1h": 60 * 60_000, "4h": 4 * 60 * 60_000, "1D": 24 * 60 * 60_000 }[timeframe];
+}
+
+function buildCandles(symbol: string, timeframe: Timeframe): Candle[] {
+  const interval = intervalFor(timeframe);
+  const seed = [...symbol].reduce((total, character) => total + character.charCodeAt(0), 0);
+  const baseline = symbol === "BTC-USD" ? 64_000 : symbol === "ETH-USD" ? 3_200 : 190;
+  const start = Date.UTC(2026, 0, 1) - interval * 239;
+  return Array.from({ length: 240 }, (_, index) => {
+    const wave = Math.sin((index + seed) / 13) * baseline * 0.025;
+    const trend = index * baseline * 0.00035;
+    const close = baseline + wave + trend + Math.cos((index + seed) / 5) * baseline * 0.006;
+    const open = close - Math.sin((index + seed) / 3) * baseline * 0.004;
+    const spread = baseline * (0.004 + ((index + seed) % 7) * 0.00045);
+    return { time: start + index * interval, open, high: Math.max(open, close) + spread, low: Math.min(open, close) - spread, close, volume: 120 + ((index * 17 + seed) % 180) * 8 };
+  });
+}
+
+function pricePoints(candles: readonly Candle[]) { return candles.map((candle) => ({ time: candle.time, value: candle.close })); }
+function volumePoints(candles: readonly Candle[]) { return candles.map((candle) => ({ time: candle.time, value: candle.volume ?? 0, color: candle.close >= candle.open ? "#34d39999" : "#fb718599" })); }
+function indicatorParameters(id: string): Record<string, unknown> {
+  switch (id) {
+    case "MACD": return { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 };
+    case "BOLLINGER_BANDS": return { period: 20, standardDeviations: 2 };
+    case "STOCHASTIC": return { kPeriod: 14, dPeriod: 3 };
+    case "VWAP": return { session: "utc-day" };
+    default: return { period: 14 };
+  }
+}
+function chartCount(layout: StudioLayout): number { return layout === "single" ? 1 : layout === "four-grid" ? 4 : 2; }
+function textForCrosshair(event: CrosshairMoveEvent | null): string { return event?.time === null || event?.time === undefined || event?.price === null ? "Move across a chart for timestamp and price" : `${new Date(event.time).toLocaleString()} · ${event.formattedPrice ?? event.price.toLocaleString()}`; }
+function textForReplay(status: ReplayStatus, timeZone: string): string { return status.currentTimestamp === null ? "No current bar" : new Date(status.currentTimestamp).toLocaleString(undefined, { timeZone }); }
+function panelKey(panel: PanelState): string { return `${panel.symbol}|${panel.timeframe}`; }
+
+function emptySnapshot(): PanelSnapshot {
+  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84 };
+}
+
+const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice }, ref) {
+  const chartHandle = useRef<FinancialChartHandle>(null);
+  const chartRef = useRef<Chart | null>(null);
+  const replayRef = useRef<ReplayApi | null>(null);
+  const replayUnsubscribeRef = useRef<(() => void) | null>(null);
+  const symbolWorkspacesRef = useRef(new Map<string, WorkspaceDocument>());
+  const initializedRef = useRef(false);
+  const marketKeyRef = useRef(panelKey(panel));
+  const [snapshot, setSnapshot] = useState<PanelSnapshot>(emptySnapshot);
+
+  const publish = useCallback((target = chartRef.current, replayStatus = snapshot.replayStatus, replaySourceLength = snapshot.replaySourceLength, replayStartIndex = snapshot.replayStartIndex): void => {
+    if (target === null) return;
+    const workspace = target.serializeWorkspace();
+    const next: PanelSnapshot = {
+      series: target.getSeriesInfo(),
+      indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
+      drawings: target.getDrawings(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex,
+    };
+    setSnapshot(next);
+    onSnapshot(panel.panelId, next);
+  }, [onSnapshot, panel.panelId, snapshot.replaySourceLength, snapshot.replayStartIndex, snapshot.replayStatus]);
+
+  const seedChart = useCallback((target: Chart, symbol: string, timeframe: Timeframe): void => {
+    const candles = buildCandles(symbol, timeframe);
+    const price = target.addCandlestickSeries({ id: "studio-price", title: "Price", style: { upColor: "#34d399", downColor: "#fb7185" } });
+    const ohlc = target.addOhlcSeries({ id: "studio-ohlc", title: "OHLC", style: { upColor: "#34d399", downColor: "#fb7185", visible: false } });
+    const hollow = target.addHollowCandlestickSeries({ id: "studio-hollow", title: "Hollow candles", style: { hollowUpColor: "#34d399", downColor: "#fb7185", visible: false } });
+    const heikin = target.addHeikinAshiSeries({ id: "studio-heikin", title: "Heikin-Ashi", style: { upColor: "#a78bfa", downColor: "#f472b6", visible: false } });
+    const line = target.addLineSeries({ id: "studio-line", title: "Close", style: { color: "#60a5fa", lineWidth: 2, visible: false } });
+    const area = target.addAreaSeries({ id: "studio-area", title: "Close area", style: { color: "#a78bfa", fillColor: "#8b5cf6", fillOpacity: 0.2, visible: false } });
+    const baseline = target.addBaselineSeries({ id: "studio-baseline", title: "Close vs first", style: { baseline: candles[0]?.close ?? 0, aboveColor: "#34d399", belowColor: "#fb7185", visible: false } });
+    const volume = target.addVolumeSeries({ id: "studio-volume", title: "Volume" });
+    price.setData(candles); ohlc.setData(candles); hollow.setData(candles); heikin.setData(candles); line.setData(pricePoints(candles)); area.setData(pricePoints(candles)); baseline.setData(pricePoints(candles)); volume.setData(volumePoints(candles));
+    target.addIndicator("SMA", { id: "studio-sma", pane: "main", parameters: { period: 20 } });
+    target.addIndicator("RSI", { id: "studio-rsi", pane: "new", parameters: { period: 14 } });
+    marketKeyRef.current = `${symbol}|${timeframe}`;
+    publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35));
+  }, [publish]);
+
+  const attachChart = useCallback((target: Chart): void => {
+    chartRef.current = target;
+    if (initialWorkspace === undefined) seedChart(target, panel.symbol, panel.timeframe);
+    else {
+      try { target.restoreWorkspace(initialWorkspace); publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35)); }
+      catch { seedChart(target, panel.symbol, panel.timeframe); onNotice(`Panel ${panel.panelId} had an invalid saved chart; deterministic data was restored.`); }
+    }
+    initializedRef.current = true;
+    onReady(panel.panelId, target);
+    target.subscribe("crosshairMove", (event) => onCrosshair(panel.panelId, event));
+    target.subscribe("viewportChange", (range) => onViewport(panel.panelId, range));
+    target.subscribe("drawingSelection", () => publish());
+    target.subscribe("indicatorChange", () => publish());
+    target.subscribe("alertTriggered", (event) => { publish(); onNotice(`${event.simulated ? "Simulated" : "Live"} alert on ${panel.symbol}: ${event.alertName}`); });
+    target.subscribe("alertError", (diagnostic) => onNotice(`Alert ${diagnostic.alertId} failed: ${diagnostic.message}`));
+  }, [initialWorkspace, onCrosshair, onNotice, onReady, onViewport, panel.panelId, panel.symbol, panel.timeframe, publish, seedChart]);
+
+  const replaceMarketData = useCallback((symbol: string, timeframe: Timeframe): void => {
+    const target = chartRef.current;
+    if (target === null || !initializedRef.current) return;
+    const oldKey = marketKeyRef.current;
+    const current = target.serializeWorkspace({ symbol, timeframe });
+    symbolWorkspacesRef.current.set(oldKey, current);
+    const saved = symbolWorkspacesRef.current.get(`${symbol}|${timeframe}`);
+    const candles = buildCandles(symbol, timeframe);
+    const base = saved ?? current;
+    const { alerts: _alerts, ...withoutAlerts } = base;
+    const nextWorkspace: WorkspaceDocument = {
+      ...withoutAlerts,
+      metadata: { symbol, timeframe },
+      drawings: saved?.drawings ?? { version: 1, drawings: [] },
+      series: base.series.map((series) => ({ ...series, data: series.type === "volume" || series.type === "histogram" ? volumePoints(candles) : (series.type === "line" || series.type === "area" || series.type === "baseline" ? pricePoints(candles) : candles) })),
+    };
+    try { target.restoreWorkspace(nextWorkspace); marketKeyRef.current = `${symbol}|${timeframe}`; publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35)); onNotice(`${panel.panelId}: loaded ${symbol} at ${timeframe}; symbol-scoped drawings were restored only when previously saved.`); }
+    catch (error) { onNotice(`Could not change ${panel.panelId}: ${error instanceof Error ? error.message : String(error)}`); }
+  }, [onNotice, panel.panelId, publish]);
+
+  const restoreWorkspace = useCallback((document: WorkspaceDocument): void => {
+    const target = chartRef.current;
+    if (target === null) return;
+    try { target.restoreWorkspace(document); publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35)); }
+    catch (error) { onNotice(`Could not restore ${panel.panelId}: ${error instanceof Error ? error.message : String(error)}`); }
+  }, [onNotice, panel.panelId, publish]);
+
+  const enterReplay = useCallback((): void => {
+    const target = chartRef.current;
+    if (target === null) return;
+    try {
+      const source = target.getData();
+      if (source.length < 2) { onNotice("Replay needs at least two bars."); return; }
+      const startIndex = Math.min(Math.max(0, snapshot.replayStartIndex), source.length - 1);
+      const replay = target.createReplay({ source, startAt: source[startIndex]!.time, speed: 2 });
+      replayRef.current = replay;
+      replayUnsubscribeRef.current?.();
+      replayUnsubscribeRef.current = replay.subscribe((status) => publish(target, status, source.length, startIndex));
+      replay.start();
+    } catch (error) { onNotice(`Could not start replay: ${error instanceof Error ? error.message : String(error)}`); }
+  }, [onNotice, publish, snapshot.replayStartIndex]);
+
+  const exitReplay = useCallback((): void => {
+    const replay = replayRef.current;
+    if (replay === null) return;
+    try { replay.exit(); publish(chartRef.current, IDLE_REPLAY_STATUS, snapshot.replaySourceLength, snapshot.replayStartIndex); }
+    catch (error) { onNotice(`Could not exit replay: ${error instanceof Error ? error.message : String(error)}`); }
+    finally { replayUnsubscribeRef.current?.(); replayUnsubscribeRef.current = null; replay.dispose(); replayRef.current = null; }
+  }, [onNotice, publish, snapshot.replaySourceLength, snapshot.replayStartIndex]);
+
+  useImperativeHandle(ref, () => ({
+    getChart: () => chartRef.current,
+    refresh: () => publish(),
+    getSnapshot: () => snapshot,
+    replaceMarketData,
+    restoreWorkspace,
+    enterReplay,
+    replayCommand: (command) => { if (replayRef.current !== null) command(replayRef.current); },
+    exitReplay,
+    setReplayStartIndex: (index) => setSnapshot((current) => ({ ...current, replayStartIndex: index })),
+  }), [enterReplay, exitReplay, publish, replaceMarketData, restoreWorkspace, snapshot]);
+
+  useEffect(() => {
+    const nextKey = panelKey(panel);
+    if (initializedRef.current && nextKey !== marketKeyRef.current) replaceMarketData(panel.symbol, panel.timeframe);
+  }, [panel.symbol, panel.timeframe, replaceMarketData]);
+
+  useEffect(() => () => { replayUnsubscribeRef.current?.(); replayRef.current?.dispose(); replayRef.current = null; }, []);
+
+  return <article className={`${styles.multiChartPanel} ${active ? styles.multiChartPanelActive : ""}`} onPointerDown={() => onActivate(panel.panelId)} data-panel-id={panel.panelId}>
+    <header className={styles.multiPanelHeader}><button type="button" className={styles.panelSelect} aria-label={`Activate ${panel.panelId}`} aria-pressed={active} onClick={() => onActivate(panel.panelId)}>{panel.panelId} · {panel.symbol} · {panel.timeframe}</button><span>{snapshot.indicators.length} indicators</span><span>{snapshot.drawings.length} drawings</span></header>
+    <div className={styles.multiChartCanvas}><FinancialChart ref={chartHandle} autoSize theme="dark" locale="en-US" timeZone="UTC" pricePrecision={2} onChartReady={attachChart} onCrosshairMove={(event) => onCrosshair(panel.panelId, event)} style={{ height: "100%" }} /></div>
+  </article>;
+});
+
+function defaultWatchlists(): WatchlistDocument {
+  return { version: 1, selectedWatchlistId: "watchlist-favorites", lists: [{ id: "watchlist-favorites", name: "Favorites", symbols: symbols.map((displaySymbol, index) => ({ id: displaySymbol, displaySymbol, name: displaySymbol === "BTC-USD" ? "Bitcoin" : displaySymbol === "ETH-USD" ? "Ether" : "Apple Inc.", exchange: displaySymbol === "AAPL" ? "NASDAQ" : "Demo", assetCategory: displaySymbol === "AAPL" ? "Equity" : "Crypto", quoteCurrency: "USD", favorite: index === 0 })) }] };
+}
+
+interface StoredWorkspaces { readonly version: 1; readonly currentId: string; readonly workspaces: readonly StudioWorkspaceDocument[]; }
+
+function parseStoredWorkspaces(value: unknown): StoredWorkspaces {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid workspace collection");
+  const record = value as Record<string, unknown>;
+  if (record.version !== 1 || typeof record.currentId !== "string" || !Array.isArray(record.workspaces)) throw new Error("Invalid workspace collection");
+  const workspaces = record.workspaces.map((item) => parseStudioWorkspace(item));
+  if (workspaces.length === 0) throw new Error("Workspace collection is empty");
+  if (!workspaces.some((item) => item.id === record.currentId)) throw new Error("Current workspace is missing");
+  return { version: 1, currentId: record.currentId, workspaces };
+}
+
+export default function MultiChartStudioClient() {
+  const panelRefs = useRef(new Map<string, ChartPanelHandle>());
+  const archivedPanelsRef = useRef(new Map<string, { panel: PanelState; workspace?: WorkspaceDocument }>());
+  const pendingRestoreRef = useRef<StudioWorkspaceDocument | null>(null);
+  const syncGuardRef = useRef<string | null>(null);
+  const serialRef = useRef(2);
+  const [layout, setLayout] = useState<StudioLayout>("single");
+  const [panels, setPanels] = useState<PanelState[]>([{ panelId: "chart-1", symbol: "BTC-USD", timeframe: "1h" }]);
+  const [activePanelId, setActivePanelId] = useState("chart-1");
+  const [snapshots, setSnapshots] = useState<Record<string, PanelSnapshot>>({});
+  const [sync, setSync] = useState({ crosshair: false, visibleRange: false, symbol: false, timeframe: false });
+  const [watchlistModel, setWatchlistModel] = useState(() => new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`));
+  const [watchlists, setWatchlists] = useState<WatchlistDocument>(() => watchlistModel.getDocument());
+  const [quotes, setQuotes] = useState<Record<string, WatchlistQuote>>({});
+  const [watchlistSearch, setWatchlistSearch] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("Default workspace");
+  const [workspaceId, setWorkspaceId] = useState(DEFAULT_WORKSPACE_ID);
+  const [workspaceIds, setWorkspaceIds] = useState<string[]>([DEFAULT_WORKSPACE_ID]);
+  const [notice, setNotice] = useState("Ready. Multi-chart Studio uses deterministic demo data; no vendor credentials are required.");
+  const [crosshair, setCrosshair] = useState<CrosshairMoveEvent | null>(null);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [scriptOpen, setScriptOpen] = useState(false);
+  const [scriptSource, setScriptSource] = useState(defaultScript);
+  const [indicatorToAdd, setIndicatorToAdd] = useState<(typeof indicatorChoices)[number][0]>("SMA");
+  const [presentation, setPresentation] = useState<Presentation>("candles");
+  const [scaleMode, setScaleMode] = useState<PriceScaleMode>("linear");
+  const [autoScale, setAutoScale] = useState(true);
+  const [axisVisible, setAxisVisible] = useState(true);
+  const [marginTop, setMarginTop] = useState(0.08);
+  const [marginBottom, setMarginBottom] = useState(0.08);
+  const timeZone = "UTC";
+  const [interaction, setInteraction] = useState({ wheelZoom: true, pointerPan: true, crosshair: true, keyboardShortcuts: true });
+  const [alertName, setAlertName] = useState("Close crosses threshold");
+  const [alertThreshold, setAlertThreshold] = useState(0);
+  const [alertFrequency, setAlertFrequency] = useState<AlertFrequency>("once-per-bar");
+
+  const activePanel = panels.find((panel) => panel.panelId === activePanelId) ?? panels[0]!;
+  const activeHandle = panelRefs.current.get(activePanel.panelId) ?? null;
+  const activeSnapshot = snapshots[activePanel.panelId] ?? activeHandle?.getSnapshot() ?? emptySnapshot();
+  const replayActive = activeSnapshot.replayStatus.state !== "idle" && activeSnapshot.replayStatus.state !== "disposed";
+  const selectedList = watchlists.lists.find((list) => list.id === watchlists.selectedWatchlistId) ?? watchlists.lists[0];
+  const filteredSymbols = selectedList?.symbols.filter((symbol) => `${symbol.displaySymbol} ${symbol.name}`.toLowerCase().includes(watchlistSearch.toLowerCase())) ?? [];
+
+  useEffect(() => {
+    if (!replayActive) return undefined;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.key === "ArrowRight") { event.preventDefault(); activeHandle?.replayCommand((replay) => replay.stepForward()); }
+      else if (event.key === "ArrowLeft") { event.preventDefault(); activeHandle?.replayCommand((replay) => replay.stepBackward()); }
+      else if (event.key === " ") { event.preventDefault(); activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play()); }
+      else if (event.key === "Escape") { event.preventDefault(); activeHandle?.exitReplay(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeHandle, activeSnapshot.replayStatus.state, replayActive]);
+
+  useEffect(() => watchlistModel.subscribe(setWatchlists), [watchlistModel]);
+
+  useEffect(() => {
+    const provider = createDeterministicDemoQuoteProvider();
+    const ids = selectedList?.symbols.map((symbol) => symbol.id) ?? [];
+    return provider.subscribe(ids, (updates) => setQuotes((current) => ({ ...current, ...Object.fromEntries(updates.map((quote) => [quote.symbolId, quote])) })));
+  }, [selectedList]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(WORKSPACES_KEY);
+      if (stored !== null) {
+        const parsed = parseStoredWorkspaces(JSON.parse(stored));
+        const current = parsed.workspaces.find((item) => item.id === parsed.currentId)!;
+        setWorkspaceId(current.id); setWorkspaceName(current.name); setWorkspaceIds(parsed.workspaces.map((item) => item.id)); applyDocument(current);
+      } else {
+        const legacy = window.localStorage.getItem(LEGACY_WORKSPACE_KEY);
+        if (legacy !== null) { const migrated = migrateLegacyWorkspace(JSON.parse(legacy), { id: DEFAULT_WORKSPACE_ID, name: "Migrated workspace" }); applyDocument(migrated); setNotice("Migrated the legacy single-chart workspace without deleting its original storage key."); }
+      }
+    } catch { setNotice("Saved workspace data was invalid; the current deterministic workspace was kept safely."); }
+    // Startup migration intentionally runs once against browser storage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const pending = pendingRestoreRef.current;
+    if (pending === null) return;
+    if (!pending.charts.every((chart) => panelRefs.current.has(chart.panelId))) return;
+    if (!pending.charts.every((chart) => panelRefs.current.get(chart.panelId)?.getChart() !== null)) return;
+    pending.charts.forEach((chart) => panelRefs.current.get(chart.panelId)?.restoreWorkspace(chart.workspace));
+    pendingRestoreRef.current = null;
+    setNotice(`Workspace “${pending.name}” restored with ${pending.charts.length} chart panels.`);
+  }, [panels, layout, snapshots]);
+
+  const applyDocument = (document: StudioWorkspaceDocument): void => {
+    const firstChart = document.charts[0]?.workspace;
+    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
+  };
+
+  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.getChart()?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument() }), [layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
+
+  const persist = useCallback((document: StudioWorkspaceDocument, all: readonly StudioWorkspaceDocument[]): void => {
+    try { window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: document.id, workspaces: all })); const activeChart = document.charts[0]?.workspace; if (activeChart !== undefined) window.localStorage.setItem(LEGACY_WORKSPACE_KEY, JSON.stringify(activeChart)); setNotice(`Workspace “${document.name}” saved locally.`); }
+    catch { setNotice("Workspace could not be saved. Browser storage may be unavailable or full."); }
+  }, []);
+
+  const saveWorkspace = useCallback((asNew = false): void => {
+    const id = asNew ? `${workspaceId}-${Date.now()}` : workspaceId;
+    const document = collectDocument(id, workspaceName);
+    const raw = window.localStorage.getItem(WORKSPACES_KEY);
+    let all: StudioWorkspaceDocument[] = [];
+    if (raw !== null) { try { all = [...parseStoredWorkspaces(JSON.parse(raw)).workspaces]; } catch { all = []; } }
+    const index = all.findIndex((item) => item.id === id);
+    if (index >= 0) all[index] = document; else all.push(document);
+    setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceIds(all.map((item) => item.id)); persist(document, all);
+  }, [collectDocument, persist, workspaceId, workspaceName]);
+
+  const changeLayout = (nextLayout: StudioLayout): void => {
+    const desired = chartCount(nextLayout);
+    const next = [...panels];
+    while (next.length > desired) { const removed = next.pop(); if (removed !== undefined) archivedPanelsRef.current.set(removed.panelId, { panel: removed, workspace: panelRefs.current.get(removed.panelId)?.getChart()?.serializeWorkspace({ symbol: removed.symbol, timeframe: removed.timeframe }) }); }
+    while (next.length < desired) { const archived = [...archivedPanelsRef.current.values()][0]; if (archived !== undefined) { next.push(archived.panel); archivedPanelsRef.current.delete(archived.panel.panelId); } else { const panelId = `chart-${serialRef.current++}`; next.push({ panelId, symbol: next[0]?.symbol ?? "BTC-USD", timeframe: next[0]?.timeframe ?? "1h" }); } }
+    setPanels(next);
+    setLayout(nextLayout);
+    setNotice(`Layout changed to ${layoutChoices.find(([id]) => id === nextLayout)?.[1] ?? nextLayout}; hidden panel analysis is retained in this session.`);
+  };
+
+  const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
+  const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); };
+
+  const onCrosshair = (panelId: string, event: CrosshairMoveEvent): void => { if (panelId === activePanelId) setCrosshair(event); if (!sync.crosshair || syncGuardRef.current !== null) return; syncGuardRef.current = panelId; try { panels.forEach((panel) => { if (panel.panelId === panelId) return; panelRefs.current.get(panel.panelId)?.getChart()?.setCrosshairAtTime(event.time); }); } finally { syncGuardRef.current = null; } };
+  const onViewport = (panelId: string, range: { from: number; to: number }): void => { if (!sync.visibleRange || syncGuardRef.current !== null) return; syncGuardRef.current = panelId; try { panels.forEach((panel) => { if (panel.panelId !== panelId) panelRefs.current.get(panel.panelId)?.getChart()?.setVisibleTimeRange(range); }); } finally { syncGuardRef.current = null; } };
+  const onSnapshot = (panelId: string, snapshot: PanelSnapshot): void => { setSnapshots((current) => ({ ...current, [panelId]: snapshot })); if (panelId === activePanelId) { const visible = snapshot.series.find((series) => series.id.startsWith("studio-") && series.id !== "studio-volume" && series.style.visible !== false); const next: Partial<Record<string, Presentation>> = { "studio-price": "candles", "studio-ohlc": "ohlc", "studio-hollow": "hollow", "studio-heikin": "heikin-ashi", "studio-line": "line", "studio-area": "area", "studio-baseline": "baseline" }; const restored = visible === undefined ? undefined : next[visible.id]; if (restored !== undefined) setPresentation(restored); } };
+
+  useEffect(() => { if (scaleMode !== "linear") setNotice(`${scaleModes.find(([mode]) => mode === scaleMode)?.[1] ?? scaleMode} price scale applied without changing financial data.`); }, [scaleMode]);
+  useEffect(() => { if (theme !== "dark") setNotice("Light theme applied without recreating the chart."); }, [theme]);
+  useEffect(() => { if (!replayActive) { setPresentation("candles"); setScaleMode("linear"); activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" }); } }, [replayActive]);
+  const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
+  const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
+  const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
+  const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: alertName.trim() || "Price alert", condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
+  const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };
+
+  const selectedSymbol = (symbolId: string): void => { const symbol = selectedList?.symbols.find((item) => item.id === symbolId); if (symbol !== undefined) changeActiveSymbol(symbol.displaySymbol); };
+  const createWatchlist = (): void => { const list = watchlistModel.create(`Watchlist ${watchlists.lists.length + 1}`); setNotice(`Created ${list.name}.`); };
+  const addWatchlistSymbol = (): void => { if (selectedList === undefined) { createWatchlist(); return; } const candidate = symbols.find((symbol) => !selectedList.symbols.some((item) => item.displaySymbol === symbol)); if (candidate === undefined) return; watchlistModel.addSymbol(selectedList.id, { id: candidate, displaySymbol: candidate, name: candidate, exchange: "Demo", assetCategory: "Sample", quoteCurrency: "USD" }); };
+  const removePanel = (panelId: string): void => { if (panels.length <= 1) return; const target = panelRefs.current.get(panelId)?.getChart(); if (target !== undefined && target !== null && !window.confirm(`Remove ${panelId}? Its chart resources will be destroyed.`)) return; setPanels((current) => current.filter((panel) => panel.panelId !== panelId)); archivedPanelsRef.current.delete(panelId); panelRefs.current.delete(panelId); if (activePanelId === panelId) setActivePanelId(panels.find((panel) => panel.panelId !== panelId)?.panelId ?? "chart-1"); setNotice(`${panelId} removed and its chart resources disposed.`); };
+
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const importWorkspace = (file: File): void => { void file.text().then((text) => { try { const document = parseStudioWorkspace(JSON.parse(text)); applyDocument(document); setNotice(`Imported workspace “${document.name}" after validation.`); } catch { setNotice("Import rejected; the current workspace was not changed."); } }); };
+  const newWorkspace = (): void => { const panelId = `chart-${serialRef.current++}`; archivedPanelsRef.current.clear(); pendingRestoreRef.current = null; setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]); setActivePanelId(panelId); setLayout("single"); setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`); setWorkspaceName("New workspace"); setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`)); setNotice("New empty Studio workspace started."); };
+  const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
+  const deleteWorkspace = (): void => { if (!window.confirm(`Delete workspace “${workspaceName}"?`)) return; const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const remaining = stored.workspaces.filter((item) => item.id !== workspaceId); if (remaining.length === 0) { newWorkspace(); window.localStorage.removeItem(WORKSPACES_KEY); } else { const next = remaining[0]!; window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: next.id, workspaces: remaining })); applyDocument(next); } } catch { setNotice("Could not delete the workspace collection safely."); } };
+  const duplicateWorkspace = (): void => { const id = `${workspaceId}-copy-${Date.now()}`; const document = collectDocument(id, `${workspaceName} copy`); const raw = window.localStorage.getItem(WORKSPACES_KEY); let all: StudioWorkspaceDocument[] = []; if (raw !== null) { try { all = [...parseStoredWorkspaces(JSON.parse(raw)).workspaces]; } catch { all = []; } } all.push(document); setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceIds(all.map((item) => item.id)); persist(document, all); };
+
+  const initialWorkspaceFor = (panelId: string): WorkspaceDocument | undefined => pendingRestoreRef.current?.charts.find((chart) => chart.panelId === panelId)?.workspace ?? archivedPanelsRef.current.get(panelId)?.workspace;
+
+  return <main className={styles.studio}>
+    <header className={styles.topbar}>
+      <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.4 multi-chart workspace</small></div>
+      <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+      <label>Active chart<select aria-label="Active chart panel" value={activePanelId} onChange={(event) => setActivePanelId(event.target.value)}>{panels.map((panel) => <option key={panel.panelId} value={panel.panelId}>{panel.panelId} · {panel.symbol}</option>)}</select></label>
+      <label>Active symbol<select aria-label="Active symbol" value={activePanel.symbol} disabled={replayActive} onChange={(event) => changeActiveSymbol(event.target.value)}>{symbols.map((symbol) => <option key={symbol}>{symbol}</option>)}</select></label>
+      <label>Timeframe<select aria-label="Active timeframe" value={activePanel.timeframe} disabled={replayActive} onChange={(event) => changeActiveTimeframe(event.target.value as Timeframe)}>{timeframes.map((timeframe) => <option key={timeframe}>{timeframe}</option>)}</select></label>
+      <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={deleteWorkspace}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceId} onChange={(event) => loadWorkspace(event.target.value)}>{workspaceIds.map((id) => <option key={id} value={id}>{id === workspaceId ? workspaceName : id}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" onClick={() => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const file = new Blob([JSON.stringify(collectDocument(), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `openkline-${workspaceName.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); }}>Export</button><button type="button" onClick={() => importInputRef.current?.click()}>Import</button><input ref={importInputRef} type="file" accept="application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file); event.currentTarget.value = ""; }} /></div>
+    </header>
+    <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
+    <div className={styles.replayBar}><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label></div>
+    {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
+    <section className={styles.workspace}>
+      <div className={styles.legacyObjectSummary} aria-label="Objects"><h2>Objects</h2><span>Series ({activeSnapshot.series.length})</span><span>Drawings ({activeSnapshot.drawings.length})</span></div>
+      <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={() => { const name = window.prompt("Watchlist name", selectedList.name); if (name !== null) watchlistModel.rename(selectedList.id, name); }}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={() => { if (window.confirm(`Delete watchlist “${selectedList.name}”?`)) watchlistModel.delete(selectedList.id); }}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
+      <aside className={`${styles.sidebar} ${styles.watchlistSidebar}`} aria-label="Watchlists"><div className={styles.panelHeading}><h2>Watchlists</h2><button type="button" onClick={createWatchlist}>New</button></div><label>List<select aria-label="Watchlist" value={watchlists.selectedWatchlistId ?? ""} onChange={(event) => watchlistModel.select(event.target.value)}>{watchlists.lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label><input aria-label="Search watchlist" placeholder="Search symbols" value={watchlistSearch} onChange={(event) => setWatchlistSearch(event.target.value)} /><button type="button" onClick={addWatchlistSymbol}>Add sample symbol</button><ul className={styles.watchlistRows}>{filteredSymbols.map((symbol) => { const quote = quotes[symbol.id]; return <li key={symbol.id} className={symbol.displaySymbol === activePanel.symbol ? styles.watchlistActive : ""}><button type="button" onClick={() => selectedSymbol(symbol.id)}>{symbol.favorite ? "★" : "☆"} {symbol.displaySymbol}<small>{symbol.name}</small></button><span className={quote?.status === "ready" ? "" : styles.quoteStale}>{quote?.last?.toFixed(2) ?? "—"}<small>{quote === undefined ? "Loading" : quote.demo ? "Demo" : quote.status}</small></span><button type="button" aria-label={`Remove ${symbol.displaySymbol}`} onClick={() => watchlistModel.removeSymbol(selectedList!.id, symbol.id)}>×</button></li>; })}</ul><small>Quotes are deterministic demo data, not exchange prices.</small></aside>
+      <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={() => undefined} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} />)}</div><div className={styles.status} aria-live="polite"><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
+      <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => setSync((current) => ({ ...current, crosshair: event.target.checked }))} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => setSync((current) => ({ ...current, visibleRange: event.target.checked }))} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => setSync((current) => ({ ...current, symbol: event.target.checked }))} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => setSync((current) => ({ ...current, timeframe: event.target.checked }))} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { activeHandle?.getChart()?.removeIndicator(indicator.id); activeHandle?.refresh(); }}>×</button></li>)}</ul></details><details open><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input aria-label="Alert name" value={alertName} disabled={replayActive} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
+    </section>
+  </main>;
+}
+
+function emptyWorkspace(symbol: string, timeframe: string): WorkspaceDocument {
+  return { version: 1, metadata: { symbol, timeframe }, chart: { theme: { background: "#0f172a", text: "#e2e8f0", grid: "#24344d", border: "#334155", upCandle: "#34d399", downCandle: "#fb7185", crosshair: "#94a3b8", volumeUp: "#34d399", volumeDown: "#fb7185" }, locale: "en-US", timeZone: "UTC", pricePrecision: 2, direction: "ltr" }, panes: [{ id: "main", height: null, minHeight: 120 }], series: [], indicators: [], drawings: { version: 1, drawings: [] }, viewport: { rangeStart: 0, visibleCount: 1 }, plugins: [] };
+}

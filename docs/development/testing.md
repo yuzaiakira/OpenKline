@@ -133,3 +133,11 @@ The Node suite includes validation and isolation tests for the versioned Studio
 workspace container, layout cardinality, legacy single-chart migration, and
 watchlist CRUD/reordering/favorites. These tests cover the framework-neutral
 domain layer; they do not claim browser UI or multi-chart rendering coverage.
+
+`tests/react-browser/multi-chart-studio.spec.ts` exercises the private Next.js
+host in local Chromium. It covers four-panel rendering, stable panel selection,
+per-panel indicator isolation, symbol and timestamp-sync switches, watchlist
+favorite/reorder controls, named workspace save/load, panel removal, and
+mobile panel selection. This is Chromium evidence only; it does not close the
+inherited Firefox, WebKit, Mobile Safari, accessibility, or physical-device
+gates.

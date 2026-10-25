@@ -15,8 +15,10 @@ replaced by a second chart serialization format.
 
 Supported layout identifiers are `single`, `two-horizontal`, `two-vertical`,
 and `four-grid`. Layout changes preserve existing panel records where possible;
-new panels are created from an explicit deterministic fixture and removed
-panels are preserved in the named workspace until the user confirms deletion.
+new panels are created from an explicit deterministic fixture and temporarily
+removed panels are archived in the current Studio session. A named save
+persists only the panel set present at save time, so permanent removal is
+explicitly represented by saving the reduced workspace.
 The host owns the lifecycle of each `FinancialChart`; unmounting a panel
 destroys only that Chart and its resources.
 

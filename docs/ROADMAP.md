@@ -272,6 +272,16 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   primitives for optional crosshair and visible-range synchronization. These
   methods do not couple charts or synchronize Replay implicitly; host-level
   source tagging and nearest-bar mapping remain required.
+- [Implemented / In Verification] Phase 7.4.1 connects the domain contracts to
+  the private Next.js Studio with single, two-horizontal, two-vertical, and
+  four-grid layouts; stable panel selection; isolated chart/replay/alert/
+  drawing/indicator/script state; opt-in timestamp and symbol/timeframe sync;
+  deterministic watchlist favorite/reorder controls; named local workspaces;
+  import/export validation; and responsive mobile panel switching. Local
+  Chromium coverage is in `tests/react-browser/multi-chart-studio.spec.ts`.
+- [Implemented / In Verification] Phase 7.4.1 adds the reproducible
+  `benchmark:studio` lifecycle workload. Its numbers are local observations;
+  it is not an FPS, memory-limit, accessibility, or cross-browser claim.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

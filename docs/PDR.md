@@ -344,3 +344,13 @@ crosshair methods to the existing Chart API. They do not create global links:
 the host must opt in, tag propagation by source panel, resolve nearest target
 bars, and dispose subscriptions. Replay remains independent by default. See
 `docs/architecture/chart-synchronization.md`.
+
+Phase 7.4.1 connects these contracts to the private Next.js Studio. The host
+now renders all four layouts with stable panel identities, preserves isolated
+chart/replay/alert/drawing/indicator/script state, offers opt-in crosshair,
+range, symbol, and timeframe synchronization, and provides responsive active
+panel selection. It also adds deterministic watchlist controls and named local
+workspace Save/Load/Save As/Duplicate/Import/Export flows. Local Chromium
+browser coverage is recorded in `tests/react-browser/multi-chart-studio.spec.ts`.
+The inherited managed Firefox, WebKit, Mobile Safari, accessibility, and
+physical-device gates remain open.
