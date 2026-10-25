@@ -77,6 +77,33 @@ test("script EMA matches the native EMA calculation", () => {
   assert.deepEqual(script, native.getResult().outputs[0]?.points.map((point) => point.value));
 });
 
+test("script SMA, RSI, and ATR match native indicator fixtures", () => {
+  const result = compileKlineScript([
+    'indicator("Native parity")',
+    'sma = ta.sma(close, 3)',
+    'rsi = ta.rsi(close, 3)',
+    'atr = ta.atr(3)',
+    'plot(sma, title="SMA")',
+    'plot(rsi, title="RSI")',
+    'plot(atr, title="ATR")',
+  ].join("\n"));
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  const input = candles([10, 12, 11, 14, 13, 15, 14]);
+  const script = result.program.execute(input).outputs.map((output) => output.points.map((point) => point.value));
+  const registry = createDefaultIndicatorRegistry();
+  const expected = [
+    ["SMA", { period: 3 }],
+    ["RSI", { period: 3 }],
+    ["ATR", { period: 3 }],
+  ] as const;
+  expected.forEach(([id, parameters], index) => {
+    const native = registry.create(id, parameters);
+    native.setInput(input);
+    assert.deepEqual(script[index], native.getResult().outputs[0]?.points.map((point) => point.value), id);
+  });
+});
+
 test("script inputs, MACD projections, hline outputs, and correction recompute work", () => {
   const result = compileKlineScript([
     'indicator("Oscillator", overlay=False)',

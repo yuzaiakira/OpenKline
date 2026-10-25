@@ -57,7 +57,9 @@ plugin in its Client Component.
 KlineScript tests cover source spans, forbidden calls, immutable metadata,
 historical indexing, warm-up/missing values, native EMA equivalence, MACD
 projections, hlines, input validation, correction recomputation, cancellation,
-budgets, and the playground lifecycle.
+budgets, malformed-source seeds, invalid financial input, and the playground
+lifecycle. The bounded malformed-source seeds are replayable in
+`tests/klinescript-fuzz.test.ts`; this is not an unbounded fuzzing service.
 
 If Chromium is unavailable, set `executablePath` in `playwright.config.ts` to a
 maintained browser installation. A browser test that times out is a failed or

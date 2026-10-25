@@ -416,25 +416,35 @@ function emaValues(values: readonly (number | null)[], period: number, budget: B
 
 function rsiValues(values: readonly (number | null)[], period: number, budget: Budget): (number | null)[] {
   const result: (number | null)[] = values.map(() => null);
+  let gainSum = 0;
+  let lossSum = 0;
   let averageGain: number | null = null;
   let averageLoss: number | null = null;
   for (let index = 1; index < values.length; index += 1) {
     budget.tick();
-    const start = index - period + 1;
-    const window = values.slice(Math.max(1, start), index + 1);
     const previous = values[index - 1] ?? null;
     const current = values[index] ?? null;
-    if (previous === null || current === null || window.length < period || window.some((item, offset) => item === null || values[index - period + offset] === null)) continue;
-    if (averageGain === null || averageLoss === null) {
-      const changes = values.slice(index - period + 1, index + 1).map((item, offset) => (item as number) - (values[index - period + offset] as number));
-      averageGain = changes.reduce((sum, change) => sum + Math.max(change, 0), 0) / period;
-      averageLoss = changes.reduce((sum, change) => sum + Math.max(-change, 0), 0) / period;
+    if (previous === null || current === null) {
+      gainSum = 0;
+      lossSum = 0;
+      averageGain = null;
+      averageLoss = null;
+      continue;
+    }
+    const change = current - previous;
+    if (index <= period) {
+      gainSum += Math.max(change, 0);
+      lossSum += Math.max(-change, 0);
+      if (index === period) {
+        averageGain = gainSum / period;
+        averageLoss = lossSum / period;
+      }
     } else {
-      const change = current as number - (previous as number);
+      if (averageGain === null || averageLoss === null) continue;
       averageGain = (averageGain * (period - 1) + Math.max(change, 0)) / period;
       averageLoss = (averageLoss * (period - 1) + Math.max(-change, 0)) / period;
     }
-    result[index] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
+    if (averageGain !== null && averageLoss !== null) result[index] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
   }
   return result;
 }
