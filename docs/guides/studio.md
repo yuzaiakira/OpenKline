@@ -27,6 +27,11 @@ the public workspace contract.
    workspace. Local storage is browser/profile-specific.
 5. Open KlineScript, compile the source, and add it only after the restricted
    compiler accepts it. Errors are reported in the editor.
+6. Use Bar replay to enter an inclusive historical view of the deterministic
+   source. Previous/next, Play/Pause, speed, and the timeline operate through
+   the public `Chart.createReplay()` API. Exit replay restores the complete
+   workspace; source and structural object changes are intentionally disabled
+   until then.
 
 The Settings panel changes theme, locale, timezone, price precision, scale
 mode (Linear, Log, Percentage, or Index 100), autoscale, axis labels, scale
@@ -39,7 +44,9 @@ Save captures the chart workspace, including visible chart type, price-scale
 configuration, indicators, drawings, and display configuration. Load restores
 through the public workspace contract and synchronizes the active Studio
 controls. Heikin–Ashi remains a display-only projection: workspace data and
-indicators use raw OHLCV.
+indicators use raw OHLCV. A workspace exported through the chart API during
+replay is marked as a partial replay snapshot and is not a resumable Studio
+workspace without the complete source.
 
 ## Boundaries
 

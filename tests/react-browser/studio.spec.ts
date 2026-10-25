@@ -21,6 +21,9 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
 
   const canvas = page.locator("canvas");
+  // Keep pointer coordinates in the chart viewport after the sidebar select
+  // has scrolled the compact Studio layout.
+  await page.evaluate(() => window.scrollTo(0, 0));
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
@@ -83,4 +86,36 @@ test("Studio remains operable at a touch-sized viewport", async ({ page }) => {
   await expect(page.getByRole("button", { name: "OHLC", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Price scale").selectOption("percentage");
   await expect(page.getByLabel("Price scale")).toHaveValue("percentage");
+  await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+  await expect(page.getByText("Replay: ready", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
+  await expect(page.getByText("Replay: paused", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  await expect(page.getByText("Replay: idle", { exact: true })).toBeVisible();
+});
+
+test("Studio exposes deterministic replay playback controls and restores the workspace", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await expect(page.locator("canvas")).toHaveCount(1);
+  await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+  await expect(page.getByText("Replay: ready", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Replay position")).toBeEnabled();
+  await expect(page.getByText(/85 \/ 240/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
+  await expect(page.getByText(/86 \/ 240/)).toBeVisible();
+  await page.getByLabel("Replay speed").selectOption("5");
+  await expect(page.getByLabel("Replay speed")).toHaveValue("5");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(page.getByText("Replay: playing", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(page.getByText("Replay: paused", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  await expect(page.getByText("Replay: idle", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enter replay", exact: true })).toBeEnabled();
+  await expect(page.getByText("Series (10)", { exact: true })).toBeVisible();
+  await expect(page.getByText("Indicators (2)", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
 });

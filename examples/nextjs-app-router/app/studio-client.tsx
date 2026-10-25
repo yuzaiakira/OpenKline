@@ -11,6 +11,8 @@ import type {
   CrosshairMoveEvent,
   DrawingSnapshot,
   PriceScaleMode,
+  ReplayApi,
+  ReplayStatus,
   WorkspaceDocument,
 } from "openkline";
 import styles from "./studio.module.css";
@@ -67,6 +69,14 @@ const defaultScript = [
   'plot(value, title="EMA", color="#a78bfa")',
 ].join("\n");
 
+const IDLE_REPLAY_STATUS: ReplayStatus = {
+  state: "idle",
+  currentIndex: null,
+  currentTimestamp: null,
+  totalBars: 0,
+  speed: 1,
+};
+
 function intervalFor(timeframe: Timeframe): number {
   return { "5m": 5 * 60_000, "1h": 60 * 60_000, "4h": 4 * 60 * 60_000, "1D": 24 * 60 * 60_000 }[timeframe];
 }
@@ -122,6 +132,8 @@ function textForCrosshair(event: CrosshairMoveEvent | null): string {
 
 export default function StudioClient() {
   const handleRef = useRef<FinancialChartHandle>(null);
+  const replayRef = useRef<ReplayApi | null>(null);
+  const replayUnsubscribeRef = useRef<(() => void) | null>(null);
   const serialRef = useRef(1);
   const [symbol, setSymbol] = useState<(typeof symbols)[number]>("BTC-USD");
   const [timeframe, setTimeframe] = useState<Timeframe>("1h");
@@ -143,6 +155,7 @@ export default function StudioClient() {
   const [scriptOpen, setScriptOpen] = useState(false);
   const [scriptSource, setScriptSource] = useState(defaultScript);
   const [scriptError, setScriptError] = useState<string | null>(null);
+  const [replayStatus, setReplayStatus] = useState<ReplayStatus>(IDLE_REPLAY_STATUS);
 
   const chart = (): Chart | null => handleRef.current?.getChart() ?? null;
 
@@ -183,6 +196,69 @@ export default function StudioClient() {
     setPricePrecision(workspace.chart.pricePrecision);
     setTheme(workspace.chart.theme.background === "#ffffff" ? "light" : "dark");
   }, []);
+
+  const replayActive = replayStatus.state !== "idle" && replayStatus.state !== "disposed";
+
+  const refreshReplayStatus = useCallback((status: ReplayStatus, target = chart()): void => {
+    setReplayStatus(status);
+    refreshObjects(target);
+  }, [refreshObjects]);
+
+  const enterReplay = useCallback((): void => {
+    const target = chart();
+    if (target === null) return;
+    try {
+      let replay = replayRef.current;
+      if (replay === null || replay.getStatus().state === "disposed") {
+        const source = target.getData();
+        if (source.length < 2) {
+          setNotice("Replay needs at least two historical bars.");
+          return;
+        }
+        replay = target.createReplay({
+          source,
+          startAt: source[Math.floor(source.length * 0.35)]!.time,
+          speed: 2,
+        });
+        replayRef.current = replay;
+        replayUnsubscribeRef.current = replay.subscribe((status) => refreshReplayStatus(status, target));
+      }
+      replay.start();
+      setNotice("Replay mode started from the selected historical point.");
+    } catch (error) {
+      setNotice(`Could not start replay: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }, [refreshReplayStatus]);
+
+  const runReplayCommand = useCallback((command: (replay: ReplayApi) => void): void => {
+    const replay = replayRef.current;
+    if (replay === null) return;
+    try {
+      command(replay);
+    } catch (error) {
+      setNotice(`Replay command failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }, []);
+
+  const exitReplay = useCallback((): void => {
+    const replay = replayRef.current;
+    if (replay === null) return;
+    try {
+      replay.exit();
+      const target = chart();
+      syncDisplayPreferences(target);
+      refreshObjects(target);
+      setNotice("Replay exited; the complete workspace and live chart state were restored.");
+    } catch (error) {
+      setNotice(`Could not exit replay: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      replayUnsubscribeRef.current?.();
+      replayUnsubscribeRef.current = null;
+      replay.dispose();
+      replayRef.current = null;
+      setReplayStatus(IDLE_REPLAY_STATUS);
+    }
+  }, [refreshObjects, syncDisplayPreferences]);
 
   const applyPresentation = useCallback((next: Presentation, target = chart()): void => {
     if (target === null) return;
@@ -259,7 +335,12 @@ export default function StudioClient() {
     setNotice(`Loaded ${symbol} at ${timeframe} with ${candles.length} deterministic bars.`);
   }, [refreshObjects, symbol, syncDisplayPreferences, timeframe]);
 
-  useEffect(() => () => { handleRef.current = null; }, []);
+  useEffect(() => () => {
+    replayUnsubscribeRef.current?.();
+    replayUnsubscribeRef.current = null;
+    replayRef.current = null;
+    handleRef.current = null;
+  }, []);
 
   const updateTheme = (next: "dark" | "light"): void => {
     chart()?.setOptions({ theme: next });
@@ -423,20 +504,20 @@ export default function StudioClient() {
       <header className={styles.topbar}>
         <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 6 local workspace</small></div>
         <label>Symbol
-          <select value={symbol} onChange={(event) => { const next = event.target.value as (typeof symbols)[number]; setSymbol(next); replaceMarketData(next, timeframe); }}>
+          <select value={symbol} disabled={replayActive} onChange={(event) => { const next = event.target.value as (typeof symbols)[number]; setSymbol(next); replaceMarketData(next, timeframe); }}>
             {symbols.map((item) => <option key={item}>{item}</option>)}
           </select>
         </label>
         <label>Timeframe
-          <select value={timeframe} onChange={(event) => { const next = event.target.value as Timeframe; setTimeframe(next); replaceMarketData(symbol, next); }}>
+          <select value={timeframe} disabled={replayActive} onChange={(event) => { const next = event.target.value as Timeframe; setTimeframe(next); replaceMarketData(symbol, next); }}>
             {(["5m", "1h", "4h", "1D"] as const).map((item) => <option key={item}>{item}</option>)}
           </select>
         </label>
         <div className={styles.topActions}>
-          <button type="button" onClick={saveWorkspace}>Save</button>
-          <button type="button" onClick={loadWorkspace}>Load</button>
-          <button type="button" onClick={exportWorkspace}>Export</button>
-          <button type="button" onClick={() => setScriptOpen((open) => !open)} aria-expanded={scriptOpen}>KlineScript</button>
+          <button type="button" onClick={saveWorkspace} disabled={replayActive}>Save</button>
+          <button type="button" onClick={loadWorkspace} disabled={replayActive}>Load</button>
+          <button type="button" onClick={exportWorkspace} disabled={replayActive}>Export</button>
+          <button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive} aria-expanded={scriptOpen}>KlineScript</button>
         </div>
       </header>
 
@@ -447,9 +528,40 @@ export default function StudioClient() {
           <button type="button" onClick={() => chart()?.resetView()}>Reset</button>
         </div>
         <div className={styles.toolGroup} aria-label="Drawing tools">
-          {drawingTools.map(([type, label]) => <button key={type} type="button" onClick={() => activateDrawing(type)}>{label}</button>)}
-          <button type="button" onClick={() => { const changed = chart()?.undoDrawing(); refreshObjects(); if (changed) setNotice("Drawing undo applied."); }}>Undo</button>
-          <button type="button" onClick={() => { const changed = chart()?.redoDrawing(); refreshObjects(); if (changed) setNotice("Drawing redo applied."); }}>Redo</button>
+          {drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}
+          <button type="button" disabled={replayActive} onClick={() => { const changed = chart()?.undoDrawing(); refreshObjects(); if (changed) setNotice("Drawing undo applied."); }}>Undo</button>
+          <button type="button" disabled={replayActive} onClick={() => { const changed = chart()?.redoDrawing(); refreshObjects(); if (changed) setNotice("Drawing redo applied."); }}>Redo</button>
+        </div>
+      </section>
+
+      <section className={styles.replayPanel} aria-label="Bar replay">
+        <div className={styles.replayHeading}>
+          <strong>Bar replay</strong>
+          <span aria-live="polite">{replayActive ? `Replay: ${replayStatus.state}` : "Replay: idle"}</span>
+        </div>
+        <div className={styles.replayControls}>
+          <button type="button" onClick={enterReplay} disabled={replayActive}>Enter replay</button>
+          <button type="button" onClick={() => runReplayCommand((replay) => replay.stepBackward())} disabled={!replayActive} aria-label="Replay previous bar">◀</button>
+          <button type="button" onClick={() => runReplayCommand((replay) => replay.getStatus().state === "playing" ? replay.pause() : replay.play())} disabled={!replayActive}>{replayStatus.state === "playing" ? "Pause" : "Play"}</button>
+          <button type="button" onClick={() => runReplayCommand((replay) => replay.stepForward())} disabled={!replayActive} aria-label="Replay next bar">▶</button>
+          <button type="button" onClick={exitReplay} disabled={!replayActive}>Exit replay</button>
+          <label>Speed
+            <select aria-label="Replay speed" value={replayStatus.speed} disabled={!replayActive} onChange={(event) => runReplayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>
+              {[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}
+            </select>
+          </label>
+        </div>
+        <div className={styles.replayTimeline}>
+          <input
+            aria-label="Replay position"
+            type="range"
+            min="0"
+            max={Math.max(0, replayStatus.totalBars - 1)}
+            value={replayStatus.currentIndex ?? 0}
+            disabled={!replayActive || replayStatus.totalBars < 2}
+            onChange={(event) => runReplayCommand((replay) => replay.seekToBar(Number(event.target.value)))}
+          />
+          <span>{replayStatus.currentIndex === null ? "No bars" : `${replayStatus.currentIndex + 1} / ${replayStatus.totalBars}`}</span>
         </div>
       </section>
 
@@ -457,34 +569,34 @@ export default function StudioClient() {
         <div><strong>KlineScript Editor</strong><span>Compiled locally through the restricted public compiler.</span></div>
         <textarea value={scriptSource} onChange={(event) => setScriptSource(event.target.value)} spellCheck={false} aria-label="KlineScript source" />
         {scriptError === null ? null : <p role="alert">{scriptError}</p>}
-        <div><button type="button" onClick={addScript}>Compile and add</button><button type="button" onClick={() => setScriptOpen(false)}>Close</button></div>
+        <div><button type="button" disabled={replayActive} onClick={addScript}>Compile and add</button><button type="button" onClick={() => setScriptOpen(false)}>Close</button></div>
       </section> : null}
 
       <section className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="Chart object manager">
-          <div className={styles.panelHeading}><h2>Objects</h2><button type="button" onClick={addOverlay}>Add overlay</button></div>
+          <div className={styles.panelHeading}><h2>Objects</h2><button type="button" disabled={replayActive} onClick={addOverlay}>Add overlay</button></div>
           <details open>
             <summary>Series ({objects.series.length})</summary>
             <ul>{objects.series.map((series) => <li key={series.id}>
               <span title={`${series.type} · ${series.dataLength} points`}>{series.title ?? series.id}</span>
               <button type="button" aria-label={`Toggle ${series.id}`} onClick={() => { chart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); refreshObjects(); }}>{series.style.visible === false ? "Show" : "Hide"}</button>
               <input aria-label={`${series.id} color`} type="color" value={series.style.color ?? series.style.hollowUpColor ?? series.style.upColor ?? "#60a5fa"} onChange={(event) => { chart()?.setSeriesStyle(series.id, isCandleSeriesType(series.type) ? { upColor: event.target.value } : { color: event.target.value }); refreshObjects(); }} />
-              {series.id === "studio-price" || series.id.includes(":") ? null : <button type="button" aria-label={`Remove ${series.id}`} onClick={() => { chart()?.removeSeries(series.id); refreshObjects(); }}>×</button>}
+              {series.id === "studio-price" || series.id.includes(":") ? null : <button type="button" disabled={replayActive} aria-label={`Remove ${series.id}`} onClick={() => { chart()?.removeSeries(series.id); refreshObjects(); }}>×</button>}
             </li>)}</ul>
           </details>
           <details open>
             <summary>Indicators ({objects.indicators.length})</summary>
-            <div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" onClick={addIndicator}>Add</button></div>
-            <ul>{objects.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" aria-label={`Remove ${indicator.id}`} onClick={() => { chart()?.removeIndicator(indicator.id); refreshObjects(); }}>×</button></li>)}</ul>
+            <div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div>
+            <ul>{objects.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { chart()?.removeIndicator(indicator.id); refreshObjects(); }}>×</button></li>)}</ul>
           </details>
           <details open>
             <summary>Drawings ({objects.drawings.length})</summary>
             <ul>{objects.drawings.map((drawing) => <li key={drawing.id} className={styles.drawingRow}>
               <button type="button" className={styles.objectName} onClick={() => chart()?.selectDrawing(drawing.id)}>{drawing.type}</button>
-              <button type="button" onClick={() => patchDrawingStyle(drawing.id, { visible: drawing.style.visible === false })}>{drawing.style.visible === false ? "Show" : "Hide"}</button>
-              <button type="button" onClick={() => patchDrawingStyle(drawing.id, { locked: drawing.style.locked !== true })}>{drawing.style.locked ? "Unlock" : "Lock"}</button>
-              <input aria-label={`${drawing.id} color`} type="color" value={drawing.style.color ?? "#fbbf24"} onChange={(event) => patchDrawingStyle(drawing.id, { color: event.target.value })} />
-              <button type="button" aria-label={`Remove ${drawing.id}`} onClick={() => { chart()?.removeDrawing(drawing.id); refreshObjects(); }}>×</button>
+              <button type="button" disabled={replayActive} onClick={() => patchDrawingStyle(drawing.id, { visible: drawing.style.visible === false })}>{drawing.style.visible === false ? "Show" : "Hide"}</button>
+              <button type="button" disabled={replayActive} onClick={() => patchDrawingStyle(drawing.id, { locked: drawing.style.locked !== true })}>{drawing.style.locked ? "Unlock" : "Lock"}</button>
+              <input aria-label={`${drawing.id} color`} disabled={replayActive} type="color" value={drawing.style.color ?? "#fbbf24"} onChange={(event) => patchDrawingStyle(drawing.id, { color: event.target.value })} />
+              <button type="button" disabled={replayActive} aria-label={`Remove ${drawing.id}`} onClick={() => { chart()?.removeDrawing(drawing.id); refreshObjects(); }}>×</button>
             </li>)}</ul>
           </details>
         </aside>
