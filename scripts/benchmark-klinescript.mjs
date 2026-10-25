@@ -1,5 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { compileKlineScript, createDefaultIndicatorRegistry } from "../dist/src/index.js";
+import { getKlineScriptIncrementalPlan } from "../dist/src/klinescript/compiler.js";
+import { executeKlineScriptIncremental } from "../dist/src/klinescript/incremental.js";
 
 const source = [
   'indicator("Benchmark EMA")',
@@ -54,6 +56,7 @@ if (!compiled.success) {
   } catch (error) {
     cancellation = error instanceof Error ? error.name : "unknown";
   }
+  const incremental = measureIncrementalCandidate();
   console.log(JSON.stringify({
     environment: { node: process.version, platform: process.platform, arch: process.arch },
     compileMs,
@@ -61,9 +64,41 @@ if (!compiled.success) {
     appendTenUpdatesMs: appendMs,
     concurrentFourBy10000Ms: concurrentMs,
     concurrentOperations: concurrent.reduce((sum, item) => sum + item.operations, 0),
+    incremental,
     cancellation,
     disposed: true,
   }, null, 2));
+}
+
+function measureIncrementalCandidate() {
+  const source = 'indicator("Pointwise")\nplot((close * 2 - open) / 3)';
+  const result = compileKlineScript(source);
+  if (!result.success) return { eligible: false, diagnostics: result.diagnostics };
+  const plan = getKlineScriptIncrementalPlan(result.program);
+  if (plan === undefined) return { eligible: false };
+  let input = candles(1_000);
+  let previous = result.program.execute(input);
+  const candidateSamples = [];
+  const fullSamples = [];
+  for (let index = 0; index < 10; index += 1) {
+    input = [...input, candles(1, input.at(-1)?.time + 60_000)[0]];
+    const candidateStart = performance.now();
+    const candidate = executeKlineScriptIncremental(plan, input, previous, {});
+    candidateSamples.push(performance.now() - candidateStart);
+    const fullStart = performance.now();
+    const full = result.program.execute(input);
+    fullSamples.push(performance.now() - fullStart);
+    if (candidate === undefined || JSON.stringify(candidate.outputs) !== JSON.stringify(full.outputs)) throw new Error("Incremental benchmark output diverged from full execution");
+    previous = candidate;
+  }
+  return {
+    eligible: true,
+    candidateMedianMs: percentile(candidateSamples, 0.5),
+    candidateP95Ms: percentile(candidateSamples, 0.95),
+    fullMedianMs: percentile(fullSamples, 0.5),
+    fullP95Ms: percentile(fullSamples, 0.95),
+    finalOperations: previous.operations,
+  };
 }
 
 function candles(count, firstTime = Date.UTC(2026, 0, 1)) {

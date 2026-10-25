@@ -238,6 +238,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   fallback, current-only script alert snapshots, replay-prefix session reset,
   and disposal on remove/destroy. A real Chromium ESM-Worker workflow passes;
   incremental execution and the professional Studio editor remain open.
+- [Implemented / In Verification] Phase 7.3.3 adds a conservative
+  `pointwise-append` Worker candidate for direct candle-field/literal
+  expressions, with exact output differential tests and full-interpreter
+  fallback for parameters, history, assignments, technical functions, and all
+  corrections. Stateful TA incremental execution remains open; see
+  `docs/architecture/klinescript-incremental-execution.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

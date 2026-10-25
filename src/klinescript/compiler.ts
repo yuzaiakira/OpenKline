@@ -5,6 +5,7 @@ import { type KlineScriptDiagnostic } from "./diagnostics.js";
 import { lexKlineScript, type LexerOptions } from "./lexer.js";
 import { parseKlineScript } from "./parser.js";
 import { createKlineScriptDefinition, executeKlineScript, type KlineScriptExecutionResult, type KlineScriptRuntimeLimits, type KlineScriptRuntimeOptions } from "./runtime.js";
+import { classifyKlineScriptIncrementalPlan, type KlineScriptIncrementalPlan } from "./incremental.js";
 
 export interface KlineScriptCompileOptions extends LexerOptions, CheckOptions {}
 
@@ -17,6 +18,8 @@ export interface KlineScriptCompiledProgram {
   createIndicatorDefinition(limits?: KlineScriptRuntimeLimits): IndicatorDefinition;
   execute(input: readonly Candle[], parameters?: Record<string, unknown>, options?: KlineScriptRuntimeOptions): KlineScriptExecutionResult;
 }
+
+const incrementalPlans = new WeakMap<KlineScriptCompiledProgram, KlineScriptIncrementalPlan | undefined>();
 
 export type KlineScriptCompileResult =
   | { readonly success: true; readonly program: KlineScriptCompiledProgram; readonly diagnostics: readonly KlineScriptDiagnostic[] }
@@ -43,7 +46,14 @@ export function compileKlineScript(source: string, options: KlineScriptCompileOp
     createIndicatorDefinition: (limits = {}) => createKlineScriptDefinition(checkedProgram, id, limits),
     execute: (input, parameters = {}, options = {}) => executeKlineScript(checkedProgram, input, parameters, options, id),
   };
-  return { success: true, program: Object.freeze(program), diagnostics };
+  const frozenProgram = Object.freeze(program);
+  incrementalPlans.set(frozenProgram, classifyKlineScriptIncrementalPlan(checkedProgram));
+  return { success: true, program: frozenProgram, diagnostics };
+}
+
+/** @internal Worker-only incremental classification; not exported from the package root. */
+export function getKlineScriptIncrementalPlan(program: KlineScriptCompiledProgram): KlineScriptIncrementalPlan | undefined {
+  return incrementalPlans.get(program);
 }
 
 function cloneMetadata(metadata: KlineScriptIndicatorMetadata): KlineScriptIndicatorMetadata {

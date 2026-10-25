@@ -298,3 +298,12 @@ Chromium verifies the real static ESM Worker, alert triggering, replay prefix
 length, removal, and canvas cleanup. This does not claim all script CPU work
 is off the main thread or close the inherited browser/accessibility/physical
 device gates. Incremental execution and the professional editor remain open.
+
+Phase 7.3.3 adds a verified `pointwise-append` subset for Worker sessions.
+Direct candle-field/literal arithmetic and conditionals can append one output
+point; scripts using inputs, historical indexing, assignments, or technical
+functions conservatively use the full interpreter. Corrections and all
+non-append events invalidate the candidate. Deterministic randomized
+differential tests compare supported output values with full execution, while
+`operations` remains a work measurement. Retained-state optimizations for
+SMA/EMA/RSI/MACD/ATR/windows are not claimed complete.

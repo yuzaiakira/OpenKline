@@ -94,6 +94,10 @@ projections, hlines, input validation, correction recomputation, cancellation,
 budgets, malformed-source seeds, invalid financial input, and the playground
 lifecycle. The bounded malformed-source seeds are replayable in
 `tests/klinescript-fuzz.test.ts`; this is not an unbounded fuzzing service.
+`tests/klinescript-incremental.test.ts` covers the verified pointwise append
+subset, missing-volume/null behavior, deterministic randomized prefixes,
+multiple outputs, correction fallback, and conservative rejection of history,
+parameters, assignments, and technical functions.
 `tests/klinescript-worker.test.ts` additionally covers the versioned Worker
 protocol, serializable compile responses, worker-side sessions, diagnostics,
 malformed requests, cancellation, timeout, restart, and disposal using a

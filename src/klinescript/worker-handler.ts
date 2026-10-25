@@ -1,6 +1,7 @@
 import { CandleStore } from "../core/candle-store.js";
 import type { Candle } from "../types.js";
-import { compileKlineScript, type KlineScriptCompileOptions, type KlineScriptCompiledProgram } from "./compiler.js";
+import { compileKlineScript, getKlineScriptIncrementalPlan, type KlineScriptCompileOptions, type KlineScriptCompiledProgram } from "./compiler.js";
+import { executeKlineScriptIncremental } from "./incremental.js";
 import { KlineScriptRuntimeError } from "./runtime.js";
 import {
   isWorkerRequest,
@@ -19,6 +20,7 @@ interface Session {
   readonly store: CandleStore;
   source: string;
   parameters: Record<string, unknown>;
+  lastResult?: import("./runtime.js").KlineScriptExecutionResult;
 }
 
 export function createKlineScriptWorkerHandler(send: (response: KlineScriptWorkerResponse) => void): (message: unknown) => void {
@@ -41,7 +43,7 @@ export function createKlineScriptWorkerHandler(send: (response: KlineScriptWorke
     return entry;
   };
 
-  const execute = (request: Extract<KlineScriptWorkerRequest, { type: "execute" | "update-input" }>, input: readonly Candle[], source: string, parameters: Record<string, unknown>, options: import("./runtime.js").KlineScriptRuntimeLimits | undefined): void => {
+  const execute = (request: Extract<KlineScriptWorkerRequest, { type: "execute" | "update-input" }>, input: readonly Candle[], source: string, parameters: Record<string, unknown>, options: import("./runtime.js").KlineScriptRuntimeLimits | undefined, session?: Session, allowIncremental = false): void => {
     const entry = compile(source);
     if (entry === null) {
       const result = compileKlineScript(source);
@@ -51,7 +53,10 @@ export function createKlineScriptWorkerHandler(send: (response: KlineScriptWorke
     const controller = new AbortController();
     cancellations.set(request.requestId, controller);
     try {
-      const result = entry.program.execute(input, parameters, { ...(options ?? {}), signal: controller.signal });
+      const result = allowIncremental
+        ? executeKlineScriptIncremental(getKlineScriptIncrementalPlan(entry.program), input, session?.lastResult, parameters) ?? entry.program.execute(input, parameters, { ...(options ?? {}), signal: controller.signal })
+        : entry.program.execute(input, parameters, { ...(options ?? {}), signal: controller.signal });
+      if (session !== undefined) session.lastResult = result;
       send({ protocol: KLINE_SCRIPT_WORKER_PROTOCOL_VERSION, type: request.type === "execute" ? "execute-result" : "update-input-result", requestId: request.requestId, generation: request.generation, result });
     } catch (error) {
       if (error instanceof KlineScriptRuntimeError) {
@@ -109,16 +114,27 @@ export function createKlineScriptWorkerHandler(send: (response: KlineScriptWorke
       session = { store: new CandleStore(), source: message.source, parameters: { ...(message.parameters ?? {}) } };
       sessions.set(message.sessionId, session);
     }
+    const previousSource = session.source;
+    const previousParameters = session.parameters;
+    const previousLast = session.store.length === 0 ? undefined : session.store.getRange(session.store.length - 1, session.store.length)[0];
+    const isAppend = message.candle !== undefined && (previousLast === undefined || message.candle.time > previousLast.time);
     session.source = message.source;
     if (message.parameters !== undefined) session.parameters = { ...message.parameters };
+    if (previousSource !== session.source || !sameParameters(previousParameters, session.parameters) || message.input !== undefined || !isAppend) delete session.lastResult;
     if (message.input !== undefined) session.store.setData(message.input);
     else if (message.candle !== undefined) session.store.update(message.candle as Candle);
     else {
       fail(message, "INVALID_INPUT", "update-input requires input or candle");
       return;
     }
-    execute(message, session.store.getAll(), session.source, session.parameters, message.options);
+    execute(message, session.store.getAll(), session.source, session.parameters, message.options, session, isAppend);
   };
+}
+
+function sameParameters(left: Readonly<Record<string, unknown>>, right: Readonly<Record<string, unknown>>): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  return leftKeys.length === rightKeys.length && leftKeys.every((key) => Object.is(left[key], right[key]));
 }
 
 function isRequestIdentity(value: unknown): value is Pick<KlineScriptWorkerRequest, "requestId" | "generation"> {

@@ -2,8 +2,23 @@
 
 Incremental execution is a separate correctness milestone from Worker
 transport. The current Worker `update-input` path is deliberately conservative:
-it keeps the ordered candle session in the worker, accepts appends and
-corrections, then runs the same full interpreter used by `execute`.
+it keeps the ordered candle session in the worker and accepts appends and
+corrections. A verified `pointwise-append` subset can append one point; all
+other programs use the same full interpreter as `execute`.
+
+## Current implementation
+
+The compiler classifies scripts with no assignments, input parameters,
+historical indexing, or technical-function calls whose plot/hline expressions
+contain only candle fields, literals, arithmetic, comparisons, boolean
+operators, and conditionals. The Worker retains the previous result and
+evaluates the new candle for this subset. Its finite-number, null-propagation,
+and division semantics match the reference interpreter.
+
+SMA, EMA, RSI, MACD, ATR, standard deviation, highest/lowest, parameterized
+scripts, historical indexing, and corrections conservatively use full
+reference execution. This is a verified subset, not a general constant-time
+claim.
 
 ## Required equivalence
 
@@ -17,16 +32,20 @@ source must invalidate any reusable state that cannot be proven correct.
 ```text
 event -> ordered CandleStore -> incremental candidate
                          \-> full reference execution
-                              -> differential comparison
+                              -> differential comparison in verification
                          equal? publish candidate : publish reference
 ```
 
-The differential path is a development and verification contract. It must use
-deterministic fixtures and adversarial cases for warm-up, duplicate timestamps,
-missing values, lookback windows, multi-output scripts, and parameter changes.
-No public O(1) promise is made by the current runtime. The existing native
-indicator engine keeps its established append optimizations; KlineScript must
-not weaken their financial-data correctness.
+The deterministic differential suite compares every supported pointwise output
+against a fresh full execution across randomized prefixes, missing volume,
+multiple outputs, and hline values. It also verifies that unsupported scripts
+are classified for fallback and that corrections use the full path. The
+`operations` field is execution-work measurement and may differ between a
+candidate and a full run; values, timestamps, nulls, ordering, identifiers,
+and parameters must match exactly. No public O(1) promise is made by the
+current runtime. The existing native indicator engine keeps its established
+append optimizations; KlineScript must not weaken their financial-data
+correctness.
 
 ## Invalidating events
 
@@ -38,6 +57,7 @@ not weaken their financial-data correctness.
 - replay seek: use the replay-visible prefix and do not reuse future state;
 - Worker restart: restore the snapshot/session before publishing a result.
 
-The first production implementation therefore uses full reference execution
-after each accepted update. A later optimization must add measured benchmark
-evidence, differential tests, and a safe fallback before changing this rule.
+The Worker benchmark and tests are the evidence for the current subset. A
+broader retained-state path for SMA/EMA/RSI/MACD/ATR/window functions requires
+new numerical equivalence tests and measured memory/latency evidence before it
+can replace this fallback policy.
