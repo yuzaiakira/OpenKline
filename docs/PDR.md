@@ -250,3 +250,16 @@ gates. See the final evidence report at
 `docs/reports/phase-7-1-verification.md`, plus
 `docs/architecture/replay-engine.md`,
 `docs/architecture/replay-data-integrity.md`, and `docs/api/replay.md`.
+
+## Phase 7.2 performance and alert foundation — in progress
+
+Phase 7.2.0 reproduced and fixed a verified inactive-replay append regression:
+the latest-candle lookup had copied the full defensive history on every
+`Chart.update()`. A cutoff-aware ordered-store lookup restores the measured
+100,000-candle append path to approximately 1 ms in the recorded environment
+without weakening replay isolation or correction semantics. Evidence is in
+`docs/reports/phase-7-2-performance-baseline.md`.
+
+The Alert Engine and its replay-aware Studio integration are the next ordered
+increments. They remain unimplemented until their independent contracts,
+deterministic tests, persistence rules, and local verification are complete.

@@ -78,8 +78,10 @@ export class CandleStore {
     return this.candles.length;
   }
 
-  public getLatestTime(): number | undefined {
-    return this.candles[this.candles.length - 1]?.time;
+  public getLatestTime(cutoffTime: number | null = null): number | undefined {
+    if (cutoffTime === null) return this.candles[this.candles.length - 1]?.time;
+    const index = this.findInsertionIndex(cutoffTime + 1) - 1;
+    return index < 0 ? undefined : this.candles[index]?.time;
   }
 
   public getAll(): Candle[] {

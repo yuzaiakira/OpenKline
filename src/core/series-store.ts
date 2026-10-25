@@ -126,9 +126,11 @@ export class SeriesCollection {
     return this.require(id).paneId;
   }
 
-  public getLatestTime(id: string): number | undefined {
+  public getLatestTime(id: string, cutoffTime: number | null = null): number | undefined {
     const series = this.require(id);
-    return series.store.getLatestTime();
+    return series.store instanceof CandleStore
+      ? series.store.getLatestTime(cutoffTime)
+      : series.store.getTimes().at(-1);
   }
 
   public get(id: string, cutoffTime: number | null = null): SeriesSnapshot {

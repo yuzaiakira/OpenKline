@@ -208,6 +208,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   managed Firefox, WebKit, Mobile Safari, accessibility, and physical-device
   gates remain open and are not reclassified, so Phase 7.1 is not formally
   closed.
+- [Implemented] Phase 7.2.0 reproduces and fixes the inactive-replay append
+  regression caused by copying the full candle snapshot in
+  `getLatestCandleTime()`. The corrected Canvas2D and replay measurements are
+  recorded in `docs/reports/phase-7-2-performance-baseline.md`; alert-engine
+  increments remain in progress.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

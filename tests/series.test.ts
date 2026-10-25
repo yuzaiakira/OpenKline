@@ -105,6 +105,24 @@ test("ChartModel replay cutoff masks every series while retaining protected sour
   assert.equal(model.getSeries(line).data.length, 3, "exiting the mask restores the complete source");
 });
 
+test("ChartModel reads the latest candle time without cloning the full history", () => {
+  const model = new ChartModel();
+  const data = Array.from({ length: 10 }, (_, index) => ({
+    time: index + 1,
+    open: 10,
+    high: 12,
+    low: 8,
+    close: 11,
+  }));
+  const id = model.addSeries("candlestick", { id: "price" });
+  model.setSeriesData(id, data);
+  assert.equal(model.getLatestCandleTime(), 10);
+  model.setReplayCutoff(5);
+  assert.equal(model.getLatestCandleTime(), 5);
+  model.setReplayCutoff(Number.NEGATIVE_INFINITY);
+  assert.equal(model.getLatestCandleTime(), undefined);
+});
+
 test("PointStore rejects malformed and duplicate time/value data", () => {
   const store = new PointStore();
   assert.throws(

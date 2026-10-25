@@ -274,7 +274,9 @@ export class ChartModel {
   }
 
   public getLatestCandleTime(): number | undefined {
-    return this.allCandles.at(-1)?.time;
+    return this.primaryCandleId === null
+      ? undefined
+      : this.collection.getLatestTime(this.primaryCandleId, this.replayCutoffTime);
   }
 
   public isPrimaryCandleSeries(id: string): boolean {

@@ -56,6 +56,13 @@ append-incremental indicator path; arbitrary seeks intentionally measure full
 prefix recalculation. The benchmark verifies restored data length and zero
 remaining chart canvases after destruction.
 
+The Phase 7.2 regression investigation found that `ChartModel` was copying the
+entire defensive candle snapshot on every ordinary `Chart.update()` while
+checking the latest timestamp. The fix uses a cutoff-aware ordered-store
+lookup instead. The before/after measurements, profiler evidence, and replay
+active observations are recorded in
+`docs/reports/phase-7-2-performance-baseline.md`.
+
 ## Observed replay run
 
 Environment: Linux headless Chromium 154 at `/usr/bin/chromium`, Playwright
