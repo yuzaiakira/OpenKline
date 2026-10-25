@@ -1,4 +1,6 @@
 import type { DrawingDocument, DrawingSnapshot, DrawingStyle } from "./drawings/types.js";
+import { parseAlertDefinitions } from "./alerts/engine.js";
+import type { AlertDefinitionDocument } from "./alerts/types.js";
 import { isCandleSeriesType } from "./core/candle-series.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
@@ -69,6 +71,8 @@ export interface WorkspaceDocument {
   readonly drawings: DrawingDocument;
   readonly viewport: { readonly rangeStart: number; readonly visibleCount: number };
   readonly plugins: readonly WorkspacePluginState[];
+  /** Optional serializable alert definitions. Runtime state and history are never persisted. */
+  readonly alerts?: AlertDefinitionDocument;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -109,6 +113,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const viewport = parseViewport(value.viewport);
   const plugins = parsePlugins(value.plugins);
   const replay = value.replay === undefined ? undefined : parseReplay(value.replay);
+  const alerts = value.alerts === undefined ? undefined : parseWorkspaceAlerts(value.alerts);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -128,8 +133,17 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     drawings,
     viewport,
     plugins,
+    ...(alerts === undefined ? {} : { alerts }),
     ...(replay === undefined ? {} : { replay }),
   };
+}
+
+function parseWorkspaceAlerts(value: unknown): AlertDefinitionDocument {
+  try {
+    return parseAlertDefinitions(value);
+  } catch (error) {
+    throw new WorkspaceValidationError(error instanceof Error ? error.message : "Invalid workspace alerts document");
+  }
 }
 
 function parseReplay(value: unknown): WorkspaceReplayState {

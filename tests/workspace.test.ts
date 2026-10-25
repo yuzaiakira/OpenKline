@@ -162,3 +162,22 @@ test("workspace parser accepts only serializable KlineScript source references",
     }],
   }), /Invalid KlineScript reference/);
 });
+
+test("workspace parser preserves serializable alert definitions without runtime history", () => {
+  const input = {
+    ...workspace(),
+    alerts: {
+      version: 1 as const,
+      alerts: [{
+        id: "close-cross",
+        name: "Close crosses 10",
+        condition: { type: "price-cross-above" as const, value: 10 },
+        frequency: "once-per-bar" as const,
+        enabled: true,
+      }],
+    },
+  };
+  const parsed = parseWorkspace(input);
+  assert.deepEqual(parsed.alerts, input.alerts);
+  assert.throws(() => parseWorkspace({ ...workspace(), alerts: { version: 2, alerts: [] } }), WorkspaceValidationError);
+});

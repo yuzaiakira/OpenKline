@@ -5,6 +5,15 @@ import { CanvasRenderer, createPanePriceScale, getPaneBounds, getPaneScaleRange 
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
 import { DrawingEngine } from "./drawings/engine.js";
 import { PluginRegistry } from "./extensions/registry.js";
+import { AlertEngine } from "./alerts/engine.js";
+import type {
+  AlertApi,
+  AlertDefinition,
+  AlertDefinitionPatch,
+  AlertEvaluationMode,
+  AlertEvent,
+  AlertOutputSnapshot,
+} from "./alerts/types.js";
 import { ReplayController, type ReplayControllerHost } from "./replay/controller.js";
 import type { ReplayApi, ReplayCursor, ReplayOptions, ReplayStatus } from "./replay/types.js";
 import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
@@ -112,6 +121,7 @@ export class Chart {
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
   private readonly pluginRegistry: PluginRegistry;
+  private readonly alertEngine = new AlertEngine();
   private readonly extensionDisposers = new Set<() => void>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
@@ -177,6 +187,8 @@ export class Chart {
       },
       subscribe: (name, handler) => this.subscribe(name, handler),
     });
+    this.alertEngine.subscribe((event) => this.emit("alertTriggered", event));
+    this.alertEngine.subscribeDiagnostics((diagnostic) => this.emit("alertError", diagnostic));
 
     this.attachInteractions();
     this.resize(this.width, this.height);
@@ -200,6 +212,7 @@ export class Chart {
     this.assertReplayDataMutationAllowed();
     this.model.setData(candles);
     this.refreshIndicatorsFromInput();
+    this.resetLiveAlerts(candles.at(-1));
     this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
     this.render();
   }
@@ -211,8 +224,58 @@ export class Chart {
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
+    this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
     this.render();
+  }
+
+  /** Add a local, deterministic alert definition and return its management API. */
+  public addAlert(definition: AlertDefinition): AlertApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const api = this.alertEngine.add(definition);
+    this.seedAlert(api.id);
+    return this.wrapAlertApi(api.id);
+  }
+
+  public updateAlert(id: string, patch: AlertDefinitionPatch): AlertDefinition {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const definition = this.alertEngine.update(id, patch);
+    this.seedAlert(id);
+    return definition;
+  }
+
+  public removeAlert(id: string): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.alertEngine.remove(id);
+  }
+
+  public getAlert(id: string): AlertApi {
+    this.assertAlive();
+    this.alertEngine.get(id);
+    return this.wrapAlertApi(id);
+  }
+
+  public getAlerts(): AlertDefinition[] {
+    this.assertAlive();
+    return this.alertEngine.list();
+  }
+
+  public getAlertStatus(id: string, mode: AlertEvaluationMode = "live") {
+    this.assertAlive();
+    return this.alertEngine.getStatus(id, mode);
+  }
+
+  public getAlertHistory(mode?: AlertEvaluationMode): AlertEvent[] {
+    this.assertAlive();
+    return this.alertEngine.historyFor(mode);
+  }
+
+  public clearAlertHistory(mode?: AlertEvaluationMode): void {
+    this.assertAlive();
+    this.alertEngine.clearHistory(mode);
   }
 
   public addCandlestickSeries(options: SeriesOptions = {}): SeriesApi<Candle> {
@@ -405,6 +468,7 @@ export class Chart {
     const replayActive = replay !== undefined
       && replay.state !== "idle"
       && replay.state !== "disposed";
+    const alerts = this.alertEngine.exportDefinitions();
     return {
       version: 1,
       ...(metadata === undefined ? {} : { metadata: { ...metadata } }),
@@ -422,6 +486,7 @@ export class Chart {
       drawings: this.getReplayVisibleDrawingDocument(),
       viewport,
       plugins,
+      ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
         replay: {
           active: true as const,
@@ -526,6 +591,7 @@ export class Chart {
     for (const plugin of parsed.plugins) {
       if (!missingPlugins.includes(plugin.id)) this.pluginRegistry.restoreState(plugin.id, plugin.state);
     }
+    if (!this.replayRestoring) this.alertEngine.replaceDefinitions(parsed.alerts?.alerts ?? []);
     this.render();
     return { skippedPlugins: missingPlugins, skippedIndicators: missingIndicators };
   }
@@ -978,6 +1044,7 @@ export class Chart {
     this.emit("chartDestroy", { timestamp: Date.now() });
     this.replayController?.dispose();
     this.replayController = null;
+    this.alertEngine.dispose();
     this.pluginRegistry.dispose();
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
@@ -1363,7 +1430,10 @@ export class Chart {
         this.assertAlive();
         this.assertReplayDataMutationAllowed();
         this.model.setSeriesData(id, data as SeriesData);
-        if (this.model.isPrimaryCandleSeries(id)) this.refreshIndicatorsFromInput();
+        if (this.model.isPrimaryCandleSeries(id)) {
+          this.refreshIndicatorsFromInput();
+          this.resetLiveAlerts((data.at(-1) as Candle | undefined));
+        }
         this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
         this.render();
       },
@@ -1374,7 +1444,10 @@ export class Chart {
         const lastTime = primaryCandleSeries ? this.model.getLatestCandleTime() : undefined;
         const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
         this.model.updateSeries(id, point);
-        if (primaryCandleSeries) this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+        if (primaryCandleSeries) {
+          this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+          this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
+        }
         this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
         this.render();
       },
@@ -1438,6 +1511,90 @@ export class Chart {
     });
   }
 
+  private alertOutputsAt(time: number): AlertOutputSnapshot[] {
+    const outputs: AlertOutputSnapshot[] = [];
+    for (const state of this.indicators.values()) {
+      for (const output of state.instance.getResult().outputs) {
+        const point = output.points.find((candidate) => candidate.time === time);
+        outputs.push({ sourceId: state.id, outputId: output.id, value: point?.value ?? null, time });
+      }
+    }
+    return outputs;
+  }
+
+  private evaluateLiveAlerts(candle: Candle, sourceEvent: "append" | "correction"): void {
+    this.alertEngine.evaluate({
+      candle,
+      outputs: this.alertOutputsAt(candle.time),
+      drawings: this.getDrawings(),
+      ...(this.datafeedSession === null ? {} : {
+        symbol: this.datafeedSession.query.symbol,
+        timeframe: this.datafeedSession.query.timeframe,
+      }),
+      mode: "live",
+      sourceEvent,
+    });
+  }
+
+  private resetLiveAlerts(latest: Candle | undefined): void {
+    this.alertEngine.reset("live", true);
+    if (latest !== undefined) {
+      this.alertEngine.seed({
+        candle: latest,
+        outputs: this.alertOutputsAt(latest.time),
+        drawings: this.getDrawings(),
+        ...(this.datafeedSession === null ? {} : {
+          symbol: this.datafeedSession.query.symbol,
+          timeframe: this.datafeedSession.query.timeframe,
+        }),
+        mode: "live",
+      });
+    }
+  }
+
+  private seedAlert(id: string): void {
+    const latest = this.model.allCandles.at(-1);
+    if (latest === undefined) return;
+    this.alertEngine.seedRule(id, {
+      candle: latest,
+      outputs: this.alertOutputsAt(latest.time),
+      drawings: this.getDrawings(),
+      ...(this.datafeedSession === null ? {} : {
+        symbol: this.datafeedSession.query.symbol,
+        timeframe: this.datafeedSession.query.timeframe,
+      }),
+      mode: "live",
+    });
+  }
+
+  private wrapAlertApi(id: string): AlertApi {
+    const api = this.alertEngine.get(id);
+    return {
+      id,
+      getDefinition: () => api.getDefinition(),
+      getStatus: (mode) => api.getStatus(mode),
+      update: (patch) => this.updateAlert(id, patch),
+      setEnabled: (enabled) => this.updateAlert(id, { enabled }),
+      reset: (mode) => api.reset(mode),
+      remove: () => this.removeAlert(id),
+    };
+  }
+
+  private evaluateReplayAlerts(candle: Candle, sourceEvent: "seed" | "append"): void {
+    this.alertEngine.evaluate({
+      candle,
+      outputs: this.alertOutputsAt(candle.time),
+      drawings: this.getDrawings(),
+      ...(this.datafeedSession === null ? {} : {
+        symbol: this.datafeedSession.query.symbol,
+        timeframe: this.datafeedSession.query.timeframe,
+      }),
+      mode: "replay",
+      sourceEvent,
+      isFinal: true,
+    });
+  }
+
   private beginReplay(source: readonly Candle[]): void {
     if (this.isReplayActive()) throw new Error("Replay is already active");
     this.replayBaseWorkspace = this.serializeWorkspace();
@@ -1446,6 +1603,7 @@ export class Chart {
       this.model.setReplaySource(source);
       this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
       this.replayCursorIndex = null;
+      this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
       this.render();
     } catch (error) {
@@ -1464,8 +1622,15 @@ export class Chart {
       && this.replayCursorIndex !== null
       && cursor.index === this.replayCursorIndex + 1;
     const visibleLastCandle = isSequentialAppend ? this.model.allCandles.at(-1) : undefined;
-    if (visibleLastCandle === undefined) this.refreshIndicatorsFromInput();
-    else this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
+    if (visibleLastCandle === undefined) {
+      this.refreshIndicatorsFromInput();
+      this.alertEngine.reset("replay", true);
+      const visibleCandles = this.model.allCandles;
+      visibleCandles.forEach((candle, index) => this.evaluateReplayAlerts(candle, index === 0 ? "seed" : "append"));
+    } else {
+      this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
+      this.evaluateReplayAlerts(visibleLastCandle, "append");
+    }
     this.replayCursorIndex = cursor.index;
     this.emit("dataUpdated", { kind: "set", time: cursor.timestamp, appendOnly: false });
     this.emitViewportChange();
@@ -1484,6 +1649,7 @@ export class Chart {
       this.replayBaseWorkspace = null;
       this.model.setReplayCutoff(null);
       this.replayCursorIndex = null;
+      this.alertEngine.reset("replay", true);
     }
     if (session !== null && !this.destroyed) {
       void this.setDatafeed(session.datafeed, session.query).catch(() => undefined);

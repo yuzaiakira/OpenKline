@@ -25,6 +25,35 @@ export type {
   WorkspaceRestoreResult,
   WorkspaceSeries,
 } from "./workspace.js";
+export {
+  AlertEngine,
+  AlertEvaluationError,
+  AlertLifecycleError,
+  AlertValidationError,
+  OPENKLINE_ALERTS_VERSION,
+  parseAlertDefinitions,
+} from "./alerts/index.js";
+export type {
+  AlertApi,
+  AlertCondition,
+  AlertDefinition,
+  AlertDefinitionDocument,
+  AlertDefinitionPatch,
+  AlertDiagnostic,
+  AlertDiagnosticListener,
+  AlertEngineOptions,
+  AlertEvaluationInput,
+  AlertEvaluationMode,
+  AlertEvent,
+  AlertEventListener,
+  AlertFrequency,
+  AlertOutputReference,
+  AlertOutputSnapshot,
+  AlertPriceField,
+  AlertSourceEvent,
+  AlertStatus,
+  AlertValue,
+} from "./alerts/index.js";
 export { PointStore, PointValidationError } from "./core/point-store.js";
 export { SeriesCollection } from "./core/series-store.js";
 export type {

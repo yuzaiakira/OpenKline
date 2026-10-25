@@ -234,6 +234,8 @@ export interface ChartEvents {
   datafeedError: Error;
   replayChange: import("./replay/types.js").ReplayStatus;
   replayError: Error;
+  alertTriggered: import("./alerts/types.js").AlertEvent;
+  alertError: import("./alerts/types.js").AlertDiagnostic;
 }
 
 export interface CrosshairSeriesValue {

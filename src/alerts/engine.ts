@@ -204,6 +204,27 @@ export class AlertEngine {
     this.evaluate({ ...input, sourceEvent: "seed" });
   }
 
+  /** Seed one newly added or updated rule without disturbing other rule state. */
+  public seedRule(id: string, input: AlertEvaluationInput): void {
+    this.assertAlive();
+    const definition = this.require(id);
+    validateCandle(input.candle);
+    const mode = input.mode ?? "live";
+    const runtime = this.runtimeFor(definition.id, mode);
+    try {
+      const match = evaluateCondition(definition.condition, input, outputMap(input.outputs ?? [], input.candle.time), runtime.previous);
+      runtime.previous = { time: input.candle.time, value: match.observedValue, comparisonValue: match.comparisonValue };
+      runtime.lastTime = input.candle.time;
+      runtime.lastError = null;
+    } catch (error) {
+      const normalized = error instanceof AlertEvaluationError
+        ? error
+        : new AlertEvaluationError(error instanceof Error ? error.message : String(error));
+      runtime.lastError = normalized.message;
+      this.notifyDiagnostic({ alertId: definition.id, evaluationMode: mode, message: normalized.message, cause: error });
+    }
+  }
+
   public reset(mode?: AlertEvaluationMode, clearHistory = false): void {
     this.assertAlive();
     if (mode === undefined) {
@@ -246,7 +267,7 @@ export class AlertEngine {
     }
     this.definitions.clear();
     for (const definition of normalized) this.definitions.set(definition.id, definition);
-    this.reset();
+    this.reset(undefined, true);
   }
 
   public dispose(): void {
