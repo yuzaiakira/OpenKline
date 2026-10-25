@@ -26,6 +26,8 @@ import type {
   DrawingToolDefinition,
 } from "./drawings/types.js";
 import type { IndicatorDefinition, IndicatorInstance } from "./indicators/types.js";
+import type { KlineScriptCompiledProgram } from "./klinescript/compiler.js";
+import { compileKlineScript } from "./klinescript/compiler.js";
 import type { SeriesData } from "./core/series-store.js";
 import type { Datafeed, GetBarsQuery } from "./types.js";
 import type {
@@ -61,6 +63,7 @@ interface ManagedChartIndicator {
   outputSeriesIds: string[];
   parameters: Record<string, unknown>;
   outputStyles: Record<string, import("./types.js").SeriesStyle>;
+  script?: { readonly programId: string; readonly source: string };
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -355,6 +358,7 @@ export class Chart {
       outputStyles: Object.fromEntries(
         Object.entries(indicator.outputStyles).map(([outputId, style]) => [outputId, { ...style }]),
       ),
+      ...(indicator.script === undefined ? {} : { script: { ...indicator.script } }),
     }));
     const plugins = this.pluginRegistry.list().map((plugin) => ({
       id: plugin.id,
@@ -398,8 +402,16 @@ export class Chart {
       }
     }
     const missingIndicators: string[] = [];
+    const scriptPrograms = new Map<string, KlineScriptCompiledProgram>();
     for (const indicator of parsed.indicators) {
-      if (!this.indicatorRegistry.has(indicator.indicatorId)) {
+      if (indicator.script !== undefined) {
+        const result = compileKlineScript(indicator.script.source);
+        if (!result.success || result.program.id !== indicator.script.programId || result.program.id !== indicator.indicatorId) {
+          throw new WorkspaceCompatibilityError(`Workspace contains an invalid or incompatible KlineScript: ${indicator.id}`);
+        }
+        scriptPrograms.set(indicator.id, result.program);
+      }
+      if (indicator.script === undefined && !this.indicatorRegistry.has(indicator.indicatorId)) {
         if ((options.missingIndicators ?? "skip") === "error") {
           throw new WorkspaceCompatibilityError(`Workspace requires missing indicator: ${indicator.indicatorId}`);
         }
@@ -445,11 +457,10 @@ export class Chart {
     }
     for (const indicator of parsed.indicators) {
       if (missingIndicators.includes(indicator.id)) continue;
-      const api = this.addIndicator(indicator.indicatorId, {
-        id: indicator.id,
-        pane: indicator.paneId,
-        parameters: { ...indicator.parameters },
-      });
+      const script = scriptPrograms.get(indicator.id);
+      const api = script === undefined
+        ? this.addIndicator(indicator.indicatorId, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } })
+        : this.addScriptIndicator(script, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } });
       for (const [outputId, style] of Object.entries(indicator.outputStyles)) api.setOutputStyle(outputId, style);
     }
     this.drawingEngine.restore(parsed.drawings);
@@ -532,6 +543,27 @@ export class Chart {
         this.removeIndicator(id);
       },
     };
+  }
+
+  /** Add a validated KlineScript program through the existing indicator lifecycle. */
+  public addScriptIndicator(program: KlineScriptCompiledProgram, options: IndicatorAddOptions = {}): ChartIndicatorApi {
+    this.assertAlive();
+    if (!this.indicatorRegistry.has(program.id)) this.indicatorRegistry.register(program.createIndicatorDefinition());
+    const nextOptions: IndicatorAddOptions = options.pane === undefined && !program.metadata.overlay
+      ? { ...options, pane: "new" }
+      : options;
+    const api = this.addIndicator(program.id, nextOptions);
+    const state = this.indicators.get(api.id);
+    if (state !== undefined) state.script = { programId: program.id, source: program.source };
+    for (const output of program.metadata.outputs) {
+      const style = {
+        ...(output.color === undefined ? {} : { color: output.color }),
+        ...(output.width === undefined ? {} : { lineWidth: output.width }),
+        ...(output.visible === undefined ? {} : { visible: output.visible }),
+      };
+      if (Object.keys(style).length > 0) api.setOutputStyle(output.id, style);
+    }
+    return api;
   }
 
   public removeIndicator(id: string): void {

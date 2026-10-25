@@ -131,6 +131,28 @@ export type {
   KlineScriptProgram,
   KlineScriptSource,
 } from "./klinescript/index.js";
+export {
+  compileKlineScript,
+  KlineScriptCompileError,
+  KlineScriptRuntimeError,
+  executeKlineScript,
+} from "./klinescript/index.js";
+export type {
+  KlineScriptCompileOptions,
+  KlineScriptCompileResult,
+  KlineScriptCompiledProgram,
+  KlineScriptDiagnostic,
+  KlineScriptDiagnosticSeverity,
+  KlineScriptExecutionResult,
+  KlineScriptIndicatorMetadata,
+  KlineScriptInputMetadata,
+  KlineScriptOutputMetadata,
+  KlineScriptRuntimeLimits,
+  KlineScriptRuntimeOptions,
+  KlineScriptScalarType,
+  KlineScriptSeriesType,
+  KlineScriptType,
+} from "./klinescript/index.js";
 export { DrawingEngine, DrawingLifecycleError, DrawingValidationError } from "./drawings/index.js";
 export {
   builtInDrawingTools,

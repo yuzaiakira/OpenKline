@@ -1,9 +1,9 @@
 # KlineScript Preparation
 
-Phase 2 only reserves the boundary for a future KlineScript language. The
-public types describe a versioned source envelope and a small AST schema for
-indicator declarations, plots, and drawing declarations. They are data shapes,
-not an executable runtime.
+Phase 4 implements the first restricted KlineScript subset. The original
+versioned source envelope remains useful for persistence, while the real
+compiler/runtime is documented in `docs/architecture/klinescript.md` and the
+language reference under `docs/klinescript/`.
 
 ```ts
 const source: KlineScriptSource = {
@@ -19,12 +19,7 @@ const program: KlineScriptProgram = {
 };
 ```
 
-The future parser will convert `KlineScriptSource` into a validated
-`KlineScriptProgram`. A future compiler/runtime may resolve indicator and
-drawing names through registered extension capabilities, but that phase must
-define sandboxing, resource limits, deterministic evaluation, diagnostics, and
-permissions first.
-
-No parser, evaluator, `eval`, `new Function`, code generation, or automatic
-execution is included in the current package. Consumers may store or inspect
-the schema, but must not treat the AST as executable code.
+Use `compileKlineScript` for validated v0.1 programs. The implementation is
+expression-only and deliberately excludes drawing calls, loops, recursion,
+imports, and arbitrary host access. The old declaration shapes are retained
+for source compatibility but are not the executable representation.

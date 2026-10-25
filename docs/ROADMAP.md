@@ -2,10 +2,9 @@
 
 ## Current milestone
 
-Phase 3 plugin SDK and customization platform — **Open under the explicitly
-documented Phase 2 environment exception**. Phase 2 acceptance remains open
-for Firefox, WebKit, and Mobile Safari; this roadmap does not treat those
-blocked runs as verified or change their gate.
+Phase 4 KlineScript language and secure indicator runtime — **In progress**.
+Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
+roadmap does not treat those blocked runs as verified or change their gate.
 
 ## Completed
 
@@ -73,7 +72,11 @@ blocked runs as verified or change their gate.
   interaction configuration, and React plugin/workspace props.
 - [In Verification] Plugin SDK browser behavior, workspace round trips,
   package/API checks, documentation, and Phase 3 acceptance report.
-- [Not Started] ChartScript parser/runtime.
+- [Implemented] Phase 4.0/4.1 KlineScript v0.1 grammar, lexer, parser,
+  source-span diagnostics, semantic/type checks, immutable compiled programs,
+  and the first compiler/runtime regression suite. Phase 4 verification remains
+  open until integration, browser, performance, and handover evidence is
+  complete.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

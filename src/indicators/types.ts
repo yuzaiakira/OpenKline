@@ -18,7 +18,7 @@ export interface IndicatorOutputDefinition {
   readonly bandRole?: IndicatorBandRole;
 }
 
-export type IndicatorParameterType = "integer" | "number" | "string" | "enum";
+export type IndicatorParameterType = "integer" | "number" | "boolean" | "string" | "enum";
 
 export interface IndicatorParameterDefinition {
   readonly name: string;
@@ -35,6 +35,7 @@ export interface IndicatorMetadata {
   readonly name: string;
   readonly version: 1;
   readonly description: string;
+  readonly overlay?: boolean;
   readonly parameters: readonly IndicatorParameterDefinition[];
   readonly outputs: readonly IndicatorOutputDefinition[];
 }

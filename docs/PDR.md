@@ -80,6 +80,17 @@ remaining Firefox/WebKit/mobile browser blockers. The current performance and
 compatibility evidence is in
 `docs/reports/phase-2-performance-and-compatibility.md`.
 
+## Phase 4 KlineScript status
+
+Phase 4 implementation is in progress. The current increment contains a real
+v0.1 lexer/parser/type checker and a restricted interpreter with deterministic
+OHLCV series semantics, budgets, cancellation checks, safe technical/math
+intrinsics, and an existing Indicator Engine integration boundary. It does not
+claim full Python/Pine compatibility, OS-level sandboxing, or closure of the
+older Firefox/WebKit/Mobile Safari browser gate. The final Phase 4 report must
+verify the remaining integration, examples, browser, benchmark, and package
+criteria before the milestone can close.
+
 ## Phase 3 platform scope
 
 Phase 3 adds the implemented foundation for a professional plugin and
