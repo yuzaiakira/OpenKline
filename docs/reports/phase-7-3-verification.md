@@ -291,10 +291,11 @@ The Phase 7.3 increments were committed and pushed in order:
 | `c95d8b9` | `feat(studio): add professional klinescript editor` | Verified |
 | `8d4ddfd` | `test(klinescript): cover chart worker cancellation` | Verified |
 | `aa93d70` | `fix(performance): keep alert output appends incremental` | Verified |
+| `be651c3` | `docs(reports): verify phase 7.3 implementation` | Verified |
 
 All listed commits use author and committer `Akira Yuzai
 <yuzai.akira@gmail.com>`. Each was pushed immediately after successful local
 verification. No force-push or history rewrite was used. The final report
-commit is the next documentation commit and must be pushed immediately after
-its local checks; its final hash and remote equality are verified in the
-delivery handoff.
+was committed as `be651c3` and pushed immediately after its local checks. The
+delivery handoff verifies final HEAD and `origin/work` equality after the
+report push.
