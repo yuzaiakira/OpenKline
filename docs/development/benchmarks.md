@@ -5,6 +5,7 @@ Run the deterministic model and browser measurements with:
 ```bash
 npm run benchmark
 npm run benchmark:browser
+npm run benchmark:replay
 npm run profile:browser
 npm run benchmark:plugins
 npm run benchmark:klinescript
@@ -45,6 +46,41 @@ Engine lifecycle, four concurrent 10,000-bar instances, operation counts,
 pre-cancelled execution, and disposal. These are local observations for the
 printed Node/runtime environment; the script makes no universal FPS, memory,
 or latency claim.
+
+`benchmark:replay` uses a real headless Chromium Canvas2D chart and measures
+replay start, ten sequential steps, four non-sequential seeks, a short
+play/pause cycle, exit restoration, and destruction at 1,000, 10,000, and
+100,000 candles. It runs separate one-indicator, multiple-indicator, and
+KlineScript scenarios. Sequential stepping uses the existing verified
+append-incremental indicator path; arbitrary seeks intentionally measure full
+prefix recalculation. The benchmark verifies restored data length and zero
+remaining chart canvases after destruction.
+
+## Observed replay run
+
+Environment: Linux headless Chromium 154 at `/usr/bin/chromium`, Playwright
+1.64.1, 1,200 × 520 viewport, `--disable-gpu`, and
+`--js-flags=--expose-gc`, run on 2026-10-25. Values are local observations, not
+performance guarantees. Step and seek columns are median/p95 milliseconds;
+heap is the browser's `usedJSHeapSize` immediately before chart destruction.
+
+| Candles | Scenario | Step p50/p95 | Seek p50/p95 | Exit (ms) | Play/pause (ms) | Heap (MB) | Canvas after destroy |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | one indicator | 2.2 / 2.9 | 2.7 / 3.4 | 12.8 | 38.3 | 7.3 | 0 |
+| 1,000 | multiple indicators | 2.4 / 3.8 | 3.7 / 6.0 | 11.7 | 36.5 | 10.1 | 0 |
+| 1,000 | KlineScript | 1.3 / 2.4 | 1.4 / 2.5 | 5.5 | 35.3 | 5.2 | 0 |
+| 10,000 | one indicator | 1.2 / 1.5 | 7.3 / 10.3 | 31.4 | 35.7 | 40.2 | 0 |
+| 10,000 | multiple indicators | 1.3 / 1.6 | 23.8 / 36.6 | 65.5 | 36.8 | 56.2 | 0 |
+| 10,000 | KlineScript | 2.2 / 8.4 | 4.4 / 9.3 | 25.5 | 37.9 | 37.7 | 0 |
+| 100,000 | one indicator | 4.1 / 9.7 | 67.1 / 138.8 | 507.4 | 40.4 | 156.5 | 0 |
+| 100,000 | multiple indicators | 2.7 / 8.4 | 371.8 / 794.8 | 1,185.2 | 43.0 | 425.5 | 0 |
+| 100,000 | KlineScript | 23.0 / 27.3 | 101.7 / 156.6 | 405.8 | 39.3 | 311.2 | 0 |
+
+The measured sequential step path is materially lower than arbitrary seek for
+large native-indicator histories because the chart reuses the existing
+append-incremental calculation contracts. KlineScript currently recomputes its
+visible prefix on step/seek; this is measured technical debt, not an
+unsupported constant-time claim. The benchmark reports no FPS target.
 
 ## Observed Node baseline
 

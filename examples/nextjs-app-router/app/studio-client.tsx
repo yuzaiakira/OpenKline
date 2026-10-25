@@ -130,6 +130,11 @@ function textForCrosshair(event: CrosshairMoveEvent | null): string {
   return `${new Date(event.time).toLocaleString()} · ${event.formattedPrice ?? event.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 }
 
+function textForReplay(status: ReplayStatus, timeZone: string): string {
+  if (status.currentTimestamp === null) return "No current bar";
+  return new Date(status.currentTimestamp).toLocaleString(undefined, { timeZone });
+}
+
 export default function StudioClient() {
   const handleRef = useRef<FinancialChartHandle>(null);
   const replayRef = useRef<ReplayApi | null>(null);
@@ -156,6 +161,8 @@ export default function StudioClient() {
   const [scriptSource, setScriptSource] = useState(defaultScript);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [replayStatus, setReplayStatus] = useState<ReplayStatus>(IDLE_REPLAY_STATUS);
+  const [replaySourceLength, setReplaySourceLength] = useState(0);
+  const [replayStartIndex, setReplayStartIndex] = useState(84);
 
   const chart = (): Chart | null => handleRef.current?.getChart() ?? null;
 
@@ -217,7 +224,7 @@ export default function StudioClient() {
         }
         replay = target.createReplay({
           source,
-          startAt: source[Math.floor(source.length * 0.35)]!.time,
+          startAt: source[Math.min(Math.max(0, replayStartIndex), source.length - 1)]!.time,
           speed: 2,
         });
         replayRef.current = replay;
@@ -228,7 +235,7 @@ export default function StudioClient() {
     } catch (error) {
       setNotice(`Could not start replay: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [refreshReplayStatus]);
+  }, [refreshReplayStatus, replayStartIndex]);
 
   const runReplayCommand = useCallback((command: (replay: ReplayApi) => void): void => {
     const replay = replayRef.current;
@@ -260,6 +267,30 @@ export default function StudioClient() {
     }
   }, [refreshObjects, syncDisplayPreferences]);
 
+  useEffect(() => {
+    if (!replayActive) return undefined;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement) return;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        runReplayCommand((replay) => replay.stepForward());
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        runReplayCommand((replay) => replay.stepBackward());
+      } else if (event.key === " ") {
+        event.preventDefault();
+        runReplayCommand((replay) => replay.getStatus().state === "playing" ? replay.pause() : replay.play());
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        exitReplay();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [exitReplay, replayActive, runReplayCommand]);
+
   const applyPresentation = useCallback((next: Presentation, target = chart()): void => {
     if (target === null) return;
     const visibility: Record<string, boolean> = {
@@ -282,6 +313,8 @@ export default function StudioClient() {
     const target = chart();
     if (target === null) return;
     const candles = buildCandles(nextSymbol, nextTimeframe);
+    setReplaySourceLength(candles.length);
+    setReplayStartIndex(Math.floor(candles.length * 0.35));
     const workspace = target.serializeWorkspace({ symbol: nextSymbol, timeframe: nextTimeframe });
     const nextWorkspace: WorkspaceDocument = {
       ...workspace,
@@ -328,6 +361,8 @@ export default function StudioClient() {
     volume.setData(volumePoints(candles));
     target.addIndicator("SMA", { id: "studio-sma", pane: "main", parameters: { period: 20 } });
     target.addIndicator("RSI", { id: "studio-rsi", pane: "new", parameters: { period: 14 } });
+    setReplaySourceLength(candles.length);
+    setReplayStartIndex(Math.floor(candles.length * 0.35));
     target.subscribe("drawingSelection", () => window.setTimeout(() => refreshObjects(target), 0));
     target.subscribe("indicatorChange", () => window.setTimeout(() => refreshObjects(target), 0));
     syncDisplayPreferences(target);
@@ -536,14 +571,28 @@ export default function StudioClient() {
 
       <section className={styles.replayPanel} aria-label="Bar replay">
         <div className={styles.replayHeading}>
-          <strong>Bar replay</strong>
-          <span aria-live="polite">{replayActive ? `Replay: ${replayStatus.state}` : "Replay: idle"}</span>
+          <strong>Bar replay <span className={styles.replayBadge}>REPLAY</span></strong>
+          <span aria-live="polite">Replay: {replayStatus.state}</span>
+          <small>{textForReplay(replayStatus, timeZone)}</small>
         </div>
         <div className={styles.replayControls}>
           <button type="button" onClick={enterReplay} disabled={replayActive}>Enter replay</button>
+          <label>Start
+            <input
+              aria-label="Replay starting point"
+              type="range"
+              min="0"
+              max={Math.max(0, replaySourceLength - 1)}
+              value={Math.min(replayStartIndex, Math.max(0, replaySourceLength - 1))}
+              disabled={replayActive || replaySourceLength < 2}
+              onChange={(event) => setReplayStartIndex(Number(event.target.value))}
+            />
+          </label>
           <button type="button" onClick={() => runReplayCommand((replay) => replay.stepBackward())} disabled={!replayActive} aria-label="Replay previous bar">◀</button>
           <button type="button" onClick={() => runReplayCommand((replay) => replay.getStatus().state === "playing" ? replay.pause() : replay.play())} disabled={!replayActive}>{replayStatus.state === "playing" ? "Pause" : "Play"}</button>
           <button type="button" onClick={() => runReplayCommand((replay) => replay.stepForward())} disabled={!replayActive} aria-label="Replay next bar">▶</button>
+          <button type="button" onClick={() => runReplayCommand((replay) => replay.jumpToStart())} disabled={!replayActive}>Beginning</button>
+          <button type="button" onClick={() => runReplayCommand((replay) => replay.jumpToLatest())} disabled={!replayActive}>Latest</button>
           <button type="button" onClick={exitReplay} disabled={!replayActive}>Exit replay</button>
           <label>Speed
             <select aria-label="Replay speed" value={replayStatus.speed} disabled={!replayActive} onChange={(event) => runReplayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>

@@ -18,6 +18,7 @@ npm run test:react:browser
 npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
+npm run benchmark:replay
 npm run benchmark:plugins
 npm run profile:browser
 npm run package:audit
@@ -48,6 +49,16 @@ all four series types, multi-series crosshair values, dynamic add/remove,
 canvas creation, non-empty rendering, zoom, pan, theme changes, updates, and
 cleanup. Mobile projects additionally exercise a touch tap that creates a
 drawing. It is intentionally interaction-focused rather than screenshot-only.
+
+Replay browser coverage is in `tests/browser/replay.spec.ts`. It asserts
+inclusive future-data masking across series, indicators, workspace exports,
+drawings, and crosshair values; source immutability; read-only structural/data
+boundaries; deterministic stepping/playback; datafeed suspension and
+resubscription; exit restoration; and chart destruction. The KlineScript browser
+workflow also verifies replay-visible script output lengths. Studio coverage
+exercises the public replay controls, starting point, Beginning/Latest,
+timeline, keyboard stepping, scale/presentation changes, restoration, and a
+touch-sized viewport.
 
 `npm run benchmark:browser` measures synchronous Canvas2D rendering work and
 requestAnimationFrame update loops for 1,000, 10,000, and 100,000 candles. It

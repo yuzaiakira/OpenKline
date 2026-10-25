@@ -28,10 +28,12 @@ the public workspace contract.
 5. Open KlineScript, compile the source, and add it only after the restricted
    compiler accepts it. Errors are reported in the editor.
 6. Use Bar replay to enter an inclusive historical view of the deterministic
-   source. Previous/next, Play/Pause, speed, and the timeline operate through
-   the public `Chart.createReplay()` API. Exit replay restores the complete
-   workspace; source and structural object changes are intentionally disabled
-   until then.
+   source. Select a starting point, use Previous/Next, Beginning/Latest,
+   Play/Pause, speed, and the timeline through the public
+   `Chart.createReplay()` API. While the chart canvas is focused, Left/Right
+   step one bar, Space toggles playback, and Escape exits replay. Exit replay
+   restores the complete workspace; source and structural object changes are
+   intentionally disabled until then.
 
 The Settings panel changes theme, locale, timezone, price precision, scale
 mode (Linear, Log, Percentage, or Index 100), autoscale, axis labels, scale

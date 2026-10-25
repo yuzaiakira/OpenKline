@@ -189,12 +189,23 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   controls, broader browser evidence, and final Phase 7.1 acceptance remain
   open. See `docs/architecture/replay-data-integrity.md` and
   `docs/api/replay.md`.
-- [Implemented / In Verification] Phase 7.1.3 adds public-API-only replay
-  controls to the private Next.js Studio: enter/exit, inclusive timeline
-  seeking, step, play/pause, bounded speed selection, status feedback, and a
-  touch-sized workflow. Existing Studio workspace and React lifecycle tests
-  remain green. Final replay verification and broader browser evidence remain
-  open; see `docs/guides/studio.md`.
+- [Implemented / In Verification] Phase 7.1.3 verifies native indicator and
+  KlineScript prefix isolation during replay and reuses append-incremental
+  indicator calculations for sequential steps. The replay benchmark measures
+  one indicator, multiple indicators, KlineScript, arbitrary seek, playback,
+  exit, and destruction at 1k/10k/100k histories; see
+  `docs/development/benchmarks.md`.
+- [Implemented / In Verification] Phase 7.1.4 adds public-API-only replay
+  controls to the private Next.js Studio: enter/exit, start selection,
+  Beginning/Latest, inclusive timeline seeking, step, play/pause, bounded speed
+  selection, status/date feedback, keyboard shortcuts, and a touch-sized
+  workflow. Existing Studio workspace and React lifecycle tests remain green;
+  final replay verification and broader browser evidence remain open. See
+  `docs/guides/studio-replay.md`.
+- [In Verification] Phase 7.1.5 final handover still requires the complete
+  local package/Next/browser/performance matrix and an evidence report. The
+  inherited managed Firefox, WebKit, Mobile Safari, accessibility, and physical
+  device gates remain open and are not reclassified.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

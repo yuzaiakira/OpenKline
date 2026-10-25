@@ -29,6 +29,43 @@ test("KlineScript playground compiles, reports diagnostics, updates inputs, and 
   expect(afterCompile.paneCount).toBeGreaterThan(1);
   expect(afterCompile.seriesIds.some((id) => id.includes(":hline-2"))).toBe(true);
 
+  const replayIntegration = await page.evaluate(() => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
+    type Replay = { getStatus(): { state: string; currentIndex: number | null; currentTimestamp: number | null; totalBars: number }; start(): void; exit(): void; dispose(): void };
+    type Chart = {
+      getData(): Candle[];
+      getSeriesInfo(): Array<{ id: string; dataLength: number }>;
+      getSeriesIds(): string[];
+      serializeWorkspace(): { replay?: { currentIndex: number | null; currentTimestamp: number | null; totalBars: number } };
+      createReplay(options: { source: Candle[]; startAt: number }): Replay;
+    };
+    const chart = (globalThis as unknown as { __openklineScriptPlayground: { chart: Chart } }).__openklineScriptPlayground.chart;
+    const source = chart.getData();
+    const scriptSeriesIds = chart.getSeriesIds().filter((id) => id.includes(":plot-") || id.includes(":hline-"));
+    const replay = chart.createReplay({ source, startAt: source[30]!.time });
+    replay.start();
+    const status = replay.getStatus();
+    const visibleInfo = chart.getSeriesInfo();
+    const workspace = chart.serializeWorkspace();
+    const visibleLength = chart.getData().length;
+    replay.exit();
+    replay.dispose();
+    return {
+      status,
+      visibleLength,
+      scriptSeriesIds,
+      scriptInfo: visibleInfo.filter((series) => scriptSeriesIds.includes(series.id)),
+      workspaceReplay: workspace.replay,
+      restoredLength: chart.getData().length,
+    };
+  });
+  expect(replayIntegration.status).toMatchObject({ state: "ready", currentIndex: 30, totalBars: 120 });
+  expect(replayIntegration.visibleLength).toBe(31);
+  expect(replayIntegration.scriptSeriesIds.length).toBeGreaterThan(0);
+  expect(replayIntegration.scriptInfo.every((series) => series.dataLength <= 31)).toBe(true);
+  expect(replayIntegration.workspaceReplay).toMatchObject({ currentIndex: 30, totalBars: 120 });
+  expect(replayIntegration.restoredLength).toBe(120);
+
   const workspace = await page.evaluate(() => (globalThis as unknown as { __openklineScriptPlayground: { chart: { serializeWorkspace(): { indicators: Array<{ script?: { source: string } }> } } } }).__openklineScriptPlayground.chart.serializeWorkspace());
   expect(workspace.indicators[0]?.script?.source).toContain("Oscillator");
   await page.evaluate((documentValue) => {

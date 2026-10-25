@@ -236,9 +236,14 @@ protects Heikin–Ashi derivation, filters drawings and interaction values,
 blocks source/structure mutations, and suspends/resubscribes datafeeds. Replay
 workspace exports are explicitly partial and are not restorable without the
 complete source. Deterministic Node and Chromium tests cover these boundaries.
-Phase 7.1.3 adds deterministic replay controls to the private Studio through
-the public React handle and `ReplayApi`, including timeline seeking, stepping,
-playback speed, mobile-sized controls, and exit restoration. Final replay
-acceptance and broader browser evidence remain open. See
+Phase 7.1.3 verifies native indicator and KlineScript prefix correctness and
+uses the existing append-incremental indicator contracts for sequential replay
+steps. Arbitrary seek and KlineScript recalculation costs are measured rather
+than described as constant-time. Phase 7.1.4 adds deterministic replay
+controls to the private Studio through the public React handle and `ReplayApi`,
+including start selection, timeline seeking, stepping, beginning/latest,
+keyboard shortcuts, playback speed, mobile-sized controls, and exit
+restoration. Final replay acceptance and broader browser evidence remain open.
+See
 `docs/architecture/replay-engine.md`,
 `docs/architecture/replay-data-integrity.md`, and `docs/api/replay.md`.

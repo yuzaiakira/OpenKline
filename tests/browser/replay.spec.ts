@@ -53,6 +53,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
     });
     const replay = chart.createReplay({ source, startAt: source[10]!.time, speed: 100 });
     (globalThis as unknown as { __openklineReplay: Replay }).__openklineReplay = replay;
+    (globalThis as unknown as { __openklineReplayIndicator: typeof indicator }).__openklineReplayIndicator = indicator;
     const protectedFirstClose = source[0]!.close;
     source[0]!.close += 1000;
     const statusLog: string[] = [];
@@ -129,19 +130,25 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
 
   const stepped = await page.evaluate(() => {
     type Replay = { getStatus(): { state: string; currentIndex: number | null }; stepForward(): void; stepBackward(): void; seekToBar(index: number): void; setSpeed(speed: number): void };
+    type Indicator = { getResult(): { outputs: Array<{ points: Array<{ time: number; value: number | null }> }> } };
     const replay = (globalThis as unknown as { __openklineReplay: Replay }).__openklineReplay;
+    const indicator = (globalThis as unknown as { __openklineReplayIndicator: Indicator }).__openklineReplayIndicator;
     replay.stepForward();
     replay.stepForward();
     const forward = replay.getStatus();
+    const sequentialResult = indicator.getResult();
     replay.stepBackward();
     const backward = replay.getStatus();
+    replay.seekToBar(10);
     replay.seekToBar(12);
     replay.setSpeed(2);
-    return { forward, backward, selected: replay.getStatus() };
+    const reseekResult = indicator.getResult();
+    return { forward, backward, selected: replay.getStatus(), indicatorMatchesAfterReseek: JSON.stringify(sequentialResult) === JSON.stringify(reseekResult) };
   });
   expect(stepped.forward).toMatchObject({ state: "paused", currentIndex: 12 });
   expect(stepped.backward).toMatchObject({ state: "paused", currentIndex: 11 });
   expect(stepped.selected).toMatchObject({ state: "paused", currentIndex: 12 });
+  expect(stepped.indicatorMatchesAfterReseek).toBe(true);
 
   const played = await page.evaluate(() => {
     type Replay = { getStatus(): { state: string; currentIndex: number | null }; play(): void; pause(): void };

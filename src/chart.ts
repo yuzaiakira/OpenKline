@@ -136,6 +136,7 @@ export class Chart {
   private datafeedSession: { readonly datafeed: Datafeed; readonly query: Omit<GetBarsQuery, "signal"> } | null = null;
   private replayController: ReplayController | null = null;
   private replayBaseWorkspace: WorkspaceDocument | null = null;
+  private replayCursorIndex: number | null = null;
   private replayRestoring = false;
   private destroyed = false;
 
@@ -984,6 +985,7 @@ export class Chart {
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     this.model.destroy();
+    this.replayCursorIndex = null;
     this.drawingEngine.dispose();
     this.overlays.clear();
     this.resizeObserver?.disconnect();
@@ -1443,11 +1445,13 @@ export class Chart {
     try {
       this.model.setReplaySource(source);
       this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
+      this.replayCursorIndex = null;
       this.refreshIndicatorsFromInput();
       this.render();
     } catch (error) {
       this.replayBaseWorkspace = null;
       this.model.setReplayCutoff(null);
+      this.replayCursorIndex = null;
       throw error;
     }
   }
@@ -1456,7 +1460,13 @@ export class Chart {
     if (this.replayBaseWorkspace === null) throw new Error("Replay chart state has not been prepared");
     this.model.setReplayCutoff(cursor.timestamp ?? Number.NEGATIVE_INFINITY);
     this.model.resetView();
-    this.refreshIndicatorsFromInput();
+    const isSequentialAppend = cursor.index !== null
+      && this.replayCursorIndex !== null
+      && cursor.index === this.replayCursorIndex + 1;
+    const visibleLastCandle = isSequentialAppend ? this.model.allCandles.at(-1) : undefined;
+    if (visibleLastCandle === undefined) this.refreshIndicatorsFromInput();
+    else this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
+    this.replayCursorIndex = cursor.index;
     this.emit("dataUpdated", { kind: "set", time: cursor.timestamp, appendOnly: false });
     this.emitViewportChange();
     this.render();
@@ -1473,6 +1483,7 @@ export class Chart {
       this.replayRestoring = false;
       this.replayBaseWorkspace = null;
       this.model.setReplayCutoff(null);
+      this.replayCursorIndex = null;
     }
     if (session !== null && !this.destroyed) {
       void this.setDatafeed(session.datafeed, session.query).catch(() => undefined);
@@ -1483,6 +1494,7 @@ export class Chart {
     this.suspendDatafeed();
     this.datafeedSession = null;
     this.model.setReplayCutoff(null);
+    this.replayCursorIndex = null;
     this.replayBaseWorkspace = null;
   }
 
