@@ -116,9 +116,14 @@ criteria remain open and are not reclassified by this work.
 
 ## Phase 5 production preparation
 
-Phase 5 preparation is in progress. Local release verification, security,
-contribution, security-policy, changelog, and documentation foundations exist.
-Stable release approval remains open because the repository has no selected
-LICENSE/package license metadata, formal third-party license inventory is not
-complete, and official Firefox/WebKit/Mobile Safari Playwright runs remain
-environment-blocked. No package is published by this milestone.
+Phase 5.1 preparation is verified locally but remains open for stable release.
+The repository now has generated dependency/license inventory evidence,
+lockfile provenance validation, dependency audits, independent package
+consumer checks, a Next.js 16.4.3 security update, and a documented local
+developer-preview process. `LICENSE-APACHE-2.0.PROPOSED` is a pending proposal,
+not an effective grant; the project-selected license, package metadata, and
+third-party notice review still require owner/legal approval. Official
+Firefox/WebKit/Mobile Safari Playwright runs remain environment-blocked. No
+package, preview tag, or public release is published by this milestone. The
+acceptance matrix and measured evidence are in
+`docs/reports/phase-5-release-readiness.md`.

@@ -32,7 +32,8 @@ export default function ChartClient() {
 ```
 
 The complete example is in `examples/nextjs-app-router`. Its production build
-was verified with Next.js 15.5.28. The example uses a local bundler alias only
+was verified with Next.js 16.4.3 using the explicit Webpack build path. The
+example uses a local bundler alias only
 to consume the unpublished root package; a published application should list
 `openkline` and `@openkline/react` as normal dependencies.
 

@@ -114,6 +114,16 @@ other series share the OHLC/point price scale.
 series. Tooltip text uses the same values, so interaction behavior remains
 consistent as series are added or removed.
 
+## Package consumption
+
+The root `openkline` package exposes the ESM/types entry shown above. The
+optional `@openkline/react` package exposes `FinancialChart` and its typed
+props; it is a separate package and is not bundled into the root tarball.
+Local tarball installation is verified by
+`node scripts/consumer-preview-smoke.mjs` for Vanilla ESM and TypeScript React
+consumers. Package publication remains pending the project-license decision;
+see the [developer-preview plan](../release/developer-preview-plan.md).
+
 `direction: "rtl"` reverses visual time coordinates while stored timestamps
 remain ascending. `locale` and `timeZone` use the platform `Intl` formatter;
 host-owned controls should provide their own translated strings.

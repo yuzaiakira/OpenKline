@@ -34,6 +34,11 @@ implemented Phase 2 analysis foundation:
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope,
 [docs/reports/phase-5-readiness.md](docs/reports/phase-5-readiness.md) for the
 production-readiness audit, and
+[docs/reports/phase-5-release-readiness.md](docs/reports/phase-5-release-readiness.md)
+for the Phase 5.1 release gate, license, package, and browser evidence. The
+[license inventory](docs/audits/license-inventory.md) and
+[developer-preview plan](docs/release/developer-preview-plan.md) describe the
+current distribution boundary; the proposed license is not effective. The
 [docs/reports/phase-2-verification.md](docs/reports/phase-2-verification.md)
 for the baseline acceptance record. The current hardening gate is recorded in
 [docs/reports/phase-2-final-verification.md](docs/reports/phase-2-final-verification.md).
@@ -76,6 +81,10 @@ must provide an appropriate process or Worker termination boundary.
 - [CHANGELOG.md](CHANGELOG.md) records unreleased changes.
 - `npm run release:check` is the reproducible local release verification
   command. It does not publish packages or use GitHub Actions.
+- `node scripts/validate-license-inventory.mjs` validates lockfile provenance
+  against the reviewed inventory, and
+  `node scripts/consumer-preview-smoke.mjs` verifies installed Vanilla ESM and
+  TypeScript React consumers.
 - Firefox, WebKit, and Mobile Safari remain open compatibility gates when the
   official Playwright-managed binaries are unavailable; see the Phase 2 and
   Phase 4 reports.

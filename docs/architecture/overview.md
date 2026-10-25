@@ -44,6 +44,13 @@ The plugin registry composes those boundaries without exposing the chart DOM,
 Canvas2D context, or private model. Workspace documents capture public state
 without capturing executable plugin code.
 
+The package/release boundary is also explicit: the root package has no runtime
+dependencies, the private Next.js example owns its separate dependency tree,
+and lockfile license/provenance metadata is generated and validated outside the
+chart runtime. The current project license is pending owner/legal approval;
+the release tooling therefore treats the proposed text and stable publication
+as separate gates.
+
 Strictly newer series updates use an append path through the stores and extend
 the shared timestamp cache without rebuilding the union. Equal-timestamp
 replacements and historical insertions retain the correction-safe ordered path;

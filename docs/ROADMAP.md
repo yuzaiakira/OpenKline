@@ -6,6 +6,8 @@ Phase 4 KlineScript language and secure indicator runtime — **In verification*
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
 roadmap does not treat those blocked runs as verified or change their gate.
 Phase 5 production preparation — **In progress; stable release not approved**.
+Phase 5.1 licensing, supply-chain, and developer-preview preparation is
+**verified locally with mandatory legal and browser gates open**.
 
 ## Completed
 
@@ -94,11 +96,13 @@ Phase 5 production preparation — **In progress; stable release not approved**.
   Playwright criteria remain environment-blocked and therefore Phase 4 is not
   closed. See `docs/audits/klinescript-security-audit.md` and
   `docs/reports/phase-4-security-verification.md`.
-- [In Progress] Phase 5 local release-check tooling, package/API audit, and
-  open-source maintainer documentation. Stable release remains blocked by the
-  missing project-selected license, incomplete third-party license inventory,
-  and the unresolved official browser gate. See
-  `docs/reports/phase-5-readiness.md`.
+- [Implemented / Gate Open] Phase 5.1 added generated license/asset inventory,
+  lockfile integrity validation, dependency audits, independent Vanilla and
+  TypeScript/React tarball consumers, Next.js 16.4.3 security remediation,
+  developer-preview and local-release procedures. The effective project
+  license and third-party notice review remain owner/legal blockers; Firefox,
+  WebKit, and Mobile Safari remain official-artifact blockers. See
+  `docs/reports/phase-5-release-readiness.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
@@ -129,3 +133,6 @@ Phase 5 production preparation — **In progress; stable release not approved**.
 - Establish reference hardware before setting Phase 2 rendering targets.
 - Complete the independent third-party dependency/license inventory before a
   stable package release.
+- Do not treat `LICENSE-APACHE-2.0.PROPOSED` as an effective license; after
+  owner/legal approval, add only the approved license, metadata, and verified
+  notices.

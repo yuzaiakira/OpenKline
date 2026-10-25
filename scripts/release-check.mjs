@@ -23,8 +23,16 @@ function validateRepository() {
     "docs/PDR.md",
     "docs/ROADMAP.md",
     "docs/audits/klinescript-security-audit.md",
+    "docs/audits/license-inventory.json",
+    "docs/audits/license-inventory.md",
+    "docs/audits/dependency-security.md",
+    "docs/legal/apache-2.0-proposal.md",
     "docs/reports/phase-4-security-verification.md",
     "docs/reports/phase-5-readiness.md",
+    "docs/reports/phase-5-release-readiness.md",
+    "docs/release/developer-preview-plan.md",
+    "docs/release/local-release-process.md",
+    "docs/release/browser-compatibility-checklist.md",
   ];
   for (const relative of required) {
     if (!existsSync(join(root, relative))) throw new Error(`Missing required document: ${relative}`);
@@ -43,8 +51,13 @@ try {
   run("Chromium browser tests", "npm", ["run", "test:browser"]);
   run("KlineScript benchmark", "npm", ["run", "benchmark:klinescript"]);
   run("Canvas2D benchmark", "npm", ["run", "benchmark:browser"]);
+  run("license inventory validation", process.execPath, ["scripts/validate-license-inventory.mjs"]);
+  run("root dependency audit", "npm", ["audit", "--json", "--include=dev"]);
   run("package contents", "npm", ["run", "package:check"]);
   run("package consumer smoke test", "npm", ["run", "package:smoke"]);
+  run("independent consumer preview smoke test", process.execPath, ["scripts/consumer-preview-smoke.mjs"]);
+  run("package publish dry-run", "npm", ["publish", "--dry-run", "--ignore-scripts"]);
+  run("Next.js dependency audit", "npm", ["audit", "--json", "--include=dev"], join(root, "examples", "nextjs-app-router"));
   run("Next.js production example", "npm", ["run", "build"], join(root, "examples", "nextjs-app-router"));
   validateRepository();
   // Missing official browser binaries must fail the gate instead of being

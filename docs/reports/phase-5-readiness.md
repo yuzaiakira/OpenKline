@@ -2,8 +2,9 @@
 
 Date: 2026-10-25 (UTC)
 
-Status: **Preparation foundation implemented; stable release approval is
-blocked.** This report records actual local evidence and does not treat
+Status: **Superseded by the Phase 5.1 release-readiness report; stable release
+approval remains blocked.** This historical report records actual local
+evidence and does not treat
 untested browser engines, missing licensing decisions, or incomplete audit work
 as complete. No package was published.
 
@@ -19,13 +20,13 @@ as complete. No package was published.
 | Package exports | Verified | Root `.` export exposes ESM/types; internal `executeKlineScript` is not exported. |
 | Source maps and tree-shaking metadata | Verified locally | Build emits source/declaration maps; package declares `sideEffects: false`. This is not a bundler compatibility guarantee for every consumer. |
 | React integration | Verified locally | React TypeScript build, SSR-safe Node test, and Next.js production example pass. The React package is a local workspace package, not published. |
-| Next.js App Router | Verified locally | `next build` passes with Next.js 15.5.28 and the packaged core build. |
+| Next.js App Router | Verified locally | `next build --webpack` passes with Next.js 16.4.3 and the packaged core build. |
 | Vanilla integration | Verified locally | Public root package smoke and standalone browser examples pass in Chromium. |
 | Plugin SDK | Implemented / Verified in existing suite | Trusted in-process extension API and lifecycle tests pass; no remote loader or sandbox is claimed. |
 | Workspace script state | Implemented / Verified | Only source/program-id references are persisted; restore tests pass. |
 | Open-source maintainer docs | Implemented | README, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, CHANGELOG, API/architecture docs, and local release-check instructions exist. |
 | LICENSE and package license metadata | Blocked | No project-owner license choice has been supplied; no license file or `package.json` license field was invented. Stable release cannot be approved. |
-| Third-party license/attribution inventory | Not verified | A formal dependency and asset inventory remains required before release. |
+| Third-party license/attribution inventory | Verified for metadata; legal review open | See `docs/audits/license-inventory.md` and `docs/audits/dependency-security.md`. Actual license/notice review remains required before release. |
 | GitHub Actions policy | Verified | No `.github/workflows` directory; checks are local only. |
 
 ## Verification results
@@ -41,7 +42,7 @@ These commands were run locally on 2026-10-25:
 | `npm run test:browser:compat` | 3 Mobile Chrome tests passed; 9 launches blocked: 3 Firefox, 3 WebKit, 3 Mobile Safari |
 | `npm run package:check` | Pass: ESM package, declarations, maps, and 142 packed files listed |
 | `npm run package:smoke` | Pass: clean local tarball install and ESM/KlineScript consumer |
-| `cd examples/nextjs-app-router && npm run build` | Pass: Next.js 15.5.28 |
+| `cd examples/nextjs-app-router && npm run build` | Pass: Next.js 16.4.3 |
 | focused KlineScript/fuzz tests | Pass: 14 tests |
 | `npm run benchmark:klinescript` | Pass; measurements below |
 | `npm run benchmark:browser` | Pass; measurements below; repeated run variance is reported honestly |
@@ -140,7 +141,8 @@ release check. It never publishes and never invokes GitHub Actions.
 
 ## Phase 5 readiness assessment
 
-OpenKline is ready for continued engineering and controlled local integration,
+The Phase 5.1 report supersedes this matrix for current package and license
+evidence. OpenKline is ready for continued engineering and controlled local integration,
 not for stable open-source release approval. The security audit found and fixed
 the verified P1 issues listed in its report, while preserving the explicit
 limitations of a synchronous in-process DSL. Phase 5 remains open until the
