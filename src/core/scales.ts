@@ -14,6 +14,64 @@ export interface PixelRange {
   end: number;
 }
 
+export interface TimeAxisTick {
+  /** UTC Unix timestamp in milliseconds; labels never rewrite stored time. */
+  readonly time: number;
+  readonly label: string;
+}
+
+export interface TimeAxisTickOptions {
+  readonly locale: string;
+  readonly timeZone: string;
+  /** Approximate CSS pixels reserved per label before renderer measurement. */
+  readonly minimumLabelSpacing?: number;
+}
+
+type TimeTickUnit = "millisecond" | "second" | "minute" | "hour" | "day" | "week" | "month" | "year";
+
+interface TimeTickInterval {
+  readonly unit: TimeTickUnit;
+  readonly step: number;
+  readonly approximateDuration: number;
+}
+
+const SECOND = 1_000;
+const MINUTE = 60 * SECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+
+const TIME_TICK_INTERVALS: readonly TimeTickInterval[] = [
+  { unit: "millisecond", step: 1, approximateDuration: 1 },
+  { unit: "millisecond", step: 10, approximateDuration: 10 },
+  { unit: "millisecond", step: 100, approximateDuration: 100 },
+  { unit: "millisecond", step: 500, approximateDuration: 500 },
+  { unit: "second", step: 1, approximateDuration: SECOND },
+  { unit: "second", step: 5, approximateDuration: 5 * SECOND },
+  { unit: "second", step: 15, approximateDuration: 15 * SECOND },
+  { unit: "second", step: 30, approximateDuration: 30 * SECOND },
+  { unit: "minute", step: 1, approximateDuration: MINUTE },
+  { unit: "minute", step: 5, approximateDuration: 5 * MINUTE },
+  { unit: "minute", step: 15, approximateDuration: 15 * MINUTE },
+  { unit: "minute", step: 30, approximateDuration: 30 * MINUTE },
+  { unit: "hour", step: 1, approximateDuration: HOUR },
+  { unit: "hour", step: 2, approximateDuration: 2 * HOUR },
+  { unit: "hour", step: 4, approximateDuration: 4 * HOUR },
+  { unit: "hour", step: 6, approximateDuration: 6 * HOUR },
+  { unit: "hour", step: 12, approximateDuration: 12 * HOUR },
+  { unit: "day", step: 1, approximateDuration: DAY },
+  { unit: "day", step: 2, approximateDuration: 2 * DAY },
+  { unit: "week", step: 1, approximateDuration: WEEK },
+  { unit: "week", step: 2, approximateDuration: 2 * WEEK },
+  { unit: "month", step: 1, approximateDuration: 30 * DAY },
+  { unit: "month", step: 3, approximateDuration: 91 * DAY },
+  { unit: "month", step: 6, approximateDuration: 182 * DAY },
+  { unit: "year", step: 1, approximateDuration: 365 * DAY },
+  { unit: "year", step: 2, approximateDuration: 2 * 365 * DAY },
+  { unit: "year", step: 5, approximateDuration: 5 * 365 * DAY },
+  { unit: "year", step: 10, approximateDuration: 10 * 365 * DAY },
+];
+
 export class TimeScale {
   private readonly timeStart: number;
   private readonly timeEnd: number;
@@ -59,6 +117,121 @@ export class TimeScale {
     const ratio = this.direction === "rtl" ? 1 - visualRatio : visualRatio;
     return this.timeStart + ratio * (this.timeEnd - this.timeStart);
   }
+
+  /**
+   * Produce deterministic ticks for the actual elapsed UTC range. Labels use
+   * `Intl` at display time, so named timezones observe daylight-saving rules
+   * without modifying timestamps or assuming a fixed offset.
+   */
+  public getTicks(options: TimeAxisTickOptions): TimeAxisTick[] {
+    const minimumLabelSpacing = options.minimumLabelSpacing ?? 92;
+    if (!Number.isFinite(minimumLabelSpacing) || minimumLabelSpacing <= 0) {
+      throw new Error("Time axis minimumLabelSpacing must be a positive finite number");
+    }
+    if (this.timeStart === this.timeEnd) {
+      return [{ time: this.timeStart, label: formatTimeTick(this.timeStart, TIME_TICK_INTERVALS[0]!, options) }];
+    }
+    const availablePixels = this.pixelEnd - this.pixelStart;
+    const targetCount = Math.max(2, Math.floor(availablePixels / minimumLabelSpacing) + 1);
+    const interval = selectTimeTickInterval((this.timeEnd - this.timeStart) / Math.max(1, targetCount - 1));
+    const times = new Set<number>([this.timeStart, this.timeEnd]);
+    let cursor = advanceTimeTick(alignTimeTick(this.timeStart, interval), interval);
+    let guard = 0;
+    while (cursor < this.timeEnd && guard < 10_000) {
+      if (cursor > this.timeStart) times.add(cursor);
+      cursor = advanceTimeTick(cursor, interval);
+      guard += 1;
+    }
+    return [...times]
+      .sort((left, right) => left - right)
+      .map((time) => ({ time, label: formatTimeTick(time, interval, options) }));
+  }
+}
+
+/** Format one UTC timestamp for display without changing its underlying value. */
+export function formatTimeTick(time: number, interval: Pick<TimeTickInterval, "unit" | "step">, options: Pick<TimeAxisTickOptions, "locale" | "timeZone">): string {
+  const date = new Date(time);
+  if (interval.unit === "millisecond") {
+    const base = new Intl.DateTimeFormat(options.locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: options.timeZone,
+    }).format(date);
+    return `${base}.${String(date.getUTCMilliseconds()).padStart(3, "0")}`;
+  }
+  if (interval.unit === "second" || interval.unit === "minute") {
+    return new Intl.DateTimeFormat(options.locale, {
+      hour: "numeric",
+      minute: "2-digit",
+      ...(interval.unit === "second" ? { second: "2-digit" } : {}),
+      timeZone: options.timeZone,
+    }).format(date);
+  }
+  if (interval.unit === "hour") {
+    return new Intl.DateTimeFormat(options.locale, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: options.timeZone,
+    }).format(date);
+  }
+  if (interval.unit === "day" || interval.unit === "week") {
+    return new Intl.DateTimeFormat(options.locale, {
+      month: "short",
+      day: "numeric",
+      timeZone: options.timeZone,
+    }).format(date);
+  }
+  if (interval.unit === "month") {
+    return new Intl.DateTimeFormat(options.locale, {
+      month: "short",
+      year: "numeric",
+      timeZone: options.timeZone,
+    }).format(date);
+  }
+  return new Intl.DateTimeFormat(options.locale, { year: "numeric", timeZone: options.timeZone }).format(date);
+}
+
+function selectTimeTickInterval(targetDuration: number): TimeTickInterval {
+  return TIME_TICK_INTERVALS.find((interval) => interval.approximateDuration >= targetDuration)
+    ?? TIME_TICK_INTERVALS[TIME_TICK_INTERVALS.length - 1]!;
+}
+
+function alignTimeTick(time: number, interval: TimeTickInterval): number {
+  if (interval.unit === "millisecond") return Math.floor(time / interval.step) * interval.step;
+  if (interval.unit === "second") return Math.floor(time / (interval.step * SECOND)) * interval.step * SECOND;
+  if (interval.unit === "minute") return Math.floor(time / (interval.step * MINUTE)) * interval.step * MINUTE;
+  if (interval.unit === "hour") return Math.floor(time / (interval.step * HOUR)) * interval.step * HOUR;
+  const date = new Date(time);
+  if (interval.unit === "day") {
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), Math.floor((date.getUTCDate() - 1) / interval.step) * interval.step + 1);
+  }
+  if (interval.unit === "week") {
+    const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const mondayOffset = (date.getUTCDay() + 6) % 7;
+    const monday = midnight - mondayOffset * DAY;
+    const mondayEpoch = Date.UTC(1970, 0, 5);
+    return Math.floor((monday - mondayEpoch) / (interval.step * WEEK)) * interval.step * WEEK + mondayEpoch;
+  }
+  if (interval.unit === "month") {
+    return Date.UTC(date.getUTCFullYear(), Math.floor(date.getUTCMonth() / interval.step) * interval.step, 1);
+  }
+  return Date.UTC(Math.floor(date.getUTCFullYear() / interval.step) * interval.step, 0, 1);
+}
+
+function advanceTimeTick(time: number, interval: TimeTickInterval): number {
+  if (interval.unit === "millisecond") return time + interval.step;
+  if (interval.unit === "second") return time + interval.step * SECOND;
+  if (interval.unit === "minute") return time + interval.step * MINUTE;
+  if (interval.unit === "hour") return time + interval.step * HOUR;
+  if (interval.unit === "day") return time + interval.step * DAY;
+  if (interval.unit === "week") return time + interval.step * WEEK;
+  const date = new Date(time);
+  if (interval.unit === "month") date.setUTCMonth(date.getUTCMonth() + interval.step);
+  else date.setUTCFullYear(date.getUTCFullYear() + interval.step);
+  return date.getTime();
 }
 
 export class PriceScale {

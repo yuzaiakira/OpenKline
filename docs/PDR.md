@@ -190,5 +190,10 @@ transform for Canvas rendering, interaction, drawings, and plugin contexts.
 It adds linear, logarithmic, percentage, and indexed display modes; raw-price
 autoscale/manual range controls; deterministic invalid-domain diagnostics; and
 backward-compatible optional workspace persistence. Scale mode never changes
-stored market data, indicator inputs, or drawing anchors. Time-axis overhaul,
-additional chart types, and Studio controls remain subsequent Phase 7 work.
+stored market data, indicator inputs, or drawing anchors. Additional chart
+types and Studio controls remain subsequent Phase 7 work.
+
+Phase 7.0.2 adds adaptive elapsed-UTC time ticks from sub-second through
+multi-year ranges. Labels are localized with `Intl` named timezones and
+renderer-side overlap measurement, while source timestamps remain UTC. Exchange
+session/calendar behavior remains intentionally unimplemented.

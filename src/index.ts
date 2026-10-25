@@ -1,7 +1,8 @@
 export { Chart, createChart } from "./chart.js";
 export { CandleStore, CandleValidationError } from "./core/candle-store.js";
 export { ChartModel } from "./core/chart-model.js";
-export { PriceScale, TimeScale, getCandlePriceRange } from "./core/scales.js";
+export { PriceScale, TimeScale, formatTimeTick, getCandlePriceRange } from "./core/scales.js";
+export type { TimeAxisTick, TimeAxisTickOptions } from "./core/scales.js";
 export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";

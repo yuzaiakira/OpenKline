@@ -392,15 +392,21 @@ export class CanvasRenderer {
   }
 
   private drawTimeLabels(context: CanvasRenderingContext2D, times: readonly number[], timeScale: TimeScale, y: number, theme: ChartTheme, options: RenderOptions): void {
+    if (times.length === 0) return;
     context.fillStyle = theme.text;
     context.font = "12px system-ui, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "top";
-    const labelIndexes = [0, Math.floor((times.length - 1) / 2), times.length - 1];
-    const formatter = new Intl.DateTimeFormat(options.locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: options.timeZone });
-    for (const index of labelIndexes) {
-      const time = times[index];
-      if (time !== undefined) context.fillText(formatter.format(new Date(time)), timeScale.xForTime(time), y + 8);
+    const ticks = timeScale.getTicks({ locale: options.locale, timeZone: options.timeZone })
+      .map((tick) => ({ ...tick, x: timeScale.xForTime(tick.time) }))
+      .sort((left, right) => left.x - right.x);
+    let rightmostLabel = Number.NEGATIVE_INFINITY;
+    for (const tick of ticks) {
+      const width = context.measureText(tick.label).width;
+      const left = tick.x - width / 2;
+      if (left < rightmostLabel + 8) continue;
+      context.fillText(tick.label, tick.x, y + 8);
+      rightmostLabel = tick.x + width / 2;
     }
   }
 

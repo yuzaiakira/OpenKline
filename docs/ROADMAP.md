@@ -5,8 +5,9 @@
 Phase 7 professional charting foundation — **In progress**. Phase 7.0.1
 centralizes primary price scaling with linear, logarithmic, percentage, and
 indexed display modes, raw-anchor preservation, invalid-domain diagnostics,
-and workspace persistence. Time-axis work, new chart types, and Studio controls
-remain in scope. Phase 6 formal accessibility, managed-browser/mobile,
+and workspace persistence. Phase 7.0.2 adds adaptive elapsed-UTC ticks,
+timezone/DST-safe `Intl` labels, and measured overlap prevention. New chart
+types and Studio controls remain in scope. Phase 6 formal accessibility, managed-browser/mobile,
 consumer, and performance acceptance remain open and are not reclassified.
 Phase 4 KlineScript language and secure indicator runtime — **In verification**.
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
@@ -149,6 +150,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   manual raw ranges, deterministic fallback diagnostics, and optional
   backward-compatible workspace configuration. See
   `docs/architecture/price-scale-system.md`.
+- [Implemented / In Verification] Phase 7.0.2 replaces fixed three-label time
+  output with adaptive UTC tick candidates from milliseconds through years,
+  responsive measured-label overlap suppression, and locale/named-timezone
+  formatting that follows DST. Session calendars remain out of scope; see
+  `docs/architecture/time-axis.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

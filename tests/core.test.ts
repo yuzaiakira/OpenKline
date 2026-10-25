@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CandleStore, CandleValidationError } from "../src/core/candle-store.js";
 import { ChartModel } from "../src/core/chart-model.js";
-import { PriceScale, TimeScale } from "../src/core/scales.js";
+import { formatTimeTick, PriceScale, TimeScale } from "../src/core/scales.js";
 import type { Candle } from "../src/types.js";
 
 const candles: Candle[] = [
@@ -88,6 +88,34 @@ test("PriceScale preserves raw values across display modes and reports invalid d
   const missingReference = new PriceScale(10, 20, pixels, { mode: "percentage" });
   assert.equal(missingReference.mode, "linear");
   assert.equal(missingReference.diagnostic?.code, "REFERENCE_REQUIRES_POSITIVE_VALUE");
+});
+
+test("TimeScale produces adaptive UTC ticks with timezone-aware labels", () => {
+  const start = Date.UTC(2024, 0, 1, 9, 30, 0, 0);
+  const shortScale = new TimeScale([start, start + 1_000], { start: 0, end: 500 });
+  const shortTicks = shortScale.getTicks({ locale: "en-US", timeZone: "UTC" });
+  assert.ok(shortTicks.length >= 3);
+  assert.equal(shortTicks[0]?.time, start);
+  assert.equal(shortTicks.at(-1)?.time, start + 1_000);
+  assert.ok(shortTicks.some((tick) => tick.label.includes(".")), "sub-second labels remain distinguishable");
+
+  const yearlyScale = new TimeScale([start, Date.UTC(2027, 0, 1)], { start: 0, end: 800 });
+  const yearlyTicks = yearlyScale.getTicks({ locale: "en-US", timeZone: "UTC" });
+  assert.ok(yearlyTicks.length >= 3 && yearlyTicks.length <= 12);
+  assert.ok(yearlyTicks.every((tick, index) => index === 0 || tick.time > yearlyTicks[index - 1]!.time));
+
+  const narrow = new TimeScale([start, start + 14 * 24 * 60 * 60 * 1_000], { start: 0, end: 70 })
+    .getTicks({ locale: "en-US", timeZone: "UTC" });
+  assert.ok(narrow.length <= 3, "narrow view avoids a dense label candidate set");
+
+  const beforeDst = Date.UTC(2024, 2, 10, 6, 30);
+  const afterDst = Date.UTC(2024, 2, 10, 7, 30);
+  const newYork = { locale: "en-US", timeZone: "America/New_York" } as const;
+  const beforeLabel = formatTimeTick(beforeDst, { unit: "minute", step: 30 }, newYork);
+  const afterLabel = formatTimeTick(afterDst, { unit: "minute", step: 30 }, newYork);
+  assert.match(beforeLabel, /1:30/);
+  assert.match(afterLabel, /3:30/);
+  assert.notEqual(beforeLabel, afterLabel, "named timezone formatting observes the DST jump without changing UTC timestamps");
 });
 
 test("ChartModel keeps a single candle visible without inventing a second bar", () => {

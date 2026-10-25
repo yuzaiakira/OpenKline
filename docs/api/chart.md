@@ -158,6 +158,13 @@ browser gates are complete.
 remain ascending. `locale` and `timeZone` use the platform `Intl` formatter;
 host-owned controls should provide their own translated strings.
 
+`TimeScale.getTicks({ locale, timeZone, minimumLabelSpacing? })` exposes the
+same adaptive UTC tick candidates used by Canvas. It returns UTC millisecond
+positions and localized labels without changing stored timestamps. Canvas
+measures text and suppresses overlapping candidates. See
+[time-axis architecture](../architecture/time-axis.md) for daylight-saving,
+elapsed-time, and trading-session boundaries.
+
 Indicator outputs can be assigned to `pane: "new"`, `pane: "main"`, or a
 named pane. RSI, MACD, and Stochastic therefore use independent scales while
 remaining synchronized with price and volume.
