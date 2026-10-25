@@ -10,7 +10,7 @@ keeping Studio outside the framework-independent Canvas2D core.
 
 | Layer | Owns | Does not own |
 | --- | --- | --- |
-| Studio React client | Controls, local workspace persistence, object list, deterministic fixture selection, and presentation | Scales, drawing geometry, indicator math, Canvas rendering, datafeed transport |
+| Studio React client | Controls, local workspace persistence, object list, deterministic fixture selection, and presentation selection | Scales, drawing geometry, indicator math, Canvas rendering, datafeed transport |
 | `FinancialChart` | React mount/unmount and public chart handle | Studio domain state or custom rendering |
 | `Chart` public API | Series, viewport, indicator, drawing, workspace, rendering, and lifecycle | React layout and UI widgets |
 | Core modules | Series stores, viewport, Canvas2D renderer, drawing/indicator engines | Next.js, storage, or browser application controls |
@@ -23,10 +23,12 @@ tree is rebuilt from public snapshots rather than stale `SeriesApi` handles.
 ## Data and workspace flow
 
 The Studio starts with a deterministic 240-bar fixture for the selected symbol
-and timeframe. It creates price, line, area, and volume series through public
-APIs, then attaches built-in indicators. Switching symbol or timeframe creates
-a versioned workspace from the current chart, replaces only market-series data
-with deterministic data of the matching shape, and restores that workspace.
+and timeframe. It creates every supported primary presentation (Candles, OHLC,
+Hollow Candles, Heikin-Ashi, Line, Area, and Baseline) plus volume through
+public APIs, with exactly one primary presentation visible at a time. It then
+attaches built-in indicators. Switching symbol or timeframe creates a versioned
+workspace from the current chart, replaces only market-series data with
+deterministic data of the matching shape, and restores that workspace.
 Indicator recomputation, pane assignment, drawings, plugins, and the viewport
 remain the chart's responsibility.
 
@@ -36,12 +38,19 @@ are not a cloud sync feature and do not transmit data. KlineScript text is
 compiled with the existing restricted public compiler before it is attached as
 a script indicator. Diagnostics remain visible in the editor.
 
+Presentation buttons use `setSeriesStyle()` to change visibility; they never
+construct a second chart or duplicate scale, crosshair, or viewport state. The
+settings panel uses `getPriceScaleOptions()`, `setPriceScaleOptions()`, and
+`resetPriceScale()` for the primary price scale. Its state is reconstructed from
+the serialized public workspace after load, so chart type, scale mode,
+auto-scaling, margins, theme, indicators, and drawings are restored together.
+
 ## Responsive and accessible behavior
 
 The chart itself remains `autoSize`. CSS moves the chart above side panels at
 narrow widths, keeps touch-sized native controls, and avoids a desktop-only
 fixed toolbar. Buttons have text labels, pressed state for chart presentation,
-labels for selectors/color controls, visible keyboard focus, an `aria-live`
+labels for selectors, scale settings, and color controls, visible keyboard focus, an `aria-live`
 status region, and the existing chart canvas label. The Studio workflow is
 tested at a 390×844 viewport with Chromium; this is diagnostic mobile-layout
 evidence, not a Mobile Safari compatibility claim.

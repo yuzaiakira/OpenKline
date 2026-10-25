@@ -3,19 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FinancialChart } from "@openkline/react";
 import type { FinancialChartHandle } from "@openkline/react";
-import { compileKlineScript } from "openkline";
+import { compileKlineScript, isCandleSeriesType } from "openkline";
 import type {
   Candle,
   Chart,
   ChartSeriesInfo,
   CrosshairMoveEvent,
   DrawingSnapshot,
+  PriceScaleMode,
   WorkspaceDocument,
 } from "openkline";
 import styles from "./studio.module.css";
 
 type Timeframe = "5m" | "1h" | "4h" | "1D";
-type Presentation = "candles" | "line" | "area";
+type Presentation = "candles" | "ohlc" | "hollow" | "heikin-ashi" | "line" | "area" | "baseline";
 
 interface StudioObjects {
   readonly series: readonly ChartSeriesInfo[];
@@ -43,6 +44,21 @@ const drawingTools = [
   ["fibonacci-retracement", "Fib"],
   ["text", "Text"],
 ] as const;
+const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
+  ["candles", "Candles"],
+  ["ohlc", "OHLC"],
+  ["hollow", "Hollow"],
+  ["heikin-ashi", "Heikin-Ashi"],
+  ["line", "Line"],
+  ["area", "Area"],
+  ["baseline", "Baseline"],
+];
+const scaleModes: ReadonlyArray<readonly [PriceScaleMode, string]> = [
+  ["linear", "Linear"],
+  ["logarithmic", "Log"],
+  ["percentage", "%"],
+  ["indexed", "Index 100"],
+];
 
 const defaultScript = [
   'indicator("Studio EMA")',
@@ -101,7 +117,7 @@ function indicatorParameters(id: string): Record<string, unknown> {
 
 function textForCrosshair(event: CrosshairMoveEvent | null): string {
   if (event === null || event.time === null || event.price === null) return "Move across the chart for OHLC-scale readout";
-  return `${new Date(event.time).toLocaleString()} · ${event.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
+  return `${new Date(event.time).toLocaleString()} · ${event.formattedPrice ?? event.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 }
 
 export default function StudioClient() {
@@ -110,6 +126,11 @@ export default function StudioClient() {
   const [symbol, setSymbol] = useState<(typeof symbols)[number]>("BTC-USD");
   const [timeframe, setTimeframe] = useState<Timeframe>("1h");
   const [presentation, setPresentation] = useState<Presentation>("candles");
+  const [scaleMode, setScaleMode] = useState<PriceScaleMode>("linear");
+  const [autoScale, setAutoScale] = useState(true);
+  const [axisVisible, setAxisVisible] = useState(true);
+  const [marginTop, setMarginTop] = useState(0.08);
+  const [marginBottom, setMarginBottom] = useState(0.08);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [locale, setLocale] = useState("en-US");
   const [timeZone, setTimeZone] = useState("UTC");
@@ -135,12 +156,44 @@ export default function StudioClient() {
     });
   }, []);
 
+  const syncDisplayPreferences = useCallback((target = chart()): void => {
+    if (target === null) return;
+    const workspace = target.serializeWorkspace();
+    const active = presentationChoices.find(([kind]) => {
+      const id = {
+        candles: "studio-price",
+        ohlc: "studio-ohlc",
+        hollow: "studio-hollow",
+        "heikin-ashi": "studio-heikin",
+        line: "studio-line",
+        area: "studio-area",
+        baseline: "studio-baseline",
+      }[kind];
+      return workspace.series.find((series) => series.id === id)?.style.visible !== false;
+    })?.[0];
+    if (active !== undefined) setPresentation(active);
+    const priceScale = target.getPriceScaleOptions();
+    setScaleMode(priceScale.mode);
+    setAutoScale(priceScale.autoScale);
+    setAxisVisible(priceScale.axisVisible);
+    setMarginTop(priceScale.marginTop);
+    setMarginBottom(priceScale.marginBottom);
+    setLocale(workspace.chart.locale);
+    setTimeZone(workspace.chart.timeZone);
+    setPricePrecision(workspace.chart.pricePrecision);
+    setTheme(workspace.chart.theme.background === "#ffffff" ? "light" : "dark");
+  }, []);
+
   const applyPresentation = useCallback((next: Presentation, target = chart()): void => {
     if (target === null) return;
     const visibility: Record<string, boolean> = {
       "studio-price": next === "candles",
+      "studio-ohlc": next === "ohlc",
+      "studio-hollow": next === "hollow",
+      "studio-heikin": next === "heikin-ashi",
       "studio-line": next === "line",
       "studio-area": next === "area",
+      "studio-baseline": next === "baseline",
     };
     for (const [id, visible] of Object.entries(visibility)) {
       if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible });
@@ -158,7 +211,10 @@ export default function StudioClient() {
       ...workspace,
       series: workspace.series.map((series) => ({
         ...series,
-        data: series.type === "candlestick"
+        style: series.id === "studio-baseline"
+          ? { ...series.style, baseline: candles[0]?.close ?? 0 }
+          : series.style,
+        data: isCandleSeriesType(series.type)
           ? candles
           : series.type === "volume" || series.type === "histogram"
             ? volumePoints(candles)
@@ -168,30 +224,40 @@ export default function StudioClient() {
     try {
       target.restoreWorkspace(nextWorkspace);
       target.resetView();
+      syncDisplayPreferences(target);
       refreshObjects(target);
       setNotice(`Loaded ${nextSymbol} at ${nextTimeframe} with ${candles.length} deterministic bars.`);
     } catch (error) {
       setNotice(`Could not replace market data: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [refreshObjects]);
+  }, [refreshObjects, syncDisplayPreferences]);
 
   const initializeChart = useCallback((target: Chart): void => {
     const candles = buildCandles(symbol, timeframe);
     const price = target.addCandlestickSeries({ id: "studio-price", title: "Price", style: { upColor: "#34d399", downColor: "#fb7185" } });
+    const ohlc = target.addOhlcSeries({ id: "studio-ohlc", title: "OHLC", style: { upColor: "#34d399", downColor: "#fb7185", visible: false } });
+    const hollow = target.addHollowCandlestickSeries({ id: "studio-hollow", title: "Hollow candles", style: { hollowUpColor: "#34d399", downColor: "#fb7185", visible: false } });
+    const heikin = target.addHeikinAshiSeries({ id: "studio-heikin", title: "Heikin-Ashi", style: { upColor: "#a78bfa", downColor: "#f472b6", visible: false } });
     const line = target.addLineSeries({ id: "studio-line", title: "Close", style: { color: "#60a5fa", lineWidth: 2, visible: false } });
     const area = target.addAreaSeries({ id: "studio-area", title: "Close area", style: { color: "#a78bfa", fillColor: "#8b5cf6", fillOpacity: 0.2, visible: false } });
+    const baseline = target.addBaselineSeries({ id: "studio-baseline", title: "Close vs first", style: { baseline: candles[0]?.close ?? 0, aboveColor: "#34d399", belowColor: "#fb7185", aboveFillOpacity: 0.14, belowFillOpacity: 0.14, visible: false } });
     const volume = target.addVolumeSeries({ id: "studio-volume", title: "Volume" });
     price.setData(candles);
+    ohlc.setData(candles);
+    hollow.setData(candles);
+    heikin.setData(candles);
     line.setData(pricePoints(candles));
     area.setData(pricePoints(candles));
+    baseline.setData(pricePoints(candles));
     volume.setData(volumePoints(candles));
     target.addIndicator("SMA", { id: "studio-sma", pane: "main", parameters: { period: 20 } });
     target.addIndicator("RSI", { id: "studio-rsi", pane: "new", parameters: { period: 14 } });
     target.subscribe("drawingSelection", () => window.setTimeout(() => refreshObjects(target), 0));
     target.subscribe("indicatorChange", () => window.setTimeout(() => refreshObjects(target), 0));
+    syncDisplayPreferences(target);
     refreshObjects(target);
     setNotice(`Loaded ${symbol} at ${timeframe} with ${candles.length} deterministic bars.`);
-  }, [refreshObjects, symbol, timeframe]);
+  }, [refreshObjects, symbol, syncDisplayPreferences, timeframe]);
 
   useEffect(() => () => { handleRef.current = null; }, []);
 
@@ -199,6 +265,35 @@ export default function StudioClient() {
     chart()?.setOptions({ theme: next });
     setTheme(next);
     setNotice(`${next === "dark" ? "Dark" : "Light"} theme applied without recreating the chart.`);
+  };
+
+  const updateScaleMode = (next: PriceScaleMode): void => {
+    chart()?.setPriceScaleOptions({ mode: next });
+    setScaleMode(next);
+    setNotice(`${scaleModes.find(([mode]) => mode === next)?.[1] ?? next} price scale applied without changing financial data.`);
+  };
+
+  const updateAutoScale = (next: boolean): void => {
+    const target = chart();
+    if (target === null) return;
+    if (next) target.resetPriceScale();
+    else target.setPriceScaleOptions({ autoScale: false });
+    setAutoScale(next);
+    setNotice(next ? "Price autoscale restored." : "Price range frozen at the current raw range.");
+  };
+
+  const updateAxisVisibility = (next: boolean): void => {
+    chart()?.setPriceScaleOptions({ axisVisible: next });
+    setAxisVisible(next);
+  };
+
+  const updateMargin = (side: "top" | "bottom", value: number): void => {
+    if (!Number.isFinite(value) || value < 0 || value >= 1) {
+      setNotice("Scale margins must be between 0 (inclusive) and 1 (exclusive).");
+      return;
+    }
+    chart()?.setPriceScaleOptions(side === "top" ? { marginTop: value } : { marginBottom: value });
+    if (side === "top") setMarginTop(value); else setMarginBottom(value);
   };
 
   const updateInteraction = (name: keyof typeof interaction): void => {
@@ -282,6 +377,7 @@ export default function StudioClient() {
     }
     try {
       target.restoreWorkspace(JSON.parse(raw));
+      syncDisplayPreferences(target);
       refreshObjects(target);
       setNotice("Local workspace restored through the public workspace contract.");
     } catch (error) {
@@ -345,8 +441,8 @@ export default function StudioClient() {
       </header>
 
       <section className={styles.toolbar} aria-label="Chart tools">
-        <div className={styles.toolGroup} aria-label="Chart presentation">
-          {(["candles", "line", "area"] as const).map((item) => <button key={item} type="button" aria-pressed={presentation === item} onClick={() => applyPresentation(item)}>{item}</button>)}
+        <div className={styles.toolGroup} aria-label="Chart type">
+          {presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => applyPresentation(kind)}>{label}</button>)}
           <button type="button" onClick={() => chart()?.fitContent()}>Fit</button>
           <button type="button" onClick={() => chart()?.resetView()}>Reset</button>
         </div>
@@ -372,7 +468,7 @@ export default function StudioClient() {
             <ul>{objects.series.map((series) => <li key={series.id}>
               <span title={`${series.type} · ${series.dataLength} points`}>{series.title ?? series.id}</span>
               <button type="button" aria-label={`Toggle ${series.id}`} onClick={() => { chart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); refreshObjects(); }}>{series.style.visible === false ? "Show" : "Hide"}</button>
-              <input aria-label={`${series.id} color`} type="color" value={series.style.color ?? series.style.upColor ?? "#60a5fa"} onChange={(event) => { chart()?.setSeriesStyle(series.id, series.type === "candlestick" ? { upColor: event.target.value } : { color: event.target.value }); refreshObjects(); }} />
+              <input aria-label={`${series.id} color`} type="color" value={series.style.color ?? series.style.hollowUpColor ?? series.style.upColor ?? "#60a5fa"} onChange={(event) => { chart()?.setSeriesStyle(series.id, isCandleSeriesType(series.type) ? { upColor: event.target.value } : { color: event.target.value }); refreshObjects(); }} />
               {series.id === "studio-price" || series.id.includes(":") ? null : <button type="button" aria-label={`Remove ${series.id}`} onClick={() => { chart()?.removeSeries(series.id); refreshObjects(); }}>×</button>}
             </li>)}</ul>
           </details>
@@ -417,6 +513,14 @@ export default function StudioClient() {
           <label>Locale<select value={locale} onChange={(event) => { const next = event.target.value; chart()?.setOptions({ locale: next }); setLocale(next); }}><option value="en-US">English (US)</option><option value="de-DE">Deutsch</option><option value="fa-IR">فارسی</option></select></label>
           <label>Timezone<select value={timeZone} onChange={(event) => { const next = event.target.value; chart()?.setOptions({ timeZone: next }); setTimeZone(next); }}><option value="UTC">UTC</option><option value="America/New_York">New York</option><option value="Asia/Tehran">Tehran</option></select></label>
           <label>Precision<select value={pricePrecision} onChange={(event) => { const next = Number(event.target.value); chart()?.setOptions({ pricePrecision: next }); setPricePrecision(next); }}><option value={0}>0</option><option value={2}>2</option><option value={4}>4</option><option value={6}>6</option></select></label>
+          <fieldset><legend>Price scale</legend>
+            <label>Mode<select aria-label="Price scale" value={scaleMode} onChange={(event) => updateScaleMode(event.target.value as PriceScaleMode)}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label>
+            <label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => updateAutoScale(event.target.checked)} />Auto scale</label>
+            <label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => updateAxisVisibility(event.target.checked)} />Show price axis</label>
+            <label>Top margin<input aria-label="Top scale margin" type="number" min="0" max="0.99" step="0.01" value={marginTop} onChange={(event) => updateMargin("top", Number(event.target.value))} /></label>
+            <label>Bottom margin<input aria-label="Bottom scale margin" type="number" min="0" max="0.99" step="0.01" value={marginBottom} onChange={(event) => updateMargin("bottom", Number(event.target.value))} /></label>
+            <button type="button" onClick={() => { const target = chart(); target?.resetPriceScale(); if (target !== null) syncDisplayPreferences(target); setNotice("Price scale reset to visible data."); }}>Reset scale</button>
+          </fieldset>
           <fieldset><legend>Interaction</legend>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => updateInteraction(name)} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</fieldset>
           <button type="button" onClick={() => { chart()?.pan(-20); setNotice("Panned twenty bars toward history."); }}>Pan history</button>
           <button type="button" onClick={() => { chart()?.zoom(0.75); setNotice("Zoomed in around the centre."); }}>Zoom in</button>

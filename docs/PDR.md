@@ -191,7 +191,7 @@ It adds linear, logarithmic, percentage, and indexed display modes; raw-price
 autoscale/manual range controls; deterministic invalid-domain diagnostics; and
 backward-compatible optional workspace persistence. Scale mode never changes
 stored market data, indicator inputs, or drawing anchors. Additional chart
-extensions and Studio controls remain subsequent Phase 7 work.
+extensions remain subsequent Phase 7 work.
 
 Phase 7.0.2 adds adaptive elapsed-UTC time ticks from sub-second through
 multi-year ranges. Labels are localized with `Intl` named timezones and
@@ -202,3 +202,13 @@ Phase 7.0.3 adds OHLC, hollow candlestick, display-only Heikin–Ashi, and
 baseline series through the existing series/pane/interaction architecture.
 Heikin–Ashi retains raw OHLCV for persistence and indicator input; historical
 corrections recompute only its deterministic display projection.
+
+Phase 7.0.4 makes the private Studio a verified consumer of the completed
+public chart APIs. It switches one chart between Candles, OHLC, Hollow Candles,
+Heikin–Ashi, Line, Area, and Baseline presentations without duplicating chart
+state, and exposes linear, logarithmic, percentage, indexed, auto-scale,
+axis-visibility, margin, and reset controls. Save/load reconstructs the UI
+from the public serialized workspace, including presentation, price scale,
+theme, indicators, and drawings. Chromium workflow evidence is recorded with
+the Phase 7 verification; broader Phase 6 browser and accessibility gates are
+not closed by this increment.

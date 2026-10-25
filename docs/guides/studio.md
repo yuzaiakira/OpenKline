@@ -14,7 +14,10 @@ the public workspace contract.
 
 ## Workflow
 
-1. Choose a symbol and timeframe, then use Candles, Line, or Area presentation.
+1. Choose a symbol and timeframe, then choose Candles, OHLC, Hollow,
+   Heikin–Ashi, Line, Area, or Baseline presentation. Studio keeps these
+   series in the existing chart and changes their real visibility; it does not
+   recreate a chart or replace raw market data.
 2. Add built-in indicators from the Objects panel; removable overlays and all
    live series appear in the same tree.
 3. Activate a drawing tool and place its anchors on the canvas. The drawing
@@ -25,9 +28,18 @@ the public workspace contract.
 5. Open KlineScript, compile the source, and add it only after the restricted
    compiler accepts it. Errors are reported in the editor.
 
-The Settings panel changes theme, locale, timezone, price precision, and
-interaction policy at runtime without rebuilding the chart. Fit and Reset use
-the shared viewport; pointer/wheel interactions remain owned by the chart.
+The Settings panel changes theme, locale, timezone, price precision, scale
+mode (Linear, Log, Percentage, or Index 100), autoscale, axis labels, scale
+margins, and interaction policy at runtime without rebuilding the chart. Scale
+settings call the public price-scale API and retain raw financial anchors.
+Fit and Reset use the shared viewport; pointer/wheel interactions remain owned
+by the chart.
+
+Save captures the chart workspace, including visible chart type, price-scale
+configuration, indicators, drawings, and display configuration. Load restores
+through the public workspace contract and synchronizes the active Studio
+controls. Heikin–Ashi remains a display-only projection: workspace data and
+indicators use raw OHLCV.
 
 ## Boundaries
 
