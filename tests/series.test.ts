@@ -75,6 +75,36 @@ test("professional candle types retain raw data while deriving visible Heikin-As
   assert.deepEqual(baselineRange, { min: 0, max: 100 }, "baseline value participates in autoscale");
 });
 
+test("ChartModel replay cutoff masks every series while retaining protected source data", () => {
+  const model = new ChartModel();
+  model.resize(800);
+  const candles = model.addSeries("candlestick", { id: "price" });
+  const heikin = model.addSeries("heikin-ashi", { id: "ha" });
+  const line = model.addSeries("line", { id: "line" });
+  const volume = model.addSeries("volume", { id: "volume" });
+  const raw = [
+    { time: 10, open: 10, high: 12, low: 9, close: 11, volume: 100 },
+    { time: 20, open: 11, high: 14, low: 10, close: 13, volume: 110 },
+    { time: 35, open: 13, high: 15, low: 12, close: 14, volume: 120 },
+  ];
+  model.setSeriesData(candles, raw);
+  model.setSeriesData(heikin, raw);
+  model.setSeriesData(line, raw.map((candle) => ({ time: candle.time, value: candle.close })));
+  model.setSeriesData(volume, raw.map((candle) => ({ time: candle.time, value: candle.volume ?? 0 })));
+
+  model.setReplayCutoff(20);
+  assert.deepEqual(model.allCandles.map((candle) => candle.time), [10, 20]);
+  assert.deepEqual(model.getVisibleData().times, [10, 20]);
+  assert.deepEqual(model.getSeries(line).data.map((point) => point.time), [10, 20]);
+  assert.deepEqual(model.getSeries(volume).data.map((point) => point.time), [10, 20]);
+  assert.equal(model.getSeries(heikin).data.length, 2);
+
+  model.setReplayCutoff(35);
+  assert.equal(model.allCandles.length, 3, "the protected source can reveal the next bar");
+  model.setReplayCutoff(null);
+  assert.equal(model.getSeries(line).data.length, 3, "exiting the mask restores the complete source");
+});
+
 test("PointStore rejects malformed and duplicate time/value data", () => {
   const store = new PointStore();
   assert.throws(

@@ -1,8 +1,8 @@
 # Replay API
 
 The framework-independent replay primitive is exported as `ReplayEngine`.
-Chart integration is provided by `Chart.createReplay()` in the later Phase
-7.1 integration increment; applications do not need React to use either API.
+Chart integration is provided by `Chart.createReplay()`; neither API requires
+React or Next.js.
 
 ```ts
 import { ReplayEngine } from "openkline";
@@ -27,6 +27,24 @@ unsubscribe();
 replay.dispose();
 ```
 
+For a chart-owned replay, pass the complete historical source to
+`createReplay`. The chart keeps its existing source and workspace private,
+then exposes only the inclusive visible prefix:
+
+```ts
+const replay = chart.createReplay({
+  source: chart.getData(),
+  startAt: chart.getData()[40]!.time,
+  speed: 2,
+});
+
+replay.subscribe((status) => console.log(status.state, status.currentIndex));
+replay.start();
+// chart.getData() now contains bars 0..40, inclusive.
+replay.stepForward();
+replay.exit(); // restores the complete pre-replay chart workspace
+```
+
 `startAt` and timestamp seeks use the first bar at or after the requested
 timestamp. The current bar is inclusive: the cursor at index `N` reveals the
 prefix through `N`. A replay status never contains future candle data.
@@ -42,3 +60,11 @@ terminal and cancels timers.
 The default uses the host's timer API. Speed is bounded to `0.01..100` and
 controls progression delay only; it never changes candle timestamps or
 financial calculations.
+
+During chart replay, source and structural mutations are rejected so a live
+datafeed, indicator, drawing, or plugin cannot introduce future state. Series,
+indicators, Heikin–Ashi projections, crosshair/tooltip values, autoscale,
+drawings, and plugin render contexts are all limited to the current cursor.
+The active datafeed subscription is suspended and safely resubscribed after
+`exit()`. A workspace serialized during replay is marked as a partial replay
+snapshot and cannot be restored without the complete replay source.

@@ -79,6 +79,19 @@ test("workspace parser keeps Phase 7 price-scale settings while accepting prior 
   }), WorkspaceValidationError);
 });
 
+test("workspace parser validates a replay-visible export marker without treating it as resumable", () => {
+  const workspaceDocument = workspace();
+  const parsed = parseWorkspace({
+    ...workspaceDocument,
+    replay: { active: true, currentIndex: 2, currentTimestamp: 30, totalBars: 5 },
+  });
+  assert.deepEqual(parsed.replay, { active: true, currentIndex: 2, currentTimestamp: 30, totalBars: 5 });
+  assert.throws(
+    () => parseWorkspace({ ...workspaceDocument, replay: { active: true, currentIndex: 5, currentTimestamp: 30, totalBars: 5 } }),
+    WorkspaceValidationError,
+  );
+});
+
 test("workspace parser preserves professional chart series and appearance settings", () => {
   const input = workspace();
   const candle = input.series[0]!;

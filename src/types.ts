@@ -232,6 +232,8 @@ export interface ChartEvents {
   themeChange: { theme: ChartTheme };
   crosshairMove: CrosshairMoveEvent;
   datafeedError: Error;
+  replayChange: import("./replay/types.js").ReplayStatus;
+  replayError: Error;
 }
 
 export interface CrosshairSeriesValue {

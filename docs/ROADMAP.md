@@ -179,6 +179,16 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   scheduling, bounded speed, and disposal tests. Chart future-data isolation,
   indicators, datafeeds, Studio, and final replay verification remain open;
   see `docs/architecture/replay-engine.md`.
+- [Implemented / In Verification] Phase 7.1.2 integrates replay with the
+  existing ChartModel and Canvas chart lifecycle. Inclusive cursor masking now
+  covers all supported series, indicators/KlineScript input, Heikin–Ashi
+  derivation, crosshair/tooltip/autoscale inputs, drawings, plugin contexts,
+  workspace exports, and datafeed callbacks. Source and structural mutations
+  are blocked during replay, while exit restores the complete workspace and
+  resubscribes the datafeed. Node and Chromium integration tests pass; Studio
+  controls, broader browser evidence, and final Phase 7.1 acceptance remain
+  open. See `docs/architecture/replay-data-integrity.md` and
+  `docs/api/replay.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

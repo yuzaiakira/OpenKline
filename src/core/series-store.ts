@@ -131,9 +131,9 @@ export class SeriesCollection {
     return series.store.getLatestTime();
   }
 
-  public get(id: string): SeriesSnapshot {
+  public get(id: string, cutoffTime: number | null = null): SeriesSnapshot {
     const series = this.require(id);
-    return this.snapshot(series);
+    return this.snapshot(series, cutoffTime);
   }
 
   public getIds(): string[] {
@@ -155,17 +155,20 @@ export class SeriesCollection {
     return [...this.timesCache];
   }
 
-  public getTimePointCount(): number {
+  public getTimePointCount(cutoffTime: number | null = null): number {
     if (this.timesCache === null) this.getTimePoints();
-    return this.timesCache?.length ?? 0;
+    const times = this.timesCache ?? [];
+    return cutoffTime === null ? times.length : upperBound(times, cutoffTime);
   }
 
-  public getTimePointsRange(from: number, to: number): number[] {
+  public getTimePointsRange(from: number, to: number, cutoffTime: number | null = null): number[] {
     if (this.timesCache === null) this.getTimePoints();
-    return this.timesCache?.slice(from, to) ?? [];
+    const times = this.timesCache ?? [];
+    const end = cutoffTime === null ? to : Math.min(to, upperBound(times, cutoffTime));
+    return times.slice(from, end);
   }
 
-  public getVisible(fromTime: number, toTime: number): SeriesSnapshot[] {
+  public getVisible(fromTime: number, toTime: number, cutoffTime: number | null = null): SeriesSnapshot[] {
     return [...this.series.values()].map((series) => ({
       id: series.id,
       type: series.type,
@@ -173,7 +176,7 @@ export class SeriesCollection {
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
       ...(series.band === undefined ? {} : { band: { ...series.band } }),
-      data: this.getRangeByTime(series, fromTime, toTime),
+      data: this.getRangeByTime(series, fromTime, toTime, cutoffTime),
     }));
   }
 
@@ -185,7 +188,7 @@ export class SeriesCollection {
     return series;
   }
 
-  private snapshot(series: StoredSeries): SeriesSnapshot {
+  private snapshot(series: StoredSeries, cutoffTime: number | null): SeriesSnapshot {
     return {
       id: series.id,
       type: series.type,
@@ -193,7 +196,7 @@ export class SeriesCollection {
       ...(series.title === undefined ? {} : { title: series.title }),
       style: { ...series.style },
       ...(series.band === undefined ? {} : { band: { ...series.band } }),
-      data: series.store instanceof CandleStore ? series.store.getAll() : series.store.getAll(),
+      data: this.getRawSnapshotData(series, cutoffTime),
     };
   }
 
@@ -203,15 +206,28 @@ export class SeriesCollection {
       : series.store.getTimes();
   }
 
-  private getRangeByTime(series: StoredSeries, from: number, to: number): SeriesPoint[] {
+  private getRangeByTime(series: StoredSeries, from: number, to: number, cutoffTime: number | null = null): SeriesPoint[] {
+    const effectiveTo = cutoffTime === null
+      ? to
+      : Math.min(to, cutoffTime === Number.MAX_SAFE_INTEGER ? Number.POSITIVE_INFINITY : cutoffTime + 1);
     if (series.store instanceof CandleStore) {
-      if (series.type !== "heikin-ashi") return series.store.getRangeByTime(from, to);
+      if (series.type !== "heikin-ashi") return series.store.getRangeByTime(from, effectiveTo);
       // Heikin-Ashi open values depend on the preceding derived candle. Build
-      // from the complete raw store before slicing so a panned viewport has the
-      // same values as a full-range render.
-      return toHeikinAshi(series.store.getAll()).filter((candle) => candle.time >= from && candle.time < to);
+      // from the currently replay-visible raw store before slicing. This keeps
+      // future raw bars from influencing a replay-visible HA projection.
+      const raw = cutoffTime === null
+        ? series.store.getAll()
+        : series.store.getRangeByTime(Number.NEGATIVE_INFINITY, effectiveTo);
+      return toHeikinAshi(raw).filter((candle) => candle.time >= from && candle.time < effectiveTo);
     }
-    return series.store.getRangeByTime(from, to);
+    return series.store.getRangeByTime(from, effectiveTo);
+  }
+
+  private getRawSnapshotData(series: StoredSeries, cutoffTime: number | null): SeriesPoint[] {
+    const effectiveTo = cutoffTime === null
+      ? Number.POSITIVE_INFINITY
+      : cutoffTime === Number.MAX_SAFE_INTEGER ? Number.POSITIVE_INFINITY : cutoffTime + 1;
+    return series.store.getRangeByTime(Number.NEGATIVE_INFINITY, effectiveTo);
   }
 
   private invalidateTimes(): void {
@@ -227,5 +243,16 @@ function isCandle(value: SeriesPoint): value is Candle {
 function isCandleData(data: SeriesData): data is readonly Candle[] {
   const first = data[0];
   return first !== undefined && isCandle(first);
+}
+
+function upperBound(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((values[middle] ?? Number.POSITIVE_INFINITY) <= target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 

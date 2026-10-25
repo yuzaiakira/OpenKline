@@ -51,6 +51,14 @@ export interface WorkspacePluginState {
   readonly state: Readonly<Record<string, JsonValue>>;
 }
 
+/** A replay export marker; it is descriptive and is not a replay source. */
+export interface WorkspaceReplayState {
+  readonly active: true;
+  readonly currentIndex: number | null;
+  readonly currentTimestamp: number | null;
+  readonly totalBars: number;
+}
+
 export interface WorkspaceDocument {
   readonly version: typeof OPENKLINE_WORKSPACE_VERSION;
   readonly metadata?: WorkspaceMetadata;
@@ -61,6 +69,8 @@ export interface WorkspaceDocument {
   readonly drawings: DrawingDocument;
   readonly viewport: { readonly rangeStart: number; readonly visibleCount: number };
   readonly plugins: readonly WorkspacePluginState[];
+  /** Present when this document was exported from a partial replay-visible chart. */
+  readonly replay?: WorkspaceReplayState;
 }
 
 export interface WorkspaceRestoreOptions {
@@ -98,6 +108,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const drawings = parseDrawings(value.drawings);
   const viewport = parseViewport(value.viewport);
   const plugins = parsePlugins(value.plugins);
+  const replay = value.replay === undefined ? undefined : parseReplay(value.replay);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -117,6 +128,26 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     drawings,
     viewport,
     plugins,
+    ...(replay === undefined ? {} : { replay }),
+  };
+}
+
+function parseReplay(value: unknown): WorkspaceReplayState {
+  if (!isPlainObject(value)
+    || value.active !== true
+    || (value.currentIndex !== null && (!Number.isInteger(value.currentIndex) || value.currentIndex < 0))
+    || (value.currentTimestamp !== null && (!isFiniteInteger(value.currentTimestamp) || value.currentTimestamp < 0))
+    || !Number.isInteger(value.totalBars)
+    || value.totalBars < 0
+    || (value.currentIndex === null) !== (value.currentTimestamp === null)
+    || (value.currentIndex !== null && value.currentIndex >= value.totalBars)) {
+    throw new WorkspaceValidationError("Invalid workspace replay state");
+  }
+  return {
+    active: true,
+    currentIndex: value.currentIndex,
+    currentTimestamp: value.currentTimestamp,
+    totalBars: value.totalBars,
   };
 }
 

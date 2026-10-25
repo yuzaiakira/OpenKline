@@ -227,7 +227,15 @@ validated historical source, an inclusive cursor, explicit idle/ready/playing/
 paused/completed/error/disposed states, deterministic stepping/seeking, bounded
 playback speed, injectable scheduling, and timer/resource cleanup. The engine
 does not expose future source bars through its status and does not depend on
-React, Next.js, or Canvas2D. Chart data masking, indicator/KlineScript
-integration, datafeed isolation, Studio controls, and final replay acceptance
-remain subsequent increments. See `docs/architecture/replay-engine.md` and
-`docs/api/replay.md`.
+React, Next.js, or Canvas2D.
+
+Phase 7.1.2 integrates the engine with the existing ChartModel and Canvas
+pipeline. The chart masks all supported series and shared time navigation at
+an inclusive cursor, recalculates indicators from the visible raw prefix,
+protects Heikin–Ashi derivation, filters drawings and interaction values,
+blocks source/structure mutations, and suspends/resubscribes datafeeds. Replay
+workspace exports are explicitly partial and are not restorable without the
+complete source. Deterministic Node and Chromium tests cover these boundaries.
+Studio controls and final replay acceptance remain subsequent increments. See
+`docs/architecture/replay-engine.md`,
+`docs/architecture/replay-data-integrity.md`, and `docs/api/replay.md`.

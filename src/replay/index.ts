@@ -1,5 +1,7 @@
 export { ReplayEngine } from "./engine.js";
 export type { ReplayEngineOptions } from "./engine.js";
+export { ReplayController } from "./controller.js";
+export type { ReplayControllerHost } from "./controller.js";
 export {
   ReplayLifecycleError,
   ReplayValidationError,

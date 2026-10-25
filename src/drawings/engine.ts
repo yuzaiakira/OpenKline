@@ -80,11 +80,12 @@ export class DrawingEngine {
     return [...this.drawings.values()].sort((left, right) => left.zIndex - right.zIndex).map(cloneSnapshot);
   }
 
-  public hitTest(x: number, y: number, converter: DrawingCoordinateConverter, bounds: { left: number; right: number; top: number; bottom: number }, tolerance = 6): DrawingHit | null {
+  public hitTest(x: number, y: number, converter: DrawingCoordinateConverter, bounds: { left: number; right: number; top: number; bottom: number }, tolerance = 6, predicate?: (snapshot: DrawingSnapshot) => boolean): DrawingHit | null {
     this.assertAlive();
     const candidates = this.getAll().reverse();
     for (const drawing of candidates) {
       if (drawing.style.visible === false) continue;
+      if (predicate !== undefined && !predicate(drawing)) continue;
       const tool = this.requireTool(drawing.type);
       const pointIndex = drawing.points.findIndex((point) => Math.hypot(x - converter.xForTime(point.time), y - converter.yForPrice(point.price)) <= tolerance);
       if (pointIndex >= 0) return { id: drawing.id, pointIndex };
@@ -94,10 +95,11 @@ export class DrawingEngine {
     return null;
   }
 
-  public getRenderItems(converter: DrawingCoordinateConverter, bounds: { left: number; right: number; top: number; bottom: number }): DrawingRenderItem[] {
+  public getRenderItems(converter: DrawingCoordinateConverter, bounds: { left: number; right: number; top: number; bottom: number }, predicate?: (snapshot: DrawingSnapshot) => boolean): DrawingRenderItem[] {
     this.assertAlive();
     return this.getAll()
       .filter((drawing) => drawing.style.visible !== false)
+      .filter((drawing) => predicate === undefined || predicate(drawing))
       .map((snapshot) => ({
         snapshot,
         geometries: this.requireTool(snapshot.type).getGeometry(snapshot, converter, bounds),

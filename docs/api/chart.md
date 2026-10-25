@@ -106,6 +106,13 @@ chart.destroy();
 - `setDatafeed(datafeed, query)` loads historical bars and subscribes to future
   bars when the provider exposes `subscribeBars`.
 - `stopDatafeed()` removes the active subscription and invalidates stale loads.
+- `createReplay(options)` creates a chart-owned replay controller around a
+  complete validated candle source. `startAt` selects the first source bar at
+  or after its timestamp. The inclusive cursor masks every chart series,
+  indicator, crosshair/tooltip value, autoscale input, drawing anchor, and
+  plugin render context after the cursor. Source and structural mutations are
+  rejected while replay is active; `exit()` restores the complete pre-replay
+  workspace and resubscribes a suspended datafeed.
 - `getVisibleRange()` and `getData()` provide defensive diagnostic snapshots.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, and stored series data. Other methods throw after
@@ -113,7 +120,8 @@ chart.destroy();
 
 `ChartEvents` includes `chartReady`, `chartDestroy`, `dataUpdated`,
 `viewportChange`, `indicatorChange`, `drawingSelection`, `toolActivation`,
-`themeChange`, `crosshairMove`, and `datafeedError`.
+`themeChange`, `crosshairMove`, `datafeedError`, `replayChange`, and
+`replayError`.
 
 ## Data contract
 

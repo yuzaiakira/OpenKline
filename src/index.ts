@@ -20,6 +20,7 @@ export type {
   WorkspaceMetadata,
   WorkspacePane,
   WorkspacePluginState,
+  WorkspaceReplayState,
   WorkspaceRestoreOptions,
   WorkspaceRestoreResult,
   WorkspaceSeries,

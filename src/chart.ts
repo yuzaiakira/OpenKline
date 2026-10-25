@@ -5,6 +5,8 @@ import { CanvasRenderer, createPanePriceScale, getPaneBounds, getPaneScaleRange 
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
 import { DrawingEngine } from "./drawings/engine.js";
 import { PluginRegistry } from "./extensions/registry.js";
+import { ReplayController, type ReplayControllerHost } from "./replay/controller.js";
+import type { ReplayApi, ReplayCursor, ReplayOptions, ReplayStatus } from "./replay/types.js";
 import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
 import type {
   InstalledPluginMetadata,
@@ -131,6 +133,10 @@ export class Chart {
   private activeDrawing: { id: string; pointIndex: number | null; time: number; price: number } | null = null;
   private datafeedCleanup: (() => void) | null = null;
   private datafeedRequestId = 0;
+  private datafeedSession: { readonly datafeed: Datafeed; readonly query: Omit<GetBarsQuery, "signal"> } | null = null;
+  private replayController: ReplayController | null = null;
+  private replayBaseWorkspace: WorkspaceDocument | null = null;
+  private replayRestoring = false;
   private destroyed = false;
 
   public constructor(private readonly container: HTMLElement, options: ChartOptions = {}) {
@@ -190,6 +196,7 @@ export class Chart {
 
   public setData(candles: readonly Candle[]): void {
     this.assertAlive();
+    this.assertReplayDataMutationAllowed();
     this.model.setData(candles);
     this.refreshIndicatorsFromInput();
     this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
@@ -198,6 +205,7 @@ export class Chart {
 
   public update(candle: Candle): void {
     this.assertAlive();
+    this.assertReplayDataMutationAllowed();
     const lastTime = this.model.getLatestCandleTime();
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
@@ -245,6 +253,7 @@ export class Chart {
 
   public addPane(options: PaneOptions = {}): PaneApi {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const id = this.model.addPane(options);
     this.render();
     return {
@@ -391,6 +400,10 @@ export class Chart {
       state: this.pluginRegistry.getStateSnapshot(plugin.id) ?? {},
     }));
     const viewport = this.model.getViewportState();
+    const replay = this.replayController?.getStatus();
+    const replayActive = replay !== undefined
+      && replay.state !== "idle"
+      && replay.state !== "disposed";
     return {
       version: 1,
       ...(metadata === undefined ? {} : { metadata: { ...metadata } }),
@@ -405,16 +418,28 @@ export class Chart {
       panes,
       series,
       indicators,
-      drawings: this.drawingEngine.serialize(),
+      drawings: this.getReplayVisibleDrawingDocument(),
       viewport,
       plugins,
+      ...(replayActive && replay !== undefined ? {
+        replay: {
+          active: true as const,
+          currentIndex: replay.currentIndex,
+          currentTimestamp: replay.currentTimestamp,
+          totalBars: replay.totalBars,
+        },
+      } : {}),
     };
   }
 
   /** Validate and restore a versioned workspace document. */
   public restoreWorkspace(document: unknown, options: WorkspaceRestoreOptions = {}): WorkspaceRestoreResult {
     this.assertAlive();
+    if (this.isReplayActive() && !this.replayRestoring) this.replayController?.exit();
     const parsed = parseWorkspace(document);
+    if (parsed.replay !== undefined) {
+      throw new WorkspaceCompatibilityError("A replay-visible workspace is a partial snapshot; restore the complete source through ReplayApi");
+    }
     const missingPlugins: string[] = [];
     for (const plugin of parsed.plugins) {
       const installed = this.pluginRegistry.get(plugin.id);
@@ -506,6 +531,7 @@ export class Chart {
 
   public addIndicator(indicatorId: string, options: IndicatorAddOptions = {}): ChartIndicatorApi {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const { id: requestedId, pane, parameters, ...directParameters } = options;
     const normalizedParameters = parameters ?? directParameters;
     const id = requestedId ?? this.nextIndicatorIdValue();
@@ -600,6 +626,7 @@ export class Chart {
 
   public removeIndicator(id: string): void {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const state = this.indicators.get(id);
     if (state === undefined) throw new Error(`Unknown indicator: ${id}`);
     for (const seriesId of state.outputSeriesIds) {
@@ -623,6 +650,7 @@ export class Chart {
 
   public addDrawing(type: string, options: DrawingOptions): DrawingApi {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const drawing = this.drawingEngine.create(type, options);
     this.selectedDrawingId = drawing.id;
     this.emit("drawingSelection", { id: drawing.id });
@@ -632,6 +660,7 @@ export class Chart {
 
   public removeDrawing(id: string): void {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     this.drawingEngine.remove(id);
     if (this.selectedDrawingId === id) this.selectedDrawingId = null;
     this.emit("drawingSelection", { id: this.selectedDrawingId });
@@ -640,12 +669,14 @@ export class Chart {
 
   public getDrawings(): DrawingSnapshot[] {
     this.assertAlive();
-    return this.drawingEngine.getAll();
+    return this.drawingEngine.getAll().filter((drawing) => this.isDrawingReplayVisible(drawing));
   }
 
   public selectDrawing(id: string | null): void {
     this.assertAlive();
-    if (id !== null) this.drawingEngine.get(id);
+    if (id !== null && !this.isDrawingReplayVisible(this.drawingEngine.get(id))) {
+      throw new Error("Drawing is not available at the current replay cursor");
+    }
     this.selectedDrawingId = id;
     this.emit("drawingSelection", { id });
     this.render();
@@ -659,6 +690,7 @@ export class Chart {
   /** Start an interactive drawing; the next one or two clicks create its anchors. */
   public startDrawing(type: string, options: DrawingStartOptions = {}): void {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const tool = this.drawingEngine.getTool(type);
     this.pendingDrawing = { type, options: { ...options }, points: [] };
     this.emit("toolActivation", { type, active: true });
@@ -689,11 +721,12 @@ export class Chart {
 
   public serializeDrawings(): DrawingDocument {
     this.assertAlive();
-    return this.drawingEngine.serialize();
+    return this.getReplayVisibleDrawingDocument();
   }
 
   public restoreDrawings(document: unknown): void {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     this.drawingEngine.restore(document);
     this.selectedDrawingId = null;
     this.render();
@@ -701,6 +734,7 @@ export class Chart {
 
   public removeSeries(id: string): void {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const wasPrimaryCandleSeries = this.model.isPrimaryCandleSeries(id);
     this.model.removeSeries(id);
     if (wasPrimaryCandleSeries) this.refreshIndicatorsFromInput();
@@ -733,10 +767,32 @@ export class Chart {
     this.render();
   }
 
+  /** Create a chart-owned replay controller without exposing the source history. */
+  public createReplay(options: ReplayOptions): ReplayApi {
+    this.assertAlive();
+    if (this.replayController !== null && this.replayController.getStatus().state !== "disposed") {
+      throw new Error("A replay controller already exists; exit or dispose it before creating another");
+    }
+    const host: ReplayControllerHost = {
+      beginReplay: (source) => this.beginReplay(source),
+      applyReplayCursor: (cursor) => this.applyReplayCursor(cursor),
+      exitReplay: () => this.exitReplay(),
+      disposeReplay: () => this.disposeReplay(),
+    };
+    const controller = new ReplayController(options, host, (status) => this.handleReplayStatus(status));
+    this.replayController = controller;
+    return controller;
+  }
+
   /** Load historical bars and optionally subscribe to future bar updates. */
   public async setDatafeed(datafeed: Datafeed, query: GetBarsQuery): Promise<void> {
     this.assertAlive();
+    this.assertReplayDataMutationAllowed();
     this.stopDatafeed();
+    this.datafeedSession = {
+      datafeed,
+      query: { symbol: query.symbol, timeframe: query.timeframe, from: query.from, to: query.to },
+    };
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     const requestId = this.datafeedRequestId;
@@ -750,7 +806,9 @@ export class Chart {
         this.datafeedCleanup = datafeed.subscribeBars({
           symbol: query.symbol,
           timeframe: query.timeframe,
-          onBar: (bar) => this.update(bar),
+          onBar: (bar) => {
+            if (!this.isReplayActive()) this.update(bar);
+          },
           onError: (error) => this.emit("datafeedError", error),
         });
       }
@@ -769,6 +827,7 @@ export class Chart {
     this.datafeedRequestId += 1;
     this.datafeedCleanup?.();
     this.datafeedCleanup = null;
+    this.datafeedSession = null;
   }
 
   public resize(width: number, height: number): void {
@@ -916,6 +975,8 @@ export class Chart {
       return;
     }
     this.emit("chartDestroy", { timestamp: Date.now() });
+    this.replayController?.dispose();
+    this.replayController = null;
     this.pluginRegistry.dispose();
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
@@ -964,7 +1025,7 @@ export class Chart {
     }
 
     if (drawingContext !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
-      const hit = this.drawingEngine.hitTest(event.offsetX, event.offsetY, drawingContext.converter, drawingContext.bounds);
+      const hit = this.drawingEngine.hitTest(event.offsetX, event.offsetY, drawingContext.converter, drawingContext.bounds, 6, (drawing) => this.isDrawingReplayVisible(drawing));
       if (hit !== null) {
         this.selectedDrawingId = hit.id;
         this.emit("drawingSelection", { id: hit.id });
@@ -1132,7 +1193,7 @@ export class Chart {
         priceScale: this.getResolvedPriceScaleConfiguration(),
       },
       this.crosshair,
-      drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds),
+        drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds, (drawing) => this.isDrawingReplayVisible(drawing)),
       this.selectedDrawingId,
       this.getPluginOverlayItems(),
     );
@@ -1291,12 +1352,14 @@ export class Chart {
 
   private createSeriesApi<T extends SeriesPoint>(type: SeriesType, options: SeriesOptions): SeriesApi<T> {
     this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
     const id = this.model.addSeries(type, options);
     return {
       id,
       type,
       setData: (data) => {
         this.assertAlive();
+        this.assertReplayDataMutationAllowed();
         this.model.setSeriesData(id, data as SeriesData);
         if (this.model.isPrimaryCandleSeries(id)) this.refreshIndicatorsFromInput();
         this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
@@ -1304,6 +1367,7 @@ export class Chart {
       },
       update: (point) => {
         this.assertAlive();
+        this.assertReplayDataMutationAllowed();
         const primaryCandleSeries = isCandleSeriesType(type) && this.model.isPrimaryCandleSeries(id);
         const lastTime = primaryCandleSeries ? this.model.getLatestCandleTime() : undefined;
         const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
@@ -1370,6 +1434,99 @@ export class Chart {
         .map((point) => ({ time: point.time, value: point.value })) ?? [];
       if (this.model.getSeriesIds().includes(seriesId)) this.model.setSeriesData(seriesId, data);
     });
+  }
+
+  private beginReplay(source: readonly Candle[]): void {
+    if (this.isReplayActive()) throw new Error("Replay is already active");
+    this.replayBaseWorkspace = this.serializeWorkspace();
+    this.suspendDatafeed();
+    try {
+      this.model.setReplaySource(source);
+      this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
+      this.refreshIndicatorsFromInput();
+      this.render();
+    } catch (error) {
+      this.replayBaseWorkspace = null;
+      this.model.setReplayCutoff(null);
+      throw error;
+    }
+  }
+
+  private applyReplayCursor(cursor: ReplayCursor): void {
+    if (this.replayBaseWorkspace === null) throw new Error("Replay chart state has not been prepared");
+    this.model.setReplayCutoff(cursor.timestamp ?? Number.NEGATIVE_INFINITY);
+    this.model.resetView();
+    this.refreshIndicatorsFromInput();
+    this.emit("dataUpdated", { kind: "set", time: cursor.timestamp, appendOnly: false });
+    this.emitViewportChange();
+    this.render();
+  }
+
+  private exitReplay(): void {
+    const baseWorkspace = this.replayBaseWorkspace;
+    if (baseWorkspace === null) return;
+    const session = this.datafeedSession;
+    this.replayRestoring = true;
+    try {
+      this.restoreWorkspace(baseWorkspace);
+    } finally {
+      this.replayRestoring = false;
+      this.replayBaseWorkspace = null;
+      this.model.setReplayCutoff(null);
+    }
+    if (session !== null && !this.destroyed) {
+      void this.setDatafeed(session.datafeed, session.query).catch(() => undefined);
+    }
+  }
+
+  private disposeReplay(): void {
+    this.suspendDatafeed();
+    this.datafeedSession = null;
+    this.model.setReplayCutoff(null);
+    this.replayBaseWorkspace = null;
+  }
+
+  private handleReplayStatus(status: ReplayStatus): void {
+    this.emit("replayChange", status);
+    if (status.state === "error") this.emit("replayError", new Error(status.error ?? "Replay failed"));
+  }
+
+  private getReplayVisibleDrawingDocument(): DrawingDocument {
+    return {
+      version: 1,
+      drawings: this.drawingEngine.getAll().filter((drawing) => this.isDrawingReplayVisible(drawing)),
+    };
+  }
+
+  private isDrawingReplayVisible(drawing: DrawingSnapshot): boolean {
+    const cutoff = this.model.getReplayCutoff();
+    return cutoff === null || drawing.points.every((point) => point.time <= cutoff);
+  }
+
+  private isReplayActive(): boolean {
+    const state = this.replayController?.getStatus().state;
+    return this.replayBaseWorkspace !== null
+      && state !== undefined
+      && state !== "idle"
+      && state !== "disposed";
+  }
+
+  private assertReplayDataMutationAllowed(): void {
+    if (this.isReplayActive() && !this.replayRestoring) {
+      throw new Error("Chart data is read-only during replay; exit replay before changing the source");
+    }
+  }
+
+  private assertReplayStructureMutationAllowed(): void {
+    if (this.isReplayActive() && !this.replayRestoring) {
+      throw new Error("Chart structure is read-only during replay; exit replay before changing series, indicators, panes, or drawings");
+    }
+  }
+
+  private suspendDatafeed(): void {
+    this.datafeedRequestId += 1;
+    this.datafeedCleanup?.();
+    this.datafeedCleanup = null;
   }
 }
 
