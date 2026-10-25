@@ -77,5 +77,11 @@ was made.
   end-to-end workflows, package-consumer checks, and measured Studio overhead.
 - Keep the formal Firefox/WebKit/Mobile Safari and pending licensing gates open.
 
-Git commit/push verification is added after this coherent increment is
-committed and synchronized.
+## Git verification
+
+The implementation increment is committed as
+`ba642d7e164b577a9d2117758d370975041d29d7`
+(`feat(reliability): harden chart lifecycle`) with both author and committer
+recorded as `Akira Yuzai <yuzai.akira@gmail.com>`. It was pushed directly to
+`origin/work`; a post-push `git fetch origin work` resolved `FETCH_HEAD` to the
+same commit. No history rewrite or GitHub Actions workflow was used.
