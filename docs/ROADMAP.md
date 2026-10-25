@@ -120,6 +120,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   no-advertising/no-paid-feature Consumer Applications. It is not OSI-approved,
   has no effective SPDX/manifest metadata, and has an explicit compatibility
   analysis and ownership checklist. See `docs/legal/README.md`.
+- [Implemented / Counsel Review Required] Phase 5.4 packages the proposed text,
+  source-availability scenarios, compatibility questions, repository ownership
+  evidence, third-party notice limits, and a strictly post-approval adoption
+  procedure. It does not adopt a license or authorize an alpha publication; see
+  `docs/reports/phase-5-4-license-adoption-readiness.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

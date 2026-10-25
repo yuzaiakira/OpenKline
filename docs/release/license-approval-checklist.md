@@ -5,6 +5,11 @@ custom source-available proposal, not an active project license. This checklist
 records the exact decision and evidence required before changing any package
 metadata. It is not an OSI-approved Open Source license.
 
+Use the [counsel review package](../legal/counsel-review-package.md) for the
+scenario analysis and evidence limitations, then follow the
+[post-approval adoption procedure](../legal/license-adoption-procedure.md)
+only after the required written clearances exist.
+
 ## Owner/legal confirmation
 
 - Confirm the legal owner has authority to license all project-authored files.

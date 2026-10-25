@@ -154,3 +154,13 @@ or relax Firefox/WebKit/Mobile Safari requirements. The owner has subsequently
 confirmed a custom source-available policy, which remains pending qualified
 counsel review and is not OSI-approved or effective. The owner decision and
 remaining evidence are recorded in `docs/reports/phase-5-3-verification.md`.
+
+## Phase 5.4 license-adoption readiness
+
+Phase 5.4 prepares the existing custom source-available proposal for
+owner/counsel review. Its counsel package records the remaining chain-of-title,
+compatibility, notice, and drafting questions; its adoption procedure lists
+only the steps after written clearance. Neither document activates a license,
+updates package metadata, authorizes a tag/publication, or closes the browser
+or legal gates. See
+`docs/reports/phase-5-4-license-adoption-readiness.md`.

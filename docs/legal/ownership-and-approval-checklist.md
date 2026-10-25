@@ -3,6 +3,12 @@
 Status: **Required before final adoption.** Completing this checklist does not
 itself adopt the proposed license or authorize publication.
 
+The repository evidence and precise questions prepared for this checklist are
+in [`counsel-review-package.md`](./counsel-review-package.md). The controlled
+steps after all approvals are in
+[`license-adoption-procedure.md`](./license-adoption-procedure.md); neither
+document supplies a missing owner or counsel approval.
+
 ## Copyright and authority
 
 - [ ] Identify the authorized OpenKline copyright holder(s) and the exact work

@@ -18,6 +18,12 @@ license. The related documents are:
   OSI-approved licenses.
 - [`ownership-and-approval-checklist.md`](./ownership-and-approval-checklist.md):
   owner and counsel review record.
+- [`counsel-review-package.md`](./counsel-review-package.md): concise package
+  for qualified-counsel and owner review, including scenario and provenance
+  questions that remain open.
+- [`license-adoption-procedure.md`](./license-adoption-procedure.md): exact
+  post-approval steps; it does not authorize adoption, metadata changes, or
+  publication.
 
 `apache-2.0-proposal.md` and `LICENSE-APACHE-2.0.PROPOSED` are retained only
 as superseded historical proposal material. They must not be renamed,

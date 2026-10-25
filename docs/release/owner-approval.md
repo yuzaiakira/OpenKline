@@ -23,6 +23,10 @@ checklist in [`docs/legal/README.md`](../legal/README.md). The proposal is not
 OSI-approved Open Source; its use of source-availability conditions can be
 incompatible with some OSI-approved consumer-application licenses. Qualified
 counsel must review the final wording and compatibility before adoption.
+The Phase 5.4 [counsel review package](../legal/counsel-review-package.md)
+identifies the exact scenario, ownership, and drafting decisions to record;
+its [adoption procedure](../legal/license-adoption-procedure.md) is expressly
+post-approval only.
 
 Before recording approval, the authorized owner/legal reviewer must decide and
 retain evidence for all of the following:
