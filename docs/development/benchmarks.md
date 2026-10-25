@@ -56,18 +56,18 @@ One run on Node.js v24.19.0 produced these model timings:
 | 10,000 | 8.694 | 0.011 | 0.031 |
 | 100,000 | 78.708 | 0.011 | 0.021 |
 
-## Observed Chromium run
+## Observed Chromium run (Phase 7.0 final local observation)
 
 Environment: Linux headless Chromium 154 at `/usr/bin/chromium`, Playwright
 1.64.1, 1,200 × 520 viewport, `--disable-gpu`, and
-`--js-flags=--expose-gc`. The result below is one completed run after the
-append-store optimization:
+`--js-flags=--expose-gc`. The result below is one completed Phase 7.0 run on
+2026-10-25. It is a local observation, not a cross-device performance claim:
 
 | Candles | Load (ms) | Nav p50/p95 (ms) | Crosshair p50/p95 (ms) | 100 appends (ms) | Append/update (ms) | 5 corrections (ms) | Frame interval p50/p95 (ms) | Frame-work p50/p95 (ms) | rAF FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 24.9 | 1.6 / 3.9 | 0.1 / 0.7 | 144.5 | 1.445 | 48.0 | 16.6 / 16.9 | 1.0 / 1.5 | 64.79 |
-| 10,000 | 95.0 | 1.0 / 5.0 | 0.1 / 0.4 | 63.6 | 0.636 | 373.9 | 16.7 / 16.9 | 1.1 / 1.4 | 62.62 |
-| 100,000 | 1,306.0 | 0.8 / 7.5 | 0.2 / 0.4 | 52.5 | 0.525 | 5,403.3 | 16.6 / 16.9 | 0.7 / 1.3 | 61.97 |
+| 1,000 | 25.7 | 3.4 / 6.4 | 0.1 / 0.3 | 198.1 | 1.981 | 44.2 | 16.6 / 17.0 | 1.5 / 2.2 | 64.61 |
+| 10,000 | 97.9 | 2.2 / 2.7 | 0.1 / 0.2 | 102.0 | 1.020 | 350.5 | 16.7 / 17.5 | 1.1 / 1.7 | 61.68 |
+| 100,000 | 1,363.3 | 1.6 / 2.3 | 0.1 / 0.2 | 104.3 | 1.043 | 5,947.8 | 16.6 / 17.0 | 1.1 / 1.6 | 62.81 |
 
 The browser loop reached approximately 60 FPS for this run's append workload;
 that is an observation, not a release target. Frame intervals measure the
@@ -75,15 +75,14 @@ browser scheduler, while frame-work measures synchronous JavaScript/chart work.
 Crosshair values are the public runtime's event/calculation path; they do not
 claim a full physical-pointer paint cost.
 
-Chromium heap observations in this compatibility-gate rerun were 1.47 MB
-before loading, 9.07 MB after 1,000 candles, 60.20 MB after 10,000, and 751.48
-MB before destruction after 100,000. After `destroy()` and an explicit GC
-opportunity the observed heap was 1.69 MB; `remainingCanvasCount` was zero.
-The peak differs from the earlier 305.32 MB observation because these are
-allocation/GC-sensitive engine measurements. They are observations, not memory
-limits or proof of leak-freedom.
+Chromium heap observations in this run were 1.80 MB before loading, 12.02 MB
+after 1,000 candles, 61.80 MB after 10,000, and 553.42 MB before destruction
+after 100,000. After `destroy()` and an explicit GC opportunity the observed
+heap was 2.02 MB; `remainingCanvasCount` was zero. These are
+allocation/GC-sensitive engine observations, not memory limits or proof of
+leak-freedom.
 
-## Profile observations
+## Earlier profile observation (diagnostic)
 
 The compatibility-gate 100,000-candle append profile measured approximately
 3.8 ms in visible-data snapshots, 18.2 ms in renderer calls, 4.6 ms in series

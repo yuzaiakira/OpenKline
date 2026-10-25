@@ -212,3 +212,10 @@ from the public serialized workspace, including presentation, price scale,
 theme, indicators, and drawings. Chromium workflow evidence is recorded with
 the Phase 7 verification; broader Phase 6 browser and accessibility gates are
 not closed by this increment.
+
+Phase 7.0 local verification records passing Node, Chromium, mobile Chromium
+emulation, production Next.js, package-consumer, and Canvas2D benchmark checks.
+The phase remains open because the project cannot currently launch the required
+Playwright-managed Firefox or WebKit binaries, and inherited Phase 6
+accessibility and physical-device gates remain unresolved. The acceptance
+matrix and exact evidence are in `docs/reports/phase-7-0-verification.md`.

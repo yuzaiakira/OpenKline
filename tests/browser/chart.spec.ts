@@ -461,7 +461,10 @@ test("renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing r
         serializeWorkspace(): { series: Array<{ type: string }> };
       };
     }).__openklineChart;
-    const candles = chart.getData().slice(0, 4);
+    // Keep the added series inside the current viewport at both desktop and
+    // touch-sized widths; a narrow viewport intentionally shows only recent
+    // bars, so the first fixture bars would not be a rendering assertion.
+    const candles = chart.getData().slice(-4);
     const ohlc = chart.addOhlcSeries({ id: "ohlc", style: { upColor: "#00ffff", downColor: "#00ffff" } });
     const hollow = chart.addHollowCandlestickSeries({ id: "hollow", style: { hollowUpColor: "#ff00ff", downColor: "#ff00ff" } });
     const heikin = chart.addHeikinAshiSeries({ id: "heikin", style: { upColor: "#8000ff", downColor: "#8000ff" } });

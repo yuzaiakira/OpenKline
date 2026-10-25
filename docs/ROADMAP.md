@@ -168,6 +168,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   workflow verifies a saved workspace restores chart presentation, scale mode,
   theme, an EMA indicator, and trend-line anchors. Broader browser and
   inherited Phase 6 acceptance remain open; see `docs/guides/studio.md`.
+- [Implemented / Gate Open] Phase 7.0.5 local verification passes Node,
+  Chromium, Pixel 7 Chromium emulation, Next.js production build, packed
+  consumer, and Canvas2D benchmark checks. Firefox, WebKit, and Mobile Safari
+  remain blocked by missing official Playwright binaries, so Phase 7.0 is not
+  closed; see `docs/reports/phase-7-0-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
