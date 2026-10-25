@@ -19,6 +19,7 @@ npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
 npm run benchmark:replay
+npm run benchmark:alerts
 npm run benchmark:plugins
 npm run profile:browser
 npm run package:audit
@@ -59,6 +60,14 @@ workflow also verifies replay-visible script output lengths. Studio coverage
 exercises the public replay controls, starting point, Beginning/Latest,
 timeline, keyboard stepping, scale/presentation changes, restoration, and a
 touch-sized viewport.
+
+Alert coverage is in `tests/alerts.test.ts` and `tests/browser/alerts.spec.ts`.
+It covers strict thresholds and crossings, warm-up/missing values, indicator
+and script outputs, horizontal drawings, frequency/cooldown/finality,
+correction deduplication, live/replay isolation, serialization, public Chart
+events, simulated replay history, seek rebuilds, and cleanup. The Studio
+React-browser suite also creates, pauses, saves, and removes an alert. No test
+sends an external notification.
 
 `npm run benchmark:browser` measures synchronous Canvas2D rendering work and
 requestAnimationFrame update loops for 1,000, 10,000, and 100,000 candles. It

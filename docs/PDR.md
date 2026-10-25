@@ -260,6 +260,17 @@ the latest-candle lookup had copied the full defensive history on every
 without weakening replay isolation or correction semantics. Evidence is in
 `docs/reports/phase-7-2-performance-baseline.md`.
 
-The Alert Engine and its replay-aware Studio integration are the next ordered
-increments. They remain unimplemented until their independent contracts,
-deterministic tests, persistence rules, and local verification are complete.
+Phase 7.2.1 adds the framework-neutral deterministic Alert Engine. It supports
+strict price, indicator, script, and horizontal-drawing conditions, stable
+crossing semantics, frequencies, cooldowns, explicit finality, diagnostics,
+bounded history, serializable definitions, and independent live/replay state.
+The Chart adapter evaluates aligned indicator/KlineScript snapshots and
+replay-visible drawings, emits `alertTriggered`/`alertError`, persists only
+definitions in workspaces, and clears simulated state on replay exit.
+
+Phase 7.2.2 adds the local Studio alert panel and deterministic Node/Chromium
+coverage, including replay simulation, seek rebuilding, public API lifecycle,
+and cleanup. The alert benchmark is Node-only and does not make Canvas2D/FPS
+or external-delivery claims. Phase 7.2 remains open pending the final report,
+broader browser/accessibility/physical gates inherited from Phase 7.1, and any
+remaining acceptance items; those gates are not silently closed by alerts.

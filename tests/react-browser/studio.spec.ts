@@ -146,3 +146,24 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("Studio creates, pauses, persists, and removes a local alert", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await expect(page.getByText("Alerts (0)", { exact: true })).toBeVisible();
+  await page.getByLabel("Alert name").fill("Studio close alert");
+  await page.getByLabel("Alert threshold").fill("65000");
+  await page.getByLabel("Alert frequency").selectOption("once");
+  await page.getByRole("button", { name: "Create alert", exact: true }).click();
+  await expect(page.getByText("Alerts (1)", { exact: true })).toBeVisible();
+  await expect(page.getByText("Studio close alert", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Enable", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { alerts?: { alerts: Array<{ name: string }> } });
+  expect(saved.alerts?.alerts).toEqual([{ id: expect.any(String), name: "Studio close alert", condition: { type: "price-cross-above", field: "close", value: 65000 }, frequency: "once", enabled: false }]);
+  await page.getByRole("button", { name: "Remove Studio close alert", exact: true }).click();
+  await expect(page.getByText("Alerts (0)", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});

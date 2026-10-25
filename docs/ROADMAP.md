@@ -211,8 +211,19 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
 - [Implemented] Phase 7.2.0 reproduces and fixes the inactive-replay append
   regression caused by copying the full candle snapshot in
   `getLatestCandleTime()`. The corrected Canvas2D and replay measurements are
-  recorded in `docs/reports/phase-7-2-performance-baseline.md`; alert-engine
-  increments remain in progress.
+  recorded in `docs/reports/phase-7-2-performance-baseline.md`.
+- [Implemented / In Verification] Phase 7.2.1 adds the framework-neutral
+  Alert Engine with strict threshold/crossing semantics, frequency/cooldown/
+  finality controls, diagnostics, serializable definitions, bounded history,
+  and separate live/replay state. Chart integration covers indicator,
+  KlineScript, drawing, datafeed metadata, workspace, replay, and lifecycle
+  boundaries; see `docs/architecture/alert-engine.md` and
+  `docs/api/alerts.md`.
+- [Implemented / In Verification] Phase 7.2.2 adds the public-API-only Studio
+  Alerts panel, simulated replay history, Chromium browser workflows, and the
+  Node alert benchmark. The final Phase 7.2 report remains open until all
+  available evidence is recorded; inherited Firefox, WebKit, Mobile Safari,
+  accessibility, and physical-device gates remain open.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

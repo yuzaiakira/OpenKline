@@ -66,7 +66,7 @@ test("public alerts evaluate live and replay data with deterministic simulated h
   expect(result.firstReplayHistory).toHaveLength(1);
   expect(result.firstReplayHistory[0]).toMatchObject({ alertId: "replay-cross", simulated: true, evaluationMode: "replay" });
   expect(result.liveHistoryBeforeExit).toEqual([]);
-  expect(result.reseekHistory).toHaveLength(1, "seek rebuilds simulated history deterministically");
+  expect(result.reseekHistory).toHaveLength(1);
   expect(result.workspace.alerts?.alerts).toHaveLength(1);
   expect(result.received.every((event) => event.simulated)).toBe(true);
   expect(result.statusBeforeReseek.currentIndex).toBe(6);

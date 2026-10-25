@@ -10,6 +10,9 @@ import type {
   ChartSeriesInfo,
   CrosshairMoveEvent,
   DrawingSnapshot,
+  AlertDefinition,
+  AlertEvent,
+  AlertFrequency,
   PriceScaleMode,
   ReplayApi,
   ReplayStatus,
@@ -154,6 +157,11 @@ export default function StudioClient() {
   const [pricePrecision, setPricePrecision] = useState(2);
   const [interaction, setInteraction] = useState({ wheelZoom: true, pointerPan: true, crosshair: true, keyboardShortcuts: true });
   const [objects, setObjects] = useState<StudioObjects>({ series: [], indicators: [], drawings: [] });
+  const [alerts, setAlerts] = useState<AlertDefinition[]>([]);
+  const [alertHistory, setAlertHistory] = useState<AlertEvent[]>([]);
+  const [alertName, setAlertName] = useState("Close crosses threshold");
+  const [alertThreshold, setAlertThreshold] = useState(0);
+  const [alertFrequency, setAlertFrequency] = useState<AlertFrequency>("once-per-bar");
   const [crosshair, setCrosshair] = useState<CrosshairMoveEvent | null>(null);
   const [notice, setNotice] = useState("Ready. The Studio uses deterministic local market data; no vendor credentials are required.");
   const [indicatorToAdd, setIndicatorToAdd] = useState<(typeof indicatorChoices)[number][0]>("SMA");
@@ -174,6 +182,12 @@ export default function StudioClient() {
       indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
       drawings: target.getDrawings(),
     });
+  }, []);
+
+  const refreshAlerts = useCallback((target = chart()): void => {
+    if (target === null) return;
+    setAlerts(target.getAlerts());
+    setAlertHistory(target.getAlertHistory());
   }, []);
 
   const syncDisplayPreferences = useCallback((target = chart()): void => {
@@ -209,7 +223,8 @@ export default function StudioClient() {
   const refreshReplayStatus = useCallback((status: ReplayStatus, target = chart()): void => {
     setReplayStatus(status);
     refreshObjects(target);
-  }, [refreshObjects]);
+    refreshAlerts(target);
+  }, [refreshAlerts, refreshObjects]);
 
   const enterReplay = useCallback((): void => {
     const target = chart();
@@ -255,6 +270,7 @@ export default function StudioClient() {
       const target = chart();
       syncDisplayPreferences(target);
       refreshObjects(target);
+      refreshAlerts(target);
       setNotice("Replay exited; the complete workspace and live chart state were restored.");
     } catch (error) {
       setNotice(`Could not exit replay: ${error instanceof Error ? error.message : String(error)}`);
@@ -265,7 +281,7 @@ export default function StudioClient() {
       replayRef.current = null;
       setReplayStatus(IDLE_REPLAY_STATUS);
     }
-  }, [refreshObjects, syncDisplayPreferences]);
+  }, [refreshAlerts, refreshObjects, syncDisplayPreferences]);
 
   useEffect(() => {
     if (!replayActive) return undefined;
@@ -335,11 +351,12 @@ export default function StudioClient() {
       target.resetView();
       syncDisplayPreferences(target);
       refreshObjects(target);
+      refreshAlerts(target);
       setNotice(`Loaded ${nextSymbol} at ${nextTimeframe} with ${candles.length} deterministic bars.`);
     } catch (error) {
       setNotice(`Could not replace market data: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [refreshObjects, syncDisplayPreferences]);
+  }, [refreshAlerts, refreshObjects, syncDisplayPreferences]);
 
   const initializeChart = useCallback((target: Chart): void => {
     const candles = buildCandles(symbol, timeframe);
@@ -365,10 +382,18 @@ export default function StudioClient() {
     setReplayStartIndex(Math.floor(candles.length * 0.35));
     target.subscribe("drawingSelection", () => window.setTimeout(() => refreshObjects(target), 0));
     target.subscribe("indicatorChange", () => window.setTimeout(() => refreshObjects(target), 0));
+    target.subscribe("alertTriggered", (event) => {
+      refreshAlerts(target);
+      setNotice(`${event.simulated ? "Simulated alert" : "Alert"}: ${event.alertName} at ${new Date(event.barTimestamp).toLocaleString()}`);
+    });
+    target.subscribe("alertError", (diagnostic) => {
+      setNotice(`Alert ${diagnostic.alertId} could not be evaluated: ${diagnostic.message}`);
+    });
     syncDisplayPreferences(target);
     refreshObjects(target);
+    refreshAlerts(target);
     setNotice(`Loaded ${symbol} at ${timeframe} with ${candles.length} deterministic bars.`);
-  }, [refreshObjects, symbol, syncDisplayPreferences, timeframe]);
+  }, [refreshAlerts, refreshObjects, symbol, syncDisplayPreferences, timeframe]);
 
   useEffect(() => () => {
     replayUnsubscribeRef.current?.();
@@ -512,6 +537,49 @@ export default function StudioClient() {
     anchor.click();
     URL.revokeObjectURL(url);
     setNotice("Workspace JSON export started.");
+  };
+
+  const addPriceAlert = (): void => {
+    const target = chart();
+    if (target === null || !Number.isFinite(alertThreshold)) {
+      setNotice("Alert thresholds must be finite numbers.");
+      return;
+    }
+    try {
+      target.addAlert({
+        id: `studio-alert-${serialRef.current++}`,
+        name: alertName.trim() || "Price alert",
+        condition: { type: "price-cross-above", field: "close", value: alertThreshold },
+        frequency: alertFrequency,
+      });
+      refreshAlerts(target);
+      setNotice("Alert created. Notifications remain local to this chart.");
+    } catch (error) {
+      setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const toggleAlert = (alert: AlertDefinition): void => {
+    const target = chart();
+    if (target === null) return;
+    try {
+      target.updateAlert(alert.id, { enabled: alert.enabled === false });
+      refreshAlerts(target);
+    } catch (error) {
+      setNotice(`Could not update alert: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const removeAlert = (id: string): void => {
+    const target = chart();
+    if (target === null) return;
+    try {
+      target.removeAlert(id);
+      refreshAlerts(target);
+      setNotice("Alert removed.");
+    } catch (error) {
+      setNotice(`Could not remove alert: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   const addScript = (): void => {
@@ -670,6 +738,27 @@ export default function StudioClient() {
 
         <aside className={styles.sidebar} aria-label="Chart settings">
           <div className={styles.panelHeading}><h2>Settings</h2></div>
+          <details className={styles.alertPanel} open>
+            <summary>Alerts ({alerts.length})</summary>
+            <div className={styles.alertForm}>
+              <label>Name<input aria-label="Alert name" value={alertName} disabled={replayActive} onChange={(event) => setAlertName(event.target.value)} /></label>
+              <label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label>
+              <label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}>
+                <option value="once">Once</option>
+                <option value="every-event">Every event</option>
+                <option value="once-per-bar">Once per bar</option>
+                <option value="once-per-confirmed-bar">Confirmed bars</option>
+              </select></label>
+              <button type="button" disabled={replayActive} onClick={addPriceAlert}>Create alert</button>
+            </div>
+            {alerts.length === 0 ? <small>No alerts configured.</small> : <ul className={styles.alertList}>{alerts.map((alert) => <li key={alert.id} className={styles.alertItem}>
+              <span title={alert.id}>{alert.name}<small>{alert.condition.type} · {alert.frequency}</small></span>
+              <button type="button" disabled={replayActive} onClick={() => toggleAlert(alert)}>{alert.enabled === false ? "Enable" : "Pause"}</button>
+              <button type="button" disabled={replayActive} aria-label={`Remove ${alert.name}`} onClick={() => removeAlert(alert.id)}>×</button>
+            </li>)}</ul>}
+            <div className={styles.alertHistoryHeading}><small>Recent events</small><button type="button" onClick={() => { chart()?.clearAlertHistory(); refreshAlerts(); }}>Clear</button></div>
+            {alertHistory.length === 0 ? <small>No alert events yet.</small> : <ul className={styles.alertList}>{alertHistory.slice(-6).reverse().map((event) => <li key={event.eventId} className={styles.alertEvent}><span>{event.alertName}<small>{new Date(event.barTimestamp).toLocaleString()}</small></span>{event.simulated ? <em>SIM</em> : <em>LIVE</em>}</li>)}</ul>}
+          </details>
           <label>Theme<select value={theme} onChange={(event) => updateTheme(event.target.value as "dark" | "light")}><option value="dark">Dark</option><option value="light">Light</option></select></label>
           <label>Locale<select value={locale} onChange={(event) => { const next = event.target.value; chart()?.setOptions({ locale: next }); setLocale(next); }}><option value="en-US">English (US)</option><option value="de-DE">Deutsch</option><option value="fa-IR">فارسی</option></select></label>
           <label>Timezone<select value={timeZone} onChange={(event) => { const next = event.target.value; chart()?.setOptions({ timeZone: next }); setTimeZone(next); }}><option value="UTC">UTC</option><option value="America/New_York">New York</option><option value="Asia/Tehran">Tehran</option></select></label>

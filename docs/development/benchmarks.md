@@ -6,6 +6,7 @@ Run the deterministic model and browser measurements with:
 npm run benchmark
 npm run benchmark:browser
 npm run benchmark:replay
+npm run benchmark:alerts
 npm run profile:browser
 npm run benchmark:plugins
 npm run benchmark:klinescript
@@ -55,6 +56,13 @@ KlineScript scenarios. Sequential stepping uses the existing verified
 append-incremental indicator path; arbitrary seeks intentionally measure full
 prefix recalculation. The benchmark verifies restored data length and zero
 remaining chart canvases after destruction.
+
+`benchmark:alerts` measures the framework-neutral Alert Engine at 1,000,
+10,000, and 100,000 bars with price, indicator, and script rules. It reports
+live evaluation, a correction path, replay-prefix evaluation, bounded history,
+event counts, and disposal time. These are Node-only measurements and are not
+Canvas2D, FPS, memory-limit, or external-delivery claims. The command prints
+the Node version and run timestamp so results can be reproduced locally.
 
 The Phase 7.2 regression investigation found that `ChartModel` was copying the
 entire defensive candle snapshot on every ordinary `Chart.update()` while

@@ -27,6 +27,7 @@
     "benchmark": "npm run build && node scripts/benchmark.mjs",
     "benchmark:browser": "npm run build && node scripts/browser-benchmark.mjs",
     "benchmark:replay": "npm run build && node scripts/replay-benchmark.mjs",
+    "benchmark:alerts": "npm run build && node scripts/alert-benchmark.mjs",
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
     "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",
