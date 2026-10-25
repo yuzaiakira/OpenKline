@@ -93,6 +93,11 @@ export interface ChartIndicatorApi {
   remove(): void;
 }
 
+/** Options for a Worker-backed KlineScript indicator. */
+export interface AsyncScriptIndicatorOptions extends IndicatorAddOptions {
+  readonly timeoutMs?: number;
+}
+
 export interface ChartTheme {
   background: string;
   text: string;
@@ -234,6 +239,7 @@ export interface ChartEvents {
   datafeedError: Error;
   replayChange: import("./replay/types.js").ReplayStatus;
   replayError: Error;
+  scriptError: { indicatorId: string; error: Error; diagnostics: readonly import("./klinescript/diagnostics.js").KlineScriptDiagnostic[] };
   alertTriggered: import("./alerts/types.js").AlertEvent;
   alertError: import("./alerts/types.js").AlertDiagnostic;
 }

@@ -287,3 +287,14 @@ by deterministic Node tests and architecture/security documentation; it does
 not close the inherited browser, accessibility, or physical-device gates.
 Worker-backed Chart/Replay/Alert integration, differential incremental
 execution, and the professional Studio editor remain subsequent milestones.
+
+Phase 7.3.2 adds `Chart.addScriptIndicatorAsync(source)`. It uses the
+versioned Worker runtime for compile and result publication while keeping the
+existing synchronous indicator instance as a correctness-first fallback. It
+guards result ownership by indicator generation, routes current Worker
+snapshots into chart series and script alerts, resets Worker sessions at replay
+seek boundaries, and disposes pending work with indicator/chart lifecycle.
+Chromium verifies the real static ESM Worker, alert triggering, replay prefix
+length, removal, and canvas cleanup. This does not claim all script CPU work
+is off the main thread or close the inherited browser/accessibility/physical
+device gates. Incremental execution and the professional editor remain open.

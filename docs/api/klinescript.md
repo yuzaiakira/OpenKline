@@ -48,8 +48,8 @@ tests.
 ```ts
 const runtime = new KlineScriptWorkerRuntime({ timeoutMs: 10_000 });
 const task = runtime.execute(source, candles, { period: 21 });
+// task.cancel() rejects the task and terminates the current Worker.
 const result = await task.promise;
-task.cancel(); // rejects the task and terminates the current Worker
 runtime.dispose();
 ```
 
@@ -61,4 +61,31 @@ chart or replay controller can discard stale results. Timeouts, Worker crashes,
 malformed messages, compiler failures, and runtime budget failures are
 reported as `KlineScriptWorkerError` codes. The Worker path uses the same
 validated compiler/interpreter and does not relax the security boundary.
+
+## Worker-backed Chart indicator
+
+`Chart.addScriptIndicatorAsync(source, options)` is an additive opt-in API. It
+compiles in the Worker, validates the same source with the host compiler, and
+returns the normal `ChartIndicatorApi` after the first Worker result is ready.
+The returned indicator participates in the existing series, pane, replay,
+workspace, alert, remove, and chart-destruction lifecycles.
+
+```ts
+const indicator = await chart.addScriptIndicatorAsync(source, {
+  id: "worker-ema",
+  parameters: { period: 21 },
+  timeoutMs: 10_000,
+});
+chart.update(nextCandle);
+console.log(indicator.getResult());
+indicator.remove();
+```
+
+The chart keeps the existing synchronous interpreter as a correctness-first
+fallback while a Worker result is pending or unavailable; this preserves the
+synchronous public contract and means this API does not by itself claim that
+all script CPU work has moved off the main thread. Worker results are applied
+only for the current indicator generation. Pending or stale results cannot
+update chart series or alert snapshots; failures are published through the
+`scriptError` chart event and the fallback remains intact.
 

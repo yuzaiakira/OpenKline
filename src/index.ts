@@ -66,6 +66,7 @@ export type {
   ChartInteractionOptions,
   ChartDirection,
   ChartOptions,
+  AsyncScriptIndicatorOptions,
   ChartSeriesInfo,
   ChartTheme,
   ChartThemeName,

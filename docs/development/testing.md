@@ -99,6 +99,9 @@ protocol, serializable compile responses, worker-side sessions, diagnostics,
 malformed requests, cancellation, timeout, restart, and disposal using a
 deterministic in-process Worker harness. It does not claim that managed
 Firefox/WebKit/mobile artifacts are available.
+The Chromium KlineScript browser workflow also exercises a real static ESM
+Worker through `Chart.addScriptIndicatorAsync`, then verifies alert output,
+replay prefix length, removal, chart destruction, and absence of page errors.
 
 The cloud's local Chromium test config is diagnostic evidence. Do not edit the
 portable config to add system browser paths; formal browser claims require the

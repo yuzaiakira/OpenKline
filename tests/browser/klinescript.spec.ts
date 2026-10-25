@@ -78,3 +78,58 @@ test("KlineScript playground compiles, reports diagnostics, updates inputs, and 
   await expect(page.locator("#status")).toHaveText("Indicator removed");
   expect(pageErrors).toEqual([]);
 });
+
+test("Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles", async ({ page }) => {
+  const pageErrors: string[] = [];
+  await page.goto("/examples/vanilla/klinescript.html");
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  const result = await page.evaluate(async () => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
+    type Indicator = { id: string; getResult(): { outputs: Array<{ id: string; points: Array<{ value: number | null }> }> }; remove(): void };
+    type Chart = {
+      addScriptIndicatorAsync(source: string, options?: { id?: string; timeoutMs?: number }): Promise<Indicator>;
+      update(candle: Candle): void;
+      getSeriesInfo(): Array<{ id: string; dataLength: number }>;
+      getData(): Candle[];
+      addAlert(definition: unknown): { remove(): void };
+      subscribe(name: string, listener: (event: unknown) => void): () => void;
+      createReplay(options: { source: Candle[]; startAt: number }): { start(): void; exit(): void; dispose(): void };
+      destroy(): void;
+    };
+    const chart = (globalThis as unknown as { __openklineScriptPlayground: { chart: Chart } }).__openklineScriptPlayground.chart;
+    const source = 'indicator("Worker close")\nplot(close, title="Close")';
+    const indicator = await chart.addScriptIndicatorAsync(source, { id: "worker-script", timeoutMs: 2_000 });
+    const initial = indicator.getResult().outputs[0]?.points.at(-1)?.value;
+    const events: unknown[] = [];
+    const unsubscribe = chart.subscribe("alertTriggered", (event) => events.push(event));
+    const alert = chart.addAlert({
+      id: "worker-alert",
+      name: "Worker close",
+      condition: { type: "script-above", scriptId: indicator.id, outputId: "plot-1", value: 150 },
+      frequency: "every-event",
+    });
+    const last = chart.getData().at(-1)!;
+    chart.update({ ...last, time: last.time + 3_600_000, open: 199, high: 201, low: 198, close: 200 });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const updated = indicator.getResult().outputs[0]?.points.at(-1)?.value;
+    const workerSeries = chart.getSeriesInfo().find((item) => item.id === "worker-script:plot-1");
+    const sourceData = chart.getData();
+    const replay = chart.createReplay({ source: sourceData, startAt: sourceData[30]!.time });
+    replay.start();
+    const replayLength = chart.getSeriesInfo().find((item) => item.id === "worker-script:plot-1")?.dataLength ?? -1;
+    replay.exit();
+    replay.dispose();
+    alert.remove();
+    unsubscribe();
+    indicator.remove();
+    chart.destroy();
+    return { initial, updated, workerSeries, events: events.length, replayLength };
+  });
+  expect(result.initial).not.toBeNull();
+  expect(result.updated).toBe(200);
+  expect(result.workerSeries?.dataLength).toBe(121);
+  expect(result.events).toBeGreaterThan(0);
+  expect(result.replayLength).toBe(31);
+  await expect.poll(() => page.locator("canvas").count()).toBe(0);
+  expect(pageErrors).toEqual([]);
+});

@@ -232,6 +232,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   integration, differential incremental execution, and the Studio IDE remain
   open; see `docs/architecture/klinescript-worker-runtime.md` and
   `docs/reports/phase-7-3-verification.md`.
+- [Implemented / In Verification] Phase 7.3.2 adds opt-in
+  `Chart.addScriptIndicatorAsync(source)`. Worker results use the normal
+  indicator/series lifecycle with generation guards, synchronous correctness
+  fallback, current-only script alert snapshots, replay-prefix session reset,
+  and disposal on remove/destroy. A real Chromium ESM-Worker workflow passes;
+  incremental execution and the professional Studio editor remain open.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

@@ -40,6 +40,8 @@ import type {
 import type { IndicatorDefinition, IndicatorInstance } from "./indicators/types.js";
 import type { KlineScriptCompiledProgram } from "./klinescript/compiler.js";
 import { compileKlineScript } from "./klinescript/compiler.js";
+import { KlineScriptWorkerError, KlineScriptWorkerRuntime, type KlineScriptWorkerTask } from "./klinescript/worker-runtime.js";
+import type { KlineScriptExecutionResult } from "./klinescript/runtime.js";
 import type { SeriesData } from "./core/series-store.js";
 import type { Datafeed, GetBarsQuery } from "./types.js";
 import type {
@@ -68,6 +70,7 @@ import type {
   PriceScaleRange,
   PriceScaleState,
   VolumePoint,
+  AsyncScriptIndicatorOptions,
 } from "./types.js";
 import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
 import type { JsonValue } from "./extensions/types.js";
@@ -81,6 +84,18 @@ interface ManagedChartIndicator {
   parameters: Record<string, unknown>;
   outputStyles: Record<string, import("./types.js").SeriesStyle>;
   script?: { readonly programId: string; readonly source: string };
+  worker?: ManagedWorkerScript;
+}
+
+interface ManagedWorkerScript {
+  readonly runtime: KlineScriptWorkerRuntime;
+  readonly sessionId: string;
+  generation: number;
+  initialized: boolean;
+  result?: KlineScriptExecutionResult;
+  resultGeneration: number;
+  disposed: boolean;
+  pending: Set<KlineScriptWorkerTask<KlineScriptExecutionResult>>;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -123,6 +138,7 @@ export class Chart {
   private readonly pluginRegistry: PluginRegistry;
   private readonly alertEngine = new AlertEngine();
   private readonly extensionDisposers = new Set<() => void>();
+  private readonly workerRuntimes = new Set<KlineScriptWorkerRuntime>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
   private theme: ChartTheme;
@@ -212,6 +228,7 @@ export class Chart {
     this.assertReplayDataMutationAllowed();
     this.model.setData(candles);
     this.refreshIndicatorsFromInput();
+    this.refreshWorkerIndicatorsFromInput();
     this.resetLiveAlerts(candles.at(-1));
     this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
     this.render();
@@ -224,6 +241,7 @@ export class Chart {
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
+    this.refreshWorkerIndicatorsFromUpdate(candle);
     this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
     this.render();
@@ -644,13 +662,17 @@ export class Chart {
       paneId,
       getResult: () => {
         this.assertAlive();
-        return instance.getResult();
+        const worker = state.worker;
+        const workerResult = worker !== undefined && worker.resultGeneration === worker.generation ? worker.result : undefined;
+        return workerResult ?? instance.getResult();
       },
       setParameters: (nextParameters) => {
         this.assertAlive();
         instance.setParameters(nextParameters);
         state.parameters = { ...instance.getResult().parameters };
+        if (state.worker !== undefined) state.worker.initialized = false;
         this.syncIndicator(state);
+        if (state.worker !== undefined) void this.scheduleWorkerIndicator(state, this.model.allCandles);
         this.emit("indicatorChange", { action: "update", id, indicatorId: state.indicatorId });
         this.render();
       },
@@ -691,11 +713,58 @@ export class Chart {
     return api;
   }
 
+  /**
+   * Compile and execute a script through a dedicated Worker while retaining
+   * the existing indicator, series, replay, and alert lifecycle as the
+   * correctness-first synchronous fallback.
+   */
+  public async addScriptIndicatorAsync(source: string, options: AsyncScriptIndicatorOptions = {}): Promise<ChartIndicatorApi> {
+    this.assertAlive();
+    const { timeoutMs, ...indicatorOptions } = options;
+    const runtime = new KlineScriptWorkerRuntime(timeoutMs === undefined ? {} : { timeoutMs });
+    this.workerRuntimes.add(runtime);
+    let createdIndicatorId: string | undefined;
+    try {
+      const compiled = await runtime.compile(source).promise;
+      if (!compiled.success || compiled.program === undefined) {
+        throw new KlineScriptWorkerError("COMPILE_FAILED", "KlineScript compilation failed in Worker", compiled.diagnostics);
+      }
+      const local = compileKlineScript(source);
+      if (!local.success || local.program.id !== compiled.program.id) {
+        throw new KlineScriptWorkerError("COMPILE_FAILED", "KlineScript compiler results differ between Worker and host", local.success ? [] : local.diagnostics);
+      }
+      const api = this.addScriptIndicator(local.program, indicatorOptions);
+      createdIndicatorId = api.id;
+      const state = this.indicators.get(api.id);
+      if (state === undefined) throw new Error(`Async KlineScript state was not created: ${api.id}`);
+      state.worker = {
+        runtime,
+        sessionId: `chart-script-${api.id}`,
+        generation: 0,
+        initialized: false,
+        resultGeneration: -1,
+        disposed: false,
+        pending: new Set(),
+      };
+      const result = await this.scheduleWorkerIndicator(state, this.model.allCandles);
+      if (result === undefined) throw new KlineScriptWorkerError("EXECUTION_FAILED", "KlineScript Worker returned no result");
+      return api;
+    } catch (error) {
+      if (createdIndicatorId !== undefined && !this.destroyed && this.indicators.has(createdIndicatorId)) {
+        this.removeIndicator(createdIndicatorId);
+      }
+      runtime.dispose();
+      this.workerRuntimes.delete(runtime);
+      throw error;
+    }
+  }
+
   public removeIndicator(id: string): void {
     this.assertAlive();
     this.assertReplayStructureMutationAllowed();
     const state = this.indicators.get(id);
     if (state === undefined) throw new Error(`Unknown indicator: ${id}`);
+    this.disposeWorkerIndicator(state);
     for (const seriesId of state.outputSeriesIds) {
       if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
     }
@@ -1049,7 +1118,12 @@ export class Chart {
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
     this.stopDatafeed();
-    for (const indicator of this.indicators.values()) indicator.instance.dispose();
+    for (const indicator of this.indicators.values()) {
+      this.disposeWorkerIndicator(indicator);
+      indicator.instance.dispose();
+    }
+    for (const runtime of this.workerRuntimes) runtime.dispose();
+    this.workerRuntimes.clear();
     this.indicators.clear();
     this.model.destroy();
     this.replayCursorIndex = null;
@@ -1486,11 +1560,81 @@ export class Chart {
     }
   }
 
+  private refreshWorkerIndicatorsFromInput(): void {
+    const input = this.model.allCandles;
+    for (const state of this.indicators.values()) {
+      if (state.worker === undefined) continue;
+      state.worker.initialized = false;
+      void this.scheduleWorkerIndicator(state, input).catch(() => undefined);
+    }
+  }
+
   private refreshIndicatorsFromUpdate(candle: Candle, appendOnly: boolean): void {
     for (const state of this.indicators.values()) {
       state.instance.update(candle);
       this.syncIndicator(state, appendOnly, state.instance.getResultReference?.() ?? state.instance.getResult());
     }
+  }
+
+  private refreshWorkerIndicatorsFromUpdate(candle: Candle): void {
+    for (const state of this.indicators.values()) {
+      if (state.worker === undefined) continue;
+      void this.scheduleWorkerIndicator(state, undefined, candle).catch(() => undefined);
+    }
+  }
+
+  private scheduleWorkerIndicator(
+    state: ManagedChartIndicator,
+    input?: readonly Candle[],
+    candle?: Candle,
+  ): Promise<KlineScriptExecutionResult | undefined> {
+    const worker = state.worker;
+    if (worker === undefined || worker.disposed || state.script === undefined) return Promise.resolve(undefined);
+    const generation = ++worker.generation;
+    let task: KlineScriptWorkerTask<KlineScriptExecutionResult>;
+    try {
+      task = worker.initialized && candle !== undefined
+        ? worker.runtime.updateInput(worker.sessionId, state.script.source, undefined, candle, state.parameters, {}, generation)
+        : worker.runtime.updateInput(worker.sessionId, state.script.source, input ?? this.model.allCandles, undefined, state.parameters, {}, generation);
+      worker.initialized = true;
+    } catch (error) {
+      worker.initialized = false;
+      return Promise.reject(error);
+    }
+    worker.pending.add(task);
+    return task.promise.then((result) => {
+      worker.pending.delete(task);
+      if (worker.disposed || this.destroyed || state.worker !== worker || generation !== worker.generation) return undefined;
+      worker.result = result;
+      worker.resultGeneration = generation;
+      this.syncIndicator(state, false, result);
+      this.emit("indicatorChange", { action: "update", id: state.id, indicatorId: state.indicatorId });
+      this.render();
+      return result;
+    }).catch((error: unknown) => {
+      worker.pending.delete(task);
+      if (!worker.disposed && !this.destroyed && state.worker === worker && generation === worker.generation) {
+        worker.initialized = false;
+        const normalized = error instanceof Error ? error : new Error(String(error));
+        this.emit("scriptError", {
+          indicatorId: state.id,
+          error: normalized,
+          diagnostics: error instanceof KlineScriptWorkerError ? [...error.diagnostics] : [],
+        });
+      }
+      throw error;
+    });
+  }
+
+  private disposeWorkerIndicator(state: ManagedChartIndicator): void {
+    const worker = state.worker;
+    if (worker === undefined || worker.disposed) return;
+    worker.disposed = true;
+    for (const task of worker.pending) task.cancel();
+    worker.pending.clear();
+    worker.runtime.dispose();
+    this.workerRuntimes.delete(worker.runtime);
+    delete state.worker;
   }
 
   private syncIndicator(state: ManagedChartIndicator, appendOnly = false, result = state.instance.getResult()): void {
@@ -1514,7 +1658,9 @@ export class Chart {
   private alertOutputsAt(time: number): AlertOutputSnapshot[] {
     const outputs: AlertOutputSnapshot[] = [];
     for (const state of this.indicators.values()) {
-      for (const output of state.instance.getResult().outputs) {
+      const worker = state.worker;
+      const workerResult = worker !== undefined && worker.resultGeneration === worker.generation ? worker.result : undefined;
+      for (const output of (workerResult ?? state.instance.getResult()).outputs) {
         const point = output.points.find((candidate) => candidate.time === time);
         outputs.push({ sourceId: state.id, outputId: output.id, value: point?.value ?? null, time });
       }
@@ -1605,6 +1751,7 @@ export class Chart {
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
+      this.refreshWorkerIndicatorsFromInput();
       this.render();
     } catch (error) {
       this.replayBaseWorkspace = null;
@@ -1624,11 +1771,13 @@ export class Chart {
     const visibleLastCandle = isSequentialAppend ? this.model.allCandles.at(-1) : undefined;
     if (visibleLastCandle === undefined) {
       this.refreshIndicatorsFromInput();
+      this.refreshWorkerIndicatorsFromInput();
       this.alertEngine.reset("replay", true);
       const visibleCandles = this.model.allCandles;
       visibleCandles.forEach((candle, index) => this.evaluateReplayAlerts(candle, index === 0 ? "seed" : "append"));
     } else {
       this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
+      this.refreshWorkerIndicatorsFromUpdate(visibleLastCandle);
       this.evaluateReplayAlerts(visibleLastCandle, "append");
     }
     this.replayCursorIndex = cursor.index;
