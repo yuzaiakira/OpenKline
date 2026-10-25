@@ -202,10 +202,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   workflow. Existing Studio workspace and React lifecycle tests remain green;
   final replay verification and broader browser evidence remain open. See
   `docs/guides/studio-replay.md`.
-- [In Verification] Phase 7.1.5 final handover still requires the complete
-  local package/Next/browser/performance matrix and an evidence report. The
-  inherited managed Firefox, WebKit, Mobile Safari, accessibility, and physical
-  device gates remain open and are not reclassified.
+- [Implemented / Gate Open] Phase 7.1.5 completes the local package, Next.js,
+  Chromium, mobile-Chromium, performance, and replay evidence matrix. The
+  handover report is `docs/reports/phase-7-1-verification.md`. The inherited
+  managed Firefox, WebKit, Mobile Safari, accessibility, and physical-device
+  gates remain open and are not reclassified, so Phase 7.1 is not formally
+  closed.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

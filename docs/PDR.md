@@ -243,7 +243,10 @@ than described as constant-time. Phase 7.1.4 adds deterministic replay
 controls to the private Studio through the public React handle and `ReplayApi`,
 including start selection, timeline seeking, stepping, beginning/latest,
 keyboard shortcuts, playback speed, mobile-sized controls, and exit
-restoration. Final replay acceptance and broader browser evidence remain open.
-See
+restoration. Local replay acceptance evidence is complete for the available
+Chromium environments, while formal acceptance remains open for the missing
+managed Firefox/WebKit/Mobile Safari, accessibility, and physical-device
+gates. See the final evidence report at
+`docs/reports/phase-7-1-verification.md`, plus
 `docs/architecture/replay-engine.md`,
 `docs/architecture/replay-data-integrity.md`, and `docs/api/replay.md`.
