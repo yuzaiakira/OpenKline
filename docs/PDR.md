@@ -181,3 +181,14 @@ management, drawings, indicators, workspaces, and restricted KlineScript. Its
 local verification and remaining acceptance work are recorded in
 `docs/reports/phase-6-studio-verification.md` and
 `docs/reports/phase-6-final-verification.md`; Phase 6 remains open.
+
+## Phase 7 professional charting foundation — in progress
+
+Phase 7 begins without closing any inherited Phase 6 browser or accessibility
+gate. The first implemented increment centralizes the primary price-scale
+transform for Canvas rendering, interaction, drawings, and plugin contexts.
+It adds linear, logarithmic, percentage, and indexed display modes; raw-price
+autoscale/manual range controls; deterministic invalid-domain diagnostics; and
+backward-compatible optional workspace persistence. Scale mode never changes
+stored market data, indicator inputs, or drawing anchors. Time-axis overhaul,
+additional chart types, and Studio controls remain subsequent Phase 7 work.

@@ -35,3 +35,7 @@ chart.
 Canvas rendering is scheduled directly from chart mutations and interaction
 events. The renderer, scales, and drawing geometry remain shared; hosts and the
 Studio must not implement a second viewport or scale system.
+
+The main-pane price conversion is likewise shared by rendering, pointer events,
+crosshair publication, drawings, and plugin pane contexts. Changing a display
+mode preserves raw crosshair prices and drawing anchors.

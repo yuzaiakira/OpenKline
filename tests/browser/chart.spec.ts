@@ -56,12 +56,47 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
     return;
   }
 
-  await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.45);
+  await page.mouse.move(box.x + box.width * 0.61, box.y + 40);
   await expect(page).toHaveTitle(/OpenKline \d/);
   await page.waitForFunction(() => {
     const event = (globalThis as unknown as { __lastCrosshair?: { series?: unknown[] } }).__lastCrosshair;
     return (event?.series?.length ?? 0) === 13;
   });
+
+  const percentageState = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        setPriceScaleOptions(options: { mode?: "linear" | "logarithmic" | "percentage" | "indexed"; referencePrice?: number; marginTop?: number; marginBottom?: number; axisVisible?: boolean }): void;
+        getPriceScaleState(): { activeMode: string; diagnostic?: { code: string }; range?: { min: number; max: number } };
+      };
+    }).__openklineChart;
+    chart.setPriceScaleOptions({ mode: "percentage", referencePrice: 100, marginTop: 0, marginBottom: 0, axisVisible: true });
+    return chart.getPriceScaleState();
+  });
+  await page.mouse.move(box.x + box.width * 0.59, box.y + 40);
+  const priceScaleResult = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        setPriceScaleRange(range: { min: number; max: number }): void;
+        resetPriceScale(): void;
+        setPriceScaleOptions(options: { mode?: "linear" | "logarithmic" | "percentage" | "indexed" }): void;
+        getPriceScaleState(): { activeMode: string; diagnostic?: { code: string }; range?: { min: number; max: number } };
+      };
+    }).__openklineChart;
+    const crosshair = (globalThis as unknown as { __lastCrosshair?: { price: number | null; formattedPrice?: string | null; priceScaleMode?: string } }).__lastCrosshair;
+    chart.setPriceScaleRange({ min: 90, max: 130 });
+    const manual = chart.getPriceScaleState();
+    chart.resetPriceScale();
+    chart.setPriceScaleOptions({ mode: "logarithmic" });
+    const logarithmic = chart.getPriceScaleState();
+    return { crosshair, manual, logarithmic };
+  });
+  expect(percentageState.activeMode).toBe("percentage");
+  expect(priceScaleResult.crosshair?.price).toBeGreaterThan(0);
+  expect(priceScaleResult.crosshair?.formattedPrice).toMatch(/%$/);
+  expect(priceScaleResult.crosshair?.priceScaleMode).toBe("percentage");
+  expect(priceScaleResult.manual.range).toEqual({ min: 90, max: 130 });
+  expect(priceScaleResult.logarithmic.activeMode).toBe("logarithmic");
 
   const beforeZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
   await page.mouse.wheel(0, -500);
@@ -332,6 +367,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
         removeIndicator(id: string): void;
         getDrawings(): Array<{ id: string; type: string }>;
         getPluginState(id: string): Record<string, unknown> | undefined;
+        getPriceScaleState(): { activeMode: string };
       };
     }).__openklineChart;
     const document = chart.serializeWorkspace({ symbol: "TEST", timeframe: "1h" });
@@ -344,6 +380,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
       restored,
       drawing: chart.getDrawings().some((drawing) => drawing.id === drawingId && drawing.type === "ray-browser"),
       state: chart.getPluginState("example.browser"),
+      priceScale: chart.getPriceScaleState().activeMode,
     };
   }, { indicatorId: pluginResult.indicatorId, drawingId: pluginResult.drawingId });
   expect(workspaceState).toEqual({
@@ -352,6 +389,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
     restored: { skippedPlugins: [], skippedIndicators: [] },
     drawing: true,
     state: { mounted: true },
+    priceScale: "logarithmic",
   });
   await page.evaluate(({ indicatorId, drawingId }) => {
     const chart = (globalThis as unknown as {

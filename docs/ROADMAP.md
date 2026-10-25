@@ -2,11 +2,12 @@
 
 ## Current milestone
 
-Phase 6 core reliability and OpenKline Studio — **In progress**. Phase 6.0
-React, REST pagination, and viewport hardening are implemented and locally
-verified; Studio is implemented and locally verified in Chromium, while
-accessibility, managed-browser/mobile, consumer, and performance acceptance
-remain open.
+Phase 7 professional charting foundation — **In progress**. Phase 7.0.1
+centralizes primary price scaling with linear, logarithmic, percentage, and
+indexed display modes, raw-anchor preservation, invalid-domain diagnostics,
+and workspace persistence. Time-axis work, new chart types, and Studio controls
+remain in scope. Phase 6 formal accessibility, managed-browser/mobile,
+consumer, and performance acceptance remain open and are not reclassified.
 Phase 4 KlineScript language and secure indicator runtime — **In verification**.
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
 roadmap does not treat those blocked runs as verified or change their gate.
@@ -141,6 +142,13 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   indicators, workspaces, and restricted KlineScript. Local Chromium workflows
   pass; managed-browser, accessibility, consumer, and final performance gates
   remain open. See `docs/reports/phase-6-studio-verification.md`.
+- [Implemented / In Verification] Phase 7.0.1 provides one primary
+  `PriceScale` conversion path for Canvas rendering, crosshair/tooltip values,
+  drawings, and plugin contexts. It supports linear, logarithmic, percentage,
+  and indexed display modes, stable positive references, asymmetric margins,
+  manual raw ranges, deterministic fallback diagnostics, and optional
+  backward-compatible workspace configuration. See
+  `docs/architecture/price-scale-system.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

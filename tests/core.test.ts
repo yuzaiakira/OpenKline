@@ -57,7 +57,37 @@ test("scales map between data and pixels in both directions", () => {
   assert.equal(priceScale.yForPrice(200), 0);
   assert.equal(priceScale.yForPrice(100), 100);
   assert.equal(priceScale.priceForY(50), 150);
+  const singleValueScale = new PriceScale(100, 100, { start: 0, end: 100 }, 0.08);
+  assert.equal(singleValueScale.min, 92);
+  assert.equal(singleValueScale.max, 108);
   assert.throws(() => new TimeScale([0, 100, 50], { start: 0, end: 100 }), /ascending/);
+});
+
+test("PriceScale preserves raw values across display modes and reports invalid domains", () => {
+  const pixels = { start: 0, end: 200 };
+  for (const mode of ["linear", "logarithmic", "percentage", "indexed"] as const) {
+    const scale = new PriceScale(100, 200, pixels, {
+      mode,
+      referencePrice: 100,
+      marginTop: 0,
+      marginBottom: 0,
+    });
+    for (const price of [100, 125, 200]) {
+      assert.ok(Math.abs(scale.priceForY(scale.yForPrice(price)) - price) < 0.000_000_1, `${mode} round trip for ${price}`);
+    }
+  }
+
+  const percentage = new PriceScale(100, 200, pixels, { mode: "percentage", referencePrice: 100, marginTop: 0, marginBottom: 0 });
+  assert.equal(percentage.formatPrice(125, 2), "25.00%");
+  const indexed = new PriceScale(100, 200, pixels, { mode: "indexed", referencePrice: 100, marginTop: 0, marginBottom: 0 });
+  assert.equal(indexed.formatPrice(125, 2), "125.00");
+
+  const invalidLog = new PriceScale(-5, 5, pixels, { mode: "logarithmic" });
+  assert.equal(invalidLog.mode, "linear");
+  assert.equal(invalidLog.diagnostic?.code, "LOGARITHMIC_REQUIRES_POSITIVE_VALUES");
+  const missingReference = new PriceScale(10, 20, pixels, { mode: "percentage" });
+  assert.equal(missingReference.mode, "linear");
+  assert.equal(missingReference.diagnostic?.code, "REFERENCE_REQUIRES_POSITIVE_VALUE");
 });
 
 test("ChartModel keeps a single candle visible without inventing a second bar", () => {

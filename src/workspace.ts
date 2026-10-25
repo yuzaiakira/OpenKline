@@ -1,6 +1,6 @@
 import type { DrawingDocument, DrawingSnapshot, DrawingStyle } from "./drawings/types.js";
 import type { JsonValue } from "./extensions/types.js";
-import type { Candle, ChartDirection, ChartTheme, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
+import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -15,6 +15,8 @@ export interface WorkspaceChartConfiguration {
   readonly timeZone: string;
   readonly pricePrecision: number;
   readonly direction: ChartDirection;
+  /** Optional so version-1 workspaces saved before Phase 7 retain their linear default. */
+  readonly priceScale?: PriceScaleConfiguration;
 }
 
 export interface WorkspacePane {
@@ -296,11 +298,41 @@ function validateOrderedTimes(points: readonly SeriesPoint[], id: string): void 
 function isChartConfiguration(value: unknown): value is WorkspaceChartConfiguration {
   if (!isPlainObject(value) || typeof value.locale !== "string" || typeof value.timeZone !== "string" || !Number.isInteger(value.pricePrecision) || value.pricePrecision < 0 || value.pricePrecision > 100 || !isPlainObject(value.theme)) return false;
   const themeKeys = ["background", "text", "grid", "border", "upCandle", "downCandle", "crosshair", "volumeUp", "volumeDown"];
-  return themeKeys.every((key) => typeof value.theme[key] === "string") && (value.theme.bandFill === undefined || typeof value.theme.bandFill === "string") && (value.theme.bandFillOpacity === undefined || isFiniteNumber(value.theme.bandFillOpacity)) && (value.direction === undefined || value.direction === "ltr" || value.direction === "rtl");
+  return themeKeys.every((key) => typeof value.theme[key] === "string")
+    && (value.theme.bandFill === undefined || typeof value.theme.bandFill === "string")
+    && (value.theme.bandFillOpacity === undefined || isFiniteNumber(value.theme.bandFillOpacity))
+    && (value.direction === undefined || value.direction === "ltr" || value.direction === "rtl")
+    && (value.priceScale === undefined || isPriceScaleConfiguration(value.priceScale));
 }
 
 function cloneChartConfiguration(value: WorkspaceChartConfiguration): WorkspaceChartConfiguration {
-  return { theme: { ...value.theme }, locale: value.locale, timeZone: value.timeZone, pricePrecision: value.pricePrecision, direction: value.direction ?? "ltr" };
+  return {
+    theme: { ...value.theme },
+    locale: value.locale,
+    timeZone: value.timeZone,
+    pricePrecision: value.pricePrecision,
+    direction: value.direction ?? "ltr",
+    ...(value.priceScale === undefined ? {} : {
+      priceScale: {
+        ...value.priceScale,
+        ...(value.priceScale.range === undefined ? {} : { range: { ...value.priceScale.range } }),
+      },
+    }),
+  };
+}
+
+function isPriceScaleConfiguration(value: unknown): value is PriceScaleConfiguration {
+  if (!isPlainObject(value)
+    || (value.mode !== "linear" && value.mode !== "logarithmic" && value.mode !== "percentage" && value.mode !== "indexed")
+    || typeof value.autoScale !== "boolean"
+    || !isFiniteNumber(value.marginTop) || value.marginTop < 0 || value.marginTop >= 1
+    || !isFiniteNumber(value.marginBottom) || value.marginBottom < 0 || value.marginBottom >= 1
+    || typeof value.axisVisible !== "boolean"
+    || (value.referencePrice !== undefined && (!isFiniteNumber(value.referencePrice) || value.referencePrice <= 0))) {
+    return false;
+  }
+  return value.range === undefined
+    || (isPlainObject(value.range) && isFiniteNumber(value.range.min) && isFiniteNumber(value.range.max) && value.range.max >= value.range.min);
 }
 
 function isSeriesType(value: unknown): value is SeriesType {

@@ -99,6 +99,51 @@ export interface ChartTheme {
 export type ChartThemeName = "light" | "dark";
 export type ChartDirection = "ltr" | "rtl";
 
+/** Display-only transformation for the primary price pane. */
+export type PriceScaleMode = "linear" | "logarithmic" | "percentage" | "indexed";
+
+export interface PriceScaleRange {
+  readonly min: number;
+  readonly max: number;
+}
+
+/** Runtime configuration for the primary price pane. */
+export interface PriceScaleOptions {
+  mode?: PriceScaleMode;
+  /** Recompute from visible data; false retains the current/manual range. */
+  autoScale?: boolean;
+  /** Positive raw-price reference for percentage and indexed modes. */
+  referencePrice?: number;
+  /** Fraction of transformed range reserved above the highest visible value. */
+  marginTop?: number;
+  /** Fraction of transformed range reserved below the lowest visible value. */
+  marginBottom?: number;
+  /** Render numeric labels for the primary price axis. */
+  axisVisible?: boolean;
+}
+
+export interface PriceScaleConfiguration {
+  readonly mode: PriceScaleMode;
+  readonly autoScale: boolean;
+  readonly referencePrice?: number;
+  readonly marginTop: number;
+  readonly marginBottom: number;
+  readonly axisVisible: boolean;
+  /** Present only while autoscale is disabled. Values remain raw prices. */
+  readonly range?: PriceScaleRange;
+}
+
+export interface PriceScaleDiagnostic {
+  readonly code: "LOGARITHMIC_REQUIRES_POSITIVE_VALUES" | "REFERENCE_REQUIRES_POSITIVE_VALUE";
+  readonly message: string;
+}
+
+export interface PriceScaleState extends PriceScaleConfiguration {
+  /** The effective transform after deterministic domain validation. */
+  readonly activeMode: PriceScaleMode;
+  readonly diagnostic?: PriceScaleDiagnostic;
+}
+
 export interface ChartOptions {
   autoSize?: boolean;
   width?: number;
@@ -107,6 +152,7 @@ export interface ChartOptions {
   locale?: string;
   timeZone?: string;
   pricePrecision?: number;
+  priceScale?: PriceScaleOptions;
   interaction?: ChartInteractionOptions;
   direction?: ChartDirection;
 }
@@ -154,7 +200,11 @@ export interface Datafeed {
 
 export interface CrosshairMoveEvent {
   time: number | null;
+  /** Raw financial price. Display transformations never change this value. */
   price: number | null;
+  /** Formatted display value for the active pane, when the pointer is in it. */
+  formattedPrice?: string | null;
+  priceScaleMode?: PriceScaleMode;
   x: number;
   y: number;
   series: CrosshairSeriesValue[];

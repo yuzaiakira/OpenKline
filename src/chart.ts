@@ -1,6 +1,6 @@
 import { ChartModel } from "./core/chart-model.js";
-import { PriceScale, TimeScale } from "./core/scales.js";
-import { CanvasRenderer, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
+import { normalizePriceScaleOptions, normalizePriceScaleRange, TimeScale } from "./core/scales.js";
+import { CanvasRenderer, createPanePriceScale, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
 import { DrawingEngine } from "./drawings/engine.js";
 import { PluginRegistry } from "./extensions/registry.js";
@@ -51,6 +51,10 @@ import type {
   SeriesOptions,
   SeriesPoint,
   SeriesType,
+  PriceScaleConfiguration,
+  PriceScaleOptions,
+  PriceScaleRange,
+  PriceScaleState,
   VolumePoint,
 } from "./types.js";
 import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
@@ -113,6 +117,7 @@ export class Chart {
   private timeZone: string;
   private pricePrecision: number;
   private direction: ChartDirection;
+  private priceScale: PriceScaleConfiguration;
   private interaction: Required<ChartInteractionOptions>;
   private width: number;
   private height: number;
@@ -133,6 +138,7 @@ export class Chart {
     this.timeZone = options.timeZone ?? "UTC";
     this.pricePrecision = normalizePricePrecision(options.pricePrecision ?? 2);
     this.direction = options.direction ?? "ltr";
+    this.priceScale = normalizePriceScaleOptions(options.priceScale);
     this.interaction = resolveInteraction(options.interaction);
     this.width = options.width ?? container.clientWidth;
     this.height = options.height ?? container.clientHeight;
@@ -376,6 +382,7 @@ export class Chart {
         timeZone: this.timeZone,
         pricePrecision: this.pricePrecision,
         direction: this.direction,
+        priceScale: this.getPriceScaleOptions(),
       },
       panes,
       series,
@@ -436,6 +443,12 @@ export class Chart {
     this.timeZone = parsed.chart.timeZone;
     this.pricePrecision = normalizePricePrecision(parsed.chart.pricePrecision);
     this.direction = parsed.chart.direction;
+    this.priceScale = parsed.chart.priceScale === undefined
+      ? normalizePriceScaleOptions()
+      : {
+          ...parsed.chart.priceScale,
+          ...(parsed.chart.priceScale.range === undefined ? {} : { range: { ...parsed.chart.priceScale.range } }),
+        };
 
     for (const pane of parsed.panes) {
       if (pane.id !== "main") {
@@ -770,6 +783,7 @@ export class Chart {
     if (options.pricePrecision !== undefined) {
       this.pricePrecision = normalizePricePrecision(options.pricePrecision);
     }
+    if (options.priceScale !== undefined) this.updatePriceScaleOptions(options.priceScale);
     if (options.direction !== undefined) this.direction = options.direction;
     if (options.interaction !== undefined) {
       this.interaction = resolveInteraction({ ...this.interaction, ...options.interaction });
@@ -780,6 +794,49 @@ export class Chart {
       return;
     }
     this.render();
+  }
+
+  /** Configure the primary price pane without duplicating scale logic in consumers. */
+  public setPriceScaleOptions(options: PriceScaleOptions): void {
+    this.assertAlive();
+    this.updatePriceScaleOptions(options);
+    this.render();
+  }
+
+  /** Freeze the primary price range in raw financial-price coordinates. */
+  public setPriceScaleRange(range: PriceScaleRange): void {
+    this.assertAlive();
+    this.priceScale = {
+      ...this.priceScale,
+      autoScale: false,
+      range: normalizePriceScaleRange(range),
+    };
+    this.render();
+  }
+
+  /** Restore visible-data autoscaling while retaining the selected display mode. */
+  public resetPriceScale(): void {
+    this.assertAlive();
+    const { range: _range, ...configuration } = this.priceScale;
+    this.priceScale = { ...configuration, autoScale: true };
+    this.render();
+  }
+
+  /** Return a defensive snapshot of the selected price-scale configuration. */
+  public getPriceScaleOptions(): PriceScaleConfiguration {
+    this.assertAlive();
+    return { ...this.priceScale, ...(this.priceScale.range === undefined ? {} : { range: { ...this.priceScale.range } }) };
+  }
+
+  /** Return the active transform and any deterministic data-domain fallback. */
+  public getPriceScaleState(): PriceScaleState {
+    this.assertAlive();
+    const context = this.getPrimaryScaleContext();
+    if (context === null) {
+      const configuration = this.getResolvedPriceScaleConfiguration();
+      return { ...configuration, activeMode: configuration.mode };
+    }
+    return context.scale.state;
   }
 
   /** Return the current visible bar indexes for interaction and diagnostics. */
@@ -994,7 +1051,7 @@ export class Chart {
 
   private emitCrosshair(x: number | null, y: number | null): void {
     const data = this.model.getVisibleData();
-    const event: CrosshairMoveEvent = { time: null, price: null, x: x ?? 0, y: y ?? 0, series: [] };
+    const event: CrosshairMoveEvent = { time: null, price: null, formattedPrice: null, x: x ?? 0, y: y ?? 0, series: [] };
     const bounds = getPaneBounds(this.width, this.height, data.panes);
     const firstPane = bounds[0];
     const activePane = bounds.find((pane) => y !== null && y >= pane.top && y <= pane.bottom);
@@ -1008,11 +1065,16 @@ export class Chart {
       && data.series.some((series) => series.data.length > 0)
     ) {
       const paneData = data.panes.find((pane) => pane.id === activePane.id);
-      const prices = getPaneScaleRange(paneData?.series ?? []);
-      const scale = new PriceScale(prices.min, prices.max, { start: activePane.top, end: activePane.bottom });
+      const scale = createPanePriceScale(
+        paneData?.series ?? [],
+        activePane,
+        activePane.id === "main" ? this.getResolvedPriceScaleConfiguration() : undefined,
+      );
       const timeScale = new TimeScale(data.times, { start: firstPane.left, end: firstPane.right }, this.direction);
       event.time = Math.round(timeScale.timeForX(x));
       event.price = scale.priceForY(y);
+      event.formattedPrice = scale.formatPrice(event.price, this.pricePrecision);
+      event.priceScaleMode = scale.mode;
       const nearest = nearestTime(data.times, event.time);
       event.series = data.series.map((series) => ({
         id: series.id,
@@ -1042,7 +1104,13 @@ export class Chart {
       this.model.getVisibleData(),
       { width: this.width, height: this.height, devicePixelRatio: this.devicePixelRatio },
       this.theme,
-      { locale: this.locale, timeZone: this.timeZone, pricePrecision: this.pricePrecision, direction: this.direction },
+      {
+        locale: this.locale,
+        timeZone: this.timeZone,
+        pricePrecision: this.pricePrecision,
+        direction: this.direction,
+        priceScale: this.getResolvedPriceScaleConfiguration(),
+      },
       this.crosshair,
       drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds),
       this.selectedDrawingId,
@@ -1098,8 +1166,11 @@ export class Chart {
     const paneContexts = new Map<string, PluginPaneRenderContext>();
     for (const pane of paneBounds) {
       const paneData = data.panes.find((candidate) => candidate.id === pane.id);
-      const range = getPaneScaleRange(paneData?.series ?? []);
-      const priceScale = new PriceScale(range.min, range.max, { start: pane.top, end: pane.bottom });
+      const priceScale = createPanePriceScale(
+        paneData?.series ?? [],
+        pane,
+        pane.id === "main" ? this.getResolvedPriceScaleConfiguration() : undefined,
+      );
       paneContexts.set(pane.id, {
         ...pane,
         xForTime: (time) => timeScale.xForTime(time),
@@ -1130,23 +1201,71 @@ export class Chart {
   }
 
   private getDrawingContext(): { bounds: { left: number; right: number; top: number; bottom: number }; converter: DrawingCoordinateConverter } | null {
+    const context = this.getPrimaryScaleContext();
+    if (context === null) return null;
+    return {
+      bounds: context.bounds,
+      converter: {
+        xForTime: (time) => context.timeScale.xForTime(time),
+        yForPrice: (price) => context.scale.yForPrice(price),
+        timeForX: (x) => context.timeScale.timeForX(x),
+        priceForY: (y) => context.scale.priceForY(y),
+      },
+    };
+  }
+
+  private updatePriceScaleOptions(options: PriceScaleOptions): void {
+    const base: PriceScaleOptions = {
+      mode: this.priceScale.mode,
+      autoScale: this.priceScale.autoScale,
+      ...(this.priceScale.referencePrice === undefined ? {} : { referencePrice: this.priceScale.referencePrice }),
+      marginTop: this.priceScale.marginTop,
+      marginBottom: this.priceScale.marginBottom,
+      axisVisible: this.priceScale.axisVisible,
+      ...options,
+    };
+    const normalized = normalizePriceScaleOptions(base);
+    const autoScale = normalized.autoScale;
+    const existingRange = this.priceScale.range;
+    const range = autoScale
+      ? undefined
+      : existingRange ?? this.getCurrentPrimaryRange();
+    this.priceScale = {
+      ...normalized,
+      ...(range === undefined ? {} : { range }),
+    };
+  }
+
+  private getCurrentPrimaryRange(): PriceScaleRange | undefined {
+    const data = this.model.getVisibleData();
+    const main = data.panes.find((pane) => pane.id === "main") ?? data.panes[0];
+    return main === undefined || main.series.length === 0
+      ? undefined
+      : getPaneScaleRange(main.series);
+  }
+
+  private getResolvedPriceScaleConfiguration(): PriceScaleConfiguration {
+    if (this.priceScale.referencePrice !== undefined || (this.priceScale.mode !== "percentage" && this.priceScale.mode !== "indexed")) {
+      return this.priceScale;
+    }
+    const referencePrice = this.model.allCandles.find((candle) => candle.close > 0)?.close;
+    return {
+      ...this.priceScale,
+      ...(referencePrice === undefined ? {} : { referencePrice }),
+    };
+  }
+
+  private getPrimaryScaleContext(): { bounds: { left: number; right: number; top: number; bottom: number }; timeScale: TimeScale; scale: import("./core/scales.js").PriceScale } | null {
     const data = this.model.getVisibleData();
     if (data.times.length === 0) return null;
     const paneBounds = getPaneBounds(this.width, this.height, data.panes);
     const bounds = paneBounds.find((pane) => pane.id === "main") ?? paneBounds[0];
     if (bounds === undefined) return null;
-    const mainSeries = data.panes.find((pane) => pane.id === bounds.id)?.series ?? data.series;
-    const range = getPaneScaleRange(mainSeries);
-    const timeScale = new TimeScale(data.times, { start: bounds.left, end: bounds.right }, this.direction);
-    const priceScale = new PriceScale(range.min, range.max, { start: bounds.top, end: bounds.bottom });
+    const series = data.panes.find((pane) => pane.id === bounds.id)?.series ?? data.series;
     return {
       bounds,
-      converter: {
-        xForTime: (time) => timeScale.xForTime(time),
-        yForPrice: (price) => priceScale.yForPrice(price),
-        timeForX: (x) => timeScale.timeForX(x),
-        priceForY: (y) => priceScale.priceForY(y),
-      },
+      timeScale: new TimeScale(data.times, { start: bounds.left, end: bounds.right }, this.direction),
+      scale: createPanePriceScale(series, bounds, this.getResolvedPriceScaleConfiguration()),
     };
   }
 

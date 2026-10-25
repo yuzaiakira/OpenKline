@@ -1,7 +1,7 @@
 import { PriceScale, TimeScale } from "../core/scales.js";
 import type { VisibleChartData, VisiblePaneData } from "../core/chart-model.js";
 import type { SeriesSnapshot } from "../core/series-store.js";
-import type { ChartDirection, ChartTheme, Candle, SeriesPoint } from "../types.js";
+import type { ChartDirection, ChartTheme, Candle, PriceScaleConfiguration, SeriesPoint } from "../types.js";
 import type { DrawingRenderItem } from "../drawings/types.js";
 import type { PluginOverlayRenderItem } from "../extensions/types.js";
 
@@ -16,6 +16,7 @@ export interface RenderOptions {
   timeZone: string;
   pricePrecision: number;
   direction: ChartDirection;
+  priceScale: PriceScaleConfiguration;
 }
 
 export interface PaneBounds {
@@ -99,10 +100,12 @@ export class CanvasRenderer {
 
     const panes = getPaneBounds(width, height, data.panes);
     const timeScale = new TimeScale(data.times, { start: panes[0]?.left ?? 68, end: panes[0]?.right ?? width - 12 }, options.direction);
+    const scales = new Map<string, PriceScale>();
     for (const pane of panes) {
       const paneData = data.panes.find((candidate) => candidate.id === pane.id);
       const series = paneData?.series ?? [];
-      const scale = new PriceScaleForPane(series, pane);
+      const scale = createPanePriceScale(series, pane, pane.id === "main" ? options.priceScale : undefined);
+      scales.set(pane.id, scale);
       this.drawGrid(context, pane, scale, theme, options);
       context.save();
       context.beginPath();
@@ -127,7 +130,7 @@ export class CanvasRenderer {
     const mainPane = panes.find((pane) => pane.id === "main") ?? panes[0];
     const mainData = data.panes.find((pane) => pane.id === mainPane?.id);
     if (mainPane !== undefined && mainData !== undefined && drawings.length > 0) {
-      const scale = new PriceScaleForPane(mainData.series, mainPane);
+      const scale = scales.get(mainPane.id) ?? createPanePriceScale(mainData.series, mainPane, options.priceScale);
       const converter = {
         xForTime: (time: number) => timeScale.xForTime(time),
         yForPrice: (price: number) => scale.yForPrice(price),
@@ -144,7 +147,7 @@ export class CanvasRenderer {
     if (lastPane !== undefined) this.drawTimeLabels(context, data.times, timeScale, lastPane.bottom, theme, options);
     if (crosshair !== null) {
       this.drawCrosshair(context, crosshair, panes, theme);
-      this.drawTooltip(context, data, timeScale, crosshair, panes, theme, options);
+      this.drawTooltip(context, data, timeScale, crosshair, panes, scales, theme, options);
     }
   }
 
@@ -161,7 +164,9 @@ export class CanvasRenderer {
       context.moveTo(pane.left, y + 0.5);
       context.lineTo(pane.right, y + 0.5);
       context.stroke();
-      context.fillText(scale.priceForY(y).toFixed(options.pricePrecision), pane.left - 8, y);
+      if (pane.id !== "main" || options.priceScale.axisVisible) {
+        context.fillText(scale.formatPrice(scale.priceForY(y), options.pricePrecision), pane.left - 8, y);
+      }
     }
   }
 
@@ -422,7 +427,7 @@ export class CanvasRenderer {
     context.restore();
   }
 
-  private drawTooltip(context: CanvasRenderingContext2D, data: VisibleChartData, timeScale: TimeScale, crosshair: { x: number; y: number }, panes: readonly PaneBounds[], theme: ChartTheme, options: RenderOptions): void {
+  private drawTooltip(context: CanvasRenderingContext2D, data: VisibleChartData, timeScale: TimeScale, crosshair: { x: number; y: number }, panes: readonly PaneBounds[], scales: ReadonlyMap<string, PriceScale>, theme: ChartTheme, options: RenderOptions): void {
     const time = nearestTime(data.times, timeScale.timeForX(crosshair.x));
     if (time === null) return;
     const formatter = new Intl.DateTimeFormat(options.locale, { dateStyle: "short", timeStyle: "short", timeZone: options.timeZone });
@@ -430,7 +435,9 @@ export class CanvasRenderer {
     for (const series of data.series) {
       const value = series.data.find((point) => point.time === time);
       if (value === undefined) continue;
-      const text = isCandle(value) ? value.close.toFixed(options.pricePrecision) : value.value.toFixed(options.pricePrecision);
+      const scale = scales.get(series.paneId);
+      const rawPrice = isCandle(value) ? value.close : value.value;
+      const text = scale?.formatPrice(rawPrice, options.pricePrecision) ?? rawPrice.toFixed(options.pricePrecision);
       lines.push(`${series.title ?? series.id}: ${text}`);
     }
     const activePane = panes.find((pane) => crosshair.y >= pane.top && crosshair.y <= pane.bottom) ?? panes[0];
@@ -452,11 +459,17 @@ export class CanvasRenderer {
   }
 }
 
-class PriceScaleForPane extends PriceScale {
-  public constructor(series: readonly SeriesSnapshot[], pane: PaneBounds) {
-    const range = getPaneRange(series);
-    super(range.min, range.max, { start: pane.top, end: pane.bottom });
-  }
+/** Shared pane scale factory used by rendering and chart interaction contexts. */
+export function createPanePriceScale(
+  series: readonly SeriesSnapshot[],
+  pane: PaneBounds,
+  configuration?: PriceScaleConfiguration,
+): PriceScale {
+  const derivedRange = getPaneRange(series);
+  const range = configuration?.autoScale === false && configuration.range !== undefined
+    ? configuration.range
+    : derivedRange;
+  return new PriceScale(range.min, range.max, { start: pane.top, end: pane.bottom }, configuration ?? {});
 }
 
 export function getPriceRange(series: readonly SeriesSnapshot[]): { min: number; max: number } {

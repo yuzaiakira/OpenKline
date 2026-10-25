@@ -12,6 +12,7 @@ const chart = createChart(document.querySelector("#chart")!, {
   autoSize: true,
   timeZone: "UTC",
   pricePrecision: 2,
+  priceScale: { mode: "linear", marginTop: 0.08, marginBottom: 0.08 },
 });
 
 const price = chart.addCandlestickSeries({ id: "price", title: "Price" });
@@ -86,7 +87,14 @@ chart.destroy();
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
   backing store.
 - `setOptions(options)` updates theme, locale, timezone, precision, direction,
-  interaction policy, or explicit dimensions without recreating the chart.
+  price-scale configuration, interaction policy, or explicit dimensions without
+  recreating the chart.
+- `setPriceScaleOptions(options)` configures the main pane as `linear`,
+  `logarithmic`, `percentage`, or `indexed`. `setPriceScaleRange({ min, max })`
+  freezes a raw-price range; `resetPriceScale()` restores visible-data
+  autoscaling. `getPriceScaleOptions()` returns configuration and
+  `getPriceScaleState()` additionally reports the effective mode and a
+  deterministic invalid-domain fallback diagnostic.
 - `setDatafeed(datafeed, query)` loads historical bars and subscribes to future
   bars when the provider exposes `subscribeBars`.
 - `stopDatafeed()` removes the active subscription and invalidates stale loads.
@@ -120,6 +128,13 @@ other series share the OHLC/point price scale.
 `crosshairMove` includes a `series` array with the nearest value for every
 series. Tooltip text uses the same values, so interaction behavior remains
 consistent as series are added or removed.
+
+For the main price pane, `CrosshairMoveEvent.price` remains a raw financial
+price in every scale mode. Its optional `formattedPrice` is the displayed
+linear/logarithmic, percentage, or indexed value; `priceScaleMode` records the
+effective transform. See [the scale architecture](../architecture/price-scale-system.md)
+for logarithmic-domain fallback, reference-price, workspace, and raw-anchor
+semantics.
 
 ## Package consumption
 

@@ -7,6 +7,9 @@ typed plugin capabilities:
   filled-band appearance.
 - `locale`, `timeZone`, and `pricePrecision` control `Intl.DateTimeFormat`
   labels and numeric tooltip/axis formatting.
+- `priceScale` configures the primary pane's centralized linear, logarithmic,
+  percentage, or indexed display transform. It does not transform stored data,
+  indicator input, or drawing anchors; see `price-scale-system.md`.
 - `direction: "ltr" | "rtl"` reverses the time-axis coordinate transform and
   is passed to drawings and overlays. It is a layout foundation; applications
   should still set the surrounding document `dir` for non-canvas UI.

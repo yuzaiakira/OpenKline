@@ -41,6 +41,44 @@ test("workspace parser validates and defensively clones a versioned document", (
   assert.equal(parsed.chart.theme.background, "#fff");
 });
 
+test("workspace parser keeps Phase 7 price-scale settings while accepting prior version-1 workspaces", () => {
+  const legacy = parseWorkspace(workspace());
+  assert.equal(legacy.chart.priceScale, undefined);
+
+  const input = workspace();
+  const parsed = parseWorkspace({
+    ...input,
+    chart: {
+      ...input.chart,
+      priceScale: {
+        mode: "percentage",
+        autoScale: false,
+        referencePrice: 100,
+        marginTop: 0.1,
+        marginBottom: 0.05,
+        axisVisible: false,
+        range: { min: 90, max: 120 },
+      },
+    },
+  });
+  assert.deepEqual(parsed.chart.priceScale, {
+    mode: "percentage",
+    autoScale: false,
+    referencePrice: 100,
+    marginTop: 0.1,
+    marginBottom: 0.05,
+    axisVisible: false,
+    range: { min: 90, max: 120 },
+  });
+  assert.throws(() => parseWorkspace({
+    ...input,
+    chart: {
+      ...input.chart,
+      priceScale: { mode: "logarithmic", autoScale: true, marginTop: 1, marginBottom: 0, axisVisible: true },
+    },
+  }), WorkspaceValidationError);
+});
+
 test("workspace parser rejects invalid references, ordering, and JSON state", () => {
   assert.throws(() => parseWorkspace({ ...workspace(), version: 2 }), WorkspaceValidationError);
   assert.throws(() => parseWorkspace({

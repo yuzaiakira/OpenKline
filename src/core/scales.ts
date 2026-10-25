@@ -1,4 +1,13 @@
-import type { Candle, ChartDirection } from "../types.js";
+import type {
+  Candle,
+  ChartDirection,
+  PriceScaleConfiguration,
+  PriceScaleDiagnostic,
+  PriceScaleMode,
+  PriceScaleOptions,
+  PriceScaleRange,
+  PriceScaleState,
+} from "../types.js";
 
 export interface PixelRange {
   start: number;
@@ -53,46 +62,197 @@ export class TimeScale {
 }
 
 export class PriceScale {
-  private readonly priceMin: number;
-  private readonly priceMax: number;
+  private readonly rawPriceMin: number;
+  private readonly rawPriceMax: number;
+  private readonly transformedPriceMin: number;
+  private readonly transformedPriceMax: number;
   private readonly pixelTop: number;
   private readonly pixelBottom: number;
+  private readonly configuration: PriceScaleConfiguration;
+  private readonly activeTransform: PriceScaleMode;
+  private readonly scaleDiagnostic: PriceScaleDiagnostic | undefined;
 
-  public constructor(min: number, max: number, pixels: PixelRange, paddingRatio = 0.08) {
+  /**
+   * Maps raw financial prices to pixels. Percentage and indexed modes change
+   * labels and geometry only; all inputs and inverse values remain raw prices.
+   * The numeric padding argument is retained for the pre-7.0 public API.
+   */
+  public constructor(min: number, max: number, pixels: PixelRange, options: PriceScaleOptions | PriceScaleConfiguration | number = 0.08) {
     if (!Number.isFinite(min) || !Number.isFinite(max) || max < min) {
       throw new Error("PriceScale requires a finite ascending range");
     }
 
     validatePixelRange(pixels);
-    if (!Number.isFinite(paddingRatio) || paddingRatio < 0) {
-      throw new Error("PriceScale paddingRatio must be a non-negative finite number");
+    const normalized = normalizePriceScaleOptions(options);
+    const range = typeof options === "object" && options !== null && "range" in options && options.range !== undefined
+      ? normalizePriceScaleRange(options.range)
+      : undefined;
+    this.configuration = {
+      ...normalized,
+      ...(range === undefined ? {} : { range }),
+    };
+    const resolved = resolveTransform(min, max, this.configuration);
+    this.activeTransform = resolved.mode;
+    this.scaleDiagnostic = resolved.diagnostic;
+    const transformedMin = transformPrice(min, resolved.mode, this.configuration.referencePrice);
+    const transformedMax = transformPrice(max, resolved.mode, this.configuration.referencePrice);
+    const sourceRange = transformedMax - transformedMin;
+    if (sourceRange === 0) {
+      // Preserve the historic single-value behavior: padding gives the scale a
+      // finite extent even when a dataset contains only one price.
+      const padding = Math.max(
+        Math.abs(transformedMin) * Math.max(this.configuration.marginTop, this.configuration.marginBottom),
+        1,
+      );
+      this.transformedPriceMin = transformedMin - padding;
+      this.transformedPriceMax = transformedMin + padding;
+    } else {
+      const topPadding = sourceRange * this.configuration.marginTop;
+      const bottomPadding = sourceRange * this.configuration.marginBottom;
+      this.transformedPriceMin = transformedMin - bottomPadding;
+      this.transformedPriceMax = transformedMax + topPadding;
     }
-
-    const sourceRange = max - min;
-    const padding = sourceRange === 0 ? Math.max(Math.abs(min) * paddingRatio, 1) : sourceRange * paddingRatio;
-    this.priceMin = min - padding;
-    this.priceMax = max + padding;
+    this.rawPriceMin = inverseTransform(this.transformedPriceMin, resolved.mode, this.configuration.referencePrice);
+    this.rawPriceMax = inverseTransform(this.transformedPriceMax, resolved.mode, this.configuration.referencePrice);
     this.pixelTop = pixels.start;
     this.pixelBottom = pixels.end;
   }
 
   public yForPrice(price: number): number {
-    const ratio = (price - this.priceMin) / (this.priceMax - this.priceMin);
+    const transformed = transformPrice(price, this.activeTransform, this.configuration.referencePrice);
+    const ratio = (transformed - this.transformedPriceMin) / (this.transformedPriceMax - this.transformedPriceMin);
     return this.pixelBottom - ratio * (this.pixelBottom - this.pixelTop);
   }
 
   public priceForY(y: number): number {
     const ratio = (this.pixelBottom - y) / (this.pixelBottom - this.pixelTop);
-    return this.priceMin + ratio * (this.priceMax - this.priceMin);
+    const transformed = this.transformedPriceMin + ratio * (this.transformedPriceMax - this.transformedPriceMin);
+    return inverseTransform(transformed, this.activeTransform, this.configuration.referencePrice);
   }
 
+  /** Format the price in the user-selected display mode without losing raw precision. */
+  public formatPrice(price: number, precision: number): string {
+    const normalizedPrecision = Math.max(0, Math.min(100, Math.floor(precision)));
+    if (this.activeTransform === "percentage") {
+      return `${transformPrice(price, "percentage", this.configuration.referencePrice).toFixed(normalizedPrecision)}%`;
+    }
+    if (this.activeTransform === "indexed") {
+      return transformPrice(price, "indexed", this.configuration.referencePrice).toFixed(normalizedPrecision);
+    }
+    return price.toFixed(normalizedPrecision);
+  }
+
+  /** Raw padded lower bound. In linear mode this retains the historic `min` value. */
   public get min(): number {
-    return this.priceMin;
+    return this.rawPriceMin;
   }
 
+  /** Raw padded upper bound. In linear mode this retains the historic `max` value. */
   public get max(): number {
-    return this.priceMax;
+    return this.rawPriceMax;
   }
+
+  public get mode(): PriceScaleMode {
+    return this.activeTransform;
+  }
+
+  public get diagnostic(): PriceScaleDiagnostic | undefined {
+    return this.scaleDiagnostic;
+  }
+
+  public get state(): PriceScaleState {
+    return {
+      ...this.configuration,
+      activeMode: this.activeTransform,
+      ...(this.scaleDiagnostic === undefined ? {} : { diagnostic: this.scaleDiagnostic }),
+    };
+  }
+}
+
+/** Canonicalize public price-scale options at the module boundary. */
+export function normalizePriceScaleOptions(options: PriceScaleOptions | PriceScaleConfiguration | number = {}): PriceScaleConfiguration {
+  if (typeof options === "number") {
+    if (!Number.isFinite(options) || options < 0) {
+      throw new Error("PriceScale paddingRatio must be a non-negative finite number");
+    }
+    return {
+      mode: "linear",
+      autoScale: true,
+      marginTop: options,
+      marginBottom: options,
+      axisVisible: true,
+    };
+  }
+  const mode = options.mode ?? "linear";
+  if (mode !== "linear" && mode !== "logarithmic" && mode !== "percentage" && mode !== "indexed") {
+    throw new Error("PriceScale mode is invalid");
+  }
+  const marginTop = options.marginTop ?? 0.08;
+  const marginBottom = options.marginBottom ?? 0.08;
+  if (!isMargin(marginTop) || !isMargin(marginBottom)) {
+    throw new Error("PriceScale margins must be finite values from zero (inclusive) to one (exclusive)");
+  }
+  if (options.referencePrice !== undefined && (!Number.isFinite(options.referencePrice) || options.referencePrice <= 0)) {
+    throw new Error("PriceScale referencePrice must be a positive finite number");
+  }
+  return {
+    mode,
+    autoScale: options.autoScale ?? true,
+    ...(options.referencePrice === undefined ? {} : { referencePrice: options.referencePrice }),
+    marginTop,
+    marginBottom,
+    axisVisible: options.axisVisible ?? true,
+  };
+}
+
+/** Build a stable manual raw range without exposing renderer internals. */
+export function normalizePriceScaleRange(range: PriceScaleRange): PriceScaleRange {
+  if (!Number.isFinite(range.min) || !Number.isFinite(range.max) || range.max < range.min) {
+    throw new Error("PriceScale range must be finite and ascending");
+  }
+  return range.min === range.max
+    ? { min: range.min - 0.5, max: range.max + 0.5 }
+    : { min: range.min, max: range.max };
+}
+
+function resolveTransform(min: number, max: number, configuration: PriceScaleConfiguration): { mode: PriceScaleMode; diagnostic?: PriceScaleDiagnostic } {
+  if (configuration.mode === "logarithmic" && (min <= 0 || max <= 0)) {
+    return {
+      mode: "linear",
+      diagnostic: {
+        code: "LOGARITHMIC_REQUIRES_POSITIVE_VALUES",
+        message: "Logarithmic price scaling requires a strictly positive visible range; linear scaling is active.",
+      },
+    };
+  }
+  if ((configuration.mode === "percentage" || configuration.mode === "indexed") && configuration.referencePrice === undefined) {
+    return {
+      mode: "linear",
+      diagnostic: {
+        code: "REFERENCE_REQUIRES_POSITIVE_VALUE",
+        message: "Percentage and indexed price scaling require a positive reference price; linear scaling is active.",
+      },
+    };
+  }
+  return { mode: configuration.mode };
+}
+
+function transformPrice(price: number, mode: PriceScaleMode, referencePrice: number | undefined): number {
+  if (mode === "logarithmic") return Math.log(price);
+  if (mode === "percentage") return ((price / (referencePrice ?? 1)) - 1) * 100;
+  if (mode === "indexed") return price / (referencePrice ?? 1) * 100;
+  return price;
+}
+
+function inverseTransform(value: number, mode: PriceScaleMode, referencePrice: number | undefined): number {
+  if (mode === "logarithmic") return Math.exp(value);
+  if (mode === "percentage") return (value / 100 + 1) * (referencePrice ?? 1);
+  if (mode === "indexed") return value / 100 * (referencePrice ?? 1);
+  return value;
+}
+
+function isMargin(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value < 1;
 }
 
 function validatePixelRange(pixels: PixelRange): void {
