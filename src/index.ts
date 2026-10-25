@@ -1,5 +1,6 @@
 export { Chart, createChart } from "./chart.js";
 export { CandleStore, CandleValidationError } from "./core/candle-store.js";
+export { isCandleSeriesType, toHeikinAshi } from "./core/candle-series.js";
 export { ChartModel } from "./core/chart-model.js";
 export { PriceScale, TimeScale, formatTimeTick, getCandlePriceRange } from "./core/scales.js";
 export type { TimeAxisTick, TimeAxisTickOptions } from "./core/scales.js";
@@ -27,6 +28,7 @@ export { PointStore, PointValidationError } from "./core/point-store.js";
 export { SeriesCollection } from "./core/series-store.js";
 export type {
   Candle,
+  CandleSeriesType,
   ChartEventHandler,
   ChartEventName,
   ChartEvents,

@@ -116,10 +116,18 @@ export class CanvasRenderer {
         if (item.style.visible === false) continue;
         if (item.type === "candlestick") {
           this.drawCandles(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
+        } else if (item.type === "ohlc") {
+          this.drawOhlc(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
+        } else if (item.type === "hollow-candlestick") {
+          this.drawHollowCandles(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
+        } else if (item.type === "heikin-ashi") {
+          this.drawCandles(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
         } else if (item.type === "line") {
           this.drawLine(context, item.data.filter(isPoint), timeScale, scale, item.style.color ?? theme.upCandle, item.style.lineWidth ?? 2);
         } else if (item.type === "area") {
           this.drawArea(context, item.data.filter(isPoint), timeScale, scale, pane, item.style.color ?? theme.upCandle, item.style.fillColor, item.style.lineWidth ?? 2);
+        } else if (item.type === "baseline") {
+          this.drawBaseline(context, item.data.filter(isPoint), timeScale, scale, pane, theme, item.style);
         } else if (item.type === "volume" || item.type === "histogram") {
           this.drawHistogram(context, item.data.filter(isPoint), timeScale, scale, pane, theme, item.style);
         }
@@ -188,6 +196,52 @@ export class CanvasRenderer {
     }
   }
 
+  private drawOhlc(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
+    const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
+    const tickWidth = Math.max(1, bodyWidth / 2);
+    context.lineWidth = normalizeLineWidth(style.lineWidth ?? 1);
+    for (const candle of candles) {
+      const x = Math.round(timeScale.xForTime(candle.time)) + 0.5;
+      const color = candle.close >= candle.open ? style.upColor ?? style.color ?? theme.upCandle : style.downColor ?? style.color ?? theme.downCandle;
+      context.strokeStyle = color;
+      context.beginPath();
+      context.moveTo(x, scale.yForPrice(candle.high));
+      context.lineTo(x, scale.yForPrice(candle.low));
+      context.moveTo(x - tickWidth, scale.yForPrice(candle.open));
+      context.lineTo(x, scale.yForPrice(candle.open));
+      context.moveTo(x, scale.yForPrice(candle.close));
+      context.lineTo(x + tickWidth, scale.yForPrice(candle.close));
+      context.stroke();
+    }
+  }
+
+  private drawHollowCandles(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
+    const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
+    context.lineWidth = normalizeLineWidth(style.lineWidth ?? 1);
+    for (const candle of candles) {
+      const x = timeScale.xForTime(candle.time);
+      const openY = scale.yForPrice(candle.open);
+      const closeY = scale.yForPrice(candle.close);
+      const up = candle.close >= candle.open;
+      const color = up
+        ? style.hollowUpColor ?? style.upColor ?? style.color ?? theme.upCandle
+        : style.downColor ?? style.color ?? theme.downCandle;
+      context.strokeStyle = color;
+      context.beginPath();
+      context.moveTo(Math.round(x) + 0.5, scale.yForPrice(candle.high));
+      context.lineTo(Math.round(x) + 0.5, scale.yForPrice(candle.low));
+      context.stroke();
+      const top = Math.min(openY, closeY);
+      const height = Math.max(1, Math.abs(closeY - openY));
+      if (up) {
+        context.strokeRect(x - bodyWidth / 2, top, bodyWidth, height);
+      } else {
+        context.fillStyle = color;
+        context.fillRect(x - bodyWidth / 2, top, bodyWidth, height);
+      }
+    }
+  }
+
   private drawLine(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, color: string, lineWidth: number): void {
     context.strokeStyle = color;
     context.lineWidth = normalizeLineWidth(lineWidth);
@@ -211,7 +265,7 @@ export class CanvasRenderer {
     const last = points[points.length - 1];
     const first = points[0];
     if (last !== undefined && first !== undefined) {
-      const baseline = Math.max(pane.top, Math.min(pane.bottom, scale.yForPrice(0)));
+      const baseline = clampScaleY(scale.yForPrice(0), pane);
       context.lineTo(timeScale.xForTime(last.time), baseline);
       context.lineTo(timeScale.xForTime(first.time), baseline);
       context.closePath();
@@ -221,6 +275,69 @@ export class CanvasRenderer {
       context.globalAlpha = 1;
     }
     this.drawLine(context, points, timeScale, scale, color, lineWidth);
+  }
+
+  private drawBaseline(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
+    if (points.length === 0) return;
+    const baseline = style.baseline ?? 0;
+    const baselineY = clampScaleY(scale.yForPrice(baseline), pane);
+    const aboveColor = style.aboveColor ?? style.color ?? theme.upCandle;
+    const belowColor = style.belowColor ?? style.color ?? theme.downCandle;
+    const aboveFill = style.aboveFillColor ?? style.fillColor ?? aboveColor;
+    const belowFill = style.belowFillColor ?? style.fillColor ?? belowColor;
+    const aboveOpacity = normalizeOpacity(style.aboveFillOpacity ?? style.fillOpacity ?? 0.16);
+    const belowOpacity = normalizeOpacity(style.belowFillOpacity ?? style.fillOpacity ?? 0.16);
+    context.lineWidth = normalizeLineWidth(style.lineWidth ?? 2);
+
+    const fillSegment = (color: string, opacity: number, fromY: number, toY: number, fromX: number, toX: number): void => {
+      context.fillStyle = color;
+      context.globalAlpha = opacity;
+      context.beginPath();
+      context.moveTo(fromX, baselineY);
+      context.lineTo(fromX, fromY);
+      context.lineTo(toX, toY);
+      context.lineTo(toX, baselineY);
+      context.closePath();
+      context.fill();
+      context.globalAlpha = 1;
+    };
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const from = points[index]!;
+      const to = points[index + 1]!;
+      const fromX = timeScale.xForTime(from.time);
+      const toX = timeScale.xForTime(to.time);
+      const fromY = scale.yForPrice(from.value);
+      const toY = scale.yForPrice(to.value);
+      const fromOffset = from.value - baseline;
+      const toOffset = to.value - baseline;
+      if ((fromOffset >= 0 && toOffset >= 0) || (fromOffset <= 0 && toOffset <= 0)) {
+        fillSegment(fromOffset >= 0 ? aboveFill : belowFill, fromOffset >= 0 ? aboveOpacity : belowOpacity, fromY, toY, fromX, toX);
+      } else {
+        const ratio = Math.abs(fromOffset) / (Math.abs(fromOffset) + Math.abs(toOffset));
+        const crossingX = fromX + (toX - fromX) * ratio;
+        fillSegment(fromOffset > 0 ? aboveFill : belowFill, fromOffset > 0 ? aboveOpacity : belowOpacity, fromY, baselineY, fromX, crossingX);
+        fillSegment(toOffset > 0 ? aboveFill : belowFill, toOffset > 0 ? aboveOpacity : belowOpacity, baselineY, toY, crossingX, toX);
+      }
+      context.strokeStyle = fromOffset >= 0 ? aboveColor : belowColor;
+      context.beginPath();
+      context.moveTo(fromX, fromY);
+      context.lineTo(toX, toY);
+      context.stroke();
+      if ((fromOffset > 0 && toOffset < 0) || (fromOffset < 0 && toOffset > 0)) {
+        context.strokeStyle = toOffset >= 0 ? aboveColor : belowColor;
+        context.beginPath();
+        context.moveTo(fromX + (toX - fromX) * (Math.abs(fromOffset) / (Math.abs(fromOffset) + Math.abs(toOffset))), baselineY);
+        context.lineTo(toX, toY);
+        context.stroke();
+      }
+    }
+    context.strokeStyle = style.color ?? theme.crosshair;
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(pane.left, baselineY + 0.5);
+    context.lineTo(pane.right, baselineY + 0.5);
+    context.stroke();
   }
 
   private drawBandRegions(context: CanvasRenderingContext2D, series: readonly SeriesSnapshot[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme): void {
@@ -272,7 +389,7 @@ export class CanvasRenderer {
 
   private drawHistogram(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
     const bodyWidth = getBodyWidth(points.map((point) => timeScale.xForTime(point.time)));
-    const baseline = Math.max(pane.top, Math.min(pane.bottom, scale.yForPrice(0)));
+    const baseline = clampScaleY(scale.yForPrice(0), pane);
     for (const point of points) {
       const y = scale.yForPrice(point.value);
       const color = "color" in point && point.color !== undefined
@@ -490,6 +607,10 @@ function getPaneRange(series: readonly SeriesSnapshot[]): { min: number; max: nu
   let min = Number.POSITIVE_INFINITY;
   let max = Number.NEGATIVE_INFINITY;
   for (const item of series) {
+    if (item.type === "baseline" && item.style.baseline !== undefined && Number.isFinite(item.style.baseline)) {
+      min = Math.min(min, item.style.baseline);
+      max = Math.max(max, item.style.baseline);
+    }
     for (const point of item.data) {
       if (isCandle(point)) {
         min = Math.min(min, point.low);
@@ -525,6 +646,10 @@ function normalizeLineWidth(value: number): number {
 
 function normalizeOpacity(value: number): number {
   return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.16;
+}
+
+function clampScaleY(value: number, pane: PaneBounds): number {
+  return Number.isFinite(value) ? Math.max(pane.top, Math.min(pane.bottom, value)) : pane.bottom;
 }
 
 function isCandle(point: SeriesPoint): point is Candle {

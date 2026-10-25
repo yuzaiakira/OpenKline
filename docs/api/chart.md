@@ -17,6 +17,12 @@ const chart = createChart(document.querySelector("#chart")!, {
 
 const price = chart.addCandlestickSeries({ id: "price", title: "Price" });
 price.setData(candles);
+const ohlc = chart.addOhlcSeries({ id: "ohlc", style: { upColor: "#22c55e", downColor: "#ef4444" } });
+ohlc.setData(candles);
+const heikinAshi = chart.addHeikinAshiSeries({ id: "ha", title: "HA" });
+heikinAshi.setData(candles); // stores raw OHLCV; transforms only for display
+const momentum = chart.addBaselineSeries({ id: "momentum", style: { baseline: 0 } });
+momentum.setData(candles.map(({ time, close }) => ({ time, value: close - 100 })));
 const trend = chart.addLineSeries({ id: "trend", style: { color: "#f59e0b" } });
 trend.setData(candles.map(({ time, close }) => ({ time, value: close })));
 const volume = chart.addVolumeSeries({ id: "volume" });
@@ -45,10 +51,12 @@ chart.destroy();
   primary candlestick dataset.
 - `update(candle)` replaces an existing timestamp or inserts a corrected bar
   in chronological order.
-- `addCandlestickSeries`, `addLineSeries`, `addAreaSeries`, and
-  `addVolumeSeries`/`addHistogramSeries` create typed series backed by the same viewport and
-  interaction model. Each series supports `setData`, `update`, `getData`,
-  `setStyle`, and `remove`.
+- `addCandlestickSeries`, `addOhlcSeries`, `addHollowCandlestickSeries`, and
+  `addHeikinAshiSeries` accept raw `Candle` data; `addLineSeries`,
+  `addAreaSeries`, and `addBaselineSeries` accept time/value points;
+  `addVolumeSeries`/`addHistogramSeries` remain histogram point series. Every
+  type uses the same viewport and interaction model and supports `setData`,
+  `update`, `getData`, `setStyle`, and `remove`.
 - `addPane(options)` creates a pane with an independent vertical scale and
   returns a `PaneApi` for height changes or removal. `height` is the preferred
   CSS-pixel height and `minHeight` is the minimum used by the renderer when
@@ -121,9 +129,13 @@ shape and may provide a per-bar `color`. Times are UTC Unix milliseconds and
 must be strictly ascending in `setData`; `update` accepts an out-of-order point
 and inserts it in order. Strictly newer updates use the realtime append path;
 equal or historical timestamps retain replacement/correction semantics.
-`SeriesStyle` supports visibility, line/fill colors,
-line width, and candlestick up/down colors. Volume renders in a lower pane;
-other series share the OHLC/point price scale.
+`SeriesStyle` supports visibility, line/fill colors, line width, and
+candlestick direction colors. Hollow candles can specify `hollowUpColor`.
+Baseline series split at `baseline` (default `0`) with independently configurable
+`above*`/`below*` colors and fill opacities. Volume renders in a lower pane;
+other series share the OHLC/point price scale. See
+[chart-type architecture](../architecture/chart-types.md) for display and raw
+data semantics.
 
 `crosshairMove` includes a `series` array with the nearest value for every
 series. Tooltip text uses the same values, so interaction behavior remains

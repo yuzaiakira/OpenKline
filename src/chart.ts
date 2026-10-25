@@ -1,4 +1,5 @@
 import { ChartModel } from "./core/chart-model.js";
+import { isCandleSeriesType } from "./core/candle-series.js";
 import { normalizePriceScaleOptions, normalizePriceScaleRange, TimeScale } from "./core/scales.js";
 import { CanvasRenderer, createPanePriceScale, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
 import { createDefaultIndicatorRegistry } from "./indicators/index.js";
@@ -209,12 +210,29 @@ export class Chart {
     return this.createSeriesApi("candlestick", options);
   }
 
+  public addOhlcSeries(options: SeriesOptions = {}): SeriesApi<Candle> {
+    return this.createSeriesApi("ohlc", options);
+  }
+
+  public addHollowCandlestickSeries(options: SeriesOptions = {}): SeriesApi<Candle> {
+    return this.createSeriesApi("hollow-candlestick", options);
+  }
+
+  /** Add a display-only Heikin-Ashi projection; `getData` remains raw OHLCV. */
+  public addHeikinAshiSeries(options: SeriesOptions = {}): SeriesApi<Candle> {
+    return this.createSeriesApi("heikin-ashi", options);
+  }
+
   public addLineSeries(options: SeriesOptions = {}): SeriesApi<LinePoint> {
     return this.createSeriesApi("line", options);
   }
 
   public addAreaSeries(options: SeriesOptions = {}): SeriesApi<AreaPoint> {
     return this.createSeriesApi("area", options);
+  }
+
+  public addBaselineSeries(options: SeriesOptions = {}): SeriesApi<LinePoint> {
+    return this.createSeriesApi("baseline", options);
   }
 
   public addVolumeSeries(options: SeriesOptions = {}): SeriesApi<VolumePoint> {
@@ -683,7 +701,9 @@ export class Chart {
 
   public removeSeries(id: string): void {
     this.assertAlive();
+    const wasPrimaryCandleSeries = this.model.isPrimaryCandleSeries(id);
     this.model.removeSeries(id);
+    if (wasPrimaryCandleSeries) this.refreshIndicatorsFromInput();
     this.render();
   }
 
@@ -1278,16 +1298,17 @@ export class Chart {
       setData: (data) => {
         this.assertAlive();
         this.model.setSeriesData(id, data as SeriesData);
-        this.refreshIndicatorsFromInput();
+        if (this.model.isPrimaryCandleSeries(id)) this.refreshIndicatorsFromInput();
         this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
         this.render();
       },
       update: (point) => {
         this.assertAlive();
-        const lastTime = type === "candlestick" ? this.model.getLatestCandleTime() : undefined;
-        const appendOnly = type === "candlestick" && (lastTime === undefined || point.time > lastTime);
+        const primaryCandleSeries = isCandleSeriesType(type) && this.model.isPrimaryCandleSeries(id);
+        const lastTime = primaryCandleSeries ? this.model.getLatestCandleTime() : undefined;
+        const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
         this.model.updateSeries(id, point);
-        if (type === "candlestick") this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+        if (primaryCandleSeries) this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
         this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
         this.render();
       },

@@ -79,6 +79,32 @@ test("workspace parser keeps Phase 7 price-scale settings while accepting prior 
   }), WorkspaceValidationError);
 });
 
+test("workspace parser preserves professional chart series and appearance settings", () => {
+  const input = workspace();
+  const candle = input.series[0]!;
+  const parsed = parseWorkspace({
+    ...input,
+    series: [
+      { ...candle, id: "ohlc", type: "ohlc", style: { upColor: "#0ff", downColor: "#f0f" } },
+      { ...candle, id: "hollow", type: "hollow-candlestick", style: { hollowUpColor: "#0ff", downColor: "#f0f" } },
+      { ...candle, id: "heikin", type: "heikin-ashi", style: { upColor: "#0f0" } },
+      {
+        id: "baseline",
+        type: "baseline",
+        paneId: "main",
+        style: { baseline: 100, aboveColor: "#0f0", belowColor: "#f00", aboveFillOpacity: 0.25, belowFillOpacity: 0.4 },
+        data: [{ time: 1, value: 101 }],
+      },
+    ],
+  });
+  assert.deepEqual(parsed.series.map((series) => series.type), ["ohlc", "hollow-candlestick", "heikin-ashi", "baseline"]);
+  assert.equal(parsed.series[3]?.style.baseline, 100);
+  assert.throws(() => parseWorkspace({
+    ...input,
+    series: [{ ...candle, type: "ohlc", style: { aboveFillOpacity: 2 } }],
+  }), WorkspaceValidationError);
+});
+
 test("workspace parser rejects invalid references, ordering, and JSON state", () => {
   assert.throws(() => parseWorkspace({ ...workspace(), version: 2 }), WorkspaceValidationError);
   assert.throws(() => parseWorkspace({

@@ -33,3 +33,19 @@ the time coordinate mapping; it does not change timestamp ordering in the data
 contract. `interaction` applies to the chart canvas only. Surrounding toolbars,
 menus, and translated labels belong to the host application and can consume
 the typed chart events.
+
+Series appearance is changed without recreating a chart:
+
+```ts
+chart.setSeriesStyle("hollow", { hollowUpColor: "#22c55e", downColor: "#ef4444" });
+chart.setSeriesStyle("baseline", {
+  baseline: 0,
+  aboveColor: "#22c55e",
+  belowColor: "#ef4444",
+  aboveFillOpacity: 0.2,
+  belowFillOpacity: 0.2,
+});
+```
+
+These options affect only drawing. Heikin–Ashi is a display transformation; it
+does not change stored candles or indicator inputs.

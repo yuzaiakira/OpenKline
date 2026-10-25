@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ChartModel } from "../src/core/chart-model.js";
+import { toHeikinAshi } from "../src/core/candle-series.js";
 import { PointStore, PointValidationError } from "../src/core/point-store.js";
-import { getPaneBounds } from "../src/renderer/canvas-renderer.js";
+import { getPaneBounds, getPaneScaleRange } from "../src/renderer/canvas-renderer.js";
 
 test("ChartModel shares one viewport across candle, line, area, and volume series", () => {
   const model = new ChartModel();
@@ -34,6 +35,44 @@ test("ChartModel shares one viewport across candle, line, area, and volume serie
   assert.equal(model.getVisibleData().times.includes(5), false, "panning keeps the non-latest viewport anchored");
   model.removeSeries(area);
   assert.deepEqual(model.getSeriesIds(), [candles, line, volume]);
+});
+
+test("professional candle types retain raw data while deriving visible Heikin-Ashi candles", () => {
+  const raw = [
+    { time: 1, open: 10, high: 14, low: 8, close: 12, volume: 5 },
+    { time: 2, open: 12, high: 15, low: 11, close: 14, volume: 6 },
+    { time: 3, open: 14, high: 16, low: 10, close: 11, volume: 7 },
+  ];
+  const derived = toHeikinAshi(raw);
+  assert.deepEqual(derived, [
+    { time: 1, open: 11, high: 14, low: 8, close: 11, volume: 5 },
+    { time: 2, open: 11, high: 15, low: 11, close: 13, volume: 6 },
+    { time: 3, open: 12, high: 16, low: 10, close: 12.75, volume: 7 },
+  ]);
+  assert.deepEqual(raw[1], { time: 2, open: 12, high: 15, low: 11, close: 14, volume: 6 }, "transform must not mutate market data");
+
+  const model = new ChartModel();
+  model.resize(800);
+  const heikinAshi = model.addSeries("heikin-ashi", { id: "ha" });
+  const ohlc = model.addSeries("ohlc", { id: "ohlc" });
+  const hollow = model.addSeries("hollow-candlestick", { id: "hollow" });
+  const baseline = model.addSeries("baseline", { id: "baseline" });
+  model.setSeriesData(heikinAshi, raw);
+  model.setSeriesData(ohlc, raw);
+  model.setSeriesData(hollow, raw);
+  model.setSeriesData(baseline, raw.map((candle) => ({ time: candle.time, value: candle.close - 12 })));
+
+  assert.deepEqual(model.allCandles, raw, "primary indicator input remains raw OHLCV");
+  assert.deepEqual(model.getSeries(heikinAshi).data, raw, "public series snapshots retain raw OHLCV");
+  assert.deepEqual(model.getVisibleData().series.find((series) => series.id === heikinAshi)?.data, derived, "renderer snapshot derives Heikin-Ashi from the full raw history");
+  assert.deepEqual(model.getVisibleData().series.map((series) => series.type), ["heikin-ashi", "ohlc", "hollow-candlestick", "baseline"]);
+
+  model.updateSeries(heikinAshi, { time: 2, open: 12, high: 18, low: 11, close: 16, volume: 6 });
+  const corrected = model.getVisibleData().series.find((series) => series.id === heikinAshi)?.data;
+  assert.deepEqual(corrected, toHeikinAshi(model.allCandles), "historical corrections recompute subsequent display candles without replacing raw input");
+
+  const baselineRange = getPaneScaleRange([{ id: "baseline", type: "baseline", paneId: "main", style: { baseline: 0 }, data: [{ time: 1, value: 100 }] }]);
+  assert.deepEqual(baselineRange, { min: 0, max: 100 }, "baseline value participates in autoscale");
 });
 
 test("PointStore rejects malformed and duplicate time/value data", () => {

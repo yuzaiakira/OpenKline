@@ -1,4 +1,5 @@
 import { CandleStore } from "./candle-store.js";
+import { isCandleSeriesType, toHeikinAshi } from "./candle-series.js";
 import { PointStore, type TimeValuePoint } from "./point-store.js";
 import type {
   Candle,
@@ -49,7 +50,7 @@ export class SeriesCollection {
       ...(options.title === undefined ? {} : { title: options.title }),
       style: { ...options.style },
       ...(options.band === undefined ? {} : { band: { ...options.band } }),
-      store: type === "candlestick" ? new CandleStore() : new PointStore(),
+      store: isCandleSeriesType(type) ? new CandleStore() : new PointStore(),
     });
     this.invalidateTimes();
     return id;
@@ -69,9 +70,9 @@ export class SeriesCollection {
 
   public setData(id: string, data: SeriesData): void {
     const series = this.require(id);
-    if (series.type === "candlestick") {
+    if (isCandleSeriesType(series.type)) {
       if (data.length > 0 && !isCandleData(data)) {
-        throw new Error(`Series ${id} requires candlestick data`);
+        throw new Error(`Series ${id} requires OHLCV candle data`);
       }
       (series.store as CandleStore).setData(data as readonly Candle[]);
     } else {
@@ -87,9 +88,9 @@ export class SeriesCollection {
     const series = this.require(id);
     const cachedTimes = this.timesCache;
     const cachedSet = this.timesSetCache;
-    if (series.type === "candlestick") {
+    if (isCandleSeriesType(series.type)) {
       if (!isCandle(point)) {
-        throw new Error(`Series ${id} requires a candlestick update`);
+        throw new Error(`Series ${id} requires an OHLCV candle update`);
       }
       (series.store as CandleStore).update(point);
     } else {
@@ -203,9 +204,14 @@ export class SeriesCollection {
   }
 
   private getRangeByTime(series: StoredSeries, from: number, to: number): SeriesPoint[] {
-    return series.store instanceof CandleStore
-      ? series.store.getRangeByTime(from, to)
-      : series.store.getRangeByTime(from, to);
+    if (series.store instanceof CandleStore) {
+      if (series.type !== "heikin-ashi") return series.store.getRangeByTime(from, to);
+      // Heikin-Ashi open values depend on the preceding derived candle. Build
+      // from the complete raw store before slicing so a panned viewport has the
+      // same values as a full-range render.
+      return toHeikinAshi(series.store.getAll()).filter((candle) => candle.time >= from && candle.time < to);
+    }
+    return series.store.getRangeByTime(from, to);
   }
 
   private invalidateTimes(): void {

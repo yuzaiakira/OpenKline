@@ -8,7 +8,8 @@ export interface Candle {
   volume?: number;
 }
 
-export type SeriesType = "candlestick" | "line" | "area" | "volume" | "histogram";
+export type CandleSeriesType = "candlestick" | "ohlc" | "hollow-candlestick" | "heikin-ashi";
+export type SeriesType = CandleSeriesType | "line" | "area" | "baseline" | "volume" | "histogram";
 
 export interface LinePoint {
   time: number;
@@ -33,6 +34,16 @@ export interface SeriesStyle {
   fillOpacity?: number;
   upColor?: string;
   downColor?: string;
+  /** Optional distinct outline color for an up hollow candlestick. */
+  hollowUpColor?: string;
+  /** Raw value used by a baseline series to split above/below regions. */
+  baseline?: number;
+  aboveColor?: string;
+  belowColor?: string;
+  aboveFillColor?: string;
+  belowFillColor?: string;
+  aboveFillOpacity?: number;
+  belowFillOpacity?: number;
   visible?: boolean;
 }
 

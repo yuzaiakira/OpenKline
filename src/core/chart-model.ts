@@ -1,4 +1,5 @@
 import { PaneLayout, type PaneConfig } from "./pane-layout.js";
+import { isCandleSeriesType } from "./candle-series.js";
 import { SeriesCollection, type SeriesData, type SeriesSnapshot } from "./series-store.js";
 import type { Candle, PaneOptions, SeriesOptions, SeriesPoint, SeriesType } from "../types.js";
 
@@ -29,7 +30,7 @@ export class ChartModel {
   public addSeries(type: SeriesType, options: SeriesOptions = {}): string {
     const paneId = this.resolvePane(type, options.pane);
     const id = this.collection.add(type, { ...options, pane: paneId });
-    if (type === "candlestick" && this.primaryCandleId === null) {
+    if (isCandleSeriesType(type) && this.primaryCandleId === null) {
       this.primaryCandleId = id;
     }
     this.rangeStart = this.clampStart(this.rangeStart);
@@ -40,7 +41,7 @@ export class ChartModel {
     const paneId = this.collection.getPaneId(id);
     this.collection.remove(id);
     if (this.primaryCandleId === id) {
-      this.primaryCandleId = this.collection.getIds().find((seriesId) => this.collection.get(seriesId).type === "candlestick") ?? null;
+      this.primaryCandleId = this.collection.getIds().find((seriesId) => isCandleSeriesType(this.collection.get(seriesId).type)) ?? null;
     }
     this.preserveViewportAfterDataChange(false);
     if (paneId !== "main" && !this.collection.getIds().some((seriesId) => this.collection.getPaneId(seriesId) === paneId)) {
@@ -247,6 +248,10 @@ export class ChartModel {
 
   public getLatestCandleTime(): number | undefined {
     return this.primaryCandleId === null ? undefined : this.collection.getLatestTime(this.primaryCandleId);
+  }
+
+  public isPrimaryCandleSeries(id: string): boolean {
+    return this.primaryCandleId === id;
   }
 
   public get barSpacing(): number {

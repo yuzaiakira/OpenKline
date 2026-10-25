@@ -1,4 +1,5 @@
 import type { DrawingDocument, DrawingSnapshot, DrawingStyle } from "./drawings/types.js";
+import { isCandleSeriesType } from "./core/candle-series.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
 
@@ -253,7 +254,7 @@ function parseViewport(value: unknown): { rangeStart: number; visibleCount: numb
 }
 
 function parseSeriesPoint(value: unknown, type: SeriesType): SeriesPoint {
-  if (type === "candlestick") {
+  if (isCandleSeriesType(type)) {
     if (!isPlainObject(value) || !isFiniteInteger(value.time) || !isFiniteNumber(value.open) || !isFiniteNumber(value.high) || !isFiniteNumber(value.low) || !isFiniteNumber(value.close) || (value.volume !== undefined && !isFiniteNumber(value.volume))) {
       throw new WorkspaceValidationError("Invalid workspace candle");
     }
@@ -274,11 +275,21 @@ function parseDrawingPoint(value: unknown): { time: number; price: number } {
 
 function parseSeriesStyle(value: unknown): SeriesStyle {
   if (!isPlainObject(value)) throw new WorkspaceValidationError("Invalid workspace series style");
-  const allowed = ["color", "lineWidth", "fillColor", "fillOpacity", "upColor", "downColor", "visible"] as const;
+  const allowed = [
+    "color", "lineWidth", "fillColor", "fillOpacity", "upColor", "downColor", "hollowUpColor",
+    "baseline", "aboveColor", "belowColor", "aboveFillColor", "belowFillColor", "aboveFillOpacity",
+    "belowFillOpacity", "visible",
+  ] as const;
   for (const key of Object.keys(value)) if (!allowed.includes(key as typeof allowed[number])) throw new WorkspaceValidationError(`Unknown series style property: ${key}`);
-  if (Object.values(value).some((item) => !(typeof item === "string" || typeof item === "boolean" || isFiniteNumber(item)))) throw new WorkspaceValidationError("Invalid workspace series style value");
+  const stringKeys = ["color", "fillColor", "upColor", "downColor", "hollowUpColor", "aboveColor", "belowColor", "aboveFillColor", "belowFillColor"] as const;
+  const numberKeys = ["lineWidth", "fillOpacity", "baseline", "aboveFillOpacity", "belowFillOpacity"] as const;
+  for (const key of stringKeys) if (value[key] !== undefined && typeof value[key] !== "string") throw new WorkspaceValidationError(`Invalid workspace ${key}`);
+  for (const key of numberKeys) if (value[key] !== undefined && !isFiniteNumber(value[key])) throw new WorkspaceValidationError(`Invalid workspace ${key}`);
+  if (value.visible !== undefined && typeof value.visible !== "boolean") throw new WorkspaceValidationError("Invalid workspace visible");
   if (value.lineWidth !== undefined && (value.lineWidth < 0 || value.lineWidth > 8)) throw new WorkspaceValidationError("Invalid workspace line width");
   if (value.fillOpacity !== undefined && (value.fillOpacity < 0 || value.fillOpacity > 1)) throw new WorkspaceValidationError("Invalid workspace fill opacity");
+  if (value.aboveFillOpacity !== undefined && (value.aboveFillOpacity < 0 || value.aboveFillOpacity > 1)) throw new WorkspaceValidationError("Invalid workspace above fill opacity");
+  if (value.belowFillOpacity !== undefined && (value.belowFillOpacity < 0 || value.belowFillOpacity > 1)) throw new WorkspaceValidationError("Invalid workspace below fill opacity");
   return { ...value } as SeriesStyle;
 }
 
@@ -336,7 +347,7 @@ function isPriceScaleConfiguration(value: unknown): value is PriceScaleConfigura
 }
 
 function isSeriesType(value: unknown): value is SeriesType {
-  return value === "candlestick" || value === "line" || value === "area" || value === "volume" || value === "histogram";
+  return value === "candlestick" || value === "ohlc" || value === "hollow-candlestick" || value === "heikin-ashi" || value === "line" || value === "area" || value === "baseline" || value === "volume" || value === "histogram";
 }
 
 function isDrawingStyle(value: unknown): value is DrawingStyle {

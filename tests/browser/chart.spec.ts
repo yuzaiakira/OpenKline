@@ -444,3 +444,74 @@ test("loads the standalone vanilla plugin example", async ({ page }) => {
   });
   expect(missingExtensionRestore).toEqual({ skippedPlugins: ["example.vanilla"], skippedIndicators: ["indicator-1"] });
 });
+
+test("renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(() => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number };
+    type Series = { type: string; getData(): Candle[]; setData(data: Array<Candle | { time: number; value: number }>): void; remove(): void };
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getData(): Candle[];
+        addOhlcSeries(options: object): Series;
+        addHollowCandlestickSeries(options: object): Series;
+        addHeikinAshiSeries(options: object): Series;
+        addBaselineSeries(options: object): Series;
+        getSeriesInfo(): Array<{ id: string; type: string }>;
+        serializeWorkspace(): { series: Array<{ type: string }> };
+      };
+    }).__openklineChart;
+    const candles = chart.getData().slice(0, 4);
+    const ohlc = chart.addOhlcSeries({ id: "ohlc", style: { upColor: "#00ffff", downColor: "#00ffff" } });
+    const hollow = chart.addHollowCandlestickSeries({ id: "hollow", style: { hollowUpColor: "#ff00ff", downColor: "#ff00ff" } });
+    const heikin = chart.addHeikinAshiSeries({ id: "heikin", style: { upColor: "#8000ff", downColor: "#8000ff" } });
+    const baseline = chart.addBaselineSeries({
+      id: "baseline",
+      style: { baseline: 104, aboveColor: "#00ffff", belowColor: "#ff00ff", aboveFillOpacity: 0.3, belowFillOpacity: 0.3 },
+    });
+    ohlc.setData(candles);
+    hollow.setData(candles);
+    heikin.setData(candles);
+    baseline.setData(candles.map((candle, index) => ({ time: candle.time, value: [101, 108, 100, 109][index]! })));
+    const canvas = document.querySelector("canvas")!;
+    const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+    let cyan = 0;
+    let magenta = 0;
+    let purple = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const red = pixels[index] ?? 0;
+      const green = pixels[index + 1] ?? 0;
+      const blue = pixels[index + 2] ?? 0;
+      if (red < 70 && green > 180 && blue > 180) cyan += 1;
+      if (red > 180 && green < 70 && blue > 180) magenta += 1;
+      if (red > 70 && red < 170 && green < 50 && blue > 180) purple += 1;
+    }
+    const workspace = chart.serializeWorkspace();
+    const output = {
+      series: chart.getSeriesInfo().filter((series) => ["ohlc", "hollow", "heikin", "baseline"].includes(series.id)).map((series) => series.type),
+      rawHeikin: heikin.getData(),
+      expectedRawHeikin: candles,
+      savedTypes: workspace.series.map((series) => series.type).filter((type) => ["ohlc", "hollow-candlestick", "heikin-ashi", "baseline"].includes(type)),
+      cyan,
+      magenta,
+      purple,
+      canvasBeforeRemove: document.querySelectorAll("canvas").length,
+    };
+    ohlc.remove();
+    hollow.remove();
+    heikin.remove();
+    baseline.remove();
+    return { ...output, remainingSeries: chart.getSeriesInfo().map((series) => series.id) };
+  });
+  expect(result.series).toEqual(["ohlc", "hollow-candlestick", "heikin-ashi", "baseline"]);
+  expect(result.rawHeikin).toEqual(result.expectedRawHeikin);
+  expect(result.savedTypes).toEqual(result.series);
+  expect(result.cyan).toBeGreaterThan(0);
+  expect(result.magenta).toBeGreaterThan(0);
+  expect(result.purple).toBeGreaterThan(0);
+  expect(result.canvasBeforeRemove).toBe(1);
+  expect(result.remainingSeries).not.toContain("ohlc");
+  expect(result.remainingSeries).not.toContain("hollow");
+  expect(result.remainingSeries).not.toContain("heikin");
+  expect(result.remainingSeries).not.toContain("baseline");
+});
