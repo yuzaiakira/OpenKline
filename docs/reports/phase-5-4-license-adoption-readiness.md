@@ -142,7 +142,9 @@ repository-visibility change is authorized.
 
 ## Git verification
 
-The Phase 5.4 documentation implementation commit and its remote synchronization
-are recorded after the local release check succeeds. No force-push, history
-rewrite, GitHub Actions workflow, tag, release, or publication is part of this
-phase.
+Implementation commit `0fc9270` (`docs(legal): prepare adoption review
+package`) used author and committer `Akira Yuzai <yuzai.akira@gmail.com>` and
+was pushed immediately to `origin/work` after the successful local check. The
+follow-on evidence-only documentation update is committed and pushed separately.
+No force-push, history rewrite, GitHub Actions workflow, tag, release, or
+publication is part of this phase.
