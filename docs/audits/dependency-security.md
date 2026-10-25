@@ -68,3 +68,17 @@ NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm ci --ignore-scripts --no-audit --n
 NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm audit --json --include=dev
 npm run build
 ```
+
+## Phase 5.2 reproducibility recheck
+
+The package artifact audit (`npm run package:audit`) verifies that the root and
+React archives have no runtime or bundled dependency tree. The preview-candidate
+verification starts from fresh temporary installs of staged tarballs and exact
+lockfile versions for React, TypeScript, and Next.js; it does not import source
+files or use the monorepo's bundler aliases. It passed locally with the current
+lockfiles.
+
+The local candidate still has no approved project license and is not eligible
+for publication. Unauthenticated npm name queries returned `404` for
+`openkline` and `@openkline/react` on the audit date; this is not a reservation
+or a supply-chain ownership decision.

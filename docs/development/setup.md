@@ -16,8 +16,10 @@ npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
 npm run profile:browser
+npm run package:audit
 npm run package:check
 npm run package:smoke
+npm run preview:prepare
 ```
 
 `npm test` performs separate core/adapter and test builds, then executes the
@@ -46,6 +48,12 @@ npm run build
 The example uses the local packages for repository development; published
 applications should depend on `openkline` and `@openkline/react` from their
 package registry.
+
+The preview artifacts are local and ignored by Git. Verify their clean
+consumption with `OPENKLINE_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium npm run
+preview:verify`. For formal cross-browser verification, follow
+`docs/release/browser-verification.md`; it requires official managed browser
+artifacts and is intentionally separate from the cloud's local Chromium setup.
 
 ## Repository policy
 

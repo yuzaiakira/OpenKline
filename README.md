@@ -36,6 +36,8 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope,
 production-readiness audit, and
 [docs/reports/phase-5-release-readiness.md](docs/reports/phase-5-release-readiness.md)
 for the Phase 5.1 release gate, license, package, and browser evidence. The
+[Phase 5.2 verification](docs/reports/phase-5-2-verification.md) records the
+portable browser workflow and local preview-candidate evidence. The
 [license inventory](docs/audits/license-inventory.md) and
 [developer-preview plan](docs/release/developer-preview-plan.md) describe the
 current distribution boundary; the proposed license is not effective. The
@@ -85,6 +87,9 @@ must provide an appropriate process or Worker termination boundary.
   against the reviewed inventory, and
   `node scripts/consumer-preview-smoke.mjs` verifies installed Vanilla ESM and
   TypeScript React consumers.
+- `npm run preview:prepare` produces ignored local review tarballs, and
+  `npm run browser:verify` produces a portable official-Playwright browser
+  report. Neither command publishes a package.
 - Firefox, WebKit, and Mobile Safari remain open compatibility gates when the
   official Playwright-managed binaries are unavailable; see the Phase 2 and
   Phase 4 reports.

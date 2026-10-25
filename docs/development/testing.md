@@ -19,14 +19,24 @@ npm run benchmark
 npm run benchmark:browser
 npm run benchmark:plugins
 npm run profile:browser
+npm run package:audit
 npm run package:check
 npm run package:smoke
+npm run preview:verify
+npm run browser:verify
 ```
 
 The default `npm run test:browser` runs the Chromium project. The compatibility
 matrix is exposed as `npm run test:browser:compat` and runs Firefox, WebKit,
 mobile Chrome emulation, and mobile Safari emulation. Missing Playwright
 binaries are an explicit blocked result, not a skipped or passing test.
+
+`npm run browser:verify` is the portable formal browser workflow. It uses
+`playwright.portable.config.ts`, which requires Playwright-managed browser
+artifacts and produces JSON/log/test-result evidence below ignored
+`artifacts/browser-verification/`. It does not accept a system Firefox or
+WebKit substitution. See `docs/release/browser-verification.md` for
+installation, project selection, and transfer instructions.
 
 The unit suite runs against the framework-independent data, scale, viewport,
 series, and datafeed modules, including pagination, cancellation, reconnect,
@@ -46,6 +56,9 @@ destruction removes the canvas. `npm run profile:browser` instruments the
 100,000-candle append path to identify renderer, series, indicator, and shared
 time-cache costs. `npm run package:smoke` installs the packed
 core tarball into a clean temporary consumer and imports its public ESM entry.
+`npm run preview:verify` is broader: it creates prerelease staging tarballs,
+installs them into clean Vanilla, TypeScript, React SSR, Next.js, and browser
+fixtures, and exercises only public package exports.
 
 Plugin tests cover metadata and dependency validation, activation rollback,
 resource ownership, state validation, shortcut conflicts, chart-scoped custom
@@ -61,6 +74,7 @@ budgets, malformed-source seeds, invalid financial input, and the playground
 lifecycle. The bounded malformed-source seeds are replayable in
 `tests/klinescript-fuzz.test.ts`; this is not an unbounded fuzzing service.
 
-If Chromium is unavailable, set `executablePath` in `playwright.config.ts` to a
-maintained browser installation. A browser test that times out is a failed or
-blocked test, never a pass.
+The cloud's local Chromium test config is diagnostic evidence. Do not edit the
+portable config to add system browser paths; formal browser claims require the
+managed artifacts. A browser test that times out is a failed or blocked test,
+never a pass.

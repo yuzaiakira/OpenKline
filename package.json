@@ -28,9 +28,13 @@
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
     "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",
+    "browser:verify": "npm run build && node scripts/browser-verification.mjs",
     "release:check": "node scripts/release-check.mjs",
     "package:check": "npm run build && NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm pack --dry-run --ignore-scripts",
-    "package:smoke": "npm run build && node scripts/package-smoke.mjs"
+    "package:audit": "npm run build && node scripts/audit-package-artifacts.mjs",
+    "package:smoke": "npm run build && node scripts/package-smoke.mjs",
+    "preview:prepare": "npm run build && node scripts/preview-candidate.mjs prepare",
+    "preview:verify": "npm run build && node scripts/preview-candidate.mjs verify"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

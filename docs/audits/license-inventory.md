@@ -71,6 +71,21 @@ tarballs, fonts, images, credentials, or `NOTICE`. No third-party notice is
 invented here because the required notice contents have not been individually
 verified.
 
+## Phase 5.2 package recheck
+
+`npm run package:audit` reproducibly checks both intended public package
+archives. It verifies the root `openkline` archive contains only `dist/`,
+`README.md`, and `package.json`; the React archive contains only `dist/` and
+`package.json`; neither package has runtime or bundled dependencies; and both
+root exports expose ESM plus declarations. It deliberately requires the
+`license` manifest field to remain absent while owner approval is pending.
+
+The local `0.1.0-alpha.1` candidate generator changes only staging-manifest
+versions and the React peer range inside ignored review tarballs. It carries
+the same pending-license status and is not evidence of a distributable
+license. The generator records SHA-256 checksums and archive paths in its local
+manifest, which must be reviewed again after legal approval.
+
 ## Open items
 
 1. Obtain owner/legal confirmation of the project copyright and Apache-2.0

@@ -127,3 +127,15 @@ Firefox/WebKit/Mobile Safari Playwright runs remain environment-blocked. No
 package, preview tag, or public release is published by this milestone. The
 acceptance matrix and measured evidence are in
 `docs/reports/phase-5-release-readiness.md`.
+
+## Phase 5.2 release-gate resolution
+
+Phase 5.2 adds portable Playwright-managed browser verification and a local
+`0.1.0-alpha.1` candidate generator that installs only staged tarballs into
+fresh Vanilla, TypeScript, React, Next.js, and browser consumers. These are
+engineering readiness tools, not publication authorization. The candidate
+remains pending owner/legal approval because there is no effective project
+license or completed third-party notice review; formal Firefox, WebKit, and
+Mobile Safari verification remains blocked until a trusted machine obtains the
+official artifacts. The exact acceptance matrix is in
+`docs/reports/phase-5-2-verification.md`.

@@ -49,10 +49,12 @@ Before an owner-approved preview, the release owner must verify:
 
 ## Preview distribution and rollback
 
-Until publication is approved, use local tarballs produced by `npm pack
---ignore-scripts` and verify them with `npm run package:smoke` and
-`node scripts/consumer-preview-smoke.mjs`. Do not distribute an artifact as a
-licensed package while the legal decision is pending.
+Until publication is approved, use local tarballs produced by
+`npm run preview:prepare` and verify them with `npm run preview:verify`.
+Those commands create a versioned `0.1.0-alpha.1` staging manifest and install
+only the staged archives into fresh Vanilla, TypeScript, React, Next.js, and
+browser fixtures. Do not distribute an artifact as a licensed package while
+the legal decision is pending.
 
 For a future owner-approved registry preview, record the exact package
 versions, tarball checksums, git commit, Node/npm versions, browser results, and
@@ -68,3 +70,11 @@ policy; never rewrite or force-push the repository history.
 - Official Firefox, WebKit, and Mobile Safari Playwright verification: blocked
   by unavailable official browser artifacts in this environment.
 - Stable release approval: not granted.
+
+## Package-name observation
+
+On 2026-10-25, unauthenticated `npm view openkline version --json` and
+`npm view @openkline/react version --json` returned registry `404` responses.
+That is only a point-in-time visibility observation: it does not reserve either
+name, prove scope ownership, or authorize publication. Recheck with the
+authorized registry account immediately before any owner-approved release.

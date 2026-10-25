@@ -32,8 +32,10 @@ npm test
 npm run test:browser
 npm run benchmark:klinescript
 npm run benchmark:browser
+npm run benchmark:plugins
 node scripts/validate-license-inventory.mjs
 npm audit --json --include=dev
+npm run package:audit
 npm run package:check
 npm run package:smoke
 node scripts/consumer-preview-smoke.mjs
@@ -60,6 +62,22 @@ npm run release:check
 It is expected to exit non-zero while Firefox, WebKit, or Mobile Safari
 artifacts are unavailable. That status is a release blocker, not a passing
 compatibility result.
+
+## Local preview candidate
+
+Prepare, but do not distribute, a local `0.1.0-alpha.1` candidate:
+
+```bash
+npm run preview:prepare
+OPENKLINE_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium npm run preview:verify
+```
+
+The first command writes ignored tarballs and checksums under `artifacts/`; it
+does not edit tracked manifest versions. The second command starts from fresh
+temporary consumer installs using only those archives. An explicit local
+Chromium path is recorded as diagnostic evidence, not Playwright-managed
+cross-browser acceptance. For official browser evidence, follow
+`docs/release/browser-verification.md`.
 
 ## Package and source-control handoff
 

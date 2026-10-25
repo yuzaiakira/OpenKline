@@ -11,11 +11,12 @@ NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm ci --ignore-scripts --no-audit --n
 
 ## Browser tests do not start
 
-`npm run test:browser` uses `/usr/bin/chromium` in the cloud environment and
-passes container-safe flags. On another machine, update
-`playwright.config.ts` with the installed Chromium path or remove
-`executablePath` to use Playwright's managed browser. A timeout is a blocked
-test, not a successful smoke check.
+`npm run test:browser` uses the cloud's configured Chromium diagnostic setup
+and passes container-safe flags. It does not establish formal managed-browser
+coverage for Firefox, WebKit, or Mobile Safari. On a trusted machine, do not
+edit `playwright.portable.config.ts` to add a host path; install official
+Playwright browsers and run `npm run browser:verify`. A launch failure is
+blocked or failed evidence, never a successful smoke check.
 
 ## Chart is blank
 

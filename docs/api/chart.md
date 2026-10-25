@@ -124,6 +124,14 @@ Local tarball installation is verified by
 consumers. Package publication remains pending the project-license decision;
 see the [developer-preview plan](../release/developer-preview-plan.md).
 
+For a release-candidate-level check, `npm run preview:prepare` stages ignored
+`0.1.0-alpha.1` archives and `npm run preview:verify` installs only those
+archives into Vanilla, TypeScript, React, Next.js, and browser fixtures. The
+browser fixture exercises chart creation, datafeed history/streaming, all core
+series, indicators, plugins, KlineScript, workspace restore, and destruction
+through public exports. It is local evidence only until licensing and managed
+browser gates are complete.
+
 `direction: "rtl"` reverses visual time coordinates while stored timestamps
 remain ascending. `locale` and `timeZone` use the platform `Intl` formatter;
 host-owned controls should provide their own translated strings.

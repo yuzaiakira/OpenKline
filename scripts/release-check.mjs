@@ -30,7 +30,12 @@ function validateRepository() {
     "docs/reports/phase-4-security-verification.md",
     "docs/reports/phase-5-readiness.md",
     "docs/reports/phase-5-release-readiness.md",
+    "docs/reports/phase-5-2-verification.md",
+    "docs/release/release-gates.md",
+    "docs/release/license-approval-checklist.md",
+    "docs/release/browser-verification.md",
     "docs/release/developer-preview-plan.md",
+    "docs/release/developer-preview-checklist.md",
     "docs/release/local-release-process.md",
     "docs/release/browser-compatibility-checklist.md",
   ];
@@ -49,10 +54,13 @@ try {
   run("typecheck", "npm", ["run", "typecheck"]);
   run("unit and integration tests", "npm", ["test"]);
   run("Chromium browser tests", "npm", ["run", "test:browser"]);
+  run("model benchmark", "npm", ["run", "benchmark"]);
   run("KlineScript benchmark", "npm", ["run", "benchmark:klinescript"]);
   run("Canvas2D benchmark", "npm", ["run", "benchmark:browser"]);
+  run("plugin and workspace benchmark", "npm", ["run", "benchmark:plugins"]);
   run("license inventory validation", process.execPath, ["scripts/validate-license-inventory.mjs"]);
   run("root dependency audit", "npm", ["audit", "--json", "--include=dev"]);
+  run("package artifact audit", "npm", ["run", "package:audit"]);
   run("package contents", "npm", ["run", "package:check"]);
   run("package consumer smoke test", "npm", ["run", "package:smoke"]);
   run("independent consumer preview smoke test", process.execPath, ["scripts/consumer-preview-smoke.mjs"]);

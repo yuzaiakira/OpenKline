@@ -103,6 +103,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   license and third-party notice review remain owner/legal blockers; Firefox,
   WebKit, and Mobile Safari remain official-artifact blockers. See
   `docs/reports/phase-5-release-readiness.md`.
+- [Implemented / Gate Open] Phase 5.2 added a portable managed-Playwright
+  configuration/report collector, local `0.1.0-alpha.1` review-tarball
+  generator, archive audit, and clean installed-package Vanilla/TypeScript/
+  React/Next/browser verification. Legal approval, attribution review, and
+  managed Firefox/WebKit/Mobile Safari evidence remain open; no public release
+  action is authorized. See `docs/reports/phase-5-2-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

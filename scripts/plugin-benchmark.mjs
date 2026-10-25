@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import { PluginRegistry, createDefaultIndicatorRegistry } from "../dist/src/index.js";
+import { PluginRegistry, createDefaultIndicatorRegistry, parseWorkspace } from "../dist/src/index.js";
 
 const iterations = 200;
 const candles = Array.from({ length: 100_000 }, (_, index) => {
@@ -14,9 +14,9 @@ const host = {
   subscribe: () => () => undefined,
 };
 
-function sample(operation) {
+function sample(operation, count = iterations) {
   const values = [];
-  for (let index = 0; index < iterations; index += 1) {
+  for (let index = 0; index < count; index += 1) {
     const start = performance.now();
     operation(index);
     values.push(performance.now() - start);
@@ -49,10 +49,25 @@ const indicatorInit = sample(() => {
 });
 indicator.dispose();
 
-const workspace = JSON.stringify({ version: 1, candles, pluginState: { enabled: true } });
+const workspace = {
+  version: 1,
+  chart: {
+    theme: { background: "#fff", text: "#111", grid: "#ddd", border: "#ccc", upCandle: "#0a0", downCandle: "#a00", crosshair: "#555", volumeUp: "#0a0", volumeDown: "#a00" },
+    locale: "en-US",
+    timeZone: "UTC",
+    pricePrecision: 2,
+    direction: "ltr",
+  },
+  panes: [{ id: "main", height: null, minHeight: 80 }],
+  series: [{ id: "candles", type: "candlestick", paneId: "main", style: {}, data: candles }],
+  indicators: [],
+  drawings: { version: 1, drawings: [] },
+  viewport: { rangeStart: 0, visibleCount: 200 },
+  plugins: [{ id: "benchmark.plugin", version: "1.0.0", state: { enabled: true } }],
+};
 const workspaceRoundTrip = sample(() => {
-  JSON.parse(workspace);
-});
+  parseWorkspace(JSON.parse(JSON.stringify(workspace)));
+}, 10);
 
 console.log(JSON.stringify({
   node: process.version,
@@ -61,5 +76,5 @@ console.log(JSON.stringify({
   lifecycle,
   indicatorInit,
   workspaceRoundTrip,
-  note: "Registry/engine microbenchmark; not a Canvas2D or cross-device performance claim.",
+  note: "Registry/engine and public workspace-document microbenchmark; not a Canvas2D or cross-device performance claim.",
 }, null, 2));

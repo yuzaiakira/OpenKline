@@ -7,6 +7,9 @@ not approved.** The effective project license is still pending owner/legal
 confirmation, and the inherited official Firefox, WebKit, and Mobile Safari
 browser gates remain blocked by this environment.
 
+Phase 5.2 extends this evidence with portable managed-Playwright reporting and
+clean prerelease-archive consumers; see `docs/reports/phase-5-2-verification.md`.
+
 This report records observed results, not promises about untested platforms or
 future dependency updates.
 
