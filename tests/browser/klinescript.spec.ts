@@ -29,6 +29,14 @@ test("KlineScript playground compiles, reports diagnostics, updates inputs, and 
   expect(afterCompile.paneCount).toBeGreaterThan(1);
   expect(afterCompile.seriesIds.some((id) => id.includes(":hline-2"))).toBe(true);
 
+  const workspace = await page.evaluate(() => (globalThis as unknown as { __openklineScriptPlayground: { chart: { serializeWorkspace(): { indicators: Array<{ script?: { source: string } }> } } } }).__openklineScriptPlayground.chart.serializeWorkspace());
+  expect(workspace.indicators[0]?.script?.source).toContain("Oscillator");
+  await page.evaluate((documentValue) => {
+    (globalThis as unknown as { __openklineScriptPlayground: { chart: { restoreWorkspace(value: unknown): void } } }).__openklineScriptPlayground.chart.restoreWorkspace(documentValue);
+  }, workspace);
+  const restored = await page.evaluate(() => (globalThis as unknown as { __openklineScriptPlayground: { chart: { getSeriesIds(): string[] } } }).__openklineScriptPlayground.chart.getSeriesIds());
+  expect(restored.some((id) => id.includes(":hline-2"))).toBe(true);
+
   await page.locator("#remove").click();
   await expect(page.locator("#status")).toHaveText("Indicator removed");
   expect(pageErrors).toEqual([]);
