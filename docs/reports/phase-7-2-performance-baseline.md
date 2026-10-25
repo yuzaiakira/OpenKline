@@ -97,12 +97,17 @@ ordinary append fix does not claim to optimize those paths.
 
 ## Verification status
 
-- `npm run typecheck && npm test`: passed, 67 Node tests.
+- `npm run typecheck && npm test`: passed, 75 Node tests after Alert Engine
+  coverage was added.
 - `npm run benchmark:browser`: passed after the fix with the measurements
   above.
 - `npm run profile:browser`: passed and confirmed the expected hot-path
   distribution after the fix.
 - `npm run benchmark:replay`: passed with restored lengths and zero canvases.
+- `npm run benchmark:alerts`: passed at 1,000/10,000/100,000 bars. The
+  current run measured live evaluation at 8.14/47.48/286.41 ms and replay
+  evaluation at 13.78/76.87/781.81 ms; these are Node-only observations, not
+  Canvas2D or FPS claims.
 - No system browser substitution, TLS bypass, GitHub Actions, package
   publication, release tag, license change, or history rewrite was used.
 
