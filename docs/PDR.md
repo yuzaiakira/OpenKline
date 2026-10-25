@@ -120,9 +120,11 @@ Phase 5.1 preparation is verified locally but remains open for stable release.
 The repository now has generated dependency/license inventory evidence,
 lockfile provenance validation, dependency audits, independent package
 consumer checks, a Next.js 16.4.3 security update, and a documented local
-developer-preview process. `LICENSE-APACHE-2.0.PROPOSED` is a pending proposal,
-not an effective grant; the project-selected license, package metadata, and
-third-party notice review still require owner/legal approval. Official
+developer-preview process. `LICENSE-APACHE-2.0.PROPOSED` is unadopted legacy
+proposal material, not an effective grant; the owner-confirmed custom
+source-available terms are in `docs/legal/README.md`. The project-selected
+final license, package metadata, compatibility disclosure, and third-party
+notice review still require owner/legal/counsel approval. Official
 Firefox/WebKit/Mobile Safari Playwright runs remain environment-blocked. No
 package, preview tag, or public release is published by this milestone. The
 acceptance matrix and measured evidence are in
@@ -146,7 +148,9 @@ Phase 5.3 records the provenance of local Chromium evidence separately from
 the required Playwright-managed workflow and prepares a limited-alpha
 owner-review package: license/ownership decisions, exact browser support
 matrix, proposed developer-preview notes, candidate integrity evidence, and a
-publication checklist. It does not approve Apache-2.0, change effective
+publication checklist. It does not approve any effective license, change
 package metadata, publish a package, create a tag/release, change visibility,
-or relax Firefox/WebKit/Mobile Safari requirements. The owner decision and
+or relax Firefox/WebKit/Mobile Safari requirements. The owner has subsequently
+confirmed a custom source-available policy, which remains pending qualified
+counsel review and is not OSI-approved or effective. The owner decision and
 remaining evidence are recorded in `docs/reports/phase-5-3-verification.md`.

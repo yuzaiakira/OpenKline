@@ -23,10 +23,13 @@ identity, `Akira Yuzai <yuzai.akira@gmail.com>`; author metadata is not by
 itself proof of copyright ownership or assignment.
 
 No root `LICENSE`, `NOTICE`, `COPYING`, or `PATENTS` file currently exists.
-Apache-2.0 is a proposed candidate only; see
-[`docs/legal/apache-2.0-proposal.md`](../legal/apache-2.0-proposal.md) and the
-separate `LICENSE-APACHE-2.0.PROPOSED` file. No effective package license has
-been asserted.
+The owner-confirmed policy is a proposed custom source-available license; see
+[`docs/legal/openkline-source-available-license-proposal.md`](../legal/openkline-source-available-license-proposal.md)
+and its [compatibility analysis](../legal/license-compatibility-analysis.md).
+It is not effective, is not OSI-approved, and has no project-assigned SPDX
+identifier. `LICENSE-APACHE-2.0.PROPOSED` is superseded historical proposal
+material, not an active candidate. No effective package license has been
+asserted.
 
 ## Package scope
 
@@ -88,8 +91,9 @@ manifest, which must be reviewed again after legal approval.
 
 ## Open items
 
-1. Obtain owner/legal confirmation of the project copyright and Apache-2.0
-   suitability, or select another license.
+1. Obtain owner/legal confirmation of project copyright, counsel-approved final
+   source-available terms, their OSI-license compatibility disclosures, and
+   the commercial-exception process.
 2. Verify historical contributions, employment/assignment obligations, and
    any source or asset provenance not visible in the current tracked tree.
 3. Review the actual license texts and notices for all dependencies intended

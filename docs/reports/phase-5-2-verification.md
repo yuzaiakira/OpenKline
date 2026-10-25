@@ -7,6 +7,11 @@ available. Public developer-preview authorization and stable release approval
 are not granted.** Legal approval and Playwright-managed Firefox/WebKit/Mobile
 Safari verification remain external blockers.
 
+Historical-policy note: references below to Apache-2.0 describe the proposal
+current when this verification was written. The owner has since confirmed a
+custom source-available policy draft; it is pending qualified-counsel review,
+not effective, and not OSI-approved. See `docs/legal/README.md`.
+
 ## Implemented changes
 
 - Added a portable `playwright.portable.config.ts` containing all five browser

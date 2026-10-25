@@ -61,7 +61,8 @@ download attempt was used.
 The following documents are ready for owner/legal review:
 
 - `docs/release/owner-approval.md`: separate license, alpha-scope, and
-  publication decisions; Apache-2.0 explanation; ownership/attribution limits.
+  publication decisions; source-available policy, ownership, and attribution
+  limits.
 - `docs/release/alpha-support-matrix.md`: Verified, Blocked by environment,
   Unverified, and Unsupported platform claims.
 - `docs/release/alpha-release-notes.md`: proposed alpha installation, APIs,
@@ -69,11 +70,43 @@ The following documents are ready for owner/legal review:
 - `docs/release/alpha-publication-checklist.md`: approvals and post-approval
   maintainer sequence without performing any public action.
 
-Apache-2.0 remains a proposal only. The owner/legal reviewer must establish
-ownership/contributor/patent authority and review actual third-party licenses
-and notices before effective licensing, metadata, or distribution. The private
-Next.js example is not in the root package archive but needs separate review if
-distributed, including its CC-BY/LGPL-related metadata.
+The owner has now confirmed a custom source-available policy, drafted under
+`docs/legal/`. It permits only qualifying free, public-source, no-advertising,
+no-paid-feature Consumer Applications, permits benefit-free voluntary
+donations, and requires a separate written license for nonconforming use. It is
+not OSI-approved and is not effective until qualified counsel and the
+authorized copyright holder adopt final text. The owner/legal reviewer must
+still establish ownership/contributor/patent authority and review actual
+third-party licenses and notices before effective licensing, metadata, or
+distribution. The private Next.js example is not in the root package archive
+but needs separate review if distributed, including its CC-BY/LGPL-related
+metadata.
+
+## Licensing policy update
+
+The owner has confirmed a policy direction, not final legal adoption: OpenKline
+may be used only by Consumer Applications that are free for all end users,
+publish their required source, document licensing compatibility limits, offer
+no paid features/subscriptions/advertising/paid promotions/revenue-generating
+affiliates, and give donors no product benefit. Unrelated company revenue alone
+does not disqualify an application. Use outside these terms requires a separate
+written license from the authorized copyright holder.
+
+`docs/legal/` now contains the proposed custom text, definitions, permitted and
+prohibited examples, donation/advertising rules, OSI-license interaction
+analysis, and ownership/counsel checklist. The policy is expressly custom
+source-available, not OSI-approved, and potentially incompatible with some
+OSI-licensed combined works. The prior Apache-2.0 proposal is recorded as
+superseded historical material. No root `LICENSE`, package `license` field,
+NOTICE, npm publication, tag, or release was changed.
+
+After the legal-document update, `npm run release:check` validated the added
+legal-document paths and passed typecheck, all 48 Node tests, local Chromium
+diagnostic tests, package/consumer checks, dependency audits, and the Next.js
+production build. It correctly exited non-zero only at the pre-existing
+managed Firefox/WebKit/Mobile Safari gate; Mobile Chrome passed 3/3 and no
+browser substitution was used. The package audit continued to require and
+confirm absent project `license` fields while legal adoption is pending.
 
 ## Supported platform matrix
 
@@ -142,8 +175,10 @@ performance guarantee is made.
 Three separate owner decisions are still required and are not inferred from
 this engineering task:
 
-1. **License authorization:** ownership/contributor/patent authority, final
-   license choice, and actual third-party notice/text review.
+1. **License authorization:** ownership/contributor/patent authority,
+   counsel-approved final source-available text, OSI-license compatibility
+   disclosures, commercial-exception process, and actual third-party
+   notice/text review.
 2. **Developer-preview scope:** acceptance of the support matrix and disclosed
    browser/security/API limitations, without waiving stable-release gates.
 3. **Publication authorization:** exact registry/account, package names,

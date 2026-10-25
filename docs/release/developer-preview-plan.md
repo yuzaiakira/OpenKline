@@ -12,9 +12,10 @@ The first preview could use `0.1.0-alpha.1` for:
 
 This document does not change either package version, add a public tag, publish
 to npm, or create a GitHub release. The repository currently has no effective
-project license, so the preview cannot be treated as an open-source
-redistribution until the owner/legal decision is recorded and the package
-metadata is updated.
+project license. The owner-confirmed custom source-available policy remains
+pending qualified-counsel review and is not OSI-approved, so the preview cannot
+be treated as an authorized licensed redistribution until final adoption,
+notices, and package metadata are completed.
 
 ## Intended audience and support boundary
 
@@ -71,7 +72,9 @@ policy; never rewrite or force-push the repository history.
 
 ## Current blockers
 
-- Effective project license and package metadata: awaiting owner/legal choice.
+- Effective project license and package metadata: custom source-available
+  proposal awaiting qualified-counsel review, ownership confirmation, and
+  owner adoption; it is not OSI-approved.
 - Complete third-party license text/notice review: open, especially example
   CC-BY-4.0 and LGPL-related metadata.
 - Official Firefox, WebKit, and Mobile Safari Playwright verification: blocked

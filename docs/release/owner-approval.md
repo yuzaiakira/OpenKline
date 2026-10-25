@@ -9,14 +9,20 @@ authorized by this document.
 
 ## A. License authorization
 
-Apache License 2.0 is proposed because it is a permissive, widely understood
-license with commercial-use, modification, and redistribution permissions,
-subject to its conditions. If adopted, distributors must include a copy of the
-license, retain required copyright/patent/trademark/attribution notices in
-source form, and preserve any applicable `NOTICE` information. Apache-2.0 also
-contains an express patent license and patent-termination provision. This is a
-plain-language summary, not legal advice; the official text and legal review
-control.
+The owner-confirmed policy is now a proposed custom source-available license:
+Consumer Applications using OpenKline must be free for every end user, publish
+their required source, document compatibility limits, offer no paid features,
+subscriptions, ads, paid promotions, or revenue-generating affiliates, and
+give donors no product benefit. Unrelated company revenue alone is not a
+disqualifier. Any use outside those conditions requires a separate written
+license from the authorized copyright holder. This is a policy instruction, not
+an adopted license grant or legal opinion.
+
+Read the proposed terms, examples, compatibility analysis, and ownership
+checklist in [`docs/legal/README.md`](../legal/README.md). The proposal is not
+OSI-approved Open Source; its use of source-availability conditions can be
+incompatible with some OSI-approved consumer-application licenses. Qualified
+counsel must review the final wording and compatibility before adoption.
 
 Before recording approval, the authorized owner/legal reviewer must decide and
 retain evidence for all of the following:
@@ -24,8 +30,8 @@ retain evidence for all of the following:
 - authority to license all project-authored code, documentation, examples, and
   generated outputs within the chosen scope;
 - contributor, employer, contractor, assignment, and historical-provenance
-  rights, including any patent authority needed for Apache-2.0;
-- whether Apache-2.0 covers both candidate packages and which examples or
+  rights, including the final patent/trademark position;
+- whether the custom proposal covers both candidate packages and which examples or
   documentation are distributed with them;
 - actual third-party license texts and required notices, particularly the
   private Next.js example's CC-BY-4.0 and LGPL-related metadata if that example
@@ -45,14 +51,15 @@ Record a written decision here or in an owner-controlled record:
 | --- | --- | --- | --- |
 | Authority and contributor/provenance review complete | Pending | — | — |
 | Approved project license and distribution scope | Pending | — | — |
-| Apache-2.0 patent terms accepted, if selected | Pending | — | — |
+| Counsel-approved source-available terms and patent/trademark position | Pending | — | — |
+| OSI-license compatibility and consumer disclosure approach | Pending | — | — |
 | Third-party texts/notices reviewed | Pending | — | — |
 | Verified notices and metadata approved | Pending | — | — |
 
 Only after all applicable rows are approved may a maintainer replace
-`LICENSE-APACHE-2.0.PROPOSED` with the official Apache-2.0 text, add matching
-manifest metadata, add only verified notices, regenerate the candidate, and
-re-run its package checks. This task does not do that work.
+the pending state with counsel-approved final license text, add counsel-approved
+matching manifest metadata, add only verified notices, regenerate the
+candidate, and re-run its package checks. This task does not do that work.
 
 ## B. Developer-preview scope
 

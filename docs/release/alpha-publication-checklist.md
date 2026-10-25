@@ -22,8 +22,9 @@ acceptance criteria.
 - [ ] Select the final license and retain the written legal/owner decision.
 - [ ] Review actual dependency license texts and required notices for distributed
   artifacts; decide whether the private Next.js example is distributed.
-- [ ] Only after approval, add the official license text, matching package
-  metadata, and only verified notices; then rebuild and re-audit archives.
+- [ ] Only after counsel/owner approval, add the final source-available license
+  text, approved package metadata, and only verified notices; then rebuild and
+  re-audit archives.
 
 ## B. Developer-preview scope — owner sign-off required
 

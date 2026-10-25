@@ -7,6 +7,11 @@ not approved.** The effective project license is still pending owner/legal
 confirmation, and the inherited official Firefox, WebKit, and Mobile Safari
 browser gates remain blocked by this environment.
 
+Historical-policy note: this report records the then-current Apache-2.0
+proposal. The owner subsequently replaced that proposal with a custom
+source-available policy draft, which remains pending counsel review and is not
+effective or OSI-approved. See `docs/legal/README.md` for the current proposal.
+
 Phase 5.2 extends this evidence with portable managed-Playwright reporting and
 clean prerelease-archive consumers; see `docs/reports/phase-5-2-verification.md`.
 

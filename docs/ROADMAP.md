@@ -115,6 +115,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   proposed release notes, and publication checklist. No package, tag, release,
   visibility, license, or onboarding setting is published by this work. See
   `docs/reports/phase-5-3-verification.md`.
+- [Implemented / Counsel Review Required] The owner-confirmed licensing policy
+  is now drafted as a custom source-available proposal for free, public-source,
+  no-advertising/no-paid-feature Consumer Applications. It is not OSI-approved,
+  has no effective SPDX/manifest metadata, and has an explicit compatibility
+  analysis and ownership checklist. See `docs/legal/README.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
@@ -145,6 +150,6 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
 - Establish reference hardware before setting Phase 2 rendering targets.
 - Complete the independent third-party dependency/license inventory before a
   stable package release.
-- Do not treat `LICENSE-APACHE-2.0.PROPOSED` as an effective license; after
-  owner/legal approval, add only the approved license, metadata, and verified
-  notices.
+- Do not treat the custom source-available proposal or the superseded
+  `LICENSE-APACHE-2.0.PROPOSED` as an effective license; after owner/counsel
+  approval, add only the approved final license, metadata, and verified notices.

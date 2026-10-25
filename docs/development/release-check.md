@@ -20,8 +20,9 @@ Do not replace them with system browsers or disable TLS verification. The
 Phase 2/4 reports preserve the current blocked state and the supported
 artifact acquisition procedure.
 
-The repository intentionally has no effective `LICENSE` yet. The proposed
-Apache-2.0 text is separately marked pending and is not a license grant. The
-project owner must choose and add the appropriate license before a stable
-public release. The machine-readable dependency inventory is validated against
-both lockfiles on every release-check run.
+The repository intentionally has no effective `LICENSE` yet. The
+owner-confirmed custom source-available policy remains a counsel-review
+proposal and is not a license grant or OSI-approved Open Source license. The
+project owner and qualified counsel must adopt final terms before a public
+release. See `docs/legal/README.md`. The machine-readable dependency inventory
+is validated against both lockfiles on every release-check run.

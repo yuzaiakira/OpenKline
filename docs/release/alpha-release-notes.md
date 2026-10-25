@@ -3,6 +3,9 @@
 Status: **Prepared for owner review only. Not published, not production
 certified, and not yet an open-source distribution.** Publication requires the
 separate written approvals in [`owner-approval.md`](./owner-approval.md).
+The proposed OpenKline policy is custom source-available and not OSI-approved;
+it is not effective until counsel review and formal adoption. See
+[`../legal/README.md`](../legal/README.md).
 
 ## Who this preview is for
 

@@ -6,7 +6,7 @@ compatibility policy.
 
 | Gate | Status | Required evidence |
 | --- | --- | --- |
-| Project license and copyright authority | **Pending owner approval** | Written owner/legal confirmation, effective `LICENSE`, reviewed contributor/provenance record, and matching manifest metadata |
+| Project license and copyright authority | **Pending owner/counsel approval** | Counsel-approved source-available final text, ownership/provenance record, compatibility disclosure, commercial-exception authority, effective `LICENSE`, and matching manifest metadata |
 | Third-party attribution and notices | **Blocked** | Review license texts and redistribution obligations, especially CC-BY and LGPL metadata in the private Next.js example tree |
 | Dependency integrity and vulnerability audit | **Verified locally** | Lockfile inventory validation and zero-advisory root/example npm audits |
 | Package contents and public exports | **Verified locally** | `npm run package:audit`, package smoke, and tarball consumer verification |
