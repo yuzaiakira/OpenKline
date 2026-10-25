@@ -315,3 +315,13 @@ browser-local save/delete, Worker runtime status, cancellation, and responsive
 layout. No Monaco/CodeMirror dependency was added because neither was already
 available and the dependency-free surface keeps bundle/SSR risk bounded; this
 is a Studio example feature, not a new core editor dependency.
+
+Phase 7.3.5 completes the local engineering verification for the Worker,
+Chart/Replay/Alert integration, conservative incremental candidate, and Studio
+editor. The verification also caught and fixed an O(n) alert-output lookup that
+cloned every indicator result during each live update; current Canvas2D evidence
+records approximately 63 FPS for the 100,000-candle append workload in the
+recorded Chromium environment. Historical corrections remain intentionally
+expensive and are reported separately. The formal phase gate remains open for
+managed Firefox, WebKit, Mobile Safari, accessibility, and physical-device
+evidence; see `docs/reports/phase-7-3-verification.md`.

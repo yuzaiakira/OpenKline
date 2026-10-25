@@ -1671,8 +1671,9 @@ export class Chart {
     for (const state of this.indicators.values()) {
       const worker = state.worker;
       const workerResult = worker !== undefined && worker.resultGeneration === worker.generation ? worker.result : undefined;
-      for (const output of (workerResult ?? state.instance.getResult()).outputs) {
-        const point = output.points.find((candidate) => candidate.time === time);
+      const result = workerResult ?? state.instance.getResultReference?.() ?? state.instance.getResult();
+      for (const output of result.outputs) {
+        const point = findOutputPointAtTime(output.points, time);
         outputs.push({ sourceId: state.id, outputId: output.id, value: point?.value ?? null, time });
       }
     }
@@ -1962,6 +1963,22 @@ function isPoint(value: unknown): value is { x: number; y: number } {
   const point = value as Record<string, unknown>;
   return typeof point.x === "number" && Number.isFinite(point.x)
     && typeof point.y === "number" && Number.isFinite(point.y);
+}
+
+function findOutputPointAtTime(points: readonly { readonly time: number; readonly value: number | null }[], time: number): { readonly time: number; readonly value: number | null } | undefined {
+  const last = points.at(-1);
+  if (last?.time === time) return last;
+  let low = 0;
+  let high = points.length - 1;
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const point = points[middle];
+    if (point === undefined) break;
+    if (point.time === time) return point;
+    if (point.time < time) low = middle + 1;
+    else high = middle - 1;
+  }
+  return undefined;
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {

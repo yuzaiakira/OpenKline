@@ -252,6 +252,16 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   added because neither dependency is available in the repository; see
   `docs/guides/klinescript-editor.md`. Final accessibility and broader browser
   gates remain open.
+- [Implemented / Gate Open] Phase 7.3.5 records local final verification for
+  Worker lifecycle, asynchronous Chart/Replay/Alert integration, differential
+  pointwise append execution, the Studio editor, package consumers, and
+  Chromium/Mobile Chrome behavior. It also fixes an alert-output full-result
+  clone and linear lookup that regressed large append workloads; the corrected
+  100,000-candle Canvas2D run measured approximately 63 FPS and 0.94 ms per
+  append in the recorded environment. Corrections remain a separate measured
+  full-recalculation path. Firefox, WebKit, Mobile Safari, accessibility, and
+  physical-device gates remain open; see
+  `docs/reports/phase-7-3-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

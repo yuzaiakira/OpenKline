@@ -56,6 +56,30 @@ separate structured-clone transfer cost, compile-cache hits, full execution,
 incremental session updates, restart cost, and memory after disposal before an
 incremental KlineScript optimization is accepted.
 
+## Phase 7.3 append regression investigation
+
+The first Phase 7.3 Canvas2D rerun exposed a real large-history regression:
+100,000-candle append work measured approximately 69 ms per update and 9 FPS.
+The cause was in the alert integration path, not the native indicator
+incremental calculation or Canvas renderer: every update cloned all indicator
+output points and then linearly searched for the current timestamp. The fix
+uses the internal result reference, the newest point for append events, and a
+binary timestamp lookup for corrections. It preserves alert values while
+restoring the append path to the following local observation:
+
+| Candles | Append/update average | Frame-work p95 | Observed rAF FPS |
+| ---: | ---: | ---: | ---: |
+| 1,000 | 1.647 ms | 1.9 ms | 64.35 |
+| 10,000 | 0.954 ms | 1.4 ms | 62.59 |
+| 100,000 | 0.938 ms | 1.4 ms | 63.33 |
+
+The same run measured 100,000-candle historical corrections at 5,241.8 ms for
+five updates, with 589.5 MB observed before destruction, 2.2 MB after the GC
+opportunity, and zero remaining canvases. These are local Chromium 154
+observations under the benchmark workload, not universal performance targets.
+The corrected run was repeated after the fix; no O(1) claim is made for
+historical corrections or arbitrary KlineScript seeks.
+
 `benchmark:replay` uses a real headless Chromium Canvas2D chart and measures
 replay start, ten sequential steps, four non-sequential seeks, a short
 play/pause cycle, exit restoration, and destruction at 1,000, 10,000, and
