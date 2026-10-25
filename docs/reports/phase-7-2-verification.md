@@ -204,9 +204,8 @@ The coherent increments were committed and pushed in order:
 | `2d5078f` | `feat(alerts): add deterministic alert engine` | Verified |
 | `e13fd74` | `feat(chart): integrate alerts with workspace and replay` | Verified |
 | `94083af` | `feat(studio): add local alerts workflow and verification` | Verified |
+| `34847fd` | `docs(reports): verify phase 7.2 alert foundation` | Verified |
 
-The final report change is pending this final documentation commit. All
-commits use author and committer `Akira Yuzai <yuzai.akira@gmail.com>`. The
-branch was fetched and verified before this report: `HEAD == origin/work ==
-94083af116bdc58a5a687c70b3eafd4b81dd942d`. No force-push, history rewrite,
+All commits use author and committer `Akira Yuzai <yuzai.akira@gmail.com>`.
+The report commit was pushed immediately after creation. No force-push, history rewrite,
 GitHub Actions workflow, package publication, or release tag was used.
