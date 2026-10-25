@@ -39,6 +39,7 @@ export interface WorkspaceIndicator {
   readonly paneId: string;
   readonly parameters: Readonly<Record<string, JsonValue>>;
   readonly outputStyles: Readonly<Record<string, SeriesStyle>>;
+  readonly script?: { readonly programId: string; readonly source: string };
 }
 
 export interface WorkspacePluginState {
@@ -187,8 +188,23 @@ function parseIndicators(value: unknown): WorkspaceIndicator[] {
     const outputStyles: Record<string, SeriesStyle> = {};
     for (const [outputId, style] of Object.entries(item.outputStyles)) outputStyles[outputId] = parseSeriesStyle(style);
     ids.add(item.id);
-    return { id: item.id, indicatorId: item.indicatorId, paneId: item.paneId, parameters: cloneJsonObject(item.parameters), outputStyles };
+    const script = item.script === undefined ? undefined : parseScriptReference(item.script, item.id);
+    return {
+      id: item.id,
+      indicatorId: item.indicatorId,
+      paneId: item.paneId,
+      parameters: cloneJsonObject(item.parameters),
+      outputStyles,
+      ...(script === undefined ? {} : { script }),
+    };
   });
+}
+
+function parseScriptReference(value: unknown, indicatorId: string): { programId: string; source: string } {
+  if (!isPlainObject(value) || typeof value.programId !== "string" || typeof value.source !== "string" || value.source.length === 0 || value.source.length > 64 * 1024) {
+    throw new WorkspaceValidationError(`Invalid KlineScript reference: ${indicatorId}`);
+  }
+  return { programId: value.programId, source: value.source };
 }
 
 function parseDrawings(value: unknown): DrawingDocument {

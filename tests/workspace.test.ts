@@ -59,3 +59,29 @@ test("workspace parser rejects invalid references, ordering, and JSON state", ()
     plugins: [{ id: "example.plugin", version: "1.0.0", state: { bad: new Date() } }],
   }), WorkspaceValidationError);
 });
+
+test("workspace parser accepts only serializable KlineScript source references", () => {
+  const parsed = parseWorkspace({
+    ...workspace(),
+    indicators: [{
+      id: "script-1",
+      indicatorId: "KLINESCRIPT-ABCD1234",
+      paneId: "main",
+      parameters: { period: 14 },
+      outputStyles: { "plot-1": { color: "#8B5CF6" } },
+      script: { programId: "KLINESCRIPT-ABCD1234", source: 'indicator("Test")\nplot(close)' },
+    }],
+  });
+  assert.equal(parsed.indicators[0]?.script?.programId, "KLINESCRIPT-ABCD1234");
+  assert.throws(() => parseWorkspace({
+    ...workspace(),
+    indicators: [{
+      id: "script-1",
+      indicatorId: "KLINESCRIPT-ABCD1234",
+      paneId: "main",
+      parameters: {},
+      outputStyles: {},
+      script: { programId: "KLINESCRIPT-ABCD1234", source: "" },
+    }],
+  }), /Invalid KlineScript reference/);
+});
