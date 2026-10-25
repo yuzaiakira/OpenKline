@@ -354,3 +354,5 @@ workspace Save/Load/Save As/Duplicate/Import/Export flows. Local Chromium
 browser coverage is recorded in `tests/react-browser/multi-chart-studio.spec.ts`.
 The inherited managed Firefox, WebKit, Mobile Safari, accessibility, and
 physical-device gates remain open.
+See `docs/reports/phase-7-4-verification.md` for the acceptance matrix and
+local evidence.

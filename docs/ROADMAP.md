@@ -278,7 +278,8 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   drawing/indicator/script state; opt-in timestamp and symbol/timeframe sync;
   deterministic watchlist favorite/reorder controls; named local workspaces;
   import/export validation; and responsive mobile panel switching. Local
-  Chromium coverage is in `tests/react-browser/multi-chart-studio.spec.ts`.
+  Chromium coverage is in `tests/react-browser/multi-chart-studio.spec.ts`;
+  the acceptance matrix is in `docs/reports/phase-7-4-verification.md`.
 - [Implemented / In Verification] Phase 7.4.1 adds the reproducible
   `benchmark:studio` lifecycle workload. Its numbers are local observations;
   it is not an FPS, memory-limit, accessibility, or cross-browser claim.
