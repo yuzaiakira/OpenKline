@@ -173,6 +173,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   consumer, and Canvas2D benchmark checks. Firefox, WebKit, and Mobile Safari
   remain blocked by missing official Playwright binaries, so Phase 7.0 is not
   closed; see `docs/reports/phase-7-0-verification.md`.
+- [Implemented] Phase 7.1.1 adds the framework-independent `ReplayEngine`
+  state machine with protected source cloning, inclusive bar cursors,
+  irregular-timestamp seeking, deterministic stepping/playback, injectable
+  scheduling, bounded speed, and disposal tests. Chart future-data isolation,
+  indicators, datafeeds, Studio, and final replay verification remain open;
+  see `docs/architecture/replay-engine.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

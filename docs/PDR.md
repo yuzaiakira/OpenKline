@@ -219,3 +219,15 @@ The phase remains open because the project cannot currently launch the required
 Playwright-managed Firefox or WebKit binaries, and inherited Phase 6
 accessibility and physical-device gates remain unresolved. The acceptance
 matrix and exact evidence are in `docs/reports/phase-7-0-verification.md`.
+
+## Phase 7.1 professional bar replay — in progress
+
+Phase 7.1.1 adds a framework-independent `ReplayEngine` with a protected,
+validated historical source, an inclusive cursor, explicit idle/ready/playing/
+paused/completed/error/disposed states, deterministic stepping/seeking, bounded
+playback speed, injectable scheduling, and timer/resource cleanup. The engine
+does not expose future source bars through its status and does not depend on
+React, Next.js, or Canvas2D. Chart data masking, indicator/KlineScript
+integration, datafeed isolation, Studio controls, and final replay acceptance
+remain subsequent increments. See `docs/architecture/replay-engine.md` and
+`docs/api/replay.md`.

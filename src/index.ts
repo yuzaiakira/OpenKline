@@ -64,6 +64,21 @@ export type {
   SubscribeBarsArgs,
   SymbolInfo,
 } from "./types.js";
+export {
+  ReplayEngine,
+  ReplayLifecycleError,
+  ReplayValidationError,
+} from "./replay/index.js";
+export type {
+  ReplayApi,
+  ReplayCursor,
+  ReplayEngineOptions,
+  ReplayOptions,
+  ReplayScheduler,
+  ReplayState,
+  ReplayStatus,
+  ReplayStatusListener,
+} from "./replay/index.js";
 export type {
   RestBarPayload,
   RestBarsPage,
