@@ -126,3 +126,10 @@ presentation, indicator/overlay/drawing object management, workspace Save/Load,
 KlineScript, runtime settings, symbol switching, and a touch-sized responsive
 viewport. It is local Chromium evidence, not a Firefox, WebKit, Mobile Safari,
 or physical-device claim.
+
+## Phase 7.4 Studio domain tests
+
+The Node suite includes validation and isolation tests for the versioned Studio
+workspace container, layout cardinality, legacy single-chart migration, and
+watchlist CRUD/reordering/favorites. These tests cover the framework-neutral
+domain layer; they do not claim browser UI or multi-chart rendering coverage.

@@ -262,6 +262,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   full-recalculation path. Firefox, WebKit, Mobile Safari, accessibility, and
   physical-device gates remain open; see
   `docs/reports/phase-7-3-verification.md`.
+- [Implemented / In Progress] Phase 7.4.0 adds framework-neutral, versioned
+  Studio workspace and watchlist contracts with stable panel/symbol IDs,
+  nested existing chart-workspace validation, legacy single-chart migration,
+  CRUD/reorder/favorite operations, and deterministic quote-provider boundaries.
+  The multi-chart UI, synchronization, named workspace manager, and final
+  acceptance remain open; see the Phase 7.4 architecture documents.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

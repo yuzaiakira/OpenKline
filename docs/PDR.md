@@ -325,3 +325,16 @@ recorded Chromium environment. Historical corrections remain intentionally
 expensive and are reported separately. The formal phase gate remains open for
 managed Firefox, WebKit, Mobile Safari, accessibility, and physical-device
 evidence; see `docs/reports/phase-7-3-verification.md`.
+
+## Phase 7.4 multi-chart Studio workspace — in progress
+
+Phase 7.4.0 adds the framework-neutral Studio workspace and watchlist
+contracts. A versioned Studio document contains stable chart panel identities,
+layout cardinality, nested existing chart workspaces, opt-in synchronization
+flags, and validated watchlists. Legacy single-chart documents can be migrated
+without overwriting the original value. The core remains independent of React,
+Next.js, and storage. Multi-chart UI, synchronization, named workspace
+management, and final verification are subsequent increments. See
+`docs/architecture/multi-chart-workspace.md`,
+`docs/architecture/watchlist-system.md`, and
+`docs/architecture/studio-workspace-persistence.md`.

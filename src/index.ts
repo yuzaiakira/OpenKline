@@ -228,6 +228,33 @@ export type {
 } from "./klinescript/index.js";
 export { DrawingEngine, DrawingLifecycleError, DrawingValidationError } from "./drawings/index.js";
 export {
+  OPENKLINE_STUDIO_WORKSPACE_VERSION,
+  OPENKLINE_WATCHLIST_VERSION,
+  StudioWorkspaceValidationError,
+  WatchlistModel,
+  WatchlistValidationError,
+  chartCount,
+  createDeterministicDemoQuoteProvider,
+  createStudioWorkspace,
+  migrateLegacyWorkspace,
+  parseStudioWorkspace,
+  parseWatchlistDocument,
+} from "./studio/index.js";
+export type {
+  LegacyWorkspaceMigrationOptions,
+  QuoteProvider,
+  QuoteStatus,
+  StudioChartPanelDocument,
+  StudioLayout,
+  StudioSynchronizationPreferences,
+  StudioWorkspaceDocument,
+  Watchlist,
+  WatchlistDocument,
+  WatchlistIdFactory,
+  WatchlistQuote,
+  WatchlistSymbol,
+} from "./studio/index.js";
+export {
   builtInDrawingTools,
   fibonacciRetracementTool,
   horizontalLineTool,
