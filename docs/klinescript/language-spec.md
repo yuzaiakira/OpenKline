@@ -29,9 +29,11 @@ stable.
 
 Supported expressions include `+ - * / %`, comparisons, `and`/`or`, `not`,
 parentheses, conditional expressions (`condition ? when_true : when_false`),
-fixed intrinsic calls, and historical indexing (`close[1]`). Calls accept
-positional arguments followed by named arguments. Unknown, duplicate, or
-out-of-order arguments are compile errors.
+fixed intrinsic calls, and historical indexing (`close[1]`). Numeric operators
+are element-wise and accept scalar/series combinations; boolean and comparison
+operators follow the same aligned-series rules. Calls accept positional
+arguments followed by named arguments. Unknown, duplicate, or out-of-order
+arguments are compile errors.
 
 There are no loops, recursion, user-defined functions, imports, arbitrary
 member access, object literals, comprehensions, assignments after a binding,

@@ -1,9 +1,10 @@
 # OpenKline Phase 4 verification
 
-Date: 2026-10-25 (Asia/Tehran)
+Date: 2026-10-25 (UTC)
 
-Status: **Implementation milestones 4.0–4.4 implemented and locally verified;
-Phase 4.5 remains open.** The inherited Firefox, WebKit, and Mobile Safari
+Status: **Implementation milestones 4.0–4.4 and the independent security
+hardening pass are locally verified; Phase 4.5 remains open.** The inherited
+Firefox, WebKit, and Mobile Safari
 Playwright gate is still blocked by the browser environment. This report does
 not claim full browser compatibility, a hardened OS sandbox, or Phase 4
 closure.
@@ -14,16 +15,16 @@ closure.
 | --- | --- | --- |
 | Documented v0.1 grammar and types | Implemented / Verified | `docs/klinescript/{language-spec,grammar,types}.md`; compiler tests |
 | Lexer with spans and invalid-token diagnostics | Implemented / Verified | `src/klinescript/lexer.ts`; malformed-source tests |
-| Precedence-aware parser and error recovery | Implemented / Verified | `src/klinescript/parser.ts`; compiler/fuzz tests |
+| Precedence-aware parser and bounded error recovery | Implemented / Verified | `src/klinescript/parser.ts`; 5,000-level nesting regression seeds cannot escape with stack overflow |
 | Semantic analysis and type checking | Implemented / Verified | `src/klinescript/checker.ts`; fixed intrinsic/name/argument checks |
 | Immutable compiled program and public compile API | Implemented / Verified | `compileKlineScript`, frozen metadata, package smoke |
 | Restricted runtime without dynamic JS execution | Implemented / Verified | AST interpreter; source audit finds no runtime `eval`/`new Function` |
-| Dataset/lookback/AST/token/output/operation budgets | Implemented / Verified | compiler and runtime limits; aggregate and per-bar budget tests |
+| Dataset/lookback/AST/token/output/operation budgets | Implemented / Verified | compiler/runtime limits; actual window work and aggregate per-bar budget tests |
 | Cancellation and idempotent indicator disposal | Implemented / Verified | cooperative `AbortSignal`; existing IndicatorInstance disposal |
 | True wall-clock interruption / JS heap cap | Not Implemented | synchronous runtime cannot promise either; no false sandbox claim |
 | OHLCV/time, missing, warm-up, historical indexing | Implemented / Verified | deterministic runtime tests and documented semantics |
 | Native-compatible SMA/EMA/RSI/ATR behavior | Implemented / Verified | parity fixtures against existing Indicator Engine |
-| MACD, stdev, highest, lowest, safe math | Implemented / Verified | compiler/runtime tests and documented fixed projections |
+| MACD, stdev, highest, lowest, safe math | Implemented / Verified | independent fixtures, zero-denominator behavior, and documented projections |
 | Indicator inputs, plots, hlines, multi-output metadata | Implemented / Verified | output/input tests and chart integration |
 | Existing Indicator Engine and pane integration | Implemented / Verified | `Chart.addScriptIndicator`; Chromium playground test |
 | Append/developing/correction behavior | Implemented / Verified | full snapshot recomputation through existing lifecycle; corrections tested |
@@ -32,16 +33,16 @@ closure.
 | Vanilla editor/playground | Implemented / Verified | `examples/vanilla/klinescript.html`; Chromium test |
 | React script integration and cleanup | Implemented / Verified | `scriptIndicators` prop, SSR/typecheck, cleanup path |
 | Next.js server-safe compilation/production use | Implemented / Verified | example script and Next.js 15.5.28 production build |
-| Package installation and public exports | Implemented / Verified | `package:check`, `package:smoke`, root build |
+| Package installation and public exports | Implemented / Verified | `package:check`, `package:smoke`, root build; internal executor and AST metadata are not public |
 | Chromium browser behavior | Verified | 3/3 tests pass; Headless Chromium 154.0.0.0 |
 | Mobile Chrome emulation | Verified | 3/3 tests pass using Chromium 154 / Pixel 7 profile |
 | Firefox Playwright | Blocked | Firefox 157 / build 1555 binary unavailable; no substitute used |
 | WebKit Playwright | Blocked | WebKit 27.2 / build 2370 binary unavailable; no substitute used |
 | Mobile Safari emulation | Blocked | depends on unavailable Playwright WebKit binary |
-| Property/fuzz coverage | Implemented / Verified | bounded deterministic malformed-source seeds; not unbounded fuzzing |
+| Property/fuzz coverage | Implemented / Verified | bounded deterministic malformed-source and complexity-limit seeds; not unbounded fuzzing |
 | Phase 2 browser gate | Blocked | preserved as an inherited project acceptance item |
 | Git identity, push, no Actions | Verified | commits below; no `.github/workflows/` directory |
-| Phase 4 milestone closure | Open | 4.5 remains open while browser criteria are blocked |
+| Phase 4 milestone closure | Open | 4.5 remains open while browser criteria and production-readiness gates are blocked |
 
 ## Implemented language subset
 
@@ -101,20 +102,22 @@ Executed locally:
 | Command | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | Pass: 43 Node tests |
+| `npm test` | Pass: 48 Node tests |
 | `npm run test:browser` | Pass: 3 Chromium tests |
 | `npx playwright test --project=mobile-chrome` | Pass: 3 tests |
 | `npm run test:browser:compat` | 3 Mobile Chrome passed; 9 Firefox/WebKit/Mobile Safari launches blocked; command exits non-zero by design |
 | `cd examples/nextjs-app-router && npm run build` | Pass: Next.js 15.5.28 |
 | `npm run package:check` | Pass: packed public package contains compiler/runtime exports |
 | `npm run package:smoke` | Pass: clean tarball consumer imports ESM package |
-| `npm run benchmark:browser` | Pass: measured Canvas2D and cleanup output below |
-| `npm run benchmark:klinescript` | Pass: measured runtime output below |
+| `npm run benchmark:browser` | Pass: measured Canvas2D and cleanup output below; repeated runs show host variance |
+| `npm run benchmark:klinescript` | Pass: measured runtime output below after operation-accounting hardening |
 | source audit / `test ! -d .github/workflows` | Pass: no GitHub Actions and no dynamic runtime execution |
 
 The compiler/runtime suite includes deterministic malformed-source seeds for
 unterminated strings, Unicode policy boundaries, nested expressions, unknown
-intrinsics, and attempts to reference `constructor`, `globalThis`, and `eval`.
+intrinsics, non-finite numerics, complexity limits, and attempts to reference
+`constructor`, `globalThis`, and `eval`. The focused hardening suite passed 14
+tests; the complete Node suite passed 48 tests.
 
 ## Browser and environment
 
@@ -128,28 +131,28 @@ available Headless Chromium 154.0.0.0 executable.
 
 ## Performance and memory
 
-The current Canvas2D benchmark ran with Headless Chromium 154.0.0.0,
+The latest Canvas2D benchmark ran with Headless Chromium 154.0.0.0,
 `--disable-gpu`, and the repository's deterministic fixture:
 
 | Candles | rAF FPS | Frame p50/p95 (ms) | Frame-work p50/p95 (ms) | Append/update (ms) |
 | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 58.06 | 16.7 / 18.1 | 2.5 / 6.7 | 2.969 |
-| 10,000 | 63.55 | 16.7 / 16.8 | 1.0 / 1.4 | 0.656 |
-| 100,000 | 63.73 | 16.6 / 17.7 | 0.7 / 2.9 | 0.647 |
+| 1,000 | 64.10 | 16.6 / 17.2 | 1.0 / 1.3 | 1.146 |
+| 10,000 | 61.68 | 16.7 / 16.8 | 0.8 / 3.1 | 0.590 |
+| 100,000 | 62.29 | 16.7 / 16.9 | 0.7 / 1.2 | 0.652 |
 
-Observed heap was 398.70 MB before destruction and 1.90 MB after destruction;
-remaining canvas count was zero. These are engine/workload observations, not
-memory caps or universal performance claims. The 100k FPS observation is in
-line with the prior recorded ~62 FPS baseline; no Canvas subsystem rewrite was
-made for KlineScript.
+Observed heap was 620.65 MB before destruction and 1.90 MB after destruction;
+remaining canvas count was zero. Separate immediately preceding runs observed
+54.51 FPS and 31.2 ms frame-interval p95 at 100k, demonstrating host variance.
+These are engine/workload observations, not memory caps or universal
+performance claims; no Canvas subsystem rewrite was made for KlineScript.
 
-The KlineScript benchmark ran on Node.js v24.19.0 Linux x64. Final observed
-values were compile 3.13 ms; historical execution median/p95 1.43/1.43 ms at
-1k, 3.89/3.89 ms at 10k, and 39.21/39.21 ms at 100k; 500,004 counted
-operations at 100k; ten lifecycle updates 6.33 ms; four concurrent 10k
-instances 24.25 ms; pre-cancelled execution raised `KlineScriptRuntimeError`;
-and disposal completed. Three samples make these directional local
-observations, not release budgets.
+The latest release-check KlineScript benchmark ran on Node.js v24.19.0 Linux
+x64. Observed values were compile 3.255 ms; historical execution median/p95
+1.524/1.524 ms at 1k, 4.910/4.910 ms at 10k, and 52.608/52.608 ms at 100k;
+2,699,794 counted operations at 100k; ten lifecycle updates 8.055 ms; four
+concurrent 10k instances 26.077 ms; pre-cancelled execution raised
+`KlineScriptRuntimeError`; and disposal completed. Three samples make these
+directional local observations, not release budgets.
 
 ## Public API and documentation
 
@@ -191,11 +194,16 @@ as both author and committer and were pushed immediately after verification:
 - `2c6c6a7` — integration playground and benchmarks
 - `3ee7e1d` — runtime correctness and fuzz coverage
 - `a7e4d98` — browser workspace restoration
+- `54f4024` — parser/runtime security hardening and public API boundary
 
-The branch was `work`, the latest implementation push was synchronized with
-`origin/work` at `a7e4d98` before this report commit, and no history was
-rewritten or force-pushed. The report commit itself must use the same identity
-and be pushed as the final documentation increment.
+The branch is `work`; the hardening push was synchronized with `origin/work`
+at `54f4024` before this documentation increment, and no history was rewritten
+or force-pushed. The final documentation commit must use the same identity and
+be pushed immediately.
+
+The independent security audit and Phase 5 readiness assessment are in
+`docs/audits/klinescript-security-audit.md` and
+`docs/reports/phase-5-readiness.md`.
 
 Phase 2 remains ready for continued work only under its already documented
 environment exception; it is not closed by Phase 4. Phase 4 is **not ready to

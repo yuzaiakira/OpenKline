@@ -82,14 +82,16 @@ compatibility evidence is in
 
 ## Phase 4 KlineScript status
 
-Phase 4 implementation is in progress. The current increment contains a real
-v0.1 lexer/parser/type checker and a restricted interpreter with deterministic
-OHLCV series semantics, budgets, cancellation checks, safe technical/math
-intrinsics, and an existing Indicator Engine integration boundary. It does not
-claim full Python/Pine compatibility, OS-level sandboxing, or closure of the
-older Firefox/WebKit/Mobile Safari browser gate. The final Phase 4 report must
-verify the remaining integration, examples, browser, benchmark, and package
-criteria before the milestone can close.
+Phase 4 implementation and the independent security hardening pass are in
+verification. The current increment contains a real v0.1 lexer/parser/type
+checker and a restricted interpreter with deterministic OHLCV series
+semantics, parser/compiler complexity limits, actual window-work and aggregate
+per-bar budgets, cancellation, safe technical/math intrinsics, and the
+existing Indicator Engine integration boundary. It does not claim full
+Python/Pine compatibility, OS-level sandboxing, synchronous wall-clock
+preemption, or closure of the older Firefox/WebKit/Mobile Safari browser gate.
+The security and Phase 5 reports record verified fixes and remaining release
+blockers.
 
 ## Phase 3 platform scope
 
@@ -111,3 +113,12 @@ Plugins remain trusted in-process code. The Phase 3 scope does not include a
 remote package loader, sandbox, marketplace, brokerage integration, or
 KlineScript runtime. Phase 2's unverified Firefox, WebKit, and Mobile Safari
 criteria remain open and are not reclassified by this work.
+
+## Phase 5 production preparation
+
+Phase 5 preparation is in progress. Local release verification, security,
+contribution, security-policy, changelog, and documentation foundations exist.
+Stable release approval remains open because the repository has no selected
+LICENSE/package license metadata, formal third-party license inventory is not
+complete, and official Firefox/WebKit/Mobile Safari Playwright runs remain
+environment-blocked. No package is published by this milestone.

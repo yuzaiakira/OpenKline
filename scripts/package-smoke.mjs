@@ -24,7 +24,7 @@ try {
   execFileSync(process.execPath, [
     "--input-type=module",
     "-e",
-    "import { Chart, createChart, RestDatafeed, WebSocketDatafeed } from 'openkline'; if (!Chart || !createChart || !RestDatafeed || !WebSocketDatafeed) process.exit(1);",
+    "import { Chart, createChart, RestDatafeed, WebSocketDatafeed, compileKlineScript } from 'openkline'; const script = compileKlineScript('indicator(\"Smoke\")\\nplot(close)'); if (!Chart || !createChart || !RestDatafeed || !WebSocketDatafeed || !script.success || script.program.execute([{ time: 1, open: 1, high: 2, low: 0, close: 1 }]).outputs[0]?.points[0]?.value !== 1 || 'executeKlineScript' in await import('openkline')) process.exit(1);",
   ], { cwd: directory, stdio: "inherit" });
   console.log(JSON.stringify({ package: "openkline", installedFrom: archive, consumer: "ESM" }, null, 2));
 } finally {

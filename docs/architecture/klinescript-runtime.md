@@ -14,9 +14,15 @@ nodes, 256 statements, 64 outputs, and 5,000 lookback. Hosts can provide
 stricter runtime limits.
 
 `AbortSignal` is checked between expression and built-in work units. A
-pre-aborted or mid-execution signal produces the structured
-`RUNTIME_CANCELLED` error. Because the API is synchronous, it cannot interrupt
-an already executing JavaScript call at an arbitrary wall-clock instant; the
-runtime makes no hard wall-clock or JavaScript heap-cap claim. A Worker with
-termination remains a future host integration, not silently implied here.
+pre-aborted or cooperatively observed signal produces the structured
+`RUNTIME_CANCELLED` error. Because the API is synchronous, a normal external
+timer cannot interrupt an already executing JavaScript call at an arbitrary
+wall-clock instant; the runtime makes no hard wall-clock or JavaScript heap-cap
+claim. A Worker with termination remains a future host integration, not
+silently implied here.
+
+Window functions account for the number of values they scan, and the per-bar
+limit aggregates work from multiple series passes for the same logical bar.
+This is a resource guard, not a proof of a fixed memory footprint or a UI
+responsiveness guarantee.
 

@@ -2,9 +2,10 @@
 
 ## Current milestone
 
-Phase 4 KlineScript language and secure indicator runtime — **In progress**.
+Phase 4 KlineScript language and secure indicator runtime — **In verification**.
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
 roadmap does not treat those blocked runs as verified or change their gate.
+Phase 5 production preparation — **In progress; stable release not approved**.
 
 ## Completed
 
@@ -86,9 +87,18 @@ roadmap does not treat those blocked runs as verified or change their gate.
 - [Implemented] Phase 4.4 public compiler/execute APIs, React and Next.js
   consumption, a dependency-free Vanilla playground, examples, and local
   KlineScript benchmarks.
-- [In Verification] Phase 4.5 complete handover report. Chromium and Mobile
-  Chrome are verified; inherited Firefox/WebKit/Mobile Safari Playwright
-  criteria remain environment-blocked and therefore Phase 4 is not closed.
+- [In Verification] Phase 4.5 security hardening and handover. The independent
+  audit fixed parser stack exhaustion, under-counted window/per-bar work, the
+  series/scalar checker mismatch, and an internal AST metadata leak. Chromium
+  and Mobile Chrome are verified; inherited Firefox/WebKit/Mobile Safari
+  Playwright criteria remain environment-blocked and therefore Phase 4 is not
+  closed. See `docs/audits/klinescript-security-audit.md` and
+  `docs/reports/phase-4-security-verification.md`.
+- [In Progress] Phase 5 local release-check tooling, package/API audit, and
+  open-source maintainer documentation. Stable release remains blocked by the
+  missing project-selected license, incomplete third-party license inventory,
+  and the unresolved official browser gate. See
+  `docs/reports/phase-5-readiness.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
@@ -113,5 +123,9 @@ roadmap does not treat those blocked runs as verified or change their gate.
 ## Architectural follow-up
 
 - Finalize the public package name and license before the first public release.
+- Add the owner-approved `LICENSE` and matching package metadata; do not infer
+  a license from the phrase “open source”.
 - Keep the formal datafeed contract vendor-neutral as adapters evolve.
 - Establish reference hardware before setting Phase 2 rendering targets.
+- Complete the independent third-party dependency/license inventory before a
+  stable package release.

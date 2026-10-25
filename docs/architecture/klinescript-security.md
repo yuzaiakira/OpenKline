@@ -7,11 +7,20 @@ host callback, loop, recursion, or user-defined function capability. The only
 external values are validated candles and validated input parameters. Calls
 are selected from a fixed intrinsic table during semantic analysis.
 
-The compiled program retains a frozen validated AST. Workspace persistence
-stores source and a content-derived id, never executable functions or runtime
-objects. Runtime budgets count evaluation and built-in work, reject excessive
-datasets/lookback/output, validate finite numeric results, and fail before
-publishing a partial `IndicatorResult`.
+The compiled program retains a frozen validated AST internally, while the
+public metadata exposes only stable names, types, styles, and limits. Workspace
+persistence stores source and a content-derived id, never executable functions
+or runtime objects. Runtime budgets count AST evaluation, vector work, actual
+window scans, output allocation, and aggregate work per logical bar; they reject
+excessive datasets/lookback/output and fail before publishing a partial
+`IndicatorResult`.
+
+The lexer, parser, checker, and runtime all have bounded inputs. Source is
+limited to 64 KiB, tokens to 10,000, AST nodes to 20,000, statements to 256,
+outputs to 64, nesting to 128, input data to 100,000 bars, lookback to 5,000,
+and output points to 2,000,000 by default. The parser has its own nesting guard
+so malformed parentheses or unary chains produce diagnostics instead of
+relying on the checker to catch stack exhaustion.
 
 Trusted TypeScript plugins remain trusted in-process JavaScript and are a
 different security class. Hosts that execute hostile scripts should add a

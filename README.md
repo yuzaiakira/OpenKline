@@ -1,9 +1,11 @@
 # OpenKline
 
-OpenKline is an open-source, framework-independent financial chart engine. It
-is being built incrementally from a tested TypeScript core toward Canvas2D
+OpenKline is a framework-independent TypeScript financial chart engine. It is
+being built incrementally from a tested TypeScript core toward Canvas2D
 rendering, datafeed adapters, indicators, drawings, plugins, and framework
-integrations.
+integrations. The repository is not yet a stable release and currently has no
+declared software license; do not redistribute it as a licensed package until
+the project owner adds the appropriate `LICENSE` and package metadata.
 
 ## Current status
 
@@ -21,12 +23,17 @@ implemented Phase 2 analysis foundation:
 - typed technical indicators, synchronized analysis panes, and browser-neutral
   drawing tools with serialization and undo/redo;
 - trusted in-process extension contracts for custom indicators and drawing
-  tools, plus a documented KlineScript boundary;
+  tools;
+- a v0.1 KlineScript compiler, semantic checker, restricted synchronous
+  interpreter, technical/math intrinsics, resource budgets, cancellation,
+  Indicator Engine integration, workspace source references, and examples;
 - vanilla browser example with all supported series;
 - local unit, browser, Canvas2D benchmark, package-install, and integration
   verification scripts.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope and
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the verified and deferred scope,
+[docs/reports/phase-5-readiness.md](docs/reports/phase-5-readiness.md) for the
+production-readiness audit, and
 [docs/reports/phase-2-verification.md](docs/reports/phase-2-verification.md)
 for the baseline acceptance record. The current hardening gate is recorded in
 [docs/reports/phase-2-final-verification.md](docs/reports/phase-2-final-verification.md).
@@ -43,6 +50,8 @@ npm test
 npm run test:browser
 npm run benchmark:browser
 npm run package:smoke
+# Run the full local release gate, including available compatibility projects.
+npm run release:check
 ```
 
 The public entry point is `createChart(container, options)`. The core model is
@@ -50,6 +59,26 @@ framework-independent. React, Next.js, and datafeed usage is documented in
 [docs/guides/react.md](docs/guides/react.md) and
 [docs/guides/nextjs.md](docs/guides/nextjs.md), and
 [docs/api/datafeed.md](docs/api/datafeed.md).
+
+KlineScript usage, diagnostics, limits, and examples are documented in
+[docs/api/klinescript.md](docs/api/klinescript.md),
+[docs/klinescript/language-spec.md](docs/klinescript/language-spec.md), and
+[docs/klinescript/examples.md](docs/klinescript/examples.md). The compiler
+does not use `eval` or `new Function`; its runtime is restricted but
+synchronous, so it is not an OS-level sandbox. Hosts handling untrusted users
+must provide an appropriate process or Worker termination boundary.
+
+## Development and release readiness
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) describes the local contribution flow.
+- [SECURITY.md](SECURITY.md) describes the security boundary and reporting
+  expectations.
+- [CHANGELOG.md](CHANGELOG.md) records unreleased changes.
+- `npm run release:check` is the reproducible local release verification
+  command. It does not publish packages or use GitHub Actions.
+- Firefox, WebKit, and Mobile Safari remain open compatibility gates when the
+  official Playwright-managed binaries are unavailable; see the Phase 2 and
+  Phase 4 reports.
 
 ## Project rules
 
