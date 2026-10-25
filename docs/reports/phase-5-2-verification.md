@@ -69,6 +69,14 @@ Firefox build 1555, and WebKit build 2370 executables were absent. Therefore
 Mobile Safari (which uses WebKit) could not run. No repeated CDN/Docker retry,
 TLS bypass, or system Firefox/Safari substitution was used.
 
+The final portable-run record for implementation commit
+`514fc02c4832f9ce01919bb0ac3c6715a8198076` is stored locally at
+`artifacts/browser-verification/2026-10-25T07-24-43-373Z`. It records Node
+v24.19.0, npm 11.9.0, Playwright 1.64.1, Linux x64, the five requested
+projects, the managed executable paths, and
+`blocked-missing-official-browser`. Artifacts are intentionally ignored because
+they are reproducible local evidence, not source deliverables.
+
 The existing local configuration ran 3 Chromium and 3 Pixel 7 mobile-emulation
 tests against explicitly configured local Chromium. The staged-package browser
 consumer also passed with explicit local Chromium 154.0.8037.57. These are
@@ -182,7 +190,10 @@ remaining browser limitations are disclosed. Stable 1.0 is **Blocked**.
 
 ## Git verification
 
-The Phase 5.2 implementation commit and remote synchronization are recorded
-after the final local verification commit. Every commit in this increment must
-use `Akira Yuzai <yuzai.akira@gmail.com>` as both author and committer; no
-force-push, GitHub Action, tag, publish, or history rewrite is permitted.
+Implementation commit
+`514fc02c4832f9ce01919bb0ac3c6715a8198076`
+(`feat(release): add portable preview verification`) was authored and committed
+as `Akira Yuzai <yuzai.akira@gmail.com>` and pushed to `origin/work` after its
+local verification. This report's final evidence-only update is committed and
+pushed separately. No force-push, GitHub Action, tag, publish, or history
+rewrite occurred.
