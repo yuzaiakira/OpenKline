@@ -14,6 +14,7 @@ changes an input, verifies an oscillator pane, and removes the script indicator.
 npm run typecheck
 npm test
 npm run test:browser
+npm run test:react:browser
 npm run test:browser:compat
 npm run benchmark
 npm run benchmark:browser
@@ -78,3 +79,10 @@ The cloud's local Chromium test config is diagnostic evidence. Do not edit the
 portable config to add system browser paths; formal browser claims require the
 managed artifacts. A browser test that times out is a failed or blocked test,
 never a pass.
+
+`npm run test:react:browser` starts the private Next.js example locally and
+uses Chromium to exercise the actual React adapter in Strict Mode. It verifies
+equivalent-array reconciliation, declarative drawing persistence, indicator and
+plugin lifecycle, workspace restoration without a `candles` prop, option
+updates, unmount, and remount. It is local Chromium evidence, not a Firefox,
+WebKit, Mobile Safari, or physical-device claim.

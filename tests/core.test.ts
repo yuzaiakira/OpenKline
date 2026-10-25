@@ -87,3 +87,44 @@ test("ChartModel supports latest data, pan, and zoom", () => {
   model.zoom(2, 0.5);
   assert.equal(model.getVisibleData().candles.length, 6);
 });
+
+test("ChartModel preserves a zoomed historical viewport through resize and correction", () => {
+  const model = new ChartModel();
+  model.resize(80);
+  model.setData(Array.from({ length: 40 }, (_, index) => ({
+    time: index + 1,
+    open: 10,
+    high: 12,
+    low: 8,
+    close: 11,
+  })));
+  model.zoom(0.5);
+  model.pan(-9);
+  const beforeResize = model.getViewportState();
+  model.resize(640);
+  assert.deepEqual(model.getViewportState(), beforeResize, "ordinary resize must not reset the user zoom");
+
+  model.update({ time: 15, open: 10, high: 13, low: 8, close: 12 });
+  assert.deepEqual(model.getViewportState(), beforeResize, "historical correction must not jump the viewport");
+});
+
+test("ChartModel keeps a live right edge anchored and exposes fit/reset navigation", () => {
+  const model = new ChartModel();
+  model.resize(32);
+  model.setData(Array.from({ length: 10 }, (_, index) => ({
+    time: index + 1,
+    open: 10,
+    high: 12,
+    low: 8,
+    close: 11,
+  })));
+  const beforeAppend = model.getViewportState();
+  model.update({ time: 11, open: 11, high: 13, low: 9, close: 12 });
+  assert.equal(model.getViewportState().rangeStart, beforeAppend.rangeStart + 1);
+  assert.equal(model.getVisibleData().times.at(-1), 11);
+
+  model.fitContent();
+  assert.deepEqual(model.getViewportState(), { rangeStart: 0, visibleCount: 11 });
+  model.resetView();
+  assert.deepEqual(model.getViewportState(), { rangeStart: 7, visibleCount: 4 });
+});

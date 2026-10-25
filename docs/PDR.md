@@ -164,3 +164,13 @@ only the steps after written clearance. Neither document activates a license,
 updates package metadata, authorizes a tag/publication, or closes the browser
 or legal gates. See
 `docs/reports/phase-5-4-license-adoption-readiness.md`.
+
+## Phase 6 core reliability — in progress
+
+Phase 6.0 hardens the public React, REST datafeed, and viewport boundaries
+before Studio work. The React adapter now reconciles stable declarative
+identities and preserves workspace state when data props are omitted; REST
+pagination defaults to same-origin, validated redirects and protected headers;
+and resize preserves a user-selected viewport. The feature remains in progress
+until Studio, mobile/accessibility, broader browser, consumer, and performance
+verification are complete. See `docs/reports/phase-6-core-reliability.md`.

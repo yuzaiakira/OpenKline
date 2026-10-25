@@ -76,6 +76,10 @@ chart.destroy();
   `serializeDrawings`, and `restoreDrawings` manage the drawing lifecycle.
 - `getSeriesIds()` lists live series. `removeSeries(id)` disposes one series.
 - `pan(deltaBars)` and `zoom(scale, anchorRatio)` navigate the shared viewport.
+  `fitContent()` shows the complete shared time range; `resetView()` restores
+  default density and follows the newest data. Ordinary resizing preserves the
+  current visible-bar count and position where possible, while a view already
+  at the right edge remains right-edge anchored as new data arrives.
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
   backing store.
 - `setOptions(options)` updates theme, locale, timezone, precision, direction,

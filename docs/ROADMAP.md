@@ -2,6 +2,10 @@
 
 ## Current milestone
 
+Phase 6 core reliability and OpenKline Studio — **In progress**. Phase 6.0
+React, REST pagination, and viewport hardening are implemented and locally
+verified; Studio, accessibility, mobile, consumer, and performance acceptance
+remain open.
 Phase 4 KlineScript language and secure indicator runtime — **In verification**.
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
 roadmap does not treat those blocked runs as verified or change their gate.
@@ -125,6 +129,12 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   evidence, third-party notice limits, and a strictly post-approval adoption
   procedure. It does not adopt a license or authorize an alpha publication; see
   `docs/reports/phase-5-4-license-adoption-readiness.md`.
+- [Implemented / In Verification] Phase 6.0 reconciles React resources by
+  stable identity, preserves omitted workspace data, validates same-origin REST
+  pagination/redirects/header forwarding, and preserves viewport zoom through
+  resize and historical correction. Local React Strict Mode browser evidence is
+  available; Studio and Phase 6 acceptance remain open. See
+  `docs/reports/phase-6-core-reliability.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

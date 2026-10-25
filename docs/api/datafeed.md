@@ -32,6 +32,23 @@ cursor or absolute URL. It:
   duplicate correction;
 - passes `AbortSignal` to every request and checks it between pages.
 
+### Pagination security
+
+The initial request and absolute pagination URLs must use `http` or `https`.
+Absolute `next` links default to the `baseUrl` origin; an untrusted origin,
+protocol-relative foreign URL, unsafe protocol, repeated page URL, malformed
+page, and redirect loop are rejected before the next request. Fetch requests
+use `redirect: "manual"`; same-origin redirects are followed only after their
+target is validated, and unexpected cross-origin redirects are rejected.
+
+Set `trustedPaginationOrigins` only for a provider whose pagination endpoint is
+known and approved. Configured `headers` are sent to `baseUrl` by default but
+are **not** forwarded to a trusted foreign origin unless
+`forwardHeadersToTrustedOrigins: true` is explicitly selected. This avoids
+leaking credentials through a server-controlled `next` URL. `maxRedirects`
+defaults to five. These controls preserve cursor pagination, timestamp
+normalization, deterministic deduplication, and `AbortSignal` semantics.
+
 Inject `fetcher` for a deterministic mock or map the response in a thin vendor
 adapter. The core does not know vendor authentication or response formats.
 

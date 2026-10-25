@@ -31,16 +31,28 @@ export function PriceChart({ candles }: { candles: Candle[] }) {
 
 The component is designed to work with React Strict Mode. The imperative
 handle exposes `getChart()` for integrations that need to call `resize`,
-`update`, `addLineSeries`, drawing methods, or `setDatafeed` directly; consumers
-must not retain the chart after unmount. The cleanup effect unsubscribes
-crosshair listeners, removes mounted indicators and drawings, destroys the
-chart, and clears its series data.
+`update`, `fitContent`, `resetView`, `addLineSeries`, drawing methods, or
+`setDatafeed` directly; consumers must not retain the chart after unmount. The
+cleanup effect unsubscribes crosshair listeners, disposes declaratively managed
+resources, and destroys the chart.
 
-`plugins` installs trusted plugins after the chart mounts and disposes their
-handles when the prop changes or the component unmounts. `workspace` is
-restored after plugins are installed, so custom indicators and drawing tools
-are available. A workspace contains data and plugin state, not executable
-plugin code.
+Use stable IDs when declaring managed resources:
+
+```tsx
+<FinancialChart
+  indicators={[{ id: "main-rsi", indicatorId: "RSI", options: { period: 14, pane: "new" } }]}
+  drawings={[{ type: "horizontal-line", options: { id: "support", points: [{ time, price }] } }]}
+/>
+```
+
+Equivalent newly allocated arrays do not recreate those resources. Omit a prop
+to preserve workspace or imperative state; pass an explicit empty array to
+clear that declarative category. Workspace restoration happens after plugins
+are available and before explicitly supplied candles, indicators, scripts, or
+drawings, so omitted `candles` never clears restored workspace data. A workspace
+contains data and plugin state, not executable plugin code. See
+[React lifecycle architecture](../architecture/react-lifecycle.md) for the
+complete precedence contract.
 
 For a data-driven integration, keep the `candles` prop immutable and replace it
 when historical data changes. Use the imperative handle for streaming updates

@@ -42,8 +42,7 @@ export class ChartModel {
     if (this.primaryCandleId === id) {
       this.primaryCandleId = this.collection.getIds().find((seriesId) => this.collection.get(seriesId).type === "candlestick") ?? null;
     }
-    this.visibleCount = this.calculateVisibleCount();
-    this.rangeStart = this.clampStart(this.rangeStart);
+    this.preserveViewportAfterDataChange(false);
     if (paneId !== "main" && !this.collection.getIds().some((seriesId) => this.collection.getPaneId(seriesId) === paneId)) {
       this.paneLayout.remove(paneId);
     }
@@ -87,17 +86,19 @@ export class ChartModel {
   }
 
   public setSeriesData(id: string, data: SeriesData): void {
+    const hadTimePoints = this.collection.getTimePointCount() > 0;
+    const wasAtLatest = this.isAtLatest();
     this.collection.setData(id, data);
-    this.resetToLatest();
+    if (!hadTimePoints) this.resetToLatest();
+    else this.preserveViewportAfterDataChange(wasAtLatest);
   }
 
   public updateSeries(id: string, point: SeriesPoint): void {
+    const hadTimePoints = this.collection.getTimePointCount() > 0;
     const wasAtLatest = this.isAtLatest();
     this.collection.update(id, point);
-    this.visibleCount = this.calculateVisibleCount();
-    this.rangeStart = wasAtLatest
-      ? Math.max(0, this.collection.getTimePointCount() - this.visibleCount)
-      : this.clampStart(this.rangeStart);
+    if (!hadTimePoints) this.resetToLatest();
+    else this.preserveViewportAfterDataChange(wasAtLatest);
   }
 
   public setSeriesStyle(id: string, style: SeriesOptions["style"]): void {
@@ -135,7 +136,8 @@ export class ChartModel {
   /** Legacy convenience API: create/reuse the primary candlestick series. */
   public setData(candles: readonly Candle[]): void {
     const id = this.ensurePrimaryCandles();
-    this.setSeriesData(id, candles);
+    this.collection.setData(id, candles);
+    this.resetToLatest();
   }
 
   /** Legacy convenience API for the primary candlestick series. */
@@ -149,11 +151,44 @@ export class ChartModel {
       throw new Error("Chart width must be a non-negative finite number");
     }
 
-    const oldEnd = this.rangeStart + this.visibleCount;
+    const wasAtLatest = this.isAtLatest();
     this.viewportWidth = width;
-    this.visibleCount = this.calculateVisibleCount();
     const length = this.collection.getTimePointCount();
-    if (oldEnd >= length) {
+    if (length === 0) {
+      this.visibleCount = 1;
+      this.rangeStart = 0;
+    } else {
+      this.visibleCount = Math.min(Math.max(1, this.visibleCount), length);
+      if (wasAtLatest) {
+        this.rangeStart = Math.max(0, length - this.visibleCount);
+      } else {
+        this.rangeStart = this.clampStart(this.rangeStart);
+      }
+    }
+  }
+
+  /** Show every timestamp in the shared time axis. */
+  public fitContent(): void {
+    const length = this.collection.getTimePointCount();
+    this.visibleCount = Math.max(1, length);
+    this.rangeStart = 0;
+  }
+
+  /** Restore the default density and follow the newest data. */
+  public resetView(): void {
+    this.visibleCount = this.calculateVisibleCount();
+    this.rangeStart = Math.max(0, this.collection.getTimePointCount() - this.visibleCount);
+  }
+
+  private preserveViewportAfterDataChange(followLatest: boolean): void {
+    const length = this.collection.getTimePointCount();
+    if (length === 0) {
+      this.visibleCount = 1;
+      this.rangeStart = 0;
+      return;
+    }
+    this.visibleCount = Math.min(Math.max(1, this.visibleCount), length);
+    if (followLatest) {
       this.rangeStart = Math.max(0, length - this.visibleCount);
     } else {
       this.rangeStart = this.clampStart(this.rangeStart);
@@ -238,8 +273,7 @@ export class ChartModel {
   }
 
   private resetToLatest(): void {
-    this.visibleCount = this.calculateVisibleCount();
-    this.rangeStart = Math.max(0, this.collection.getTimePointCount() - this.visibleCount);
+    this.resetView();
   }
 
   private isAtLatest(): boolean {

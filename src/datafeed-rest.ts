@@ -25,6 +25,15 @@ export interface RestDatafeedOptions {
   fetcher?: RestFetcher;
   headers?: HeadersInit;
   maxPages?: number;
+  /** Additional HTTPS/HTTP origins allowed in absolute `next` links. */
+  trustedPaginationOrigins?: readonly string[];
+  /**
+   * Forward configured headers to explicitly trusted cross-origin pagination
+   * URLs. Disabled by default so credentials stay on `baseUrl`'s origin.
+   */
+  forwardHeadersToTrustedOrigins?: boolean;
+  /** Maximum redirect hops for one page. Defaults to five. */
+  maxRedirects?: number;
 }
 
 /**
@@ -37,15 +46,31 @@ export class RestDatafeed implements Datafeed {
   private readonly barsPath: string;
   private readonly fetcher: RestFetcher;
   private readonly maxPages: number;
+  private readonly trustedOrigins: ReadonlySet<string>;
+  private readonly forwardHeadersToTrustedOrigins: boolean;
+  private readonly maxRedirects: number;
 
   public constructor(private readonly options: RestDatafeedOptions) {
     this.baseUrl = new URL(options.baseUrl);
+    assertHttpUrl(this.baseUrl, "REST baseUrl");
     this.barsPath = options.barsPath ?? "/bars";
     this.fetcher = options.fetcher ?? fetch;
     this.maxPages = options.maxPages ?? 100;
     if (!Number.isInteger(this.maxPages) || this.maxPages < 1) {
       throw new RangeError("maxPages must be a positive integer");
     }
+    this.maxRedirects = options.maxRedirects ?? 5;
+    if (!Number.isInteger(this.maxRedirects) || this.maxRedirects < 0) {
+      throw new RangeError("maxRedirects must be a non-negative integer");
+    }
+    const origins = new Set<string>([this.baseUrl.origin]);
+    for (const origin of options.trustedPaginationOrigins ?? []) {
+      const url = new URL(origin);
+      assertHttpUrl(url, "trusted pagination origin");
+      origins.add(url.origin);
+    }
+    this.trustedOrigins = origins;
+    this.forwardHeadersToTrustedOrigins = options.forwardHeadersToTrustedOrigins === true;
   }
 
   public async resolveSymbol(symbol: string, signal?: AbortSignal): Promise<SymbolInfo> {
@@ -67,22 +92,17 @@ export class RestDatafeed implements Datafeed {
     for (let page = 0; page < this.maxPages; page += 1) {
       throwIfAborted(query.signal);
       const url = this.createPageUrl(query, next);
-      const init: RequestInit = {
-        ...(this.options.headers === undefined ? {} : { headers: this.options.headers }),
-        ...(query.signal === undefined ? {} : { signal: query.signal }),
-      };
-      const response = await this.fetcher(url.toString(), init);
+      if (visited.has(url.href)) throw new Error("REST bars pagination repeated a URL");
+      visited.add(url.href);
+      const response = await this.fetchPage(url, query.signal);
       if (!response.ok) throw new Error(`REST bars request failed: ${response.status} ${response.statusText}`);
-      const payload = await response.json() as RestBarsPage;
-      if (!Array.isArray(payload.bars)) throw new Error("REST bars response must contain a bars array");
+      const payload = parseRestBarsPage(await response.json());
       for (const raw of payload.bars) {
         const candle = normalizeRestCandle(raw);
         if (candle.time >= query.from && candle.time < query.to) byTime.set(candle.time, candle);
       }
       next = payload.next;
       if (next === undefined || next === null || next === "") break;
-      if (visited.has(next)) throw new Error("REST bars pagination repeated a cursor");
-      visited.add(next);
       if (page === this.maxPages - 1) throw new Error(`REST bars pagination exceeded maxPages=${this.maxPages}`);
     }
 
@@ -93,17 +113,64 @@ export class RestDatafeed implements Datafeed {
   }
 
   private createPageUrl(query: GetBarsQuery, cursor: string | null | undefined): URL {
-    const url = cursor?.startsWith("http") ? new URL(cursor) : new URL(this.barsPath, this.baseUrl);
+    const absolute = cursor === undefined || cursor === null ? null : parseAbsolutePaginationUrl(cursor, this.baseUrl);
+    const url = absolute ?? new URL(this.barsPath, this.baseUrl);
+    if (absolute !== null) this.assertAllowedPaginationUrl(absolute);
     url.searchParams.set("symbol", query.symbol);
     url.searchParams.set("timeframe", query.timeframe);
     url.searchParams.set("from", String(query.from));
     url.searchParams.set("to", String(query.to));
-    if (cursor !== undefined && cursor !== null && !cursor.startsWith("http")) url.searchParams.set("cursor", cursor);
+    if (cursor !== undefined && cursor !== null && absolute === null) url.searchParams.set("cursor", cursor);
     return url;
+  }
+
+  private async fetchPage(url: URL, signal: AbortSignal | undefined): Promise<Response> {
+    let current = url;
+    const redirects = new Set<string>([current.href]);
+    for (let redirect = 0; redirect <= this.maxRedirects; redirect += 1) {
+      throwIfAborted(signal);
+      const init: RequestInit = {
+        redirect: "manual",
+        ...(this.shouldForwardHeaders(current) && this.options.headers !== undefined ? { headers: this.options.headers } : {}),
+        ...(signal === undefined ? {} : { signal }),
+      };
+      const response = await this.fetcher(current.href, init);
+      if (!isRedirect(response.status)) {
+        if (response.redirected && response.url !== "") {
+          const finalUrl = new URL(response.url);
+          this.assertAllowedPaginationUrl(finalUrl);
+          if (finalUrl.origin !== current.origin) {
+            throw new Error("REST fetcher followed an unexpected cross-origin redirect");
+          }
+        }
+        return response;
+      }
+      const location = response.headers.get("location");
+      if (location === null || location.length === 0) throw new Error("REST bars redirect is missing a Location header");
+      const next = new URL(location, current);
+      this.assertAllowedPaginationUrl(next);
+      if (redirect === this.maxRedirects) throw new Error(`REST bars request exceeded maxRedirects=${this.maxRedirects}`);
+      if (redirects.has(next.href)) throw new Error("REST bars redirect repeated a URL");
+      redirects.add(next.href);
+      current = next;
+    }
+    throw new Error("REST bars request exceeded redirect handling");
+  }
+
+  private shouldForwardHeaders(url: URL): boolean {
+    return url.origin === this.baseUrl.origin || this.forwardHeadersToTrustedOrigins;
+  }
+
+  private assertAllowedPaginationUrl(url: URL): void {
+    assertHttpUrl(url, "REST pagination URL");
+    if (!this.trustedOrigins.has(url.origin)) {
+      throw new Error(`REST pagination URL origin is not trusted: ${url.origin}`);
+    }
   }
 }
 
 export function normalizeRestCandle(raw: RestBarPayload): Candle {
+  assertRestBarPayload(raw);
   return {
     time: normalizeTimestamp(raw.time),
     open: raw.open,
@@ -112,6 +179,53 @@ export function normalizeRestCandle(raw: RestBarPayload): Candle {
     close: raw.close,
     ...(raw.volume === undefined ? {} : { volume: raw.volume }),
   };
+}
+
+function parseRestBarsPage(value: unknown): RestBarsPage {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("REST bars response must be an object");
+  }
+  const page = value as Record<string, unknown>;
+  if (!Array.isArray(page.bars)) throw new Error("REST bars response must contain a bars array");
+  if (page.next !== undefined && page.next !== null && typeof page.next !== "string") {
+    throw new Error("REST bars response next cursor must be a string, null, or omitted");
+  }
+  for (const bar of page.bars) assertRestBarPayload(bar);
+  return { bars: page.bars as RestBarPayload[], ...(page.next === undefined ? {} : { next: page.next as string | null }) };
+}
+
+function assertRestBarPayload(value: unknown): asserts value is RestBarPayload {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("REST bars response contains a malformed bar");
+  }
+  const bar = value as Record<string, unknown>;
+  if ((typeof bar.time !== "number" && typeof bar.time !== "string")
+    || typeof bar.open !== "number"
+    || typeof bar.high !== "number"
+    || typeof bar.low !== "number"
+    || typeof bar.close !== "number"
+    || (bar.volume !== undefined && typeof bar.volume !== "number")) {
+    throw new Error("REST bars response contains a malformed bar");
+  }
+}
+
+function parseAbsolutePaginationUrl(value: string, baseUrl: URL): URL | null {
+  if (value.startsWith("//")) return new URL(value, baseUrl);
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
+function assertHttpUrl(url: URL, label: string): void {
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`${label} must use http or https`);
+  }
+}
+
+function isRedirect(status: number): boolean {
+  return status >= 300 && status < 400;
 }
 
 export function normalizeTimestamp(value: number | string): number {

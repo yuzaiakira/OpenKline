@@ -60,6 +60,24 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   const afterPan = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
   expect(afterPan.from).toBeGreaterThan(afterZoom.from);
 
+  const navigationCommands = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getData(): unknown[];
+        getVisibleRange(): { from: number; to: number };
+        fitContent(): void;
+        resetView(): void;
+      };
+    }).__openklineChart;
+    chart.fitContent();
+    const fit = chart.getVisibleRange();
+    chart.resetView();
+    const reset = chart.getVisibleRange();
+    return { dataLength: chart.getData().length, fit, reset };
+  });
+  expect(navigationCommands.fit).toEqual({ from: 0, to: navigationCommands.dataLength });
+  expect(navigationCommands.reset.to).toBe(navigationCommands.dataLength);
+
   const beforeTheme = await page.evaluate(() => Array.from((document.querySelector("canvas") as HTMLCanvasElement).getContext("2d")!.getImageData(0, 0, 1, 1).data));
   await page.evaluate(() => (globalThis as unknown as { __openklineChart: { setOptions(options: { theme: string }): void } }).__openklineChart.setOptions({ theme: "light" }));
   const afterTheme = await page.evaluate(() => Array.from((document.querySelector("canvas") as HTMLCanvasElement).getContext("2d")!.getImageData(0, 0, 1, 1).data));
@@ -154,6 +172,7 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
     backingHeight: (element as HTMLCanvasElement).height,
     viewportWidth: window.innerWidth,
   }));
+  const viewportBeforeResize = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
   await page.setViewportSize({ width: 800, height: 700 });
   await expect.poll(async () => {
     const metrics = await canvas.evaluate((element) => ({
@@ -169,6 +188,8 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
         || metrics.backingHeight !== beforeResize.backingHeight
         || metrics.viewportWidth !== beforeResize.viewportWidth);
   }).toBe(true);
+  const viewportAfterResize = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
+  expect(viewportAfterResize.to - viewportAfterResize.from).toBe(viewportBeforeResize.to - viewportBeforeResize.from);
 
   const pluginResult = await page.evaluate(() => {
     const chart = (globalThis as unknown as {

@@ -784,6 +784,22 @@ export class Chart {
     this.render();
   }
 
+  /** Show the complete shared time range without recreating chart resources. */
+  public fitContent(): void {
+    this.assertAlive();
+    this.model.fitContent();
+    this.emitViewportChange();
+    this.render();
+  }
+
+  /** Restore default bar density and follow the newest available data. */
+  public resetView(): void {
+    this.assertAlive();
+    this.model.resetView();
+    this.emitViewportChange();
+    this.render();
+  }
+
   /** Return a defensive copy of the currently stored candles. */
   public getData(): Candle[] {
     this.assertAlive();
