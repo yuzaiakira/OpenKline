@@ -91,7 +91,7 @@ public action. Confirm all fields rather than inferring them from this plan:
 | npm access level and destinations | Pending |
 | Git tag name and annotated-tag approval | Pending |
 | GitHub release approval and release-note text | Pending |
-| Candidate commit and manifest SHA-256 values | Pending final candidate |
+| Candidate commit and manifest SHA-256 values | `08e79b50a84b62461859ad4040ee90dc655e864f`; core `a3117670792e9fb2d0e37a70efce8c78c95bf572e0670523d525f5b33bb90410`; React `13ce25c5eedcd8bc12ef33b53231842fbc181703fc37852bab6504d20108ed73` |
 | Rollback/deprecation owner and communication path | Pending |
 
 Until all three sections have an explicit owner decision, maintainers must not
