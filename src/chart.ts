@@ -1070,6 +1070,44 @@ export class Chart {
     return { from, to };
   }
 
+  /** Return UTC time boundaries for optional cross-chart viewport synchronization. */
+  public getVisibleTimeRange(): { from: number | null; to: number | null } {
+    this.assertAlive();
+    const times = this.model.getVisibleData().times;
+    return { from: times[0] ?? null, to: times.at(-1) ?? null };
+  }
+
+  /** Apply a UTC time range without assuming that chart indexes match. */
+  public setVisibleTimeRange(range: { from: number; to: number }): void {
+    this.assertAlive();
+    this.model.setVisibleTimeRange(range.from, range.to);
+    this.emitViewportChange();
+    this.render();
+  }
+
+  /** Move the crosshair to the nearest visible bar time, or clear it. */
+  public setCrosshairAtTime(time: number | null): number | null {
+    this.assertAlive();
+    if (time === null) {
+      this.crosshair = null;
+      if (this.interaction.crosshair) this.emitCrosshair(null, null);
+      this.render();
+      return null;
+    }
+    if (!Number.isFinite(time)) throw new Error("Crosshair time must be finite or null");
+    const context = this.getPrimaryScaleContext();
+    const times = this.model.getVisibleData().times;
+    if (context === null || times.length === 0) return null;
+    const nearest = nearestTime(times, time);
+    if (nearest === null) return null;
+    const x = context.timeScale.xForTime(nearest);
+    const y = (context.bounds.top + context.bounds.bottom) / 2;
+    this.crosshair = { x, y };
+    if (this.interaction.crosshair) this.emitCrosshair(x, y);
+    this.render();
+    return nearest;
+  }
+
   /** Pan the shared viewport by a number of bars and redraw. */
   public pan(deltaBars: number): void {
     this.assertAlive();

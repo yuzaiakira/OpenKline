@@ -338,3 +338,9 @@ management, and final verification are subsequent increments. See
 `docs/architecture/multi-chart-workspace.md`,
 `docs/architecture/watchlist-system.md`, and
 `docs/architecture/studio-workspace-persistence.md`.
+
+The synchronization primitive increment adds timestamp-based visible-range and
+crosshair methods to the existing Chart API. They do not create global links:
+the host must opt in, tag propagation by source panel, resolve nearest target
+bars, and dispose subscriptions. Replay remains independent by default. See
+`docs/architecture/chart-synchronization.md`.

@@ -268,6 +268,10 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   CRUD/reorder/favorite operations, and deterministic quote-provider boundaries.
   The multi-chart UI, synchronization, named workspace manager, and final
   acceptance remain open; see the Phase 7.4 architecture documents.
+- [Implemented / In Progress] Phase 7.4.0 also adds timestamp-based Chart
+  primitives for optional crosshair and visible-range synchronization. These
+  methods do not couple charts or synchronize Replay implicitly; host-level
+  source tagging and nearest-bar mapping remain required.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

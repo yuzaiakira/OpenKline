@@ -153,6 +153,24 @@ export class ChartModel {
     return { rangeStart: this.rangeStart, visibleCount: this.visibleCount };
   }
 
+  /** Set the viewport from UTC time boundaries without assuming equal bar spacing. */
+  public setVisibleTimeRange(fromTime: number, toTime: number): void {
+    if (!Number.isFinite(fromTime) || !Number.isFinite(toTime) || fromTime > toTime) {
+      throw new Error("Visible time range must contain finite ascending boundaries");
+    }
+    const times = this.collection.getTimePoints();
+    if (times.length === 0) {
+      this.visibleCount = 1;
+      this.rangeStart = 0;
+      return;
+    }
+    const from = lowerBound(times, fromTime);
+    const to = Math.max(from + 1, upperBound(times, toTime));
+    this.rangeStart = this.clampStart(from);
+    this.visibleCount = Math.min(Math.max(1, to - from), times.length);
+    this.rangeStart = this.clampStart(this.rangeStart);
+  }
+
   public setViewportState(state: { rangeStart: number; visibleCount: number }): void {
     if (!Number.isInteger(state.rangeStart) || state.rangeStart < 0 || !Number.isInteger(state.visibleCount) || state.visibleCount < 1) {
       throw new Error("Invalid viewport state");
@@ -330,5 +348,27 @@ export class ChartModel {
 
 function isCandle(value: SeriesPoint): value is Candle {
   return "open" in value && "high" in value && "low" in value && "close" in value;
+}
+
+function lowerBound(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((values[middle] ?? Number.POSITIVE_INFINITY) < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBound(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((values[middle] ?? Number.POSITIVE_INFINITY) <= target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 

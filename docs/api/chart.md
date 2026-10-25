@@ -114,6 +114,12 @@ chart.destroy();
   rejected while replay is active; `exit()` restores the complete pre-replay
   workspace and resubscribes a suspended datafeed.
 - `getVisibleRange()` and `getData()` provide defensive diagnostic snapshots.
+- `getVisibleTimeRange()` returns the visible UTC boundaries for optional host
+  synchronization. `setVisibleTimeRange({ from, to })` applies those boundaries
+  without assuming equal indexes across charts. `setCrosshairAtTime(time)`
+  selects the nearest visible bar and returns the timestamp selected; passing
+  `null` clears the crosshair. These are additive synchronization primitives;
+  charts are never coupled automatically.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, and stored series data. Other methods throw after
   destruction.
