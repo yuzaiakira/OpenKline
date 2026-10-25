@@ -45,6 +45,10 @@ NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm ci --ignore-scripts --no-audit --n
 npm run build
 ```
 
+The App Router root route is the private OpenKline Studio consumer. It uses
+deterministic local fixtures and browser-local workspaces; it is not a hosted
+market-data application. See [the Studio guide](../guides/studio.md).
+
 The example uses the local packages for repository development; published
 applications should depend on `openkline` and `@openkline/react` from their
 package registry.

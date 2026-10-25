@@ -74,7 +74,10 @@ chart.destroy();
   `startDrawing` creates one from pointer clicks. `getDrawings`,
   `selectDrawing`, `removeDrawing`, `undoDrawing`, `redoDrawing`,
   `serializeDrawings`, and `restoreDrawings` manage the drawing lifecycle.
-- `getSeriesIds()` lists live series. `removeSeries(id)` disposes one series.
+- `getSeriesIds()` lists live series. `getSeriesInfo()` returns defensive
+  object-management metadata (type, pane, title, style, and data length), and
+  `setSeriesStyle(id, style)` updates one appearance without resetting data or
+  the viewport. `removeSeries(id)` disposes one series.
 - `pan(deltaBars)` and `zoom(scale, anchorRatio)` navigate the shared viewport.
   `fitContent()` shows the complete shared time range; `resetView()` restores
   default density and follows the newest data. Ordinary resizing preserves the

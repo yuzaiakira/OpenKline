@@ -42,6 +42,11 @@ NodeNext-style compiled imports resolve correctly when Next processes the
 linked development packages. This is not required for a normal registry
 installation.
 
+Its root route is a private local Studio that demonstrates imperative public
+chart composition, workspace persistence, indicators, drawings, and restricted
+KlineScript. It uses deterministic fixtures only; see
+[the Studio guide](studio.md).
+
 Plugins and workspace documents are client-side props. Install trusted plugin
 modules in the Client Component and pass a validated workspace after mount;
 never import or execute plugin code in a Server Component.

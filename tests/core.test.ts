@@ -25,7 +25,6 @@ test("CandleStore validates ordered OHLCV data", () => {
     CandleValidationError,
   );
 });
-
 test("CandleStore replaces updates and inserts corrected historical bars", () => {
   const store = new CandleStore();
   store.setData(candles);

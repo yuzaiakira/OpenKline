@@ -33,6 +33,7 @@ export type {
   ChartInteractionOptions,
   ChartDirection,
   ChartOptions,
+  ChartSeriesInfo,
   ChartTheme,
   ChartThemeName,
   CrosshairMoveEvent,

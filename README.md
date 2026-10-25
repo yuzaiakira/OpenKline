@@ -19,7 +19,7 @@ implemented Phase 2 analysis foundation:
 - framework-independent historical/realtime `Datafeed` contracts with
   deterministic in-memory, paginated REST, and reconnecting WebSocket
   reference adapters;
-- optional React bindings and a Next.js App Router example;
+- optional React bindings and a private Next.js App Router Studio example;
 - typed technical indicators, synchronized analysis panes, and browser-neutral
   drawing tools with serialization and undo/redo;
 - trusted in-process extension contracts for custom indicators and drawing
@@ -49,6 +49,8 @@ for the baseline acceptance record. The current hardening gate is recorded in
 [docs/reports/phase-2-final-verification.md](docs/reports/phase-2-final-verification.md).
 The performance and browser compatibility evidence is recorded in
 [docs/reports/phase-2-performance-and-compatibility.md](docs/reports/phase-2-performance-and-compatibility.md).
+Phase 6 local implementation and open acceptance gates are recorded in
+[docs/reports/phase-6-final-verification.md](docs/reports/phase-6-final-verification.md).
 See [docs/api/chart.md](docs/api/chart.md) and
 [docs/api/datafeed.md](docs/api/datafeed.md) for the public APIs.
 
@@ -68,7 +70,8 @@ The public entry point is `createChart(container, options)`. The core model is
 framework-independent. React, Next.js, and datafeed usage is documented in
 [docs/guides/react.md](docs/guides/react.md) and
 [docs/guides/nextjs.md](docs/guides/nextjs.md), and
-[docs/api/datafeed.md](docs/api/datafeed.md).
+[docs/api/datafeed.md](docs/api/datafeed.md). The private local Studio is
+documented in [docs/guides/studio.md](docs/guides/studio.md).
 
 KlineScript usage, diagnostics, limits, and examples are documented in
 [docs/api/klinescript.md](docs/api/klinescript.md),

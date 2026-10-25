@@ -84,5 +84,8 @@ never a pass.
 uses Chromium to exercise the actual React adapter in Strict Mode. It verifies
 equivalent-array reconciliation, declarative drawing persistence, indicator and
 plugin lifecycle, workspace restoration without a `candles` prop, option
-updates, unmount, and remount. It is local Chromium evidence, not a Firefox,
-WebKit, Mobile Safari, or physical-device claim.
+updates, unmount, and remount. It also executes a Studio workflow covering
+presentation, indicator/overlay/drawing object management, workspace Save/Load,
+KlineScript, runtime settings, symbol switching, and a touch-sized responsive
+viewport. It is local Chromium evidence, not a Firefox, WebKit, Mobile Safari,
+or physical-device claim.

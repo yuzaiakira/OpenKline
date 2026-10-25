@@ -174,3 +174,10 @@ pagination defaults to same-origin, validated redirects and protected headers;
 and resize preserves a user-selected viewport. The feature remains in progress
 until Studio, mobile/accessibility, broader browser, consumer, and performance
 verification are complete. See `docs/reports/phase-6-core-reliability.md`.
+
+OpenKline Studio is now implemented in the private Next.js consumer example.
+It composes public APIs for deterministic symbol/timeframe fixtures, object
+management, drawings, indicators, workspaces, and restricted KlineScript. Its
+local verification and remaining acceptance work are recorded in
+`docs/reports/phase-6-studio-verification.md` and
+`docs/reports/phase-6-final-verification.md`; Phase 6 remains open.

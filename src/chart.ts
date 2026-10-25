@@ -40,6 +40,7 @@ import type {
   ChartDirection,
   ChartInteractionOptions,
   ChartOptions,
+  ChartSeriesInfo,
   ChartTheme,
   CrosshairMoveEvent,
   IndicatorAddOptions,
@@ -677,6 +678,26 @@ export class Chart {
   public getSeriesIds(): string[] {
     this.assertAlive();
     return this.model.getSeriesIds();
+  }
+
+  /** Return defensive metadata for every live series without exposing stores. */
+  public getSeriesInfo(): ChartSeriesInfo[] {
+    this.assertAlive();
+    return this.model.getAllSeries().map((series) => ({
+      id: series.id,
+      type: series.type,
+      paneId: series.paneId,
+      ...(series.title === undefined ? {} : { title: series.title }),
+      style: { ...series.style },
+      dataLength: series.data.length,
+    }));
+  }
+
+  /** Update a live series appearance without recreating data, panes, or viewport. */
+  public setSeriesStyle(id: string, style: SeriesOptions["style"]): void {
+    this.assertAlive();
+    this.model.setSeriesStyle(id, style ?? {});
+    this.render();
   }
 
   /** Load historical bars and optionally subscribe to future bar updates. */

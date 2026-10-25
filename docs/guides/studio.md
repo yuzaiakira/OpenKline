@@ -1,0 +1,39 @@
+# OpenKline Studio guide
+
+Run the private Studio consumer locally from the repository root:
+
+```sh
+npm run build
+npm run dev --prefix examples/nextjs-app-router
+```
+
+Open the local Next.js root route. Studio intentionally uses deterministic
+BTC-USD, ETH-USD, and AAPL fixtures rather than pretending to connect to a
+market-data vendor. Symbol and timeframe controls replace fixture data through
+the public workspace contract.
+
+## Workflow
+
+1. Choose a symbol and timeframe, then use Candles, Line, or Area presentation.
+2. Add built-in indicators from the Objects panel; removable overlays and all
+   live series appear in the same tree.
+3. Activate a drawing tool and place its anchors on the canvas. The drawing
+   list can select, hide, color, lock, and remove it; Undo/Redo use the chart's
+   drawing history.
+4. Save or Load the browser-local workspace, or Export a portable JSON
+   workspace. Local storage is browser/profile-specific.
+5. Open KlineScript, compile the source, and add it only after the restricted
+   compiler accepts it. Errors are reported in the editor.
+
+The Settings panel changes theme, locale, timezone, price precision, and
+interaction policy at runtime without rebuilding the chart. Fit and Reset use
+the shared viewport; pointer/wheel interactions remain owned by the chart.
+
+## Boundaries
+
+Studio is a private application example, not an npm package or hosted service.
+It has no credentials, analytics, remote storage, or third-party data adapter.
+For real vendor integration, implement a public `Datafeed` adapter in the host
+application and retain its authentication outside the core. See
+[the datafeed API](../api/datafeed.md) and
+[Studio architecture](../architecture/studio-architecture.md).

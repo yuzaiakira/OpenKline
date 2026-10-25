@@ -25,6 +25,21 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   const seriesIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getSeriesIds(): string[] } }).__openklineChart.getSeriesIds());
   expect(seriesIds.slice(0, 4)).toEqual(["price", "trend", "area", "volume"]);
   expect(seriesIds).toHaveLength(13);
+  const seriesInfo = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getSeriesInfo(): Array<{ id: string; dataLength: number; style: { visible?: boolean; upColor?: string } }>;
+        setSeriesStyle(id: string, style: { visible?: boolean; upColor?: string }): void;
+      };
+    }).__openklineChart;
+    chart.setSeriesStyle("price", { visible: false, upColor: "#10b981" });
+    const info = chart.getSeriesInfo();
+    info[0]!.style.visible = true;
+    return { price: chart.getSeriesInfo().find((series) => series.id === "price"), count: info.length };
+  });
+  expect(seriesInfo.count).toBe(13);
+  expect(seriesInfo.price).toMatchObject({ id: "price", dataLength: 80, style: { visible: false, upColor: "#10b981" } });
+  await page.evaluate(() => (globalThis as unknown as { __openklineChart: { setSeriesStyle(id: string, style: { visible?: boolean }): void } }).__openklineChart.setSeriesStyle("price", { visible: true }));
   const paneIds = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getPaneIds(): string[] } }).__openklineChart.getPaneIds());
   expect(paneIds).toHaveLength(5);
 

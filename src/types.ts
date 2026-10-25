@@ -190,6 +190,16 @@ export interface SeriesApi<T extends SeriesPoint> {
   remove(): void;
 }
 
+/** A lightweight, defensive description for object-management UIs. */
+export interface ChartSeriesInfo {
+  readonly id: string;
+  readonly type: SeriesType;
+  readonly paneId: string;
+  readonly title?: string;
+  readonly style: SeriesStyle;
+  readonly dataLength: number;
+}
+
 export type ChartEventName = keyof ChartEvents;
 
 export type ChartEventHandler<Name extends ChartEventName> = (

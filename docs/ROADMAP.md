@@ -4,7 +4,8 @@
 
 Phase 6 core reliability and OpenKline Studio — **In progress**. Phase 6.0
 React, REST pagination, and viewport hardening are implemented and locally
-verified; Studio, accessibility, mobile, consumer, and performance acceptance
+verified; Studio is implemented and locally verified in Chromium, while
+accessibility, managed-browser/mobile, consumer, and performance acceptance
 remain open.
 Phase 4 KlineScript language and secure indicator runtime — **In verification**.
 Phase 2 acceptance remains open for Firefox, WebKit, and Mobile Safari; this
@@ -135,6 +136,11 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   resize and historical correction. Local React Strict Mode browser evidence is
   available; Studio and Phase 6 acceptance remain open. See
   `docs/reports/phase-6-core-reliability.md`.
+- [Implemented / In Verification] The private Next.js Studio composes public
+  chart APIs for deterministic market fixtures, object management, drawings,
+  indicators, workspaces, and restricted KlineScript. Local Chromium workflows
+  pass; managed-browser, accessibility, consumer, and final performance gates
+  remain open. See `docs/reports/phase-6-studio-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

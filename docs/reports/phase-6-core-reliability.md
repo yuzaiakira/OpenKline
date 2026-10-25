@@ -72,10 +72,11 @@ was made.
 
 ## Open requirements
 
-- Build and verify OpenKline Studio through public APIs.
-- Add Studio object management, workspace UX, mobile behavior, accessibility,
-  end-to-end workflows, package-consumer checks, and measured Studio overhead.
-- Keep the formal Firefox/WebKit/Mobile Safari and pending licensing gates open.
+- Studio implementation, object management, workspace UX, responsive Chromium
+  workflow, packed-consumer checks, and a post-Studio benchmark are now
+  recorded in `docs/reports/phase-6-studio-verification.md`.
+- Keep the formal Firefox/WebKit/Mobile Safari, physical-device, assistive
+  technology, visual-regression, and pending licensing gates open.
 
 ## Git verification
 
