@@ -48,6 +48,12 @@ pre-cancelled execution, and disposal. These are local observations for the
 printed Node/runtime environment; the script makes no universal FPS, memory,
 or latency claim.
 
+Worker transport is not represented as a universal performance claim yet. The
+7.3.1 deterministic tests verify lifecycle behavior; a later benchmark must
+separate structured-clone transfer cost, compile-cache hits, full execution,
+incremental session updates, restart cost, and memory after disposal before an
+incremental KlineScript optimization is accepted.
+
 `benchmark:replay` uses a real headless Chromium Canvas2D chart and measures
 replay start, ten sequential steps, four non-sequential seeks, a short
 play/pause cycle, exit restoration, and destruction at 1,000, 10,000, and

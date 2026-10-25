@@ -23,7 +23,10 @@ so malformed parentheses or unary chains produce diagnostics instead of
 relying on the checker to catch stack exhaustion.
 
 Trusted TypeScript plugins remain trusted in-process JavaScript and are a
-different security class. Hosts that execute hostile scripts should add a
-process/Worker isolation boundary and termination policy; this package does
-not claim that a browser Worker alone is a security sandbox.
+different security class. `KlineScriptWorkerRuntime` adds a structured,
+versioned Worker boundary with timeout/cancellation termination, generation
+stale-result rejection, and cleanup. It is a resource and lifecycle boundary,
+not an OS or browser security sandbox: Workers may still access the origin's
+ambient capabilities unless the host's deployment policy prevents them, and
+the language restrictions and runtime budgets remain required.
 

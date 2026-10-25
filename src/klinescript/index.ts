@@ -34,3 +34,37 @@ export type {
   KlineScriptRuntimeLimits,
   KlineScriptRuntimeOptions,
 } from "./runtime.js";
+export {
+  KLINE_SCRIPT_WORKER_PROTOCOL_VERSION,
+  isWorkerRequest,
+  isWorkerResponse,
+} from "./worker-protocol.js";
+export type {
+  KlineScriptWorkerAckResponse,
+  KlineScriptWorkerCancelRequest,
+  KlineScriptWorkerCompileRequest,
+  KlineScriptWorkerCompileResponse,
+  KlineScriptWorkerCompiledProgram,
+  KlineScriptWorkerDiagnosticResponse,
+  KlineScriptWorkerDisposeRequest,
+  KlineScriptWorkerErrorPayload,
+  KlineScriptWorkerErrorResponse,
+  KlineScriptWorkerExecuteRequest,
+  KlineScriptWorkerExecutionResponse,
+  KlineScriptWorkerOperation,
+  KlineScriptWorkerRequest,
+  KlineScriptWorkerResponse,
+  KlineScriptWorkerUpdateInputRequest,
+} from "./worker-protocol.js";
+export {
+  KlineScriptWorkerError,
+  KlineScriptWorkerRuntime,
+  defaultWorkerFactory,
+} from "./worker-runtime.js";
+export type {
+  KlineScriptWorkerFactory,
+  KlineScriptWorkerLike,
+  KlineScriptWorkerRuntimeOptions,
+  KlineScriptWorkerTask,
+  KlineScriptWorkerErrorCode,
+} from "./worker-runtime.js";

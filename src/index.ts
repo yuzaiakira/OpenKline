@@ -207,6 +207,24 @@ export type {
   KlineScriptSeriesType,
   KlineScriptType,
 } from "./klinescript/index.js";
+export {
+  KLINE_SCRIPT_WORKER_PROTOCOL_VERSION,
+  isWorkerRequest,
+  isWorkerResponse,
+  KlineScriptWorkerError,
+  KlineScriptWorkerRuntime,
+  defaultWorkerFactory,
+} from "./klinescript/index.js";
+export type {
+  KlineScriptWorkerFactory,
+  KlineScriptWorkerLike,
+  KlineScriptWorkerRuntimeOptions,
+  KlineScriptWorkerTask,
+  KlineScriptWorkerErrorCode,
+  KlineScriptWorkerRequest,
+  KlineScriptWorkerResponse,
+  KlineScriptWorkerCompiledProgram,
+} from "./klinescript/index.js";
 export { DrawingEngine, DrawingLifecycleError, DrawingValidationError } from "./drawings/index.js";
 export {
   builtInDrawingTools,

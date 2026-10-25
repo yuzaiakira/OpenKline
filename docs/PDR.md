@@ -274,3 +274,16 @@ and cleanup. The alert benchmark is Node-only and does not make Canvas2D/FPS
 or external-delivery claims. Phase 7.2 remains open pending the final report,
 broader browser/accessibility/physical gates inherited from Phase 7.1, and any
 remaining acceptance items; those gates are not silently closed by alerts.
+
+## Phase 7.3 KlineScript IDE and Worker runtime — in progress
+
+Phase 7.3.1 adds an optional public `KlineScriptWorkerRuntime` and a versioned
+structured-clone protocol. The Worker compiles and executes the existing
+validated interpreter, keeps incremental input sessions in a Worker-side
+`CandleStore`, reports diagnostics and structured failures, rejects stale
+generations, and terminates/restarts on cancellation or timeout. Compiled
+program closures are never transferred to the host. This increment is covered
+by deterministic Node tests and architecture/security documentation; it does
+not close the inherited browser, accessibility, or physical-device gates.
+Worker-backed Chart/Replay/Alert integration, differential incremental
+execution, and the professional Studio editor remain subsequent milestones.

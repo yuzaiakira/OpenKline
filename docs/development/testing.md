@@ -94,6 +94,11 @@ projections, hlines, input validation, correction recomputation, cancellation,
 budgets, malformed-source seeds, invalid financial input, and the playground
 lifecycle. The bounded malformed-source seeds are replayable in
 `tests/klinescript-fuzz.test.ts`; this is not an unbounded fuzzing service.
+`tests/klinescript-worker.test.ts` additionally covers the versioned Worker
+protocol, serializable compile responses, worker-side sessions, diagnostics,
+malformed requests, cancellation, timeout, restart, and disposal using a
+deterministic in-process Worker harness. It does not claim that managed
+Firefox/WebKit/mobile artifacts are available.
 
 The cloud's local Chromium test config is diagnostic evidence. Do not edit the
 portable config to add system browser paths; formal browser claims require the

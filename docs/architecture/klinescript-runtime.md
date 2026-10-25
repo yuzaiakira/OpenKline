@@ -18,8 +18,10 @@ pre-aborted or cooperatively observed signal produces the structured
 `RUNTIME_CANCELLED` error. Because the API is synchronous, a normal external
 timer cannot interrupt an already executing JavaScript call at an arbitrary
 wall-clock instant; the runtime makes no hard wall-clock or JavaScript heap-cap
-claim. A Worker with termination remains a future host integration, not
-silently implied here.
+claim. `KlineScriptWorkerRuntime` provides an optional asynchronous boundary
+with request timeouts, generation checks, and hard worker termination. It
+transfers serializable source/metadata and results, never executable closures.
+See `docs/architecture/klinescript-worker-runtime.md`.
 
 Window functions account for the number of values they scan, and the per-bar
 limit aggregates work from multiple series passes for the same logical bar.

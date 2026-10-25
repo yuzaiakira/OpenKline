@@ -224,6 +224,14 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   Node alert benchmark. The final Phase 7.2 report remains open until all
   available evidence is recorded; inherited Firefox, WebKit, Mobile Safari,
   accessibility, and physical-device gates remain open.
+- [Implemented / In Verification] Phase 7.3.1 adds the optional public
+  `KlineScriptWorkerRuntime`, versioned structured-clone protocol, serializable
+  compile metadata, Worker-side candle sessions, generation/stale-result
+  protection, diagnostics, timeout, cancellation, restart, and disposal. The
+  deterministic Worker harness passes locally. Chart/Replay/Alert async
+  integration, differential incremental execution, and the Studio IDE remain
+  open; see `docs/architecture/klinescript-worker-runtime.md` and
+  `docs/reports/phase-7-3-verification.md`.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
