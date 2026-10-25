@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FinancialChart } from "@openkline/react";
 import type { FinancialChartHandle } from "@openkline/react";
-import { compileKlineScript, isCandleSeriesType } from "openkline";
+import { isCandleSeriesType } from "openkline";
 import type {
   Candle,
   Chart,
@@ -19,6 +19,7 @@ import type {
   WorkspaceDocument,
 } from "openkline";
 import styles from "./studio.module.css";
+import { KlineScriptStudioEditor } from "./klinescript-studio-editor";
 
 type Timeframe = "5m" | "1h" | "4h" | "1D";
 type Presentation = "candles" | "ohlc" | "hollow" | "heikin-ashi" | "line" | "area" | "baseline";
@@ -167,7 +168,6 @@ export default function StudioClient() {
   const [indicatorToAdd, setIndicatorToAdd] = useState<(typeof indicatorChoices)[number][0]>("SMA");
   const [scriptOpen, setScriptOpen] = useState(false);
   const [scriptSource, setScriptSource] = useState(defaultScript);
-  const [scriptError, setScriptError] = useState<string | null>(null);
   const [replayStatus, setReplayStatus] = useState<ReplayStatus>(IDLE_REPLAY_STATUS);
   const [replaySourceLength, setReplaySourceLength] = useState(0);
   const [replayStartIndex, setReplayStartIndex] = useState(84);
@@ -582,24 +582,12 @@ export default function StudioClient() {
     }
   };
 
-  const addScript = (): void => {
+  const addScript = async (source: string, signal: AbortSignal): Promise<void> => {
     const target = chart();
-    if (target === null) return;
-    const result = compileKlineScript(scriptSource);
-    if (!result.success) {
-      const message = result.diagnostics.map((diagnostic) => `L${diagnostic.span.start.line}:${diagnostic.span.start.column} ${diagnostic.message}`).join(" · ");
-      setScriptError(message);
-      return;
-    }
-    try {
-      target.addScriptIndicator(result.program, { id: `studio-script-${serialRef.current++}`, pane: "new" });
-      setScriptError(null);
-      setScriptOpen(false);
-      refreshObjects(target);
-      setNotice(`Added validated KlineScript indicator “${result.program.metadata.name}”.`);
-    } catch (error) {
-      setScriptError(error instanceof Error ? error.message : String(error));
-    }
+    if (target === null) throw new Error("Chart is not ready");
+    const indicator = await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal });
+    refreshObjects(target);
+    setNotice(`Added Worker-backed KlineScript indicator “${indicator.indicatorId}”.`);
   };
 
   return (
@@ -682,12 +670,7 @@ export default function StudioClient() {
         </div>
       </section>
 
-      {scriptOpen ? <section className={styles.scriptPanel} aria-label="KlineScript editor">
-        <div><strong>KlineScript Editor</strong><span>Compiled locally through the restricted public compiler.</span></div>
-        <textarea value={scriptSource} onChange={(event) => setScriptSource(event.target.value)} spellCheck={false} aria-label="KlineScript source" />
-        {scriptError === null ? null : <p role="alert">{scriptError}</p>}
-        <div><button type="button" disabled={replayActive} onClick={addScript}>Compile and add</button><button type="button" onClick={() => setScriptOpen(false)}>Close</button></div>
-      </section> : null}
+      {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
 
       <section className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="Chart object manager">

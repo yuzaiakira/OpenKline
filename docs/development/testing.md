@@ -106,6 +106,11 @@ Firefox/WebKit/mobile artifacts are available.
 The Chromium KlineScript browser workflow also exercises a real static ESM
 Worker through `Chart.addScriptIndicatorAsync`, then verifies alert output,
 replay prefix length, removal, chart destruction, and absence of page errors.
+The private Next.js Chromium Studio workflow additionally verifies templates,
+diagnostic rendering, autocomplete, browser-local save/delete, Worker runtime
+status, indicator creation, and page-error cleanup. This is available
+Chromium evidence, not formal Firefox/WebKit/Mobile Safari or accessibility
+acceptance.
 
 The cloud's local Chromium test config is diagnostic evidence. Do not edit the
 portable config to add system browser paths; formal browser claims require the

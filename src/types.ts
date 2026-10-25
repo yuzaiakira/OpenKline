@@ -96,6 +96,8 @@ export interface ChartIndicatorApi {
 /** Options for a Worker-backed KlineScript indicator. */
 export interface AsyncScriptIndicatorOptions extends IndicatorAddOptions {
   readonly timeoutMs?: number;
+  /** Aborting this signal cancels compilation/execution and terminates the Worker. */
+  readonly signal?: AbortSignal;
 }
 
 export interface ChartTheme {

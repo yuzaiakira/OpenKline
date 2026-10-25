@@ -47,7 +47,12 @@ compile/execute/cancel controls, such as a preview pane that is not yet owned
 by a Chart. Its compile response contains serializable metadata only; never
 attempt to transfer or persist executable program closures.
 
-The repository's current Studio example still uses the intentionally small
-textarea workflow. A maintained editor integration, completion provider,
-templates, and local script manager are Phase 7.3.4 work and are not claimed
-as implemented by this guide.
+The private Next.js Studio includes a dependency-free editor surface built for
+the current restricted grammar. It provides syntax highlighting, line numbers,
+precise compiler diagnostics, implemented-language autocomplete, starter
+templates, browser-local script save/delete, Worker runtime status, and an
+AbortController-backed Cancel action. It intentionally does not add Monaco or
+CodeMirror: neither dependency is present in the repository, and the current
+surface keeps the Next.js client bundle and SSR boundary small. A future editor
+replacement can adopt a maintained package after measuring bundle and SSR
+impact without changing the compiler contract.

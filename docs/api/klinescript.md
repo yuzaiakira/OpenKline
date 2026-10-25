@@ -71,10 +71,12 @@ The returned indicator participates in the existing series, pane, replay,
 workspace, alert, remove, and chart-destruction lifecycles.
 
 ```ts
+const abortController = new AbortController();
 const indicator = await chart.addScriptIndicatorAsync(source, {
   id: "worker-ema",
   parameters: { period: 21 },
   timeoutMs: 10_000,
+  signal: abortController.signal,
 });
 chart.update(nextCandle);
 console.log(indicator.getResult());
@@ -88,4 +90,7 @@ all script CPU work has moved off the main thread. Worker results are applied
 only for the current indicator generation. Pending or stale results cannot
 update chart series or alert snapshots; failures are published through the
 `scriptError` chart event and the fallback remains intact.
+Aborting `options.signal` cancels the compile or execution task and terminates
+the dedicated Worker; the promise rejects with `KlineScriptWorkerError` code
+`CANCELLED`.
 

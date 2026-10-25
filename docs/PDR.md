@@ -307,3 +307,11 @@ non-append events invalidate the candidate. Deterministic randomized
 differential tests compare supported output values with full execution, while
 `operations` remains a work measurement. Retained-state optimizations for
 SMA/EMA/RSI/MACD/ATR/windows are not claimed complete.
+
+Phase 7.3.4 replaces the private Studio's basic KlineScript textarea with an
+SSR-safe client editor surface. It provides syntax highlighting, line numbers,
+implemented-language autocomplete, source-span diagnostics, starter templates,
+browser-local save/delete, Worker runtime status, cancellation, and responsive
+layout. No Monaco/CodeMirror dependency was added because neither was already
+available and the dependency-free surface keeps bundle/SSR risk bounded; this
+is a Studio example feature, not a new core editor dependency.

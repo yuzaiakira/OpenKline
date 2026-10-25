@@ -96,6 +96,7 @@ interface ManagedWorkerScript {
   resultGeneration: number;
   disposed: boolean;
   pending: Set<KlineScriptWorkerTask<KlineScriptExecutionResult>>;
+  readonly signal?: AbortSignal;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -720,12 +721,19 @@ export class Chart {
    */
   public async addScriptIndicatorAsync(source: string, options: AsyncScriptIndicatorOptions = {}): Promise<ChartIndicatorApi> {
     this.assertAlive();
-    const { timeoutMs, ...indicatorOptions } = options;
+    const { timeoutMs, signal, ...indicatorOptions } = options;
     const runtime = new KlineScriptWorkerRuntime(timeoutMs === undefined ? {} : { timeoutMs });
     this.workerRuntimes.add(runtime);
     let createdIndicatorId: string | undefined;
     try {
-      const compiled = await runtime.compile(source).promise;
+      const compileTask = runtime.compile(source);
+      const removeCompileAbort = bindWorkerAbort(signal, compileTask);
+      let compiled;
+      try {
+        compiled = await compileTask.promise;
+      } finally {
+        removeCompileAbort();
+      }
       if (!compiled.success || compiled.program === undefined) {
         throw new KlineScriptWorkerError("COMPILE_FAILED", "KlineScript compilation failed in Worker", compiled.diagnostics);
       }
@@ -745,6 +753,7 @@ export class Chart {
         resultGeneration: -1,
         disposed: false,
         pending: new Set(),
+        ...(signal === undefined ? {} : { signal }),
       };
       const result = await this.scheduleWorkerIndicator(state, this.model.allCandles);
       if (result === undefined) throw new KlineScriptWorkerError("EXECUTION_FAILED", "KlineScript Worker returned no result");
@@ -1593,6 +1602,7 @@ export class Chart {
     const generation = ++worker.generation;
     let task: KlineScriptWorkerTask<KlineScriptExecutionResult>;
     try {
+      if (worker.signal?.aborted) return Promise.reject(new KlineScriptWorkerError("CANCELLED", "KlineScript execution was cancelled"));
       task = worker.initialized && candle !== undefined
         ? worker.runtime.updateInput(worker.sessionId, state.script.source, undefined, candle, state.parameters, {}, generation)
         : worker.runtime.updateInput(worker.sessionId, state.script.source, input ?? this.model.allCandles, undefined, state.parameters, {}, generation);
@@ -1602,6 +1612,7 @@ export class Chart {
       return Promise.reject(error);
     }
     worker.pending.add(task);
+    const removeAbort = bindWorkerAbort(worker.signal, task);
     return task.promise.then((result) => {
       worker.pending.delete(task);
       if (worker.disposed || this.destroyed || state.worker !== worker || generation !== worker.generation) return undefined;
@@ -1613,7 +1624,7 @@ export class Chart {
       return result;
     }).catch((error: unknown) => {
       worker.pending.delete(task);
-      if (!worker.disposed && !this.destroyed && state.worker === worker && generation === worker.generation) {
+      if (!worker.disposed && !worker.signal?.aborted && !this.destroyed && state.worker === worker && generation === worker.generation) {
         worker.initialized = false;
         const normalized = error instanceof Error ? error : new Error(String(error));
         this.emit("scriptError", {
@@ -1623,7 +1634,7 @@ export class Chart {
         });
       }
       throw error;
-    });
+    }).finally(removeAbort);
   }
 
   private disposeWorkerIndicator(state: ManagedChartIndicator): void {
@@ -1955,4 +1966,12 @@ function isPoint(value: unknown): value is { x: number; y: number } {
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {
   return new Chart(container, options);
+}
+
+function bindWorkerAbort<T>(signal: AbortSignal | undefined, task: KlineScriptWorkerTask<T>): () => void {
+  if (signal === undefined) return () => undefined;
+  const onAbort = (): void => task.cancel();
+  if (signal.aborted) onAbort();
+  else signal.addEventListener("abort", onAbort, { once: true });
+  return () => signal.removeEventListener("abort", onAbort);
 }

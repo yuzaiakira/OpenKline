@@ -167,3 +167,30 @@ test("Studio creates, pauses, persists, and removes a local alert", async ({ pag
   await expect(page.getByText("Alerts (0)", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+  await expect(page.getByRole("region", { name: "KlineScript editor" })).toBeVisible();
+  const source = page.getByLabel("KlineScript source");
+  await expect(source).toHaveValue(/Studio EMA/);
+  await page.getByLabel("KlineScript template").selectOption({ label: "Pointwise close" });
+  await expect(source).toHaveValue(/Pointwise close/);
+  await source.fill('indicator("Broken")\nplot(eval(close))');
+  await expect(page.getByText("KS3063", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Run in Worker", exact: true })).toBeDisabled();
+  await source.fill('indicator("Worker Studio")\nplot(close)');
+  await source.press("Control+Space");
+  await expect(page.getByRole("listbox", { name: "KlineScript completions" })).toBeVisible();
+  await page.getByRole("button", { name: "Save local", exact: true }).click();
+  await expect(page.getByText("My KlineScript", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Run in Worker", exact: true }).click();
+  await expect(page.getByText("Runtime: ready", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible();
+  await page.getByRole("button", { name: "Delete My KlineScript", exact: true }).click();
+  await expect(page.getByText("My KlineScript", { exact: true })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

@@ -100,6 +100,14 @@ test("Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecyc
     const source = 'indicator("Worker close")\nplot(close, title="Close")';
     const indicator = await chart.addScriptIndicatorAsync(source, { id: "worker-script", timeoutMs: 2_000 });
     const initial = indicator.getResult().outputs[0]?.points.at(-1)?.value;
+    const cancellationController = new AbortController();
+    cancellationController.abort();
+    let cancellationCode = "none";
+    try {
+      await chart.addScriptIndicatorAsync(source, { id: "cancelled-worker-script", signal: cancellationController.signal });
+    } catch (error) {
+      cancellationCode = (error as { code?: string }).code ?? "unknown";
+    }
     const events: unknown[] = [];
     const unsubscribe = chart.subscribe("alertTriggered", (event) => events.push(event));
     const alert = chart.addAlert({
@@ -123,13 +131,14 @@ test("Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecyc
     unsubscribe();
     indicator.remove();
     chart.destroy();
-    return { initial, updated, workerSeries, events: events.length, replayLength };
+    return { initial, updated, workerSeries, events: events.length, replayLength, cancellationCode };
   });
   expect(result.initial).not.toBeNull();
   expect(result.updated).toBe(200);
   expect(result.workerSeries?.dataLength).toBe(121);
   expect(result.events).toBeGreaterThan(0);
   expect(result.replayLength).toBe(31);
+  expect(result.cancellationCode).toBe("CANCELLED");
   await expect.poll(() => page.locator("canvas").count()).toBe(0);
   expect(pageErrors).toEqual([]);
 });

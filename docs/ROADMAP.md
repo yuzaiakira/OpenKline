@@ -244,6 +244,14 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   fallback for parameters, history, assignments, technical functions, and all
   corrections. Stateful TA incremental execution remains open; see
   `docs/architecture/klinescript-incremental-execution.md`.
+- [Implemented / In Verification] Phase 7.3.4 upgrades the private Studio
+  KlineScript surface with syntax highlighting, line numbers, precise
+  diagnostics, implemented-language autocomplete, starter templates, local
+  browser script management, Worker runtime status/cancellation, and a
+  responsive client-only layout. Monaco/CodeMirror was evaluated but not
+  added because neither dependency is available in the repository; see
+  `docs/guides/klinescript-editor.md`. Final accessibility and broader browser
+  gates remain open.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
