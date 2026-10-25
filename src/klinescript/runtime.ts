@@ -188,6 +188,7 @@ function evaluate(
     }
     case "call": result = evaluateCall(expression, environment, cache, input, budget); break;
   }
+  if (Array.isArray(result)) budget.accountVector(result.length);
   cache.set(expression.nodeId, result);
   return result;
 }
@@ -390,7 +391,7 @@ function validateParameters(inputs: readonly KlineScriptInputMetadata[], paramet
 function smaValues(values: readonly (number | null)[], period: number, budget: Budget): (number | null)[] {
   const result: (number | null)[] = [];
   for (let index = 0; index < values.length; index += 1) {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const window = values.slice(Math.max(0, index - period + 1), index + 1);
     result.push(window.length === period && window.every((item) => item !== null) ? (window as number[]).reduce((sum, item) => sum + item, 0) / period : null);
   }
@@ -401,7 +402,7 @@ function emaValues(values: readonly (number | null)[], period: number, budget: B
   const result: (number | null)[] = [];
   let previous: number | null = null;
   for (let index = 0; index < values.length; index += 1) {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const window = values.slice(Math.max(0, index - period + 1), index + 1);
     if (window.length < period || window.some((item) => item === null)) {
       result.push(null);
@@ -421,7 +422,7 @@ function rsiValues(values: readonly (number | null)[], period: number, budget: B
   let averageGain: number | null = null;
   let averageLoss: number | null = null;
   for (let index = 1; index < values.length; index += 1) {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const previous = values[index - 1] ?? null;
     const current = values[index] ?? null;
     if (previous === null || current === null) {
@@ -452,7 +453,7 @@ function rsiValues(values: readonly (number | null)[], period: number, budget: B
 function stdevValues(values: readonly (number | null)[], period: number, budget: Budget): (number | null)[] {
   const means = smaValues(values, period, budget);
   return means.map((mean, index) => {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const window = values.slice(index - period + 1, index + 1);
     if (mean === null || window.length !== period || window.some((item) => item === null)) return null;
     const numericWindow = window as number[];
@@ -462,7 +463,7 @@ function stdevValues(values: readonly (number | null)[], period: number, budget:
 
 function extremeValues(values: readonly (number | null)[], period: number, mode: "min" | "max", budget: Budget): (number | null)[] {
   return values.map((_, index) => {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const window = values.slice(index - period + 1, index + 1);
     if (window.length !== period || window.some((item) => item === null)) return null;
     return mode === "min" ? Math.min(...window as number[]) : Math.max(...window as number[]);
@@ -472,7 +473,7 @@ function extremeValues(values: readonly (number | null)[], period: number, mode:
 function atrValues(input: readonly Candle[], period: number, budget: Budget): (number | null)[] {
   const trueRanges: number[] = [];
   input.forEach((candle, index) => {
-    budget.tick();
+    budget.tickAtBar(1, index);
     const previous = input[index - 1]?.close;
     trueRanges.push(previous === undefined ? candle.high - candle.low : Math.max(candle.high - candle.low, Math.abs(candle.high - previous), Math.abs(candle.low - previous)));
   });
@@ -482,7 +483,7 @@ function atrValues(input: readonly Candle[], period: number, budget: Budget): (n
 function emaLikeWilder(values: readonly number[], period: number, budget: Budget): (number | null)[] {
   let previous: number | null = null;
   return values.map((value, index) => {
-    budget.tick();
+    budget.tickAtBar(1, index);
     if (index < period - 1) return null;
     previous = previous === null ? values.slice(index - period + 1, index + 1).reduce((sum, item) => sum + item, 0) / period : (previous * (period - 1) + value) / period;
     return previous;
@@ -500,6 +501,8 @@ function isMacd(value: RuntimeValue): value is MacdValue {
 class Budget {
   public operations = 0;
   private outputPoints = 0;
+  private currentBar = -1;
+  private operationsAtBar = 0;
 
   public constructor(private readonly limits: Required<KlineScriptRuntimeLimits>, private readonly signal?: AbortSignal) {}
 
@@ -508,6 +511,20 @@ class Budget {
     if (this.operations > this.limits.maxOperations) throw runtimeBudget("KlineScript operation budget exhausted");
     if (enforcePerBar && units > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
     this.check();
+  }
+
+  public tickAtBar(units: number, bar: number): void {
+    if (this.currentBar !== bar) {
+      this.currentBar = bar;
+      this.operationsAtBar = 0;
+    }
+    this.operationsAtBar += units;
+    if (this.operationsAtBar > this.limits.maxOperationsPerBar) throw runtimeBudget("KlineScript per-bar operation budget exhausted");
+    this.tick(units, false);
+  }
+
+  public accountVector(length: number): void {
+    this.tick(length, false);
   }
 
   public checkLookback(value: number): void {

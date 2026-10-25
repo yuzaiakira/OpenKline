@@ -87,5 +87,8 @@ validation, and a pure `calculate(input, parameters)` function. They may also
 provide `calculateIncremental` when they can prove append-only correctness.
 
 Registered definitions are not arbitrary scripts and are never evaluated with
-`eval` or `new Function`. A future KlineScript runtime can call this same
-contract after its own deterministic, sandboxed execution policy is designed.
+`eval` or `new Function`. KlineScript v0.1 now calls this same contract through
+`compileKlineScript` and `Chart.addScriptIndicator` after restricted lexical,
+semantic, type, budget, and runtime validation. See
+`docs/api/klinescript.md`; the DSL is not an OS-level sandbox and is not full
+Python/Pine compatibility.

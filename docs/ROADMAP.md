@@ -77,6 +77,18 @@ roadmap does not treat those blocked runs as verified or change their gate.
   and the first compiler/runtime regression suite. Phase 4 verification remains
   open until integration, browser, performance, and handover evidence is
   complete.
+- [Implemented] Phase 4.2 restricted interpreter with deterministic series
+  semantics, validated technical/math intrinsics, budgets, cancellation,
+  invalid-input diagnostics, and native parity fixtures.
+- [Implemented] Phase 4.3 integration through the existing Indicator Engine,
+  Chart panes/styles/lifecycle, correction recomputation, and serializable
+  workspace source references.
+- [Implemented] Phase 4.4 public compiler/execute APIs, React and Next.js
+  consumption, a dependency-free Vanilla playground, examples, and local
+  KlineScript benchmarks.
+- [In Verification] Phase 4.5 complete handover report. Chromium and Mobile
+  Chrome are verified; inherited Firefox/WebKit/Mobile Safari Playwright
+  criteria remain environment-blocked and therefore Phase 4 is not closed.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

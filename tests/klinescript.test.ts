@@ -141,4 +141,5 @@ test("runtime enforces cancellation and operation budgets", () => {
   controller.abort();
   assert.throws(() => result.program.execute(candles([1, 2]), {}, { signal: controller.signal }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_CANCELLED");
   assert.throws(() => result.program.execute(candles([1, 2, 3]), {}, { maxOperations: 1 }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET");
+  assert.throws(() => result.program.execute(candles([1, 2, 3]), {}, { maxOperationsPerBar: 0 }), (error: unknown) => error instanceof KlineScriptRuntimeError && error.code === "RUNTIME_BUDGET");
 });

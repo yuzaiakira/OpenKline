@@ -1,0 +1,203 @@
+# OpenKline Phase 4 verification
+
+Date: 2026-10-25 (Asia/Tehran)
+
+Status: **Implementation milestones 4.0–4.4 implemented and locally verified;
+Phase 4.5 remains open.** The inherited Firefox, WebKit, and Mobile Safari
+Playwright gate is still blocked by the browser environment. This report does
+not claim full browser compatibility, a hardened OS sandbox, or Phase 4
+closure.
+
+## Acceptance matrix
+
+| Requirement | Status | Evidence / limitation |
+| --- | --- | --- |
+| Documented v0.1 grammar and types | Implemented / Verified | `docs/klinescript/{language-spec,grammar,types}.md`; compiler tests |
+| Lexer with spans and invalid-token diagnostics | Implemented / Verified | `src/klinescript/lexer.ts`; malformed-source tests |
+| Precedence-aware parser and error recovery | Implemented / Verified | `src/klinescript/parser.ts`; compiler/fuzz tests |
+| Semantic analysis and type checking | Implemented / Verified | `src/klinescript/checker.ts`; fixed intrinsic/name/argument checks |
+| Immutable compiled program and public compile API | Implemented / Verified | `compileKlineScript`, frozen metadata, package smoke |
+| Restricted runtime without dynamic JS execution | Implemented / Verified | AST interpreter; source audit finds no runtime `eval`/`new Function` |
+| Dataset/lookback/AST/token/output/operation budgets | Implemented / Verified | compiler and runtime limits; aggregate and per-bar budget tests |
+| Cancellation and idempotent indicator disposal | Implemented / Verified | cooperative `AbortSignal`; existing IndicatorInstance disposal |
+| True wall-clock interruption / JS heap cap | Not Implemented | synchronous runtime cannot promise either; no false sandbox claim |
+| OHLCV/time, missing, warm-up, historical indexing | Implemented / Verified | deterministic runtime tests and documented semantics |
+| Native-compatible SMA/EMA/RSI/ATR behavior | Implemented / Verified | parity fixtures against existing Indicator Engine |
+| MACD, stdev, highest, lowest, safe math | Implemented / Verified | compiler/runtime tests and documented fixed projections |
+| Indicator inputs, plots, hlines, multi-output metadata | Implemented / Verified | output/input tests and chart integration |
+| Existing Indicator Engine and pane integration | Implemented / Verified | `Chart.addScriptIndicator`; Chromium playground test |
+| Append/developing/correction behavior | Implemented / Verified | full snapshot recomputation through existing lifecycle; corrections tested |
+| O(1) script append path | Not Implemented | v0.1 intentionally prioritizes correctness; updates are full recomputes |
+| Workspace persistence of script definitions | Implemented / Verified | source/program-id-only references; Chromium restore test |
+| Vanilla editor/playground | Implemented / Verified | `examples/vanilla/klinescript.html`; Chromium test |
+| React script integration and cleanup | Implemented / Verified | `scriptIndicators` prop, SSR/typecheck, cleanup path |
+| Next.js server-safe compilation/production use | Implemented / Verified | example script and Next.js 15.5.28 production build |
+| Package installation and public exports | Implemented / Verified | `package:check`, `package:smoke`, root build |
+| Chromium browser behavior | Verified | 3/3 tests pass; Headless Chromium 154.0.0.0 |
+| Mobile Chrome emulation | Verified | 3/3 tests pass using Chromium 154 / Pixel 7 profile |
+| Firefox Playwright | Blocked | Firefox 157 / build 1555 binary unavailable; no substitute used |
+| WebKit Playwright | Blocked | WebKit 27.2 / build 2370 binary unavailable; no substitute used |
+| Mobile Safari emulation | Blocked | depends on unavailable Playwright WebKit binary |
+| Property/fuzz coverage | Implemented / Verified | bounded deterministic malformed-source seeds; not unbounded fuzzing |
+| Phase 2 browser gate | Blocked | preserved as an inherited project acceptance item |
+| Git identity, push, no Actions | Verified | commits below; no `.github/workflows/` directory |
+| Phase 4 milestone closure | Open | 4.5 remains open while browser criteria are blocked |
+
+## Implemented language subset
+
+Programs are line-separated, indentation-insensitive, and begin with one
+`indicator` declaration. Bindings use `name = expression`. Supported syntax is
+numeric/string/boolean/missing literals, comments, arithmetic, comparisons,
+boolean operators, parentheses, conditional expressions, named/positional
+arguments, fixed `ta.*`/`input.*` calls, and non-negative historical indexes.
+The fixed MACD projections are `.macd`, `.signal`, and `.histogram`.
+
+The language deliberately does not implement loops, recursion, user functions,
+imports, arbitrary object/member traversal, browser/Node globals, strategy
+orders, drawing calls, sessions, Python compatibility, or Pine compatibility.
+The exact grammar and type rules are in `docs/klinescript/`.
+
+## Compiler and runtime evidence
+
+The pipeline is:
+
+```text
+source -> lexer -> AST -> semantic/type checker -> frozen compiled program
+       -> bounded interpreter -> IndicatorDefinition -> Chart series/panes
+```
+
+Diagnostics have stable codes, severity, message, and one-based source spans.
+For example, `plot(eval(close))` reports `KS3063` at the call and
+`ta.unknown(close, 3)` reports `KS3066` on the technical call. Invalid source
+never produces an executable program.
+
+The interpreter evaluates defensive candle snapshots and memoizes expression
+vectors per execution. No script receives CandleStore, PointStore, renderer
+state, prototypes, host callbacks, filesystem, network, DOM, or dynamic code
+execution. `AbortSignal` cancellation is checked at deterministic work
+boundaries. This is a restricted DSL boundary, not an OS-level security
+sandbox; hostile deployments still need process/Worker isolation and a host
+termination policy.
+
+## Built-ins and financial correctness
+
+The verified built-ins are `ta.sma`, `ta.ema`, `ta.rsi`, `ta.macd`, `ta.atr`,
+`ta.stdev`, `ta.highest`, `ta.lowest`, scalar `abs/min/max/sqrt/pow/round/floor/ceil`,
+typed inputs, `plot`, and `hline`. EMA, RSI, and ATR use the same warm-up and
+smoothing conventions as the current native Indicator Engine. Missing values
+are `null` in aligned series; arithmetic/comparison/conditional operations
+propagate missing values. Bars are ascending UTC Unix milliseconds and sessions
+are not inferred from wall-clock timestamps.
+
+Script instance updates use the full ordered snapshot. This makes append,
+developing-bar replacement, historical correction, and parameter changes
+deterministic and isolated, but the v0.1 implementation does not claim O(1)
+script updates.
+
+## Commands and results
+
+Executed locally:
+
+| Command | Result |
+| --- | --- |
+| `npm run typecheck` | Pass |
+| `npm test` | Pass: 43 Node tests |
+| `npm run test:browser` | Pass: 3 Chromium tests |
+| `npx playwright test --project=mobile-chrome` | Pass: 3 tests |
+| `npm run test:browser:compat` | 3 Mobile Chrome passed; 9 Firefox/WebKit/Mobile Safari launches blocked; command exits non-zero by design |
+| `cd examples/nextjs-app-router && npm run build` | Pass: Next.js 15.5.28 |
+| `npm run package:check` | Pass: packed public package contains compiler/runtime exports |
+| `npm run package:smoke` | Pass: clean tarball consumer imports ESM package |
+| `npm run benchmark:browser` | Pass: measured Canvas2D and cleanup output below |
+| `npm run benchmark:klinescript` | Pass: measured runtime output below |
+| source audit / `test ! -d .github/workflows` | Pass: no GitHub Actions and no dynamic runtime execution |
+
+The compiler/runtime suite includes deterministic malformed-source seeds for
+unterminated strings, Unicode policy boundaries, nested expressions, unknown
+intrinsics, and attempts to reference `constructor`, `globalThis`, and `eval`.
+
+## Browser and environment
+
+Project Playwright is `1.64.1`. The official dry-run requires Firefox 157
+(Playwright build 1555) and WebKit 27.2 (build 2370); those cache entries were
+absent. The official pinned Docker attempt
+`mcr.microsoft.com/playwright:v1.64.1-noble` also failed with `Forbidden` while
+downloading image layers. No arbitrary binaries, system Firefox, or system
+Safari were substituted. The existing Chromium configuration uses the
+available Headless Chromium 154.0.0.0 executable.
+
+## Performance and memory
+
+The current Canvas2D benchmark ran with Headless Chromium 154.0.0.0,
+`--disable-gpu`, and the repository's deterministic fixture:
+
+| Candles | rAF FPS | Frame p50/p95 (ms) | Frame-work p50/p95 (ms) | Append/update (ms) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 58.06 | 16.7 / 18.1 | 2.5 / 6.7 | 2.969 |
+| 10,000 | 63.55 | 16.7 / 16.8 | 1.0 / 1.4 | 0.656 |
+| 100,000 | 63.73 | 16.6 / 17.7 | 0.7 / 2.9 | 0.647 |
+
+Observed heap was 398.70 MB before destruction and 1.90 MB after destruction;
+remaining canvas count was zero. These are engine/workload observations, not
+memory caps or universal performance claims. The 100k FPS observation is in
+line with the prior recorded ~62 FPS baseline; no Canvas subsystem rewrite was
+made for KlineScript.
+
+The KlineScript benchmark ran on Node.js v24.19.0 Linux x64. Final observed
+values were compile 3.13 ms; historical execution median/p95 1.43/1.43 ms at
+1k, 3.89/3.89 ms at 10k, and 39.21/39.21 ms at 100k; 500,004 counted
+operations at 100k; ten lifecycle updates 6.33 ms; four concurrent 10k
+instances 24.25 ms; pre-cancelled execution raised `KlineScriptRuntimeError`;
+and disposal completed. Three samples make these directional local
+observations, not release budgets.
+
+## Public API and documentation
+
+The root package exports `compileKlineScript`, diagnostic/runtime types,
+`KlineScriptCompiledProgram`, `execute`/`createIndicatorDefinition`, and
+`Chart.addScriptIndicator`. `@openkline/react` exports the
+`scriptIndicators` prop. Runnable documentation is in:
+
+- `docs/api/klinescript.md`
+- `docs/klinescript/{language-spec,grammar,types,builtins,examples}.md`
+- `docs/architecture/klinescript*.md` and ADRs 004–008
+- `docs/guides/{writing-indicators,debugging-scripts}.md`
+- `examples/vanilla/klinescript.html`
+- `examples/nextjs-app-router/app/example-script.ts`
+
+## Known technical debt and deferred scope
+
+- A synchronous evaluator cannot hard-preempt arbitrary wall-clock work or
+  enforce a JavaScript heap cap. A terminating Worker/process boundary is a
+  future host feature, not silently implied by this runtime.
+- Script updates recompute full history. Incremental script state/bytecode
+  optimization is deferred until a correctness-preserving design is measured.
+- Session metadata/intrinsics, loops, user functions, imports, strategy/order
+  APIs, drawing language, plugin marketplace, and Python/Pine compatibility are
+  deliberately not implemented.
+- Firefox, WebKit, and Mobile Safari require official Playwright artifacts from
+  an environment with access to the official CDN/image registry. The project
+  acceptance gate remains open; no exception was invented in this report.
+- Phase 3's trusted TypeScript plugins remain trusted in-process code and are
+  not converted into the KlineScript security model.
+
+## Git verification and Phase 2 readiness
+
+The Phase 4 implementation commits use `Akira Yuzai <yuzai.akira@gmail.com>`
+as both author and committer and were pushed immediately after verification:
+
+- `0d4602b` — compiler/runtime foundation
+- `7464dad` — workspace source references
+- `2c6c6a7` — integration playground and benchmarks
+- `3ee7e1d` — runtime correctness and fuzz coverage
+- `a7e4d98` — browser workspace restoration
+
+The branch was `work`, the latest implementation push was synchronized with
+`origin/work` at `a7e4d98` before this report commit, and no history was
+rewritten or force-pushed. The report commit itself must use the same identity
+and be pushed as the final documentation increment.
+
+Phase 2 remains ready for continued work only under its already documented
+environment exception; it is not closed by Phase 4. Phase 4 is **not ready to
+close** until the owner accepts the unresolved browser gate or the official
+Firefox/WebKit artifacts become available and the compatibility suite passes.
