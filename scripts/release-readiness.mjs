@@ -44,6 +44,7 @@ runGate("package-portability", "npm", ["run", "package:portability"]);
 runGate("distribution", "npm", ["run", "distribution:check"]);
 runGate("package-smoke", "npm", ["run", "package:smoke"]);
 runGate("consumer-smoke", "node", ["scripts/consumer-preview-smoke.mjs"]);
+runGate("trusted-browser-evidence", "npm", ["run", "evidence:browser:check"]);
 runGate("license-inventory", "node", ["scripts/validate-license-inventory.mjs"]);
 runGate("root-audit", "npm", ["audit", "--json", "--include=dev"]);
 runGate("next-audit", "npm", ["audit", "--json", "--include=dev"], { cwd: join(root, "examples/nextjs-app-router") });

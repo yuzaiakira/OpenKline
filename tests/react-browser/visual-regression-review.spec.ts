@@ -1,9 +1,24 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { expect, test, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-function reviewScreenshot(bytes: Buffer, fileName: string, testInfo: TestInfo): void {
+const visualReviewEnvironment = {
+  locale: "en-US",
+  timezoneId: "UTC",
+  deviceScaleFactor: 1,
+  reducedMotion: "reduce" as const,
+  fixture: "private Next.js Studio deterministic demo",
+};
+
+test.use({
+  locale: visualReviewEnvironment.locale,
+  timezoneId: visualReviewEnvironment.timezoneId,
+  deviceScaleFactor: visualReviewEnvironment.deviceScaleFactor,
+  reducedMotion: visualReviewEnvironment.reducedMotion,
+});
+
+async function reviewScreenshot(bytes: Buffer, fileName: string, testInfo: TestInfo, page: Page): Promise<void> {
   const generatedPath = testInfo.outputPath(fileName);
   writeFileSync(generatedPath, bytes);
   const baselineRoot = process.env.OPENKLINE_VISUAL_BASELINE_DIR;
@@ -26,6 +41,12 @@ function reviewScreenshot(bytes: Buffer, fileName: string, testInfo: TestInfo): 
   writeFileSync(testInfo.outputPath(`${basename(fileName, ".png")}.image-difference.json`), `${JSON.stringify({
     schemaVersion: 1,
     status,
+    environment: {
+      ...visualReviewEnvironment,
+      project: testInfo.project.name,
+      browserVersion: page.context().browser()?.version() ?? "unknown",
+      viewport: page.viewportSize(),
+    },
     generated: { path: generatedPath, bytes: bytes.byteLength, sha256: createHash("sha256").update(bytes).digest("hex") },
     baseline: baselinePath === null ? null : { path: baselinePath, bytes: baselineBytes },
     differentBytes,
@@ -37,11 +58,11 @@ test("captures deterministic desktop and light-theme review artifacts", async ({
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(1);
-  const dark = await page.screenshot({ path: testInfo.outputPath("studio-dark.png"), fullPage: true });
-  reviewScreenshot(dark, "studio-dark.png", testInfo);
+  const dark = await page.screenshot({ path: testInfo.outputPath("studio-dark.png"), fullPage: true, animations: "disabled" });
+  await reviewScreenshot(dark, "studio-dark.png", testInfo, page);
   await page.getByLabel("Theme").selectOption("light");
-  const light = await page.screenshot({ path: testInfo.outputPath("studio-light.png"), fullPage: true });
-  reviewScreenshot(light, "studio-light.png", testInfo);
+  const light = await page.screenshot({ path: testInfo.outputPath("studio-light.png"), fullPage: true, animations: "disabled" });
+  await reviewScreenshot(light, "studio-light.png", testInfo, page);
   expect(dark.byteLength).toBeGreaterThan(10_000);
   expect(light.byteLength).toBeGreaterThan(10_000);
 });
@@ -50,7 +71,7 @@ test("captures a deterministic narrow-layout review artifact", async ({ page }, 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(1);
-  const mobile = await page.screenshot({ path: testInfo.outputPath("studio-mobile.png"), fullPage: true });
-  reviewScreenshot(mobile, "studio-mobile.png", testInfo);
+  const mobile = await page.screenshot({ path: testInfo.outputPath("studio-mobile.png"), fullPage: true, animations: "disabled" });
+  await reviewScreenshot(mobile, "studio-mobile.png", testInfo, page);
   expect(mobile.byteLength).toBeGreaterThan(5_000);
 });
