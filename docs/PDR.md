@@ -772,3 +772,29 @@ The latest cloud Chromium suite passes 23/23 and Next production build passes.
 Current-revision trusted standalone and Studio five-browser runs, formal
 accessibility, physical devices, legal review, and owner release approval
 remain open.
+
+## Phase 8.8.4 Studio cross-browser defect remediation — engineering complete; compatibility gates open
+
+The Phase 8.8.3 trusted Studio evidence was audited as a structured 30-failure
+ledger rather than treated as an undifferentiated browser failure. The evidence
+validator now checks the complete Phase 8.8.3 pack, including 70 standalone
+records, 105 Studio records, the 75/30 reconciliation, failure classifications,
+required diagnostic fields, provenance, and sanitization. Evidence-integrity
+validation remains independent from the Studio behavior result, which remains
+open.
+
+Phase 8.8.4 fixes the reproducible responsive overlay and pointer-interception
+defects, normalizes Canvas pointer/touch coordinates through the element
+bounding box, adds `touch-action: none`, and makes unchanged chart resize
+notifications idempotent. The responsive Studio tests now assert the intended
+inactive-panel behavior and perform hit-test checks without forced clicks.
+Local typecheck, 160 Node tests, 14 standalone Chromium tests, 24 Studio
+Chromium tests, and the versioned evidence validator pass.
+
+The trusted Phase 8.8.3 records target source `8a62e324` and do not certify the
+remediated source. Current-revision managed Firefox, WebKit, Mobile Chrome,
+and Mobile Safari execution is still required. Async state failures and bare
+timeouts remain open where the evidence did not identify a causal runtime
+defect. Physical-device, formal accessibility, visual approval, legal, and
+owner release gates also remain open; Phase 8.8.4 is not a release-approval
+claim.

@@ -56,6 +56,13 @@ supplemental probe remain open until named failures and traces are available
 or a reproducible fix is independently verified. System Chromium emulation
 does not certify Playwright WebKit or mobile Safari.
 
+Phase 8.8.4 records the complete 30-failure ledger and independently validates
+the Phase 8.8.3 evidence pack. Responsive overlay and Canvas pointer/touch
+remediations pass local system-Chromium regression coverage, but the trusted
+managed Studio rerun targets the final source before the Studio compatibility
+gate can close. Bare timeout and async-state records remain open where the
+evidence does not establish a causal product defect.
+
 The command never publishes npm packages, creates tags or releases, changes the
 effective license, uses GitHub Actions, or selects a public version/channel.
 The existing `npm run release:check` remains a historical broad hard gate; use
