@@ -83,6 +83,31 @@ and SHA-256 artifact hashes. Its status is `verified-local-diagnostic`, never
 `verified` for the managed-browser policy. It does not run Firefox, WebKit, or
 Mobile Safari and must not be used to claim those projects.
 
+## GitHub evidence handoff
+
+The current trusted-machine result for source commit
+`19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa` is preserved as a compact,
+sanitized GitHub evidence pack at
+[`docs/evidence/browser/phase-8-6-1/`](../evidence/browser/phase-8-6-1/),
+from evidence branch commit
+`ac408424f8c1880615fea6b0994dc3b7abbddb0a`. The cloud validator is
+`npm run evidence:browser:check`; it confirms the exact source SHA, Playwright
+1.64.1, official image digest, five managed projects, 70 unique passing
+records, per-project 14/14 totals, archive hash format, and sanitization.
+
+The complete trusted-machine archive remains outside GitHub. Its recorded
+SHA-256 is provenance from the trusted host and is not recomputed in the cloud:
+
+```text
+openkline-phase-8-6-1-matrix-20261026T153655Z.tar.gz
+73bc6e2b12db91c87a85c1e82bcaf35395ba8291a1d2b39629f7ebf69d77fe3c
+```
+
+This evidence confirms automated managed-browser emulation for the tested
+source revision. It does not claim that the cloud executed those browsers,
+does not verify native pinch or physical devices, and does not close
+accessibility, visual-baseline, legal, or release-authorization gates.
+
 ## Behavior covered
 
 The existing browser suite asserts chart initialization, candlestick/line/area/
@@ -96,19 +121,12 @@ The current cloud machine has no official managed browser executables. Its
 report is intentionally blocked; use it only as reproducible diagnostics, not
 as a passing compatibility claim.
 
-On a trusted Manjaro host, the official pinned container
+The historical trusted Manjaro run used the official pinned container
 `mcr.microsoft.com/playwright:v1.64.1-noble`
 (`sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea`)
-ran the full portable matrix for commit
+ran the historical matrix for commit
 `4d689c86f619f32e4d91f90c4e3b03576ea38d6c` with all five projects passing
-(65/65). Mobile Safari zoom coverage uses the public `chart.zoom()` API path
-because Playwright rejects `mouse.wheel` on mobile WebKit; desktop wheel zoom
-remains native. That result is automated emulation only—not native iOS or
-physical-device verification. The result is recorded from the trusted report;
-the named archive is not available in the current workspace, so its stated
-SHA-256 has not been independently recomputed here. Request
-`openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz` together with
-`environment.json`, `summary.json`, `playwright-results.json`, and
-`test-results/` before treating the five-browser result as independently
-validated. See
+(65/65). The current 70/70 result is the Phase 8.6.1 evidence pack described
+above. Both are automated emulation only—not native iOS or physical-device
+verification. See
 [`browser-compatibility-matrix.md`](./browser-compatibility-matrix.md).

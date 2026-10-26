@@ -288,6 +288,29 @@ Phase 8.6 accessibility, visual regression, and release evidence consolidation
   baselines, physical-device decision/evidence, effective-license and
   third-party-notice approvals, and owner release authorization.
 
+Phase 8.6.2 GitHub evidence integration and release-quality completion —
+**Engineering implemented; release gate open**.
+
+- [Implemented / Verified] The trusted-machine evidence branch
+  `qa/phase-8-6-1-browser-evidence` was reviewed and integrated without
+  unrelated files. `npm run evidence:browser:check` validates source commit
+  `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`, official Playwright provenance,
+  70 unique records, five 14/14 project totals, SHA-256 formats, and
+  sanitization. Full archives remain trusted-machine-only; their hashes are
+  not recomputed in cloud.
+- [Implemented / Verified locally] Visual review determinism now records and
+  fixes locale, UTC, device scale, reduced motion, viewport, fixture metadata,
+  resolved browser version, and disabled screenshot animations. Candidates
+  remain unapproved until owner review.
+- [Verified locally] Typecheck, 156 Node tests, API compatibility, package
+  portability/smoke/distribution, Studio separation, 14 Vanilla Chromium
+  tests, 20 React/Studio Chromium tests, Next.js production build, and the
+  trusted-evidence consistency gate pass.
+- [Gate Open] Local managed-browser execution is blocked by unavailable
+  Playwright binaries; physical-device, formal accessibility, visual-baseline,
+  legal, third-party-notice, and owner release-authorization gates remain
+  unresolved. Phase 8.6.2 does not mark the project release-ready.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

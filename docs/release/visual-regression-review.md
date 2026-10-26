@@ -27,6 +27,28 @@ is reported as `UNABLE TO VERIFY`. The comparison never writes or approves a
 baseline and its byte-difference count is only a review signal, not a pixel,
 WCAG, or cross-browser compatibility claim.
 
+## Phase 8.6.2 determinism controls
+
+The review test now records and fixes the major environment inputs that can
+change a candidate:
+
+| Input | Controlled value |
+| --- | --- |
+| Locale | `en-US` |
+| Time zone | `UTC` |
+| Device scale factor | `1` |
+| Reduced motion | `reduce` |
+| Animation capture | Playwright screenshot animations disabled |
+| Desktop viewport | `1280×900` |
+| Narrow viewport | `390×844` |
+| Fixture | Private Next.js Studio deterministic demo |
+
+Each difference report also records the Playwright project, resolved browser
+version, and viewport. Font availability and Canvas rasterization remain
+machine/engine properties and must be held constant by the reviewer when
+approving a baseline. The current targeted Chromium run generated candidates
+with status `SCREENSHOT GENERATED`; no baseline was approved.
+
 ## Review procedure
 
 ```bash

@@ -678,3 +678,25 @@ Playwright executables are absent. Phase 8.6 is not release-ready and cannot
 be closed until archive validation, formal accessibility review, visual
 baseline approval, physical-device decisions, effective-license and notice
 approvals, and owner release authorization are resolved.
+
+## Phase 8.6.2 GitHub evidence integration and release-quality completion — engineering complete; release gate open
+
+The trusted Manjaro Phase 8.6.1 result is now integrated through the compact
+GitHub evidence branch `qa/phase-8-6-1-browser-evidence`. The reviewed pack is
+limited to four sanitized QA records and targets source commit
+`19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`. The reusable
+`npm run evidence:browser:check` command validates the exact source revision,
+official Playwright 1.64.1/image provenance, all five managed projects, 70
+unique passing records, totals, recorded SHA formats, and sanitization. It
+does not recompute trusted-machine tarballs or claim cloud execution of those
+browsers.
+
+The deterministic visual review now fixes locale, UTC timezone, device scale,
+reduced motion, viewport, fixture metadata, resolved browser version, and
+disabled screenshot animations. It still generates review candidates only;
+owner-approved baselines are not present. Local type, Node, API, package,
+Studio, Chromium, React, Next.js, and release-readiness engineering gates
+pass, while the local managed-browser runner remains blocked and formal
+accessibility, physical-device, visual approval, legal, and owner release
+gates remain open. See
+`docs/reports/phase-8-6-2-verification.md` for the acceptance matrix.

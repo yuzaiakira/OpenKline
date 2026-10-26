@@ -243,3 +243,22 @@ physical-device decision/evidence, legal approvals, and owner release
 authorization are mandatory unresolved gates. No later phase should be
 treated as release authorization until the owner explicitly resolves those
 gates or records an approved exception.
+
+## Phase 8.6.2 evidence update
+
+The later trusted-machine run supersedes the earlier unvalidated browser
+provenance for the current source revision. GitHub branch
+`qa/phase-8-6-1-browser-evidence`, commit
+`ac408424f8c1880615fea6b0994dc3b7abbddb0a`, records 14/14 for each of
+Chromium, Firefox, WebKit, Mobile Chrome emulation, and Mobile Safari
+emulation on source commit
+`19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`. The compact records were reviewed
+and integrated in `13091be`; `npm run evidence:browser:check` reports PASS for
+70 unique expected/passed records, totals, provenance, hash formats, and
+sanitization.
+
+The complete archives remain outside GitHub. Their SHA-256 values are recorded
+from the trusted host and are not recomputed in this cloud checkout. The
+current evidence therefore clears the trusted-record consistency gate, not the
+physical-device, formal accessibility, visual-baseline, legal, or owner
+release gates. OpenKline remains **NOT RELEASE READY**.
