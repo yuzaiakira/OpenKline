@@ -62,6 +62,7 @@ try {
       });
       unsubscribe();
       session.dispose();
+      measurements[measurements.length - 1].statusAfterDispose = session.getStatus().state;
     }
     const cancellationSession = createBacktestWorker({ ...base, candles: makeCandles(500_000) });
     const cancellationStartedAt = performance.now();
@@ -77,12 +78,13 @@ try {
     const cancellationMs = performance.now() - cancellationStartedAt;
     const cancellationState = cancellationSession.getStatus().state;
     cancellationSession.dispose();
+    const cancellationDisposedState = cancellationSession.getStatus().state;
     globalThis.gc?.();
     return {
       userAgent: navigator.userAgent,
       generatedAt: new Date().toISOString(),
       measurements,
-      cancellation: { code: cancellationCode, elapsedMs: Number(cancellationMs.toFixed(3)), state: cancellationState },
+      cancellation: { code: cancellationCode, elapsedMs: Number(cancellationMs.toFixed(3)), state: cancellationState, disposedState: cancellationDisposedState },
       usedHeapBytes: performance.memory?.usedJSHeapSize ?? null,
     };
   });

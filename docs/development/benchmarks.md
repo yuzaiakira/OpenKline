@@ -89,7 +89,7 @@ different fixture.
 The Worker benchmark boundary is intentionally separate from the synchronous
 table. A Worker measurement must report dataset structured-clone/initialization
 time, built-in engine time, result transfer time, cancellation/restart time,
-and post-disposal heap in the same environment. The Studio 500,000-bar
+and post-disposal status/heap in the same environment. The Studio 500,000-bar
 cancel test verifies responsiveness and cleanup but is an interaction test,
 not a throughput benchmark. It does not establish a universal Worker FPS,
 latency, or memory target.
@@ -97,7 +97,8 @@ latency, or memory target.
 `benchmark:strategy-worker` runs the actual built ESM Worker in local headless
 Chromium at 1,000/10,000/100,000 candles. It reports first progress latency,
 first-run and repeat-run time, serialized result size, repeat parity, status
-after disposal, and a separate 500,000-bar cancellation observation. It is a
+before and after disposal, and a separate 500,000-bar cancellation observation.
+It is a
 reproducible local transport/engine measurement, not a cross-browser or
 universal performance claim.
 
