@@ -9,6 +9,24 @@ export type {
   PaperMarketStreamStatus,
 } from "./market.js";
 export { parsePaperTradingDocument, serializePaperTradingDocument } from "./persistence.js";
+export { PaperMarketDataStaleResponseError, PaperMarketDataValidationError, PaperRestMarketAdapter, normalizePaperEvent } from "./rest.js";
+export { PaperWebSocketMarketAdapter } from "./websocket.js";
+export type {
+  PaperHistoryQuery,
+  PaperRestEventPage,
+  PaperRestEventPayload,
+  PaperRestFetcher,
+  PaperRestMarketAdapterOptions,
+} from "./rest.js";
+export type {
+  PaperMarketErrorListener,
+  PaperMarketEventListener,
+  PaperWebSocketLike,
+  PaperWebSocketMarketAdapterOptions,
+  PaperWebSocketScheduler,
+  PaperWebSocketSubscription,
+  PaperWebSocketSubscriptionStatus,
+} from "./websocket.js";
 export {
   OPENKLINE_PAPER_TRADING_VERSION,
   PaperTradingLifecycleError,

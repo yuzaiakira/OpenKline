@@ -39,3 +39,14 @@ parse/serialize helpers for persistence. Call `dispose()` to remove listeners.
 The deterministic stream is a test/demo source. It does not represent a real
 exchange and does not authorize live execution.
 
+## Transport adapters
+
+`PaperRestMarketAdapter` and `PaperWebSocketMarketAdapter` are reference
+transport boundaries. Inject a fetcher or socket in tests and map the vendor
+payload to the documented event fields. REST history is paginated and
+cancelable; a newer request makes an older response stale. WebSocket
+reconnection is bounded and subscriptions are disposable. The adapters
+normalize timestamps and validate prices, symbols, modes, quote status, and
+sequence numbers, but they do not decide whether an account should fill an
+event—that remains the account engine's causal policy.
+

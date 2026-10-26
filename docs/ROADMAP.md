@@ -84,6 +84,12 @@ benchmark, and broader browser acceptance remain open.
   order, event, deterministic stream, and persistence contracts. Local Node
   tests cover causal fills, idempotency, stale/duplicate/out-of-order/replay
   isolation, state round trips, disconnect/reconnect, and invalid events.
+- [Implemented / Verified] Phase 8.1.1 adds injected REST and WebSocket paper
+  market adapters with timestamp normalization, bounded pagination, safe
+  origin checks, cancellation/stale-response protection, duplicate handling,
+  bounded reconnect backoff, and subscription cleanup. Deterministic fake
+  fetch/socket tests pass locally; no vendor integration or credentials are
+  claimed.
 
 ## Completed
 

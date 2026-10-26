@@ -442,6 +442,13 @@ idempotency, stale and ordering protection, replay isolation, and versioned
 JSON persistence. It is explicitly simulated and has no broker or live-order
 side effect. The deterministic market stream is a test/demo source only.
 
+Phase 8.1.1 adds reusable injected REST and WebSocket market adapters. REST
+history has bounded, origin-checked pagination, UTC timestamp normalization,
+cancellation, and stale-response protection. WebSocket subscriptions validate
+events, handle identical duplicates, reconnect with bounded backoff, and clean
+up timers and handlers. These adapters remain vendor-neutral and do not
+authorize live execution.
+
 The account, stream, and persistence contracts are documented in
 `docs/architecture/paper-trading-engine.md`,
 `docs/architecture/paper-market-data.md`,

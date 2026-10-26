@@ -158,6 +158,11 @@ export {
   parsePaperTradingDocument,
   restorePaperTradingAccount,
   serializePaperTradingDocument,
+  PaperMarketDataStaleResponseError,
+  PaperMarketDataValidationError,
+  PaperRestMarketAdapter,
+  PaperWebSocketMarketAdapter,
+  normalizePaperEvent,
 } from "./paper-trading/index.js";
 export type {
   PaperAccountSnapshot,
@@ -193,6 +198,18 @@ export type {
   PaperTradingListener,
   PaperTradingMode,
   PaperTradingStatus,
+  PaperHistoryQuery,
+  PaperRestEventPage,
+  PaperRestEventPayload,
+  PaperRestFetcher,
+  PaperRestMarketAdapterOptions,
+  PaperMarketErrorListener,
+  PaperMarketEventListener,
+  PaperWebSocketLike,
+  PaperWebSocketMarketAdapterOptions,
+  PaperWebSocketScheduler,
+  PaperWebSocketSubscription,
+  PaperWebSocketSubscriptionStatus,
 } from "./paper-trading/index.js";
 export type {
   AdxParameters,

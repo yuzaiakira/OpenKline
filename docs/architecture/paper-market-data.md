@@ -17,3 +17,20 @@ The stream is suitable for unit tests, examples, and local Studio demos. It
 is not a market-data simulator with statistical guarantees and must not be
 used as evidence of trading performance.
 
+## Reference transport adapters
+
+`PaperRestMarketAdapter` loads pages of normalized quote events through an
+injected `fetch`-compatible function. It bounds pages, rejects pagination
+loops and untrusted origins, normalizes seconds/ISO timestamps to UTC
+milliseconds, last-writes duplicate event ids, filters the requested range,
+and returns a deterministic time/sequence order. A new load supersedes and
+aborts the prior load; a transport that ignores abort still cannot publish a
+stale response.
+
+`PaperWebSocketMarketAdapter` accepts an injected WebSocket-like transport.
+It validates messages, filters symbols, drops identical duplicate events,
+forwards corrected event payloads for the account's duplicate policy, and
+reconnects with bounded exponential backoff. `stop()` detaches all handlers,
+cancels the reconnect timer, closes the socket, and prevents late callbacks.
+Neither adapter embeds a vendor schema or credential policy.
+
