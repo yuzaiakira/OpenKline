@@ -32,6 +32,12 @@ replay/Studio integration, and final verification remain open.
   reversal, Donchian breakout, and EMA trend-following definitions backed by
   the existing Indicator Engine. Signals remain separate from orders and
   fills; execution, accounting, metrics, and Studio integration remain open.
+- [Implemented / Verified] Phase 8.0.2 adds deterministic single-symbol market
+  order simulation with next-bar-open fills, required commission/slippage,
+  fixed/notional/equity sizing, explicit short limits, reversal policy, cash/
+  equity accounting, trade ledger, open-position mark-to-market, and
+  cancellation/lifecycle handling. Protective orders, metrics, replay, and UI
+  remain open.
 
 ## Completed
 

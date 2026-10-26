@@ -58,6 +58,11 @@ cancellation, invalid candles, and disposal. These tests cover signal
 generation only; order fills, portfolio accounting, and result metrics are
 separate Phase 8 milestones.
 
+Backtest accounting coverage is in `tests/backtesting.test.ts`. Independent
+fixtures verify next-bar-open execution, signal/fill timestamp separation,
+commission, slippage, long and short P&L, open-vs-closed positions, final-bar
+no-fill behavior, reversal policy, validation, cancellation, and disposal.
+
 Replay browser coverage is in `tests/browser/replay.spec.ts`. It asserts
 inclusive future-data masking across series, indicators, workspace exports,
 drawings, and crosshair values; source immutability; read-only structural/data

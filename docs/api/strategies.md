@@ -76,3 +76,7 @@ not pass untrusted JavaScript or serialized functions to it. KlineScript
 strategy syntax is not implemented by this API and remains a separate
 language-design and security milestone. No live trading or broker execution is
 provided.
+
+For deterministic next-bar-open simulation and accounting, use the separate
+[`createBacktest`](./backtesting.md) API. Strategy signals remain distinct
+from simulated orders and fills.

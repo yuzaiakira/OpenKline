@@ -405,8 +405,11 @@ boundary. The initial StrategyRegistry validates versioned definitions and
 creates isolated evaluators whose contexts contain only the completed-bar
 historical prefix. Signals are timestamped separately from future execution;
 the initial built-ins are EMA crossover, RSI reversal, Donchian breakout, and
-EMA trend following. The initial order simulator, accounting, metrics, replay
-overlays, and Studio Strategy Tester remain subsequent Phase 8 increments. No live trading,
-brokerage connectivity, arbitrary user JavaScript, or milestone closure is
+EMA trend following. The deterministic single-symbol market simulator now
+implements next-bar-open fills, required costs, validated sizing, explicit
+short limits, reversal policy, cash/equity accounting, and trade ledgers.
+Performance metrics, replay overlays, and Studio Strategy Tester remain
+subsequent Phase 8 increments. No live trading, brokerage connectivity,
+arbitrary user JavaScript, or milestone closure is
 claimed. See `docs/architecture/strategy-engine.md` and
 `docs/api/strategies.md`.

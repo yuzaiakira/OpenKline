@@ -271,6 +271,31 @@ export type {
   WatchlistSymbol,
 } from "./studio/index.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
+export { BacktestSession, createBacktest } from "./backtesting/index.js";
+export {
+  BacktestCancellationError,
+  BacktestLifecycleError,
+  BacktestValidationError,
+} from "./backtesting/index.js";
+export type {
+  AccountSnapshot,
+  BacktestApi,
+  BacktestAssumptions,
+  BacktestOpenPosition,
+  BacktestOptions,
+  BacktestOrder,
+  BacktestOrderStatus,
+  BacktestPositionDirection,
+  BacktestProgress,
+  BacktestResult,
+  BacktestStatus,
+  BacktestStatusState,
+  BacktestTrade,
+  BacktestReversalPolicy,
+  PositionSizing,
+  ShortSellingOptions,
+  TransactionCost,
+} from "./backtesting/index.js";
 export { StrategyRegistry } from "./strategies/index.js";
 export {
   builtInStrategyDefinitions,
