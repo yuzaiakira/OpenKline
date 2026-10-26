@@ -5,7 +5,7 @@ It consumes a registered trusted TypeScript strategy and validated historical
 OHLCV data.
 
 ```ts
-import { createBacktest } from "openkline";
+import { createBacktest, serializeBacktestResult, serializeTradeLedgerCsv } from "openkline";
 
 const backtest = createBacktest({
   strategy: "EMA_CROSSOVER",
@@ -19,6 +19,9 @@ const backtest = createBacktest({
 
 const result = backtest.run();
 console.log(result.trades, result.equityCurve, result.finalAccount);
+console.log(result.metrics);
+const json = serializeBacktestResult(result);
+const csv = serializeTradeLedgerCsv(result);
 backtest.dispose();
 ```
 
@@ -44,3 +47,11 @@ multi-asset portfolios, and live trading are not implemented.
 `getStatus()` and `subscribe()` expose local lifecycle/progress observations.
 `dispose()` is terminal. This API does not execute arbitrary JavaScript and is
 not a prediction or profitability service.
+
+The result includes deterministic `inputFingerprint` metadata and
+`engineVersion`. `calculatePerformanceMetrics()` reports total return, net and
+gross P&L, drawdown, trade counts, win rate, averages, profit factor,
+commissions, exposure, and open-position unrealized P&L. Undefined ratios use
+`null`; they are never represented as `Infinity` or an invented zero.
+`serializeBacktestResult()` exports JSON assumptions and results, while
+`serializeTradeLedgerCsv()` exports only the completed trade ledger.

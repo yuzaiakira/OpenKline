@@ -409,7 +409,9 @@ EMA trend following. The deterministic single-symbol market simulator now
 implements next-bar-open fills, required costs, validated sizing, explicit
 short limits, reversal policy, cash/equity accounting, and trade ledgers.
 Performance metrics, replay overlays, and Studio Strategy Tester remain
-subsequent Phase 8 increments. No live trading, brokerage connectivity,
+subsequent Phase 8 increments. The result model now includes deterministic
+metrics, input fingerprint metadata, JSON result export, and CSV completed
+trade export. No live trading, brokerage connectivity,
 arbitrary user JavaScript, or milestone closure is
 claimed. See `docs/architecture/strategy-engine.md` and
 `docs/api/strategies.md`.

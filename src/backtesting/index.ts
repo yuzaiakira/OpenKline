@@ -1,4 +1,6 @@
 export { BacktestSession, createBacktest } from "./engine.js";
+export { OPENKLINE_BACKTEST_RESULT_VERSION, serializeBacktestResult, serializeTradeLedgerCsv } from "./export.js";
+export { calculatePerformanceMetrics, fingerprintCandles } from "./metrics.js";
 export {
   BacktestCancellationError,
   BacktestLifecycleError,
@@ -22,4 +24,5 @@ export type {
   PositionSizing,
   ShortSellingOptions,
   TransactionCost,
+  PerformanceMetrics,
 } from "./types.js";

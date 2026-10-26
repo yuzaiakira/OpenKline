@@ -127,10 +127,12 @@ export interface AccountSnapshot {
 }
 
 export interface BacktestResult {
+  readonly engineVersion: 1;
   readonly strategyId: string;
   readonly strategyVersion: number;
   readonly parameters: Readonly<Record<string, unknown>>;
   readonly input: StrategyEvaluationResult["input"];
+  readonly inputFingerprint: string;
   readonly signals: StrategyEvaluationResult["signals"];
   readonly assumptions: BacktestAssumptions;
   readonly orders: readonly BacktestOrder[];
@@ -138,6 +140,27 @@ export interface BacktestResult {
   readonly openPosition: BacktestOpenPosition | null;
   readonly equityCurve: readonly AccountSnapshot[];
   readonly finalAccount: AccountSnapshot;
+  readonly metrics: PerformanceMetrics;
+}
+
+export interface PerformanceMetrics {
+  readonly totalReturn: number | null;
+  readonly netProfit: number;
+  readonly grossProfit: number;
+  readonly grossLoss: number;
+  readonly maxDrawdown: number;
+  readonly maxDrawdownPercent: number;
+  readonly closedTradeCount: number;
+  readonly winningTradeCount: number;
+  readonly losingTradeCount: number;
+  readonly winRate: number | null;
+  readonly averageProfit: number | null;
+  readonly averageLoss: number | null;
+  readonly profitFactor: number | null;
+  readonly averageTradeDurationMs: number | null;
+  readonly totalCommissions: number;
+  readonly exposure: number | null;
+  readonly openPositionUnrealizedPnl: number;
 }
 
 export interface BacktestApi {

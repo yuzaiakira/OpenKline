@@ -4,6 +4,9 @@ import {
   BacktestCancellationError,
   BacktestLifecycleError,
   BacktestValidationError,
+  calculatePerformanceMetrics,
+  serializeBacktestResult,
+  serializeTradeLedgerCsv,
   StrategyRegistry,
   type Candle,
   type StrategyDefinition,
@@ -118,6 +121,20 @@ test("Backtest executes signals at the next bar open and keeps accounting identi
   assert.equal(result.finalAccount.cash, 1_194);
   assert.equal(result.finalAccount.equity, 1_194);
   assert.equal(result.finalAccount.realizedPnl, 194);
+  assert.equal(result.metrics.netProfit, 194);
+  assert.equal(result.metrics.totalReturn, 0.194);
+  assert.equal(result.metrics.grossProfit, 200);
+  assert.equal(result.metrics.grossLoss, 0);
+  assert.equal(result.metrics.maxDrawdown, 92);
+  assert.equal(result.metrics.maxDrawdownPercent, 0.092);
+  assert.equal(result.metrics.totalCommissions, 6);
+  assert.equal(result.metrics.averageTradeDurationMs, 120_000);
+  assert.equal(result.metrics.exposure, 0.5);
+  assert.equal(result.metrics.winRate, 1);
+  assert.equal(result.metrics.profitFactor, null, "zero gross loss has no finite profit factor");
+  assert.match(result.inputFingerprint, /^fnv1a32-/);
+  assert.match(serializeBacktestResult(result), /"inputFingerprint":"fnv1a32-/);
+  assert.match(serializeTradeLedgerCsv(result), /tradeId,direction/);
   assert.deepEqual(result.equityCurve.map((point) => point.time), candles().map((candle) => candle.time));
 });
 
@@ -215,4 +232,20 @@ test("reversal policy is explicit and close-and-reverse keeps the prior trade se
   assert.equal(reversed.trades.length, 1);
   assert.equal(reversed.trades[0]?.exitReason, "reversal short entry");
   assert.equal(reversed.openPosition?.direction, "short");
+});
+
+test("performance metrics use explicit unavailable values for empty ledgers", () => {
+  const empty = calculatePerformanceMetrics({
+    initialCapital: 100,
+    orders: [],
+    trades: [],
+    openPosition: null,
+    equityCurve: [],
+    finalAccount: { time: null, markPrice: null, cash: 100, positionQuantity: 0, positionValue: 0, realizedPnl: 0, unrealizedPnl: 0, equity: 100, peakEquity: 100, drawdown: 0, drawdownPercent: 0 },
+  });
+  assert.equal(empty.totalReturn, 0);
+  assert.equal(empty.winRate, null);
+  assert.equal(empty.averageProfit, null);
+  assert.equal(empty.profitFactor, null);
+  assert.equal(empty.exposure, null);
 });

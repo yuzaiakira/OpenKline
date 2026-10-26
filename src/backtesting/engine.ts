@@ -2,6 +2,7 @@ import { CandleStore } from "../core/candle-store.js";
 import { createDefaultStrategyRegistry, type StrategySignal } from "../strategies/index.js";
 import { StrategyCancellationError, type StrategyInstance, type StrategyRegistry } from "../strategies/index.js";
 import type { Candle } from "../types.js";
+import { calculatePerformanceMetrics, fingerprintCandles } from "./metrics.js";
 import {
   BacktestCancellationError,
   BacktestLifecycleError,
@@ -263,18 +264,29 @@ export class BacktestSession implements BacktestApi {
 
     const lastCandle = this.candles[this.candles.length - 1];
     const finalAccount = equityCurve[equityCurve.length - 1] ?? snapshotWithPeak(accountAtPrice(cash, position, lastCandle?.close ?? null, realizedPnl, peakEquity, lastCandle?.time ?? null), peakEquity);
+    const openPosition = position === null ? null : openPositionSnapshot(position, finalAccount.markPrice);
     return {
+      engineVersion: 1,
       strategyId: evaluation.strategyId,
       strategyVersion: evaluation.strategyVersion,
       parameters: { ...evaluation.parameters },
       input: { ...evaluation.input },
+      inputFingerprint: fingerprintCandles(this.candles),
       signals: evaluation.signals.map((signal) => ({ ...signal })),
       assumptions: this.assumptions,
       orders: orders.map(cloneOrder),
       trades: trades.map((trade) => ({ ...trade })),
-      openPosition: position === null ? null : openPositionSnapshot(position, finalAccount.markPrice),
+      openPosition,
       equityCurve: equityCurve.map((snapshot) => ({ ...snapshot })),
       finalAccount: { ...finalAccount },
+      metrics: calculatePerformanceMetrics({
+        initialCapital: this.options.initialCapital,
+        orders,
+        trades,
+        openPosition,
+        equityCurve,
+        finalAccount,
+      }),
     };
   }
 
@@ -507,6 +519,7 @@ function cloneResult(result: BacktestResult): BacktestResult {
       shortSelling: result.assumptions.shortSelling === null ? null : { ...result.assumptions.shortSelling },
     },
     signals: result.signals.map((signal) => ({ ...signal })),
+    metrics: { ...result.metrics },
     orders: result.orders.map((order) => ({ ...order })),
     trades: result.trades.map((trade) => ({ ...trade })),
     openPosition: result.openPosition === null ? null : { ...result.openPosition },

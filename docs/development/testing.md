@@ -61,7 +61,10 @@ separate Phase 8 milestones.
 Backtest accounting coverage is in `tests/backtesting.test.ts`. Independent
 fixtures verify next-bar-open execution, signal/fill timestamp separation,
 commission, slippage, long and short P&L, open-vs-closed positions, final-bar
-no-fill behavior, reversal policy, validation, cancellation, and disposal.
+no-fill behavior, reversal policy, validation, cancellation, disposal, metrics,
+fingerprints, and JSON/CSV export. Annualized risk ratios are intentionally
+not tested or claimed until their calendar and sampling assumptions are
+specified.
 
 Replay browser coverage is in `tests/browser/replay.spec.ts`. It asserts
 inclusive future-data masking across series, indicators, workspace exports,

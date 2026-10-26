@@ -273,6 +273,13 @@ export type {
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
 export { BacktestSession, createBacktest } from "./backtesting/index.js";
 export {
+  OPENKLINE_BACKTEST_RESULT_VERSION,
+  calculatePerformanceMetrics,
+  fingerprintCandles,
+  serializeBacktestResult,
+  serializeTradeLedgerCsv,
+} from "./backtesting/index.js";
+export {
   BacktestCancellationError,
   BacktestLifecycleError,
   BacktestValidationError,
@@ -295,6 +302,7 @@ export type {
   PositionSizing,
   ShortSellingOptions,
   TransactionCost,
+  PerformanceMetrics,
 } from "./backtesting/index.js";
 export { StrategyRegistry } from "./strategies/index.js";
 export {

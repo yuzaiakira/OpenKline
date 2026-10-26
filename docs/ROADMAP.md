@@ -38,6 +38,10 @@ replay/Studio integration, and final verification remain open.
   equity accounting, trade ledger, open-position mark-to-market, and
   cancellation/lifecycle handling. Protective orders, metrics, replay, and UI
   remain open.
+- [Implemented / Verified] Phase 8.0.3 adds independently tested performance
+  metrics, deterministic candle fingerprints, JSON result export, and CSV
+  completed-trade export. Annualized Sharpe/Sortino/Calmar assumptions,
+  replay overlays, Worker execution, and Studio remain open.
 
 ## Completed
 
