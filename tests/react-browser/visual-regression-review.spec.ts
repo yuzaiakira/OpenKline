@@ -64,8 +64,9 @@ async function openDeterministicStudio(page: Page, viewport: { readonly width: n
   await expect(page.locator("canvas")).toHaveCount(1);
   await page.waitForFunction(() => {
     const canvas = document.querySelector("canvas");
-    const context = canvas?.getContext("2d");
-    if (canvas === null || context === null) return false;
+    if (canvas === null) return false;
+    const context = canvas.getContext("2d");
+    if (context === null) return false;
     const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
     return red === 17 && green === 24 && blue === 39;
   });
@@ -81,8 +82,9 @@ test("captures deterministic desktop and light-theme review artifacts", async ({
   await page.getByLabel("Theme").selectOption("light");
   await page.waitForFunction(() => {
     const canvas = document.querySelector("canvas");
-    const context = canvas?.getContext("2d");
-    if (canvas === null || context === null) return false;
+    if (canvas === null) return false;
+    const context = canvas.getContext("2d");
+    if (context === null) return false;
     const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
     return red !== undefined && green !== undefined && blue !== undefined && red > 240 && green > 240 && blue > 240;
   });
