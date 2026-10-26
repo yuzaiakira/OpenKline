@@ -502,11 +502,13 @@ export {
   canonicalParameterSerialization,
   compareOptimizationScores,
   createOptimizationWorker,
+  createWalkForwardFolds,
   generateOptimizationCandidates,
   getOptimizationObjective,
   listOptimizationObjectives,
   runOptimization,
   scoreBacktestResult,
+  runWalkForward,
   OptimizationWorkerError,
   OptimizationWorkerSession,
 } from "./optimization/index.js";
@@ -533,3 +535,4 @@ export type {
   ValuesParameter,
 } from "./optimization/index.js";
 export type { OptimizationWorkerApi, OptimizationWorkerErrorCode, OptimizationWorkerFactory, OptimizationWorkerRuntimeOptions, OptimizationWorkerStatus, OptimizationWorkerStatusState } from "./optimization/index.js";
+export type { WalkForwardAggregate, WalkForwardFoldDefinition, WalkForwardFoldResult, WalkForwardMode, WalkForwardOptions, WalkForwardProgress, WalkForwardResult, WalkForwardSplitOptions } from "./optimization/index.js";

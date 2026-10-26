@@ -102,6 +102,7 @@ export class BacktestSession implements BacktestApi {
       shortSelling: options.shortSelling === undefined ? null : { ...options.shortSelling },
       reversal: options.reversal ?? DEFAULT_REVERSAL,
       allowFractionalQuantity: options.allowFractionalQuantity === true,
+      tradingStartIndex: options.tradingStartIndex ?? 0,
     };
     this.externalSignal = options.signal;
     this.externalSignal?.addEventListener("abort", this.externalAbortListener);
@@ -223,6 +224,10 @@ export class BacktestSession implements BacktestApi {
       this.throwIfCancelled();
       const candle = this.candles[index];
       if (candle === undefined) continue;
+      if (index < this.assumptions.tradingStartIndex) {
+        emitExecutionProgress(index);
+        continue;
+      }
       while (pendingIndex < pending.length && pending[pendingIndex]?.fillIndex === index) {
         const item = pending[pendingIndex];
         pendingIndex += 1;
@@ -392,6 +397,7 @@ function validateOptions(options: BacktestOptions): void {
   validateSizing(options.positionSizing);
   if (options.shortSelling !== undefined && (!Number.isFinite(options.shortSelling.maxNotional) || options.shortSelling.maxNotional <= 0)) throw new BacktestValidationError("shortSelling.maxNotional must be positive when short selling is enabled");
   if (options.reversal !== undefined && options.reversal !== "reject" && options.reversal !== "close-and-reverse") throw new BacktestValidationError("reversal must be reject or close-and-reverse");
+  if (options.tradingStartIndex !== undefined && (!Number.isSafeInteger(options.tradingStartIndex) || options.tradingStartIndex < 0 || options.tradingStartIndex >= options.candles.length)) throw new BacktestValidationError("tradingStartIndex must be a valid candle index");
 }
 
 function validateCost(cost: TransactionCost, name: string): void {

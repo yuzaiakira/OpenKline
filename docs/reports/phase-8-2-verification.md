@@ -63,7 +63,7 @@ Verification:
 
 | Check | Result |
 | --- | --- |
-| `npm test` | Pass: 126 tests |
+| `npm test` | Pass: 128 tests |
 | `npm run typecheck` | Pass |
 
 Worker execution, walk-forward leakage tests, robustness reports, Studio
@@ -92,4 +92,31 @@ Verification:
 | `npm run typecheck` | Pass |
 
 Strict Walk-Forward isolation, robustness analysis, Studio workflows, and
+optimization benchmarks remain open.
+
+## Phase 8.2.3 — Walk-Forward engine
+
+Implemented:
+
+- Added anchored and rolling chronological fold construction with training,
+  optional validation, gap, test, warm-up, and trading-boundary metadata.
+- Added the additive Backtest `tradingStartIndex` contract. Warm-up signals
+  cannot create an OOS order/fill, OOS equity starts at the boundary, and each
+  fold account starts flat.
+- Added training-only candidate selection, frozen-parameter validation/OOS
+  runs, fold fingerprints, metrics, trades, equity, assumptions, diagnostics,
+  reproducibility IDs, and reset-per-fold aggregation.
+- Detects overlapping tests and explicitly withholds a continuous executable
+  equity curve; reports historical/overfitting warnings.
+- Added anti-leakage tests for changed OOS data, later folds, boundary fills,
+  warm-up observations, overlap handling, and repeated-run identity.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Pass: 132 tests |
+| `npm run typecheck` | Pass |
+
+Robustness sensitivity/degradation analysis, Studio integration, and
 optimization benchmarks remain open.

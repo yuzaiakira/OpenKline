@@ -516,3 +516,11 @@ and rejects cancellation, timeout, supersession, and disposal without
 publishing stale or partial completed results. Worker execution remains
 restricted to the trusted built-in strategy boundary; Paper Trading remains
 isolated.
+
+Phase 8.2.3 adds anchored and rolling Walk-Forward Analysis. Fold selection
+uses training data only, with optional validation, gap, and explicit warm-up
+context. The additive Backtest `tradingStartIndex` suppresses warm-up trades
+and starts an isolated flat out-of-sample account at the test boundary. Fold
+results retain separate training/OOS metrics and provenance. Aggregation is
+reset-per-fold and never fabricates a continuous curve; overlapping windows
+are warned about. Robustness diagnostics and Studio presentation remain open.

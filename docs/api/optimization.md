@@ -56,3 +56,19 @@ count, aggregate progress, and lifecycle state. A second run supersedes the
 first; `cancel()` rejects the active job and disposes all active Worker
 sessions. Worker startup/crash failures receive one fresh-session retry by
 default. No partial cancellation result is reported as completed.
+
+## Walk-Forward Analysis
+
+`runWalkForward()` creates chronological anchored or rolling bar-count folds.
+Each fold optimizes on its training slice, freezes the selected parameters,
+and then evaluates optional validation and out-of-sample slices separately.
+Configure `gapBars` and `warmupBars` explicitly. Warm-up context is passed to
+the strategy, while the additive Backtest `tradingStartIndex` prevents
+warm-up signals and account state from crossing into the test interval.
+
+The initial aggregation policy is `reset-per-fold`; every fold starts with
+fresh configured capital and the result deliberately exposes no continuous
+portfolio equity curve. Overlapping tests are detected and warned about.
+Fold reports include boundaries, fingerprints, selected parameters, training
+score, out-of-sample metrics/trades/equity, assumptions, and diagnostics.
+Out-of-sample results are historical simulated evidence, not predictions.

@@ -50,6 +50,8 @@ export interface BacktestOptions {
   /** Presence enables short selling and caps aggregate open short notional. */
   readonly shortSelling?: ShortSellingOptions;
   readonly reversal?: BacktestReversalPolicy;
+  /** Starts the account/equity/trading boundary after optional indicator warm-up bars. */
+  readonly tradingStartIndex?: number;
   /** Fractional quantity is rejected unless this is explicitly true. */
   readonly allowFractionalQuantity?: boolean;
   readonly signal?: AbortSignal;
@@ -66,6 +68,7 @@ export interface BacktestAssumptions {
   readonly shortSelling: ShortSellingOptions | null;
   readonly reversal: BacktestReversalPolicy;
   readonly allowFractionalQuantity: boolean;
+  readonly tradingStartIndex: number;
 }
 
 export interface BacktestOrder {

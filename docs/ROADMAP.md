@@ -141,6 +141,12 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
   timeout, crash/startup retry, cancellation, supersession, generation-safe
   result ownership, and disposal cleanup. Walk-Forward, robustness, and Studio
   integration remain open.
+- [Implemented / Verified] Phase 8.2.3 adds anchored and rolling chronological
+  Walk-Forward folds with optional validation/gap, explicit warm-up context,
+  strict training-only selection, isolated flat OOS execution through the
+  additive Backtest `tradingStartIndex` boundary, fold provenance, and
+  reset-per-fold aggregation with overlap warnings. Robustness and Studio
+  integration remain open.
 
 ## Completed
 

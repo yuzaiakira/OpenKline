@@ -43,6 +43,13 @@ an explicit `shortSelling.maxNotional`; reversal requires explicit
 mark-to-market without liquidation. Protective stops, targets, intrabar fills,
 multi-asset portfolios, and live trading are not implemented.
 
+For isolated historical evaluation, `tradingStartIndex` may identify a bar
+after an indicator warm-up prefix. Strategy signals are still evaluated
+causally across the supplied input, but signals before this boundary cannot
+create orders, fills, or equity observations. The account starts flat at the
+boundary and the validated boundary is included in `assumptions`. This is the
+contract used by Walk-Forward out-of-sample evaluation.
+
 `cancel()` or an aborted signal ends the run without a partial result.
 `getStatus()` and `subscribe()` expose local lifecycle/progress observations.
 `dispose()` is terminal. This API does not execute arbitrary JavaScript and is
