@@ -18,17 +18,17 @@ subscriptions, updates, drawing/indicator setup, destruction, and host removal.
 ## Phase 8.5 local observation
 
 Environment: Node.js v24.19.0, Playwright 1.64.1, system Chromium
-154.0.8037.57 at `/usr/bin/chromium`, Linux x64, headless Canvas2D. The second
-of two same-session benchmark runs is recorded below; values are local
-observations and should be rerun on a clean authorized machine before release.
+154.0.8037.57 at `/usr/bin/chromium`, Linux x64, headless Canvas2D. The latest
+readiness-run benchmark is recorded below; values are local observations and
+should be rerun on a clean authorized machine before release.
 
 | Candles | Load (ms) | Update-frame (ms) | Five corrections (ms) | Frame-work p95 (ms) | rAF FPS |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 19.5 | 1.729 | 44.2 | 2.0 | 63.42 |
-| 10,000 | 94.0 | 1.079 | 383.4 | 1.8 | 62.83 |
-| 100,000 | 1,409.2 | 1.024 | 5,585.9 | 6.8 | 62.23 |
+| 1,000 | 33.3 | 2.017 | 51.1 | 5.7 | 64.25 |
+| 10,000 | 116.4 | 1.130 | 438.9 | 5.2 | 56.94 |
+| 100,000 | 1,586.2 | 1.091 | 5,359.4 | 1.6 | 63.40 |
 
-The 100,000-candle run observed 661,939,526 bytes before destroy and 2,809,015
+The 100,000-candle run observed 585,331,738 bytes before destroy and 2,794,311
 bytes after the explicit cleanup/GC opportunity, with zero remaining canvases.
 This is not proof of zero heap leakage. The historical correction workload is
 intentionally separate from the newer-timestamp append path and remains

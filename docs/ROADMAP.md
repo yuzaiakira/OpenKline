@@ -223,6 +223,44 @@ Phase 8.4 universal data integration and library architecture hardening —
   Safari, physical-device, formal accessibility, visual-regression, and real
   external-provider gates remain open; Phase 8.4 is not formally closed.
 
+Phase 8.5 quality assurance and public API/release-readiness hardening —
+**Engineering implemented; final release gate open**.
+
+- [Implemented / Verified] 8.5.0 records a release baseline audit covering
+  repository state, package manifests, exports, workers, runtime dependencies,
+  documentation, effective-license status, and browser evidence.
+- [Implemented / Verified] 8.5.1 inventories the public runtime/type surface
+  and adds declaration-signature compatibility checks. The current inventory
+  contains 205 runtime exports and 418 type exports; removed or changed
+  exports fail the compatibility gate while additive exports are reported.
+- [Implemented / In Verification] 8.5.2 records the browser matrix. System
+  Chromium and Mobile Chrome emulation pass the local diagnostic; official
+  Playwright-managed Firefox, WebKit, and Mobile Safari remain blocked by
+  unavailable browser artifacts. Physical-device evidence is not tested.
+- [Implemented / Verified] 8.5.3 adds deterministic release hardening for
+  corrections, invalid data, concurrent subscriptions, disposal, chart
+  destruction, and React/browser lifecycle cleanup. The Node suite passes 156
+  tests and the targeted browser lifecycle test passes.
+- [Implemented / Verified locally] 8.5.4 records Canvas2D benchmark and
+  profiler observations for 1k/10k/100k candles, update/correction work,
+  frame-work p95, rAF rate, heap cleanup, and renderer/update timings. These
+  are environment-specific observations, not universal guarantees.
+- [Implemented / In Review] 8.5.5 adds automated accessibility smoke checks
+  and deterministic visual-review capture candidates. Formal assistive-
+  technology/conformance review and owner-approved visual baselines remain
+  open.
+- [Implemented / Verified] 8.5.6 verifies package portability, packed
+  contents, independent Vanilla/TypeScript/React consumers, Next.js build,
+  license inventory, and root/example npm audits. Effective license and
+  third-party notice adoption remain unchanged and pending approval.
+- [Implemented / In Verification] 8.5.7 adds `npm run release:readiness`, an
+  explicit local command that records all automated and manual/approval gates
+  without publishing or authorizing a release. The latest run reports
+  `NOT READY` only because the documented browser, legal, accessibility,
+  visual, physical-device, and owner-authorization gates remain open. Phase
+  8.5 must not be marked closed until those mandatory gates are independently
+  satisfied or the owner documents an authorized exception.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

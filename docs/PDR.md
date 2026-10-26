@@ -613,3 +613,33 @@ Canvas2D benchmark gates listed in `docs/reports/phase-8-4-verification.md`.
 The report intentionally leaves managed Firefox, WebKit, Mobile Safari,
 physical-device, formal accessibility, visual-regression, and real external
 provider gates open. Phase 8.4 is therefore not marked fully accepted.
+
+## Phase 8.5 quality assurance and release readiness — engineering complete; release gate open
+
+Phase 8.5 adds a repeatable local release-readiness workflow without changing
+the effective license, publishing packages, creating releases, or using
+GitHub Actions. The baseline audit records the current branch/upstream,
+package/export/worker surfaces, runtime dependency boundary, documentation,
+and known legal/browser evidence. The public API inventory records 205 runtime
+exports and 418 type exports, with a declaration-signature baseline and an
+additive/removal compatibility check.
+
+The implemented QA layer includes deterministic lifecycle/correction tests,
+React browser accessibility smoke checks, visual review capture candidates,
+Canvas2D benchmark and profiler evidence, package portability/distribution
+checks, independent consumer smoke tests, license inventory validation, and
+root/Next.js dependency audits. The local readiness command is
+`npm run release:readiness`; it writes timestamped ignored evidence and
+classifies every gate as PASS, FAIL, BLOCKED, NOT TESTED, or REQUIRES OWNER
+APPROVAL. The latest run passed all executable engineering gates, including
+typecheck, 156 Node tests, Chromium/mobile emulation, React browser tests,
+Next.js production build, package checks, consumer checks, and zero npm audit
+advisories.
+
+Phase 8.5 is not release-accepted. Official Playwright-managed browser
+artifacts for Firefox, WebKit, and Mobile Safari remain unavailable in this
+environment; legal effective-license and third-party-notice approvals,
+formal accessibility review, approved visual baselines, physical-device
+evidence, and owner release authorization are also open. The latest measured
+performance and gate matrix are recorded in
+`docs/reports/phase-8-5-verification.md` and the supporting release documents.
