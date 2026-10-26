@@ -8,8 +8,14 @@ import { EVIDENCE_PACK_POLICIES, validateAllEvidencePacks, validateEvidencePack 
 const repositoryEvidenceRoot = join(process.cwd(), "docs", "evidence", "browser");
 
 function copyPack(phase) {
+  return copyPacks([phase]);
+}
+
+function copyPacks(phases) {
   const root = mkdtempSync(join(tmpdir(), "openkline-evidence-"));
-  cpSync(join(repositoryEvidenceRoot, EVIDENCE_PACK_POLICIES[phase].directory), join(root, EVIDENCE_PACK_POLICIES[phase].directory), { recursive: true });
+  for (const phase of phases) {
+    cpSync(join(repositoryEvidenceRoot, EVIDENCE_PACK_POLICIES[phase].directory), join(root, EVIDENCE_PACK_POLICIES[phase].directory), { recursive: true });
+  }
   return root;
 }
 
@@ -27,6 +33,7 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.6.1", EVIDENCE_PACK_POLICIES["8.6.1"].expectedSourceCommit, 70],
     ["8.8.1", EVIDENCE_PACK_POLICIES["8.8.1"].expectedSourceCommit, 70],
     ["8.8.3", EVIDENCE_PACK_POLICIES["8.8.3"].expectedSourceCommit, 175],
+    ["8.8.5", EVIDENCE_PACK_POLICIES["8.8.5"].expectedSourceCommit, 180],
   ]);
 });
 
@@ -51,6 +58,19 @@ test("failed Studio evidence is integrity-valid but falsified failure details ar
   const result = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.3"] });
   assert.equal(result.status, "FAIL");
   assert.ok(result.failures.some((failure) => failure.includes("unknown Studio failure classification")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.5 evidence reconciles all prior failures and rejects falsified regression claims", () => {
+  const root = copyPacks(["8.8.3", "8.8.5"]);
+  const valid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.5"] });
+  assert.equal(valid.status, "PASS");
+  editJson(root, "8.8.5", "regression-comparison.json", (document) => {
+    document.previouslyFailingNowPassing = [{ project: "studio-webkit", file: "studio.spec.ts", title: "fabricated resolution" }];
+  });
+  const invalid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.5"] });
+  assert.equal(invalid.status, "FAIL");
+  assert.ok(invalid.failures.some((failure) => failure.includes("must not claim an old failure resolved")));
   rmSync(root, { recursive: true, force: true });
 });
 

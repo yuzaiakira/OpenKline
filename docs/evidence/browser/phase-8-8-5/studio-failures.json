@@ -1,0 +1,1266 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "playwrightVersion": "1.64.1",
+  "derivedFrom": "playwright-results.json failure records from initial full Studio suite",
+  "priorPhase883": {
+    "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+    "perProjectPassedFailed": {
+      "studio-chromium": {
+        "passed": 21,
+        "failed": 0
+      },
+      "studio-firefox": {
+        "passed": 21,
+        "failed": 0
+      },
+      "studio-webkit": {
+        "passed": 18,
+        "failed": 3
+      },
+      "studio-mobile-chrome": {
+        "passed": 5,
+        "failed": 16
+      },
+      "studio-mobile-safari": {
+        "passed": 10,
+        "failed": 11
+      }
+    },
+    "overall": {
+      "expected": 75,
+      "unexpected": 30,
+      "total": 105
+    }
+  },
+  "currentTotals": {
+    "studio-chromium": {
+      "passed": 22,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 22
+    },
+    "studio-firefox": {
+      "passed": 22,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 22
+    },
+    "studio-webkit": {
+      "passed": 19,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 22
+    },
+    "studio-mobile-chrome": {
+      "passed": 5,
+      "failed": 17,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 22
+    },
+    "studio-mobile-safari": {
+      "passed": 11,
+      "failed": 11,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 22
+    }
+  },
+  "failureCount": 31,
+  "classificationCounts": {
+    "timeout": 14,
+    "assertion-element-not-found": 8,
+    "timeout-pointer-interception": 2,
+    "assertion-element-hidden": 1,
+    "page-error-resizeobserver": 6
+  },
+  "failures": [
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "fullTitle": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30032,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "fullTitle": "Studio dialogs keep keyboard focus inside the modal",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30038,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "fullTitle": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30030,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "fullTitle": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30035,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "fullTitle": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  119 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  120 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 121 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  122 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  123 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  124 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:121:65",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": {
+        "expected": "Drawings (1) visible",
+        "actual": "Drawings (1) not found; snapshot often still shows Drawings (0)"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 10932,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) w"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "fullTitle": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "resultStatus": "timedOut",
+      "classification": "timeout-pointer-interception",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": true,
+        "detail": "Overlay/fieldset from strategy-optimizer (or similar) intercepts pointer events"
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": {
+        "note": "See local error-context.md for elementFromPoint-equivalent interceptor chain"
+      },
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30053,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "fullTitle": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30041,
+      "retry": 0,
+      "phase883Outcome": "new-test",
+      "focusedRetryOutcome": {
+        "status": "timedOut",
+        "ok": false,
+        "errorPreview": "Test timeout of 30000ms exceeded."
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "fullTitle": "Studio cancels a large Worker backtest without retaining a partial result",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30038,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "fullTitle": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "resultStatus": "failed",
+      "classification": "assertion-element-hidden",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator:  locator('[data-panel-id=\"chart-1\"]').getByText(/AAPL/)\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n  - Expect \"toBeVisible\" locator('[data-panel-id=\"chart-1\"]').getByText(/AAPL/) with timeout 10000ms\n  - waiting for locator('[data-panel-id=\"chart-1\"]').getByText(/AAPL/)\n    23 \u00d7 locator resolved to <button type=\"button\" aria-pressed=\"false\" aria-label=\"Activate chart-1\" class=\"studio_panelSelect__aWHE7\">\u2026</button>\n       - unexpected value \"hidden\"\n\n\n  36 |   await page.getByLabel(\"Sync symbols\").check();\n  37 |   await page.getByLabel(\"Active symbol\").selectOption(\"AAPL\");\n> 38 |   await expect(page.locator('[data-panel-id=\"chart-1\"]').getByText(/AAPL/)).toBeVisible();\n     |                                                                             ^\n  39 |   await expect(page.locator('[data-panel-id=\"chart-4\"]').getByText(/AAPL/)).toBeVisible();\n  40 |   await page.getByLabel(\"Sync crosshair\").check();\n  41 |   await page.getByLabel(\"Sync visible range\").check();\n    at /tests/react-browser/multi-chart-studio.spec.ts:38:77",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": {
+        "expected": "visible",
+        "actual": "hidden"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11467,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "fullTitle": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  119 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  120 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 121 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  122 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  123 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  124 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:121:65",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": {
+        "expected": "Drawings (1) visible",
+        "actual": "Drawings (1) not found; snapshot often still shows Drawings (0)"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 10937,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) w"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "fullTitle": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  157 |   await page.getByLabel(\"Active chart panel\").selectOption(\"chart-1\");\n  158 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toBeVisible();\n> 159 |   expect(errors).toEqual([]);\n      |                  ^\n  160 | });\n  161 |\n  162 | test(\"mobile Studio keeps critical controls visible and hit-testable after responsive layout changes\", async ({ page }) => {\n    at /tests/react-browser/multi-chart-studio.spec.ts:159:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 1319,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "fullTitle": "Studio cancels a large Worker backtest without retaining a partial result",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  188 |   await expect(page.getByText(\"cancelled\", { exact: true })).toBeVisible();\n  189 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toHaveCount(0);\n> 190 |   expect(errors).toEqual([]);\n      |                  ^\n  191 | });\n  192 |\n    at /tests/react-browser/multi-chart-studio.spec.ts:190:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 1460,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "fullTitle": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30035,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "fullTitle": "mobile Studio exposes bounded optimization controls and cancellation",
+      "resultStatus": "timedOut",
+      "classification": "timeout-pointer-interception",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": true,
+        "detail": "Overlay/fieldset from strategy-optimizer (or similar) intercepts pointer events"
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": {
+        "note": "See local error-context.md for elementFromPoint-equivalent interceptor chain"
+      },
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30057,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "fullTitle": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  29 |   await expect(page.getByTestId(\"wfa-fold-chart\")).toBeVisible();\n  30 |   await expect(page.getByRole(\"button\", { name: \"Export WFA JSON\" })).toBeVisible();\n> 31 |   expect(errors).toEqual([]);\n     |                  ^\n  32 | });\n  33 |\n  34 | test(\"mobile Studio exposes bounded optimization controls and cancellation\", async ({ page }) => {\n    at /tests/react-browser/optimization-studio.spec.ts:31:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 1560,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-webkit",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (default Playwright desktop)",
+        "device": null,
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11752,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeou"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30035,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "timedOut",
+        "ok": false,
+        "errorPreview": "Test timeout of 30000ms exceeded."
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11115,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeou"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "fullTitle": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30039,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "fullTitle": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  23 |   await page.getByRole(\"button\", { name: \"Open chart\", exact: true }).first().click();\n  24 |   await expect(page.locator(\"p\").filter({ hasText: /BTC-USD|ETH-USD|AAPL/ }).last()).toBeVisible();\n> 25 |   expect(errors).toEqual([]);\n     |                  ^\n  26 | });\n  27 |\n  28 |\n    at /tests/react-browser/screener.spec.ts:25:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 1561,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  87 |   await page.getByRole(\"button\", { name: \"Fit\", exact: true }).click();\n  88 |   await expect(page.getByLabel(\"Price scale\")).toHaveValue(\"linear\");\n> 89 |   expect(errors).toEqual([]);\n     |                  ^\n  90 | });\n  91 |\n  92 | test(\"Studio remains operable at a touch-sized viewport\", async ({ page }) => {\n    at /tests/react-browser/studio.spec.ts:89:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (default Playwright desktop)",
+        "device": null,
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 4572,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  87 |   await page.getByRole(\"button\", { name: \"Fit"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  174 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  175 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 176 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  177 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  178 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  179 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:176:72",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (default Playwright desktop)",
+        "device": null,
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11072,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30038,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "timedOut",
+        "ok": false,
+        "errorPreview": "Test timeout of 30000ms exceeded."
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "fullTitle": "Studio remains operable at a touch-sized viewport",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30031,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "fullTitle": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30034,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30037,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "fullTitle": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "156.0.8078.4",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 30043,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  38 |   await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.22);\n  39 |   await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 40 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n     |                                                                 ^\n  41 |   const objectTree = page.getByRole(\"complementary\", { name: \"Object tree\" });\n  42 |   await expect(objectTree).toBeVisible();\n  43 |   await objectTree.getByRole(\"button\", { name: \"Lock drawing-1\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:40:65",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": {
+        "expected": "Drawings (1) visible",
+        "actual": "Drawings (1) not found; snapshot often still shows Drawings (0)"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11415,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": {
+        "status": "failed",
+        "ok": false,
+        "errorPreview": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) w"
+      },
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "fullTitle": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  127 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  128 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 129 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  130 |   await page.getByRole(\"button\", { name: \"Enter replay\", exact: true }).click();\n  131 |   await expect(page.getByText(\"Replay: ready\", { exact: true })).toBeVisible();\n  132 |   await expect(page.getByLabel(\"Replay position\")).toBeEnabled();\n    at /tests/react-browser/studio.spec.ts:129:65",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": {
+        "expected": "Drawings (1) visible",
+        "actual": "Drawings (1) not found; snapshot often still shows Drawings (0)"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 11003,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  174 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  175 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 176 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  177 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  178 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  179 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:176:72",
+      "assertion": "expect(locator).toBeVisible",
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": null,
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 10996,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "fullTitle": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  209 |   await page.getByRole(\"button\", { name: \"Delete My KlineScript\", exact: true }).click();\n  210 |   await expect(page.getByText(\"My KlineScript\", { exact: true })).toHaveCount(0);\n> 211 |   expect(errors).toEqual([]);\n      |                  ^\n  212 | });\n  213 |\n    at /tests/react-browser/studio.spec.ts:211:18",
+      "assertion": "expect(received).toEqual",
+      "expectedVsActual": {
+        "expected": "[] page errors",
+        "actual": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ]
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x844 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "Device profile sizes from Playwright config; innerWidth not captured in full-suite JSON."
+      },
+      "activePanelState": null,
+      "pointerHitTest": null,
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "browserVersion": "27.2",
+      "localArtifactBasenames": [
+        "error-context.md"
+      ],
+      "durationMs": 1300,
+      "retry": 0,
+      "phase883Outcome": "failed",
+      "focusedRetryOutcome": null,
+      "reproducible": "initial-full-suite-authoritative; focused-retry-supplemental-only",
+      "observedFact": true
+    }
+  ],
+  "note": "Initial full-suite failures are authoritative; focused retries are supplemental diagnostics only and do not convert FAIL to PASS."
+}

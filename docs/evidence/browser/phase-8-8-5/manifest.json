@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.5",
+  "evidenceKind": "trusted-machine-standalone-and-studio-browser-matrix-regression-vs-8-8-3",
+  "createdAtUtc": "2026-10-26T19:20:35.985175Z",
+  "sourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "sourceCommitNote": "Detached checkout of required Phase 8.8.4 remediation revision; verified in container via git rev-parse HEAD.",
+  "baselinePhase883SourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "standaloneConfig": "playwright.portable.config.ts",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override is accepted by this workflow."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "how": "Official Playwright Docker image bind-mounted repository at /work; HOME=/tmp; npm_config_cache=/tmp/npm-cache; PLAYWRIGHT_BROWSERS_PATH=/ms-playwright; npm ci --ignore-scripts --no-audit --no-fund at root and examples/nextjs-app-router; npm run build; node scripts/browser-verification.mjs; node scripts/studio-browser-verification.mjs.",
+    "notCloudWorkspace": true,
+    "cloudVerification": "not-used-for-this-evidence",
+    "physicalDeviceTesting": false,
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "originWorkAtVerificationTime": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+    "note": "Local origin/work tracking ref was fetched to the tested SHA; this task did not push or rewrite origin/work."
+  },
+  "standaloneResults": {
+    "status": "verified",
+    "exitCode": 0,
+    "stats": {
+      "startTime": "2026-10-26T19:11:54.534Z",
+      "duration": 6389.307000000001,
+      "expected": 70,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "perProject": {
+      "chromium": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "firefox": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "webkit": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "mobile-chrome": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "mobile-safari": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      }
+    },
+    "testRecordCount": 70
+  },
+  "studioResults": {
+    "status": "FAIL",
+    "exitCode": 1,
+    "stats": {
+      "startTime": "2026-10-26T19:12:11.625Z",
+      "duration": 179646.441,
+      "expected": 79,
+      "skipped": 0,
+      "unexpected": 31,
+      "flaky": 0
+    },
+    "perProject": {
+      "studio-chromium": {
+        "passed": 22,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "studio-firefox": {
+        "passed": 22,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "studio-webkit": {
+        "passed": 19,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "studio-mobile-chrome": {
+        "passed": 5,
+        "failed": 17,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "studio-mobile-safari": {
+        "passed": 11,
+        "failed": 11,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      }
+    },
+    "testRecordCount": 110,
+    "failureCount": 31,
+    "comparisonToPhase883": {
+      "oldFailuresResolved": 0,
+      "oldFailuresRemaining": 30,
+      "newFailures": 1,
+      "testsAdded": 5
+    }
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "standalone": {
+      "filename": "openkline-phase-8-8-5-standalone-20261026T191031Z.tar.gz",
+      "sha256": "87cb6754c84f75a3c82435f6f0da72eb89029d4ae3616c8234fbb07af1aa795e",
+      "evidenceDirectoryBasename": "phase-8-8-5-standalone-20261026T191031Z"
+    },
+    "studio": {
+      "filename": "openkline-phase-8-8-5-studio-20261026T191031Z.tar.gz",
+      "sha256": "38509a628a39f561e689bf6a4a5a30a7cdb7f0960ce4a440f55c70b8c7bac47a",
+      "evidenceDirectoryBasename": "phase-8-8-5-studio-20261026T191031Z"
+    },
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-5-studio-focused-diag-20261026T191031Z.tar.gz",
+      "sha256": "8a06a0a7f46510107b98433339f74633cbef75436dae7a5bda66be33402a0ffd",
+      "evidenceDirectoryBasename": "phase-8-8-5-studio-focused-diag-20261026T191031Z",
+      "note": "Supplemental focused retries; does not replace the initial full Studio suite archive."
+    },
+    "phase883ArchivesPreserved": [
+      "openkline-phase-8-8-3-standalone-20261026T181441Z.tar.gz",
+      "openkline-phase-8-8-3-studio-20261026T181441Z.tar.gz",
+      "openkline-phase-8-8-3-studio-focused-diag-20261026T181441Z.tar.gz"
+    ]
+  },
+  "sourceArtifactHashes": {
+    "standalone": {
+      "environment.json": {
+        "sha256": "f9d4ad29c482ef8d67d6dad60dcf51980def376d1a29e3298e4805a27e5de3ed",
+        "bytes": 3604
+      },
+      "playwright-results.json": {
+        "sha256": "a0910de58518633422bbe90ac99160026ee5966bb691102041e84ec00169a403",
+        "bytes": 85313
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "35df99d12190769442ea43b5d7b0a841c4b988e5ec75d9ff9b89430c54174ec9",
+        "bytes": 4663
+      }
+    },
+    "studio": {
+      "environment.json": {
+        "sha256": "177464104ecb9859ff8cbb905c8535ce07fe61fecb43eb47502bef45b24e832b",
+        "bytes": 3392
+      },
+      "playwright-results.json": {
+        "sha256": "077643eed2cb211c20ca3f7c52557154dbb1331271160a7452f1bd51eb886438",
+        "bytes": 227657
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "988be29b90c68f5eab0d752b7791ff5f15ab14ff9a9532f0311192ed2c1e534c",
+        "bytes": 11642
+      }
+    }
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname and other unnecessary machine identifiers",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, binaries, node_modules, Next.js .next build output",
+      "Access credentials, auth headers, and environment secrets"
+    ],
+    "note": "This GitHub evidence pack is a compact sanitized derivative. Original archives and full artifact directories remain only on the trusted Manjaro machine."
+  },
+  "limitations": [
+    "Automated Playwright container emulation only",
+    "Not native iOS Safari verification",
+    "Not physical Android/iOS device verification",
+    "Not accessibility conformance certification",
+    "Not visual-regression baseline approval",
+    "Not release authorization",
+    "Studio five-browser matrix still fails on WebKit and mobile managed browsers",
+    "Phase 8.8.4 remediation did not clear the Phase 8.8.3 Studio failure set on this trusted run",
+    "Passing Chromium/Firefox Studio projects does not imply physical-device compatibility"
+  ]
+}
