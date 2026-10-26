@@ -192,6 +192,7 @@ export class Chart {
     this.canvas.style.display = "block";
     this.canvas.style.width = "100%";
     this.canvas.style.height = "100%";
+    this.canvas.style.touchAction = "none";
     this.container.appendChild(this.canvas);
     this.renderer = new CanvasRenderer(this.canvas);
     this.pluginRegistry = new PluginRegistry({
@@ -1005,11 +1006,15 @@ export class Chart {
 
   public resize(width: number, height: number): void {
     this.assertAlive();
-    this.width = Math.max(0, Math.floor(width));
-    this.height = Math.max(0, Math.floor(height));
-    this.devicePixelRatio = typeof window === "undefined" ? 1 : Math.max(1, window.devicePixelRatio || 1);
-    const pixelWidth = Math.max(1, Math.floor(this.width * this.devicePixelRatio));
-    const pixelHeight = Math.max(1, Math.floor(this.height * this.devicePixelRatio));
+    const nextWidth = Math.max(0, Math.floor(width));
+    const nextHeight = Math.max(0, Math.floor(height));
+    const nextDevicePixelRatio = typeof window === "undefined" ? 1 : Math.max(1, window.devicePixelRatio || 1);
+    const pixelWidth = Math.max(1, Math.floor(nextWidth * nextDevicePixelRatio));
+    const pixelHeight = Math.max(1, Math.floor(nextHeight * nextDevicePixelRatio));
+    if (this.width === nextWidth && this.height === nextHeight && this.devicePixelRatio === nextDevicePixelRatio && this.canvas.width === pixelWidth && this.canvas.height === pixelHeight) return;
+    this.width = nextWidth;
+    this.height = nextHeight;
+    this.devicePixelRatio = nextDevicePixelRatio;
     if (this.canvas.width !== pixelWidth) {
       this.canvas.width = pixelWidth;
     }
@@ -1270,12 +1275,23 @@ export class Chart {
     return { time: nearest.time, price };
   }
 
+  private pointerPosition(event: PointerEvent): { readonly x: number; readonly y: number } {
+    const bounds = this.canvas.getBoundingClientRect();
+    const scaleX = bounds.width > 0 ? this.width / bounds.width : 1;
+    const scaleY = bounds.height > 0 ? this.height / bounds.height : 1;
+    return {
+      x: Math.max(0, Math.min(this.width, (event.clientX - bounds.left) * scaleX)),
+      y: Math.max(0, Math.min(this.height, (event.clientY - bounds.top) * scaleY)),
+    };
+  }
+
   private readonly handlePointerDown = (event: PointerEvent): void => {
+    const position = this.pointerPosition(event);
     const drawingContext = this.getDrawingContext();
-    if (drawingContext !== null && this.pendingDrawing !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
+    if (drawingContext !== null && this.pendingDrawing !== null && isInsideBounds(position.x, position.y, drawingContext.bounds)) {
       const point = this.snapDrawingPoint({
-        time: Math.max(0, Math.round(drawingContext.converter.timeForX(event.offsetX))),
-        price: drawingContext.converter.priceForY(event.offsetY),
+        time: Math.max(0, Math.round(drawingContext.converter.timeForX(position.x))),
+        price: drawingContext.converter.priceForY(position.y),
       }, this.pendingDrawing.options.snap);
       this.pendingDrawing.points.push(point);
       const tool = this.drawingEngine.getTool(this.pendingDrawing.type);
@@ -1296,8 +1312,8 @@ export class Chart {
       return;
     }
 
-    if (drawingContext !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
-      const hit = this.drawingEngine.hitTest(event.offsetX, event.offsetY, drawingContext.converter, drawingContext.bounds, 6, (drawing) => this.isDrawingReplayVisible(drawing));
+    if (drawingContext !== null && isInsideBounds(position.x, position.y, drawingContext.bounds)) {
+      const hit = this.drawingEngine.hitTest(position.x, position.y, drawingContext.converter, drawingContext.bounds, 6, (drawing) => this.isDrawingReplayVisible(drawing));
       if (hit !== null) {
         this.selectedDrawingId = hit.id;
         this.emit("drawingSelection", { id: hit.id });
@@ -1306,8 +1322,8 @@ export class Chart {
           this.activeDrawing = {
             id: hit.id,
             pointIndex: hit.pointIndex,
-            time: drawingContext.converter.timeForX(event.offsetX),
-            price: drawingContext.converter.priceForY(event.offsetY),
+            time: drawingContext.converter.timeForX(position.x),
+            price: drawingContext.converter.priceForY(position.y),
           };
           this.canvas.setPointerCapture(event.pointerId);
         }
@@ -1320,16 +1336,17 @@ export class Chart {
     this.emit("drawingSelection", { id: null });
     this.activeDrawing = null;
     this.dragging = this.interaction.pointerPan;
-    this.lastPointerX = event.offsetX;
+    this.lastPointerX = position.x;
     this.canvas.setPointerCapture(event.pointerId);
   };
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
+    const position = this.pointerPosition(event);
     if (this.activeDrawing !== null) {
       const drawingContext = this.getDrawingContext();
       if (drawingContext !== null) {
-        const time = drawingContext.converter.timeForX(event.offsetX);
-        const price = drawingContext.converter.priceForY(event.offsetY);
+        const time = drawingContext.converter.timeForX(position.x);
+        const price = drawingContext.converter.priceForY(position.y);
         if (this.activeDrawing.pointIndex === null) {
           this.drawingEngine.move(this.activeDrawing.id, time - this.activeDrawing.time, price - this.activeDrawing.price);
         } else {
@@ -1338,23 +1355,23 @@ export class Chart {
         this.activeDrawing = { ...this.activeDrawing, time, price };
       }
       if (this.interaction.crosshair) {
-        this.crosshair = { x: event.offsetX, y: event.offsetY };
-        this.emitCrosshair(event.offsetX, event.offsetY);
+        this.crosshair = { x: position.x, y: position.y };
+        this.emitCrosshair(position.x, position.y);
       }
       this.render();
       return;
     }
 
     if (this.dragging) {
-      const delta = event.offsetX - this.lastPointerX;
+      const delta = position.x - this.lastPointerX;
       this.model.pan(-delta / Math.max(this.model.barSpacing, 1));
       this.emitViewportChange();
-      this.lastPointerX = event.offsetX;
+      this.lastPointerX = position.x;
     }
 
     if (this.interaction.crosshair) {
-      this.crosshair = { x: event.offsetX, y: event.offsetY };
-      this.emitCrosshair(event.offsetX, event.offsetY);
+      this.crosshair = { x: position.x, y: position.y };
+      this.emitCrosshair(position.x, position.y);
     }
     this.render();
   };

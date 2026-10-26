@@ -1,4 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function expectHitTestTarget(locator: Locator): Promise<void> {
+  await locator.scrollIntoViewIfNeeded();
+  const receivesPointer = await locator.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return hit === element || (hit !== null && element.contains(hit));
+  });
+  expect(receivesPointer).toBe(true);
+}
 
 test("multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces", async ({ page }) => {
   const errors: string[] = [];
@@ -14,7 +24,14 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   await page.getByLabel("Indicator").selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
-  await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+  if (await page.evaluate(() => window.matchMedia("(max-width: 720px)").matches)) {
+    await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeHidden();
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+  } else {
+    await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+  }
 
   await page.getByLabel("Sync symbols").check();
   await page.getByLabel("Active symbol").selectOption("AAPL");
@@ -121,7 +138,9 @@ test("Studio runs a real chart-scoped backtest, exposes generated results, marke
   await expect(page.getByRole("button", { name: "Run Backtest" })).toBeEnabled();
 
   const chartOneTester = page.getByRole("region", { name: "Strategy Tester for chart-1" });
-  await page.getByRole("button", { name: "Run Backtest" }).click();
+  const runBacktest = page.getByRole("button", { name: "Run Backtest" });
+  await expectHitTestTarget(runBacktest);
+  await runBacktest.click();
   await expect(page.getByText("completed", { exact: true })).toBeVisible();
   await expect(chartOneTester.getByRole("button", { name: "Export JSON" })).toBeVisible();
   await expect(chartOneTester.getByRole("button", { name: "Export CSV" })).toBeVisible();
@@ -138,6 +157,24 @@ test("Studio runs a real chart-scoped backtest, exposes generated results, marke
   await page.getByLabel("Active chart panel").selectOption("chart-1");
   await expect(page.getByRole("region", { name: "Strategy Tester for chart-1" }).getByRole("button", { name: "Export JSON" })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("mobile Studio keeps critical controls visible and hit-testable after responsive layout changes", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Chart layout").selectOption("four-grid");
+  await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+  await page.getByLabel("Active chart panel").selectOption("chart-2");
+  const addIndicator = page.getByRole("button", { name: "Add", exact: true });
+  await expectHitTestTarget(addIndicator);
+  await addIndicator.click();
+  await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
+
+  await page.getByLabel("Chart layout").selectOption("single");
+  const runBacktest = page.getByRole("button", { name: "Run Backtest", exact: true });
+  await expectHitTestTarget(runBacktest);
+  await runBacktest.click();
+  await expect(page.getByText("completed", { exact: true })).toBeVisible();
 });
 
 test("Studio cancels a large Worker backtest without retaining a partial result", async ({ page }) => {

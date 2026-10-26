@@ -1,4 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function placeChartPoint(page: Page, x: number, y: number): Promise<void> {
+  const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  if (touchInput) await page.touchscreen.tap(x, y);
+  else await page.mouse.click(x, y);
+}
 
 test("Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload", async ({ page }) => {
   const errors: string[] = [];
@@ -29,8 +35,8 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);
-  await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);
+  await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.22);
+  await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.34);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   const objectTree = page.getByRole("complementary", { name: "Object tree" });
   await expect(objectTree).toBeVisible();
