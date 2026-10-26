@@ -49,6 +49,28 @@ machine/engine properties and must be held constant by the reviewer when
 approving a baseline. The current targeted Chromium run generated candidates
 with status `SCREENSHOT GENERATED`; no baseline was approved.
 
+## Phase 8.7 fixture audit
+
+The audit found that the Studio demo quote provider derives displayed quote
+values from `Date.now()`. Candle data was deterministic, but quote labels could
+therefore change between captures. The review harness now installs a fixed
+clock before the Next.js application loads. This keeps runtime quote behavior
+unchanged while making the review fixture reproducible. Repeated local
+Chromium captures produced identical candidate hashes; the status remains
+`SCREENSHOT GENERATED` and no baseline was approved.
+
+Latest local candidates (Chromium `154.0.8037.57`, no baseline) are:
+
+| Candidate | Viewport | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| `studio-dark.png` | 1280×900 | 477,760 | `8e90174eaf37fd5d165f43af4f19ade77e4b01df998a9de7dafa2609e87a0f92` |
+| `studio-light.png` | 1280×900 | 477,136 | `e34a3a6e96c150821a06e63c39ee8beb5cf0603a9dd7cdbb38762d4aa8f12712` |
+| `studio-mobile.png` | 390×844 | 481,421 | `39b272cca9c03005292c6a4aa6df6c297c2df7ebf1823b44f69d0e528a9797cf` |
+
+These are ignored local review artifacts, not approved repository baselines.
+The current Phase 8.7 source has not been rerun in the trusted managed
+Firefox, WebKit, or mobile projects.
+
 ## Review procedure
 
 ```bash
