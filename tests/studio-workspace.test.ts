@@ -7,6 +7,7 @@ import {
   migrateLegacyWorkspace,
   parseStudioWorkspace,
   parseWatchlistDocument,
+  StudioSynchronizationController,
 } from "../src/index.js";
 import type { WorkspaceDocument } from "../src/workspace.js";
 
@@ -57,4 +58,35 @@ test("WatchlistModel supports stable CRUD, ordering, favorites, and round trips"
   assert.equal(parseWatchlistDocument(model.getDocument()).lists[0]?.name, "Pinned");
   model.delete(list.id);
   assert.equal(model.getDocument().selectedWatchlistId, null);
+});
+
+test("Studio synchronization forwards UTC coordinates across irregular charts without loops", () => {
+  const calls: Array<{ panel: string; kind: string; value: unknown }> = [];
+  const nearest = (times: readonly number[], target: number): number => times.reduce((best, time) => Math.abs(time - target) < Math.abs(best - target) ? time : best, times[0]!);
+  let controller: StudioSynchronizationController;
+  const makeTarget = (panel: string, times: readonly number[]) => ({
+    setCrosshairAtTime(time: number | null): number | null {
+      const resolved = time === null ? null : nearest(times, time);
+      calls.push({ panel, kind: "crosshair", value: resolved });
+      if (panel === "chart-2" && resolved !== null) controller.syncCrosshair(panel, resolved, true);
+      return resolved;
+    },
+    setVisibleTimeRange(range: { from: number; to: number }): void {
+      calls.push({ panel, kind: "range", value: range });
+    },
+  });
+  const targets = new Map([
+    ["chart-1", makeTarget("chart-1", [1_000, 2_000, 3_500])],
+    ["chart-2", makeTarget("chart-2", [900, 1_800, 3_000, 5_000])],
+    ["chart-3", makeTarget("chart-3", [800, 1_700, 2_900])],
+  ]);
+  controller = new StudioSynchronizationController(() => targets);
+
+  controller.syncCrosshair("chart-1", 3_420, true);
+  assert.deepEqual(calls.filter((call) => call.kind === "crosshair").map((call) => [call.panel, call.value]), [["chart-2", 3_000], ["chart-3", 2_900]]);
+  controller.syncVisibleRange("chart-1", { from: 1_120, to: 3_420 }, true);
+  assert.equal(calls.filter((call) => call.kind === "range").length, 2);
+  controller.syncCrosshair("chart-1", 3_420, false);
+  controller.syncVisibleRange("chart-1", { from: 4_000, to: 2_000 }, true);
+  assert.equal(calls.length, 4);
 });

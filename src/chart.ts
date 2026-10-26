@@ -34,7 +34,9 @@ import type {
   DrawingOptions,
   DrawingPoint,
   DrawingSnapshot,
+  DrawingSnapMode,
   DrawingStartOptions,
+  DrawingStyle,
   DrawingToolDefinition,
 } from "./drawings/types.js";
 import type { IndicatorDefinition, IndicatorInstance } from "./indicators/types.js";
@@ -812,6 +814,22 @@ export class Chart {
     this.render();
   }
 
+  public setDrawingStyle(id: string, style: DrawingStyle): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.drawingEngine.setStyle(id, style);
+    this.emit("drawingSelection", { id: this.selectedDrawingId });
+    this.render();
+  }
+
+  public setDrawingVisibility(id: string, visible: boolean): void {
+    this.setDrawingStyle(id, { visible });
+  }
+
+  public setDrawingLocked(id: string, locked: boolean): void {
+    this.setDrawingStyle(id, { locked });
+  }
+
   public getDrawings(): DrawingSnapshot[] {
     this.assertAlive();
     return this.drawingEngine.getAll().filter((drawing) => this.isDrawingReplayVisible(drawing));
@@ -837,6 +855,7 @@ export class Chart {
     this.assertAlive();
     this.assertReplayStructureMutationAllowed();
     const tool = this.drawingEngine.getTool(type);
+    if (options.snap !== undefined && options.snap !== "none" && options.snap !== "visible-ohlc") throw new Error(`Unsupported drawing snap mode: ${options.snap}`);
     this.pendingDrawing = { type, options: { ...options }, points: [] };
     this.emit("toolActivation", { type, active: true });
     if (tool.minPoints === 0) {
@@ -1188,13 +1207,25 @@ export class Chart {
     this.listeners.clear();
   }
 
+  private snapDrawingPoint(point: DrawingPoint, mode: DrawingSnapMode | undefined): DrawingPoint {
+    if (mode !== "visible-ohlc") return point;
+    const candles = this.model.getVisibleData().candles;
+    const nearest = candles.reduce<{ candle: Candle | undefined; distance: number }>((best, candle) => {
+      const distance = Math.abs(candle.time - point.time);
+      return distance < best.distance ? { candle, distance } : best;
+    }, { candle: undefined, distance: Number.POSITIVE_INFINITY }).candle;
+    if (nearest === undefined) return point;
+    const price = [nearest.open, nearest.high, nearest.low, nearest.close].reduce((best, candidate) => Math.abs(candidate - point.price) < Math.abs(best - point.price) ? candidate : best, nearest.close);
+    return { time: nearest.time, price };
+  }
+
   private readonly handlePointerDown = (event: PointerEvent): void => {
     const drawingContext = this.getDrawingContext();
     if (drawingContext !== null && this.pendingDrawing !== null && isInsideBounds(event.offsetX, event.offsetY, drawingContext.bounds)) {
-      const point = {
+      const point = this.snapDrawingPoint({
         time: Math.max(0, Math.round(drawingContext.converter.timeForX(event.offsetX))),
         price: drawingContext.converter.priceForY(event.offsetY),
-      };
+      }, this.pendingDrawing.options.snap);
       this.pendingDrawing.points.push(point);
       const tool = this.drawingEngine.getTool(this.pendingDrawing.type);
       if (this.pendingDrawing.points.length >= tool.minPoints) {

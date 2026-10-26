@@ -290,20 +290,25 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   append/correction equivalence are covered by the indicator tests and public
   API documentation. The advanced definitions reuse the existing registry,
   chart series, pane, scale, and filled-band architecture.
-- [In Progress] Phase 7.5.1 still requires the professional drawing set,
-  accessible Indicator Explorer and drawing object tree, real synchronization
-  propagation tests, workspace/browser hardening, and final performance and
-  memory evidence. No Phase 7.5 acceptance claim is made until those checks
-  and the inherited Firefox/WebKit/Mobile Safari/accessibility/device gates are
-  verified.
+- [In Progress] Phase 7.5.1 still requires contextual drawing property editing,
+  broader end-to-end drawing/synchronization coverage, workspace
+  import/storage and multi-chart performance/memory evidence. The accessible
+  Indicator Explorer, professional drawing toolbar, object tree,
+  visible-OHLC snapping, source-tagged sync controller, and in-page dialogs
+  are implemented and locally verified in Chromium. No Phase 7.5 acceptance
+  claim is made until the remaining checks and inherited Firefox/WebKit/Mobile
+  Safari/accessibility/device gates are verified.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They
   reuse the existing coordinate converter, Canvas primitives, hit testing,
   locked editing, undo/redo, and workspace serialization. Node geometry and
-  validation coverage passes; browser interaction coverage and Studio toolbar
-  exposure remain open.
-- [Not Started] Accessibility UI and visual regression baselines.
+  validation coverage passes; representative Chromium interaction and Studio
+  toolbar exposure are verified, while broader tool/device coverage remains
+  open.
+- [In Progress] Accessible Studio controls are implemented, but formal
+  keyboard/assistive-technology audits and visual regression baselines remain
+  open.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
   narrow exception recorded in `docs/reports/phase-3-verification.md`. It does

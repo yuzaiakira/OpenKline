@@ -16,3 +16,14 @@ to persist the complete panel set and nested chart workspaces.
 The synchronization switches are independent. Crosshair and visible-range
 sync use timestamps and target-side clamping. Symbol and timeframe sync update
 the selected panel set. Replay remains private to each panel.
+
+The Indicator Explorer is keyboard-accessible and exposes metadata categories,
+text search, favorites, and definition parameters. Selecting a definition
+feeds the existing Add control; the chart still owns parameter validation,
+pane assignment, output styles, and lifecycle cleanup. The toolbar exposes
+the built-in analysis drawings, including channels, Fibonacci extension,
+ranges, and long/short risk-reward annotations.
+
+Workspace, watchlist, and panel destructive actions use an in-page ARIA dialog
+with explicit Cancel and Confirm/Apply controls. They do not call blocking
+browser `prompt()` or `confirm()` dialogs.

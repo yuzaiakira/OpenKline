@@ -13,6 +13,8 @@ export type {
   StudioSynchronizationPreferences,
   StudioWorkspaceDocument,
 } from "./workspace.js";
+export { StudioSynchronizationController } from "./synchronization.js";
+export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./synchronization.js";
 export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,

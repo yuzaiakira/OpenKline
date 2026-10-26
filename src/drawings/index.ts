@@ -32,6 +32,7 @@ export type {
   DrawingPoint,
   DrawingSnapshot,
   DrawingStartOptions,
+  DrawingSnapMode,
   DrawingStyle,
   DrawingToolDefinition,
   DrawingToolType,

@@ -40,7 +40,10 @@ export interface DrawingStartOptions {
   readonly style?: DrawingStyle;
   readonly text?: string;
   readonly zIndex?: number;
+  readonly snap?: DrawingSnapMode;
 }
+
+export type DrawingSnapMode = "none" | "visible-ohlc";
 
 export interface DrawingSnapshot {
   readonly id: string;

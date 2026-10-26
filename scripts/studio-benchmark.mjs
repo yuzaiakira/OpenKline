@@ -21,6 +21,7 @@ try {
   });
   const page = await browser.newPage({ viewport: { width: 1_440, height: 900 } });
   await page.goto(`${baseURL}/`);
+  const heapBefore = await readHeap(page);
   const results = [];
   for (const layout of ["single", "two-horizontal", "two-vertical", "four-grid"]) {
     const startedAt = await page.evaluate(() => performance.now());
@@ -28,17 +29,41 @@ try {
     const expectedPanels = layout === "single" ? 1 : layout === "four-grid" ? 4 : 2;
     await page.locator("[data-panel-id]").nth(expectedPanels - 1).waitFor();
     await page.waitForTimeout(250);
-    results.push(await page.evaluate(({ layout: measuredLayout, startedAt: measuredStart, expected }) => ({
+    results.push(await page.evaluate(async ({ layout: measuredLayout, startedAt: measuredStart, expected }) => ({
       layout: measuredLayout,
       transitionMs: Number((performance.now() - measuredStart).toFixed(3)),
       panelCount: document.querySelectorAll("[data-panel-id]").length,
       visibleCanvasCount: [...document.querySelectorAll("canvas")].filter((canvas) => canvas.getBoundingClientRect().width > 0 && canvas.getBoundingClientRect().height > 0).length,
       expectedPanels: expected,
+      heapUsedMb: performance.memory === undefined ? null : Number((performance.memory.usedJSHeapSize / 1_048_576).toFixed(2)),
     }), { layout, startedAt, expected: expectedPanels }));
   }
+  await page.getByLabel("Active chart panel").selectOption("chart-4");
+  await page.getByLabel("Sync crosshair").check();
+  await page.getByLabel("Sync visible range").check();
+  const interactionStartedAt = await page.evaluate(() => performance.now());
+  const activeCanvas = page.locator('[data-panel-id="chart-4"] canvas');
+  await activeCanvas.scrollIntoViewIfNeeded();
+  const activeBox = await activeCanvas.boundingBox();
+  if (activeBox !== null) {
+    await page.mouse.move(activeBox.x + activeBox.width * 0.45, activeBox.y + activeBox.height * 0.45);
+    await page.mouse.down();
+    await page.mouse.move(activeBox.x + activeBox.width * 0.35, activeBox.y + activeBox.height * 0.45);
+    await page.mouse.up();
+  }
+  const interactionMs = await page.evaluate((startedAt) => Number((performance.now() - startedAt).toFixed(3)), interactionStartedAt);
   await page.getByLabel("Chart layout").selectOption("single");
   await page.locator('[data-panel-id="chart-1"]').waitFor();
-  const cleanup = await page.evaluate(() => ({ remainingCanvasCount: document.querySelectorAll("canvas").length, userAgent: navigator.userAgent }));
+  await page.goto("about:blank");
+  const heapAfter = await readHeap(page);
+  const cleanup = await page.evaluate(({ measuredInteractionMs, before, after }) => ({
+    remainingCanvasCount: document.querySelectorAll("canvas").length,
+    userAgent: navigator.userAgent,
+    interactionMs: measuredInteractionMs,
+    heapBeforeMb: before,
+    heapAfterMb: after,
+    heapDeltaMb: before === null || after === null ? null : Number((after - before).toFixed(2)),
+  }), { measuredInteractionMs: interactionMs, before: heapBefore, after: heapAfter });
   console.log(JSON.stringify({ browser: cleanup.userAgent, results, cleanup }, null, 2));
 } finally {
   await browser?.close();
@@ -57,4 +82,11 @@ async function waitForServer(url) {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(`Timed out waiting for ${url}`);
+}
+
+async function readHeap(page) {
+  return page.evaluate(() => {
+    globalThis.gc?.();
+    return performance.memory === undefined ? null : Number((performance.memory.usedJSHeapSize / 1_048_576).toFixed(2));
+  });
 }

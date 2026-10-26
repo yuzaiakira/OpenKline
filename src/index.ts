@@ -254,6 +254,7 @@ export {
   migrateLegacyWorkspace,
   parseStudioWorkspace,
   parseWatchlistDocument,
+  StudioSynchronizationController,
 } from "./studio/index.js";
 export type {
   LegacyWorkspaceMigrationOptions,
@@ -269,6 +270,7 @@ export type {
   WatchlistQuote,
   WatchlistSymbol,
 } from "./studio/index.js";
+export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
 export {
   builtInDrawingTools,
   dateRangeTool,
@@ -297,6 +299,7 @@ export type {
   DrawingOptions,
   DrawingPoint,
   DrawingSnapshot,
+  DrawingSnapMode,
   DrawingStartOptions,
   DrawingStyle,
   DrawingToolDefinition,

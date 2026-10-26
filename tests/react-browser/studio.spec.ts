@@ -24,13 +24,21 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   // Keep pointer coordinates in the chart viewport after the sidebar select
   // has scrolled the compact Studio layout.
   await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await page.getByRole("button", { name: "Trend", exact: true }).click();
   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);
   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  await expect(objectTree).toBeVisible();
+  await objectTree.getByRole("button", { name: "Lock drawing-1", exact: true }).click();
+  await expect(objectTree.getByRole("button", { name: "Unlock drawing-1", exact: true })).toBeVisible();
+  await objectTree.getByRole("button", { name: "Hide drawing-1", exact: true }).click();
+  await expect(objectTree.getByRole("button", { name: "Show drawing-1", exact: true })).toBeVisible();
+  await objectTree.getByRole("button", { name: "Show drawing-1", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   const anchorsBeforeLinear = await page.evaluate(() => {
     const workspace = JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as {
@@ -104,10 +112,11 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   const canvas = page.locator("canvas");
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await page.getByRole("button", { name: "Trend", exact: true }).click();
   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);
   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();

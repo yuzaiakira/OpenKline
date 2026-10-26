@@ -46,9 +46,10 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   await expect(page.locator("[data-panel-id]")).toHaveCount(4);
   await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
 
-  page.on("dialog", (dialog) => void dialog.accept());
   await page.getByLabel("Active chart panel").selectOption("chart-4");
   await page.getByRole("button", { name: "Remove chart", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Remove chart-4" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.locator("[data-panel-id]")).toHaveCount(3);
   expect(errors).toEqual([]);
 });
@@ -67,4 +68,47 @@ test("mobile multi-chart Studio switches the visible panel through the accessibl
   await expect(page.locator(`[data-panel-id="${thirdPanelId}"]`)).toBeVisible();
   await expect(page.locator('[data-panel-id="chart-1"]')).toBeHidden();
   await expect(page.getByRole("button", { name: "Fit", exact: true })).toBeVisible();
+});
+
+test("Studio management actions use accessible dialogs instead of browser blocking prompts", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Rename watchlist", exact: true }).click();
+  const renameDialog = page.getByRole("dialog", { name: "Rename watchlist" });
+  await expect(renameDialog).toBeVisible();
+  await renameDialog.getByLabel("Dialog value").fill("Analysis symbols");
+  await renameDialog.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByLabel("Watchlist", { exact: true })).toHaveValue("watchlist-favorites");
+  await expect(page.getByLabel("Watchlist", { exact: true })).toContainText("Analysis symbols");
+
+  await page.getByRole("button", { name: "Delete watchlist", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: /Delete watchlist/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByLabel("Watchlist", { exact: true })).toContainText("Analysis symbols");
+
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: /Delete workspace/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+});
+
+test("Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Snap drawings to visible OHLC").check();
+  const canvas = page.locator("canvas");
+  await page.getByRole("button", { name: "Ray", exact: true }).click();
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  if (box === null) return;
+  await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);
+  await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);
+  await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);
+  expect(before).toHaveLength(2);
+  const start = Date.UTC(2026, 0, 1) - 239 * 60 * 60 * 1_000;
+  expect(before?.every((point) => (point.time - start) % (60 * 60 * 1_000) === 0)).toBe(true);
+  await page.getByLabel("Price scale").selectOption("logarithmic");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const after = await page.evaluate(() => (JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);
+  expect(after).toEqual(before);
 });

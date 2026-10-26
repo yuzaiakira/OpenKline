@@ -369,11 +369,13 @@ explorer and future plugin-defined indicators; no vendor or browser dependency
 is added. The API reference and indicator-engine architecture document the
 implemented formula and missing-volume policies.
 
-The remaining Phase 7.5 work includes the full professional drawing set,
-accessible Studio explorer/object-tree UI, real multi-chart synchronization and
-workspace hardening coverage, performance/memory evidence, and the inherited
-Firefox, WebKit, Mobile Safari, accessibility, and physical-device gates. This
-section does not mark those items complete.
+The Phase 7.5 increment now includes the full professional drawing set,
+accessible Studio explorer/object-tree UI, source-tagged synchronization, and
+workspace hardening coverage. Visible-OHLC snapping is available as an explicit
+drawing option. Remaining work includes contextual drawing property editing,
+broader end-to-end workflow coverage, performance/memory evidence, and the
+inherited Firefox, WebKit, Mobile Safari, accessibility, and physical-device
+gates. This section does not mark those items complete.
 
 The current drawing increment completes the framework-neutral geometry and
 validation foundation for rays, extended lines, parallel channels, Fibonacci
@@ -381,5 +383,17 @@ extensions, price/date ranges, and long/short risk-reward annotations. These
 objects reuse the existing DrawingEngine, Canvas primitives, coordinate
 converter, hit testing, edit lock, undo/redo, and version-1 workspace
 serialization. Position objects remain visual analysis annotations and do not
-place broker orders. Browser interaction verification and the Studio toolbar
-integration remain open.
+place broker orders. The Studio toolbar and representative Chromium drawing
+interactions are now integrated; broader tool-by-tool and device verification
+remain open.
+
+The Studio hardening increment now uses the public
+`StudioSynchronizationController` for source-tagged crosshair and visible
+range propagation, with target charts responsible for nearest-bar selection
+and clamping. Its accessible Indicator Explorer supports category, search,
+favorite filtering, and parameter overrides while continuing to call the
+existing chart indicator API. The professional drawing toolbar exposes the
+new built-in tools, and destructive watchlist/workspace/panel actions use an
+in-page ARIA dialog rather than blocking browser prompts. Local Chromium
+coverage verifies these paths; other browser and physical accessibility gates
+remain open.

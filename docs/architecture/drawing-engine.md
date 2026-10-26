@@ -34,6 +34,12 @@ their data coordinates. Selected drawings show anchor handles; dragging an
 anchor resizes/edits that point, while dragging geometry moves the whole object.
 Locked drawings remain selectable but cannot be moved or edited.
 
+Interactive creation can opt into `visible-ohlc` snapping. The Chart resolves
+each pointer anchor against the currently visible primary candles, choosing the
+nearest timestamp and nearest raw OHLC value before passing it to the engine.
+This keeps snapping out of tool geometry and preserves raw anchors when price
+scale display modes change.
+
 ## Lifecycle and persistence
 
 `Chart.addDrawing` creates an object immediately. `Chart.startDrawing` collects

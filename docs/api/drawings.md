@@ -30,6 +30,9 @@ chart.restoreDrawings(document);
 - `selectDrawing(id)` selects an object or clears selection with `null`.
 - `getSelectedDrawingId()` returns the selected ID.
 - `removeDrawing(id)` removes one object.
+- `setDrawingVisibility(id, visible)` and `setDrawingLocked(id, locked)`
+  update object-tree presentation state without changing anchors.
+- `setDrawingStyle(id, style)` merges a validated style patch into the object.
 - `registerDrawingTool(definition)` and `unregisterDrawingTool(type)` manage
   custom tools.
 - `undoDrawing()` and `redoDrawing()` return whether a state changed.
@@ -68,6 +71,11 @@ updates are ignored. Higher `zIndex` objects are rendered and hit-tested later.
 `setLocked`, `setText`, `setZIndex`, and `remove`. Pointer selection near an
 anchor moves that anchor (resize/edit); selection on the geometry moves the
 whole object. Snapshots are copied at the API boundary.
+
+Interactive `Chart.startDrawing` accepts `snap: "none" | "visible-ohlc"`.
+The latter maps each pointer anchor to the nearest visible candle timestamp
+and nearest raw open/high/low/close value. Snapping is opt-in, uses raw data
+coordinates, and does not modify stored candles or indicator values.
 
 ## Custom tools
 
