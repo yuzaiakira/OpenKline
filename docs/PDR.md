@@ -462,3 +462,11 @@ The account, stream, and persistence contracts are documented in
 `docs/api/paper-trading.md`. The Studio ticket/dashboard, REST/WebSocket
 transport adapters, risk policy expansion, recovery hardening, performance
 benchmarks, and inherited browser/accessibility gates remain open.
+
+Phase 8.1.3 connects the public account and deterministic stream to the
+private Next.js Studio. The active chart has a prominent simulated/no-real-
+money banner, order ticket, account dashboard, order/position audit, risk
+halt, and chart-scoped non-persistent paper markers. Chromium verifies the
+causal fill flow, marker scope, responsive control path, and no page errors.
+Paper state remains in memory in this example and is not silently included in
+workspace export.

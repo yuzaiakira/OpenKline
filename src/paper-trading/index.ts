@@ -11,6 +11,7 @@ export type {
 export { parsePaperTradingDocument, serializePaperTradingDocument } from "./persistence.js";
 export { PaperMarketDataStaleResponseError, PaperMarketDataValidationError, PaperRestMarketAdapter, normalizePaperEvent } from "./rest.js";
 export { PaperWebSocketMarketAdapter } from "./websocket.js";
+export { createPaperTradingMarkers, validatePaperTradingMarkers } from "./markers.js";
 export type {
   PaperHistoryQuery,
   PaperRestEventPage,
@@ -64,3 +65,4 @@ export type {
   PaperTradingMode,
   PaperTradingStatus,
 } from "./types.js";
+export type { PaperTradingMarker, PaperTradingMarkerKind } from "./markers.js";

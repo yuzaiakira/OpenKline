@@ -95,6 +95,12 @@ benchmark, and broader browser acceptance remain open.
   controls plus a journaled/restorable operator risk halt. Long-only,
   non-leveraged behavior remains enforced; local risk rejection and drawdown
   tests pass.
+- [Implemented / Verified] Phase 8.1.3 adds the Next.js Studio simulated
+  paper-trading panel with prominent no-real-money labeling, ticket,
+  dashboard, order/position history, risk halt, active-chart marker overlay,
+  responsive layout, and accessible controls. A focused Chromium E2E flow
+  passes. Firefox, WebKit, Mobile Safari, physical-device, and formal
+  accessibility gates remain open.
 
 ## Completed
 

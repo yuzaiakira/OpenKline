@@ -54,3 +54,15 @@ labels for selectors, scale settings, and color controls, visible keyboard focus
 status region, and the existing chart canvas label. The Studio workflow is
 tested at a 390×844 viewport with Chromium; this is diagnostic mobile-layout
 evidence, not a Mobile Safari compatibility claim.
+
+## Paper trading panel
+
+The Studio paper-trading panel is a client-only consumer of the public
+`createPaperTradingAccount`, deterministic stream, and paper-marker APIs. It
+does not import account internals. Each active chart panel receives a distinct
+account identity and marker scope; replay and Strategy Tester events are not
+forwarded to it. The ticket, dashboard, order history, risk halt, and audit
+notice all carry simulated/no-real-money messaging. The panel is responsive
+and uses native labels, status regions, a real form, and table captions so it
+remains operable at narrow widths. The current example keeps paper state in
+memory; durable hosts should use the versioned persistence API explicitly.

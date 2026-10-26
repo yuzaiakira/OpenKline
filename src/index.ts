@@ -163,6 +163,8 @@ export {
   PaperRestMarketAdapter,
   PaperWebSocketMarketAdapter,
   normalizePaperEvent,
+  createPaperTradingMarkers,
+  validatePaperTradingMarkers,
 } from "./paper-trading/index.js";
 export type {
   PaperAccountSnapshot,
@@ -210,6 +212,8 @@ export type {
   PaperWebSocketScheduler,
   PaperWebSocketSubscription,
   PaperWebSocketSubscriptionStatus,
+  PaperTradingMarker,
+  PaperTradingMarkerKind,
 } from "./paper-trading/index.js";
 export type {
   AdxParameters,

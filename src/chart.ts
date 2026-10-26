@@ -77,6 +77,8 @@ import type {
 import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { StrategyMarker } from "./backtesting/markers.js";
+import type { PaperTradingMarker } from "./paper-trading/markers.js";
+import { validatePaperTradingMarkers } from "./paper-trading/markers.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -140,6 +142,7 @@ export class Chart {
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
   private strategyMarkers: StrategyMarker[] = [];
+  private paperTradingMarkers: PaperTradingMarker[] = [];
   private readonly pluginRegistry: PluginRegistry;
   private readonly alertEngine = new AlertEngine();
   private readonly extensionDisposers = new Set<() => void>();
@@ -1188,6 +1191,25 @@ export class Chart {
     this.render();
   }
 
+  /** Set non-persistent simulated paper-order markers without replacing strategy markers. */
+  public setPaperTradingMarkers(markers: readonly PaperTradingMarker[]): void {
+    this.assertAlive();
+    this.paperTradingMarkers = validatePaperTradingMarkers(markers);
+    this.render();
+  }
+
+  public getPaperTradingMarkers(): PaperTradingMarker[] {
+    this.assertAlive();
+    const cutoff = this.model.getReplayCutoff();
+    return this.paperTradingMarkers.filter((marker) => cutoff === null || marker.time <= cutoff).map((marker) => ({ ...marker }));
+  }
+
+  public clearPaperTradingMarkers(): void {
+    this.assertAlive();
+    this.paperTradingMarkers = [];
+    this.render();
+  }
+
   public subscribe<Name extends ChartEventName>(name: Name, handler: ChartEventHandler<Name>): () => void {
     const handlers = this.listeners.get(name) ?? new Set<ChartEventHandler<ChartEventName>>();
     handlers.add(handler as ChartEventHandler<ChartEventName>);
@@ -1219,6 +1241,7 @@ export class Chart {
     this.drawingEngine.dispose();
     this.overlays.clear();
     this.strategyMarkers = [];
+    this.paperTradingMarkers = [];
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -1464,6 +1487,8 @@ export class Chart {
     const items: PluginOverlayRenderItem[] = [];
     const strategyMarkers = this.getStrategyMarkerOverlay();
     if (strategyMarkers !== null) items.push(strategyMarkers);
+    const paperTradingMarkers = this.getPaperTradingMarkerOverlay();
+    if (paperTradingMarkers !== null) items.push(paperTradingMarkers);
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -1501,6 +1526,25 @@ export class Chart {
         text: marker.kind === "entry-signal" ? "▲" : marker.kind === "exit-signal" ? "▼" : marker.kind === "entry-fill" ? "◆" : "◇",
         font: "bold 14px system-ui, sans-serif",
         ...(marker.color === undefined ? {} : { color: marker.color }),
+      })),
+    };
+  }
+
+  private getPaperTradingMarkerOverlay(): PluginOverlayRenderItem | null {
+    if (this.paperTradingMarkers.length === 0) return null;
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return null;
+    return {
+      id: "openkline.paper-trading-markers",
+      zIndex: 21,
+      commands: this.getPaperTradingMarkers().map((marker) => ({
+        kind: "text" as const,
+        x: context.xForTime(marker.time) - 7,
+        y: pane.yForPrice(marker.price) - 8,
+        text: marker.kind === "entry-fill" ? "◆" : "◇",
+        font: "bold 14px system-ui, sans-serif",
+        color: marker.color ?? "#fbbf24",
       })),
     };
   }

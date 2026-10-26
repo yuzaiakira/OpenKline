@@ -44,6 +44,11 @@ updates and is included in the account snapshot and journal.
 The deterministic stream is a test/demo source. It does not represent a real
 exchange and does not authorize live execution.
 
+`createPaperTradingMarkers(account.getOrders())` produces non-persistent
+long-entry/long-exit markers. Pass them to a chart with
+`chart.setPaperTradingMarkers()`; this overlay is separate from strategy
+markers and is cleared with `chart.clearPaperTradingMarkers()`.
+
 ## Transport adapters
 
 `PaperRestMarketAdapter` and `PaperWebSocketMarketAdapter` are reference
