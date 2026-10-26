@@ -76,6 +76,7 @@ import type {
 } from "./types.js";
 import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
 import type { JsonValue } from "./extensions/types.js";
+import type { StrategyMarker } from "./backtesting/markers.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -138,6 +139,7 @@ export class Chart {
   private nextIndicatorId = 1;
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
+  private strategyMarkers: StrategyMarker[] = [];
   private readonly pluginRegistry: PluginRegistry;
   private readonly alertEngine = new AlertEngine();
   private readonly extensionDisposers = new Set<() => void>();
@@ -1165,6 +1167,27 @@ export class Chart {
     return this.model.allCandles;
   }
 
+  /** Set non-persistent strategy signal/fill markers rendered through the existing overlay path. */
+  public setStrategyMarkers(markers: readonly StrategyMarker[]): void {
+    this.assertAlive();
+    this.strategyMarkers = validateStrategyMarkers(markers);
+    this.render();
+  }
+
+  public getStrategyMarkers(): StrategyMarker[] {
+    this.assertAlive();
+    const cutoff = this.model.getReplayCutoff();
+    return this.strategyMarkers
+      .filter((marker) => cutoff === null || marker.time <= cutoff)
+      .map((marker) => ({ ...marker }));
+  }
+
+  public clearStrategyMarkers(): void {
+    this.assertAlive();
+    this.strategyMarkers = [];
+    this.render();
+  }
+
   public subscribe<Name extends ChartEventName>(name: Name, handler: ChartEventHandler<Name>): () => void {
     const handlers = this.listeners.get(name) ?? new Set<ChartEventHandler<ChartEventName>>();
     handlers.add(handler as ChartEventHandler<ChartEventName>);
@@ -1195,6 +1218,7 @@ export class Chart {
     this.replayCursorIndex = null;
     this.drawingEngine.dispose();
     this.overlays.clear();
+    this.strategyMarkers = [];
     this.resizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
@@ -1437,10 +1461,13 @@ export class Chart {
   }
 
   private getPluginOverlayItems(): PluginOverlayRenderItem[] {
-    if (this.overlays.size === 0) return [];
+    const items: PluginOverlayRenderItem[] = [];
+    const strategyMarkers = this.getStrategyMarkerOverlay();
+    if (strategyMarkers !== null) items.push(strategyMarkers);
+    if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
-    if (context === null) return [];
-    return [...this.overlays.values()]
+    if (context === null) return items;
+    items.push(...[...this.overlays.values()]
       .sort((left, right) => (left.zIndex ?? 0) - (right.zIndex ?? 0))
       .map((definition) => {
         try {
@@ -1455,7 +1482,27 @@ export class Chart {
           console.error(`OpenKline plugin overlay failed: ${definition.id}`, error);
           return { id: definition.id, zIndex: definition.zIndex ?? 0, commands: [] };
         }
-      });
+      }));
+    return items;
+  }
+
+  private getStrategyMarkerOverlay(): PluginOverlayRenderItem | null {
+    if (this.strategyMarkers.length === 0) return null;
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return null;
+    return {
+      id: "openkline.strategy-markers",
+      zIndex: 20,
+      commands: this.getStrategyMarkers().map((marker) => ({
+        kind: "text" as const,
+        x: context.xForTime(marker.time) - 7,
+        y: pane.yForPrice(marker.price) - 8,
+        text: marker.kind === "entry-signal" ? "▲" : marker.kind === "exit-signal" ? "▼" : marker.kind === "entry-fill" ? "◆" : "◇",
+        font: "bold 14px system-ui, sans-serif",
+        ...(marker.color === undefined ? {} : { color: marker.color }),
+      })),
+    };
   }
 
   private getPluginRenderContext(): PluginRenderContext | null {
@@ -1965,6 +2012,19 @@ function keyboardShortcut(event: KeyboardEvent): string | null {
 function resolveTheme(theme: ChartOptions["theme"]): ChartTheme {
   const base = theme === "dark" ? DARK_THEME : LIGHT_THEME;
   return typeof theme === "object" && theme !== null ? { ...base, ...theme } : { ...base };
+}
+
+function validateStrategyMarkers(markers: readonly StrategyMarker[]): StrategyMarker[] {
+  const ids = new Set<string>();
+  return markers.map((marker) => {
+    if (typeof marker.id !== "string" || marker.id.length === 0 || ids.has(marker.id)) throw new Error(`Invalid or duplicate strategy marker id: ${marker.id}`);
+    if (marker.kind !== "entry-signal" && marker.kind !== "entry-fill" && marker.kind !== "exit-signal" && marker.kind !== "exit-fill") throw new Error(`Invalid strategy marker kind: ${marker.kind}`);
+    if (marker.direction !== "long" && marker.direction !== "short") throw new Error(`Invalid strategy marker direction: ${marker.direction}`);
+    if (!Number.isInteger(marker.time) || marker.time < 0 || !Number.isFinite(marker.price) || marker.price <= 0 || typeof marker.label !== "string") throw new Error(`Invalid strategy marker values: ${marker.id}`);
+    if (marker.color !== undefined && typeof marker.color !== "string") throw new Error(`Invalid strategy marker color: ${marker.id}`);
+    ids.add(marker.id);
+    return { ...marker };
+  });
 }
 
 function nearestTime(times: readonly number[], target: number): number | null {

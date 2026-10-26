@@ -55,3 +55,13 @@ commissions, exposure, and open-position unrealized P&L. Undefined ratios use
 `null`; they are never represented as `Infinity` or an invented zero.
 `serializeBacktestResult()` exports JSON assumptions and results, while
 `serializeTradeLedgerCsv()` exports only the completed trade ledger.
+
+To display a result on an existing chart without persisting it as workspace
+data:
+
+```ts
+const markers = createStrategyMarkers(result, candles);
+chart.setStrategyMarkers(markers);
+// chart.getStrategyMarkers() is replay-aware and hides future markers.
+chart.clearStrategyMarkers();
+```

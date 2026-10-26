@@ -42,6 +42,11 @@ replay/Studio integration, and final verification remain open.
   metrics, deterministic candle fingerprints, JSON result export, and CSV
   completed-trade export. Annualized Sharpe/Sortino/Calmar assumptions,
   replay overlays, Worker execution, and Studio remain open.
+- [Implemented / Verified] Phase 8.0.4 adds result-to-marker conversion and
+  Chart-scoped strategy marker APIs using the existing overlay renderer.
+  Markers remain non-persistent, replay-aware, price-scale-aware, and separate
+  from alerts/drawings; full Studio integration and Worker execution remain
+  open.
 
 ## Completed
 

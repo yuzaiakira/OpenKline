@@ -278,6 +278,7 @@ export {
   fingerprintCandles,
   serializeBacktestResult,
   serializeTradeLedgerCsv,
+  createStrategyMarkers,
 } from "./backtesting/index.js";
 export {
   BacktestCancellationError,
@@ -304,6 +305,7 @@ export type {
   TransactionCost,
   PerformanceMetrics,
 } from "./backtesting/index.js";
+export type { StrategyMarker, StrategyMarkerDirection, StrategyMarkerKind } from "./backtesting/index.js";
 export { StrategyRegistry } from "./strategies/index.js";
 export {
   builtInStrategyDefinitions,

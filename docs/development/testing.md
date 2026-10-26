@@ -76,6 +76,11 @@ exercises the public replay controls, starting point, Beginning/Latest,
 timeline, keyboard stepping, scale/presentation changes, restoration, and a
 touch-sized viewport.
 
+The replay browser workflow also verifies that strategy markers are filtered to
+the inclusive replay cursor and restored after replay exit. Marker rendering
+uses the existing overlay path; this does not claim Firefox, WebKit, Mobile
+Safari, physical-device, or formal accessibility coverage.
+
 Alert coverage is in `tests/alerts.test.ts` and `tests/browser/alerts.spec.ts`.
 It covers strict thresholds and crossings, warm-up/missing values, indicator
 and script outputs, horizontal drawings, frequency/cooldown/finality,

@@ -1,6 +1,7 @@
 export { BacktestSession, createBacktest } from "./engine.js";
 export { OPENKLINE_BACKTEST_RESULT_VERSION, serializeBacktestResult, serializeTradeLedgerCsv } from "./export.js";
 export { calculatePerformanceMetrics, fingerprintCandles } from "./metrics.js";
+export { createStrategyMarkers } from "./markers.js";
 export {
   BacktestCancellationError,
   BacktestLifecycleError,
@@ -26,3 +27,4 @@ export type {
   TransactionCost,
   PerformanceMetrics,
 } from "./types.js";
+export type { StrategyMarker, StrategyMarkerDirection, StrategyMarkerKind } from "./markers.js";

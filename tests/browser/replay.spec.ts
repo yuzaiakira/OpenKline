@@ -30,6 +30,8 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
       addDrawing(type: string, options: object): { id: string };
       getDrawings(): Array<{ id: string }>;
       serializeDrawings(): { drawings: Array<{ id: string }> };
+      setStrategyMarkers(markers: Array<{ id: string; kind: string; direction: string; time: number; price: number; label: string }>): void;
+      getStrategyMarkers(): Array<{ id: string; time: number; price: number }>;
       serializeWorkspace(): { replay?: { active: boolean; currentIndex: number | null; currentTimestamp: number | null; totalBars: number }; series: Array<{ data: Array<{ time: number }> }> };
       subscribe(name: string, listener: (event: { time: number | null; series: Array<{ value: { time?: number } | null }> }) => void): () => void;
       createReplay(options: { source: Candle[]; startAt: number; speed: number }): Replay;
@@ -51,6 +53,10 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
         { time: source[12]!.time, price: source[12]!.high },
       ],
     });
+    chart.setStrategyMarkers([
+      { id: "marker-past", kind: "entry-fill", direction: "long", time: source[5]!.time, price: source[5]!.close, label: "Entry fill" },
+      { id: "marker-future", kind: "exit-fill", direction: "long", time: source[12]!.time, price: source[12]!.close, label: "Exit fill" },
+    ]);
     const replay = chart.createReplay({ source, startAt: source[10]!.time, speed: 100 });
     (globalThis as unknown as { __openklineReplay: Replay }).__openklineReplay = replay;
     (globalThis as unknown as { __openklineReplayIndicator: typeof indicator }).__openklineReplayIndicator = indicator;
@@ -69,6 +75,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
     const series = chart.getSeriesInfo();
     const drawingIds = chart.getDrawings().map((drawing) => drawing.id);
     const serializedDrawingIds = chart.serializeDrawings().drawings.map((drawing) => drawing.id);
+    const strategyMarkerIds = chart.getStrategyMarkers().map((marker) => marker.id);
     let updateError = "";
     let structureError = "";
     try {
@@ -92,6 +99,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
       series,
       drawingIds,
       serializedDrawingIds,
+      strategyMarkerIds,
       updateError,
       structureError,
       statusLog,
@@ -113,6 +121,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
   expect(started.series.every((series) => series.dataLength <= 11)).toBe(true);
   expect(started.drawingIds).toEqual(["replay-past"]);
   expect(started.serializedDrawingIds).toEqual(["replay-past"]);
+  expect(started.strategyMarkerIds).toEqual(["marker-past"]);
   expect(started.updateError).toMatch(/read-only during replay/);
   expect(started.structureError).toMatch(/read-only during replay/);
   expect(started.statusLog).toEqual(["ready"]);
@@ -170,6 +179,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
       getData(): Array<{ time: number }>;
       getDrawings(): Array<{ id: string }>;
       getSeriesIds(): string[];
+      getStrategyMarkers(): Array<{ id: string }>;
       serializeWorkspace(): { replay?: unknown };
       destroy(): void;
     };
@@ -183,6 +193,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
       seriesIds: chart.getSeriesIds(),
       workspaceReplay: chart.serializeWorkspace().replay,
       status: replay.getStatus(),
+      strategyMarkerIds: chart.getStrategyMarkers().map((marker) => marker.id),
     };
     chart.destroy();
     replay.dispose();
@@ -193,6 +204,7 @@ test("isolates chart state at an inclusive replay cursor and restores it on exit
   expect(restored.beforeDestroy.seriesIds).not.toContain("replay-forbidden-series");
   expect(restored.beforeDestroy.workspaceReplay).toBeUndefined();
   expect(restored.beforeDestroy.status).toMatchObject({ state: "idle", currentIndex: played.currentIndex });
+  expect(restored.beforeDestroy.strategyMarkerIds).toEqual(["marker-past", "marker-future"]);
   expect(restored.canvasCount).toBe(0);
   expect(restored.finalStatus.state).toBe("disposed");
   expect(pageErrors).toEqual([]);

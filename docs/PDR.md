@@ -413,5 +413,8 @@ subsequent Phase 8 increments. The result model now includes deterministic
 metrics, input fingerprint metadata, JSON result export, and CSV completed
 trade export. No live trading, brokerage connectivity,
 arbitrary user JavaScript, or milestone closure is
-claimed. See `docs/architecture/strategy-engine.md` and
+claimed. Strategy results can now produce replay-aware, non-persistent Chart
+markers through the existing overlay renderer. See
+`docs/architecture/strategy-engine.md`,
+`docs/architecture/strategy-replay-integration.md`, and
 `docs/api/strategies.md`.

@@ -5,6 +5,7 @@ import {
   BacktestLifecycleError,
   BacktestValidationError,
   calculatePerformanceMetrics,
+  createStrategyMarkers,
   serializeBacktestResult,
   serializeTradeLedgerCsv,
   StrategyRegistry,
@@ -135,6 +136,9 @@ test("Backtest executes signals at the next bar open and keeps accounting identi
   assert.match(result.inputFingerprint, /^fnv1a32-/);
   assert.match(serializeBacktestResult(result), /"inputFingerprint":"fnv1a32-/);
   assert.match(serializeTradeLedgerCsv(result), /tradeId,direction/);
+  const markers = createStrategyMarkers(result, candles());
+  assert.deepEqual(markers.map((marker) => marker.kind), ["entry-signal", "exit-signal", "entry-fill", "exit-fill"]);
+  assert.deepEqual(markers.filter((marker) => marker.kind.endsWith("fill")).map((marker) => marker.price), [20, 40]);
   assert.deepEqual(result.equityCurve.map((point) => point.time), candles().map((candle) => candle.time));
 });
 
