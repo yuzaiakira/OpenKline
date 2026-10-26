@@ -90,3 +90,7 @@ corresponding Walk-Forward JSON/CSV helpers. Pass an explicit local
 `analysisCompletedAt` timestamp to make export provenance clear; market candle
 timestamps remain separate. Exports are data-only and do not include
 executable functions or secrets.
+
+For reproducible local timing, run `npm run benchmark:optimization`. This is a
+diagnostic reference-engine workload, not a browser FPS, Worker throughput, or
+release performance target.

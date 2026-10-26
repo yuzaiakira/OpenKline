@@ -32,6 +32,7 @@
     "benchmark:studio": "npm run build && node scripts/studio-benchmark.mjs",
     "benchmark:strategies": "npm run build && node --expose-gc scripts/strategy-benchmark.mjs",
     "benchmark:strategy-worker": "npm run build && node scripts/strategy-worker-benchmark.mjs",
+    "benchmark:optimization": "npm run build && node --expose-gc scripts/optimization-benchmark.mjs",
     "benchmark:paper-trading": "npm run build && node --expose-gc scripts/paper-trading-benchmark.mjs",
     "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",

@@ -254,3 +254,14 @@ the corrected result is recorded above; the old result is retained only as a
 diagnosed baseline, not a current performance measurement.
 
 Repeat the benchmark on reference hardware before setting a performance budget.
+
+## Phase 8.2 optimization observations
+
+`npm run benchmark:optimization` measures the synchronous reference engine for
+bounded nine-candidate EMA grids on 1,000, 10,000, and 100,000 candles with
+three repetitions, median/p95 elapsed time, candidate availability, input
+fingerprints, and process heap observations. It also measures a deterministic
+1,000-candle anchored Walk-Forward run and neighboring-parameter sensitivity.
+The script intentionally reports Node reference-engine work; it does not
+claim browser FPS, Worker throughput, predictive quality, or a universal
+memory limit. Candidate summaries retain no full backtest payloads.
