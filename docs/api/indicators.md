@@ -29,10 +29,26 @@ rsi.dispose();
 | `ATR` | `period` | `value` |
 | `STOCHASTIC` | `kPeriod`, `dPeriod` | `k`, `d` |
 | `VWAP` | `session: "none" | "utc-day"` | `value` |
+| `ROC` | `period` | `value` |
+| `CCI` | `period`, `constant` | `value` |
+| `WILLIAMS_R` | `period` | `value` |
+| `OBV` | none | `value` |
+| `MFI` | `period` | `value` |
+| `ADX` | `period` | `adx`, `plusDi`, `minusDi` |
+| `DONCHIAN_CHANNELS` | `period` | `upper`, `middle`, `lower` |
+| `KELTNER_CHANNELS` | `period`, `multiplier` | `upper`, `middle`, `lower` |
 
 All periods are positive integers. MACD requires `fastPeriod < slowPeriod`.
 `standardDeviations` is finite and non-negative. VWAP rejects missing or
 unknown session semantics.
+
+The primary Phase 7.5 additions are registered in the same framework-neutral
+`IndicatorRegistry` and are available from the package root. ROC, CCI, and
+Williams %R are momentum/oscillator outputs; OBV and MFI are volume outputs;
+ADX exposes trend strength and aligned directional-index outputs; Donchian and
+Keltner are overlay channel definitions. Channel outputs are marked as upper
+and lower bands so the existing renderer can fill them without a separate
+scale or interaction implementation.
 
 ## Warm-up and missing values
 
@@ -41,6 +57,12 @@ minimum sample size are `null`. VWAP returns `null` for candles without a
 positive volume and does not add those candles to its cumulative denominator.
 Constant-price edge cases use defined values: RSI is 50 when both average gain
 and loss are zero, and stochastic %K is 50 when its high/low range is zero.
+ROC requires a candle `period` bars earlier and therefore starts at index
+`period`; rolling-window indicators start after their first complete window.
+OBV treats missing volume as zero. MFI uses a bounded 0–100 ratio and returns
+50 when both rolling money-flow directions are zero. ADX and its DI outputs
+preserve null warm-up values. Channel calculations retain the same input
+timestamps and never invent bars.
 
 ## Historical correction and updates
 

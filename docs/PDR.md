@@ -356,3 +356,21 @@ The inherited managed Firefox, WebKit, Mobile Safari, accessibility, and
 physical-device gates remain open.
 See `docs/reports/phase-7-4-verification.md` for the acceptance matrix and
 local evidence.
+
+## Phase 7.5 advanced analysis and drawing foundation — in progress
+
+Phase 7.5 extends the existing framework-independent indicator registry with
+ROC, CCI, Williams %R, OBV, MFI, ADX (+DI/-DI), Donchian Channels, and Keltner
+Channels. These definitions use aligned timestamps, explicit warm-up `null`
+values, validated parameters, deterministic OHLCV formulas, and the existing
+correction-safe lifecycle. Channel definitions reuse the existing overlay and
+filled-band renderer. Their metadata categories are intended for the Studio
+explorer and future plugin-defined indicators; no vendor or browser dependency
+is added. The API reference and indicator-engine architecture document the
+implemented formula and missing-volume policies.
+
+The remaining Phase 7.5 work includes the full professional drawing set,
+accessible Studio explorer/object-tree UI, real multi-chart synchronization and
+workspace hardening coverage, performance/memory evidence, and the inherited
+Firefox, WebKit, Mobile Safari, accessibility, and physical-device gates. This
+section does not mark those items complete.

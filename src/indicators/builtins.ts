@@ -1,4 +1,5 @@
 import type { Candle } from "../types.js";
+import { advancedIndicatorDefinitions } from "./advanced.js";
 import {
   closeValues,
   emaValues,
@@ -207,6 +208,7 @@ export const builtInIndicatorDefinitions: readonly IndicatorDefinition[] = [
   atrDefinition,
   stochasticDefinition,
   vwapDefinition,
+  ...advancedIndicatorDefinitions,
 ];
 
 function appendSma(context: IndicatorIncrementalContext<PeriodParameters>): IndicatorResult | undefined {

@@ -87,6 +87,9 @@ const indicatorChoices = [
   ["SMA", "SMA · 20"], ["EMA", "EMA · 20"], ["RSI", "RSI · 14"],
   ["MACD", "MACD · 12/26/9"], ["BOLLINGER_BANDS", "Bollinger Bands · 20"],
   ["ATR", "ATR · 14"], ["STOCHASTIC", "Stochastic · 14/3"], ["VWAP", "VWAP · UTC day"],
+  ["ROC", "ROC · 14"], ["CCI", "CCI · 20"], ["WILLIAMS_R", "Williams %R · 14"],
+  ["OBV", "OBV"], ["MFI", "MFI · 14"], ["ADX", "ADX · 14 (+DI/-DI)"],
+  ["DONCHIAN_CHANNELS", "Donchian Channels · 20"], ["KELTNER_CHANNELS", "Keltner Channels · 20/2"],
 ] as const;
 const drawingTools = [["trend-line", "Trend"], ["horizontal-line", "Horizontal"], ["vertical-line", "Vertical"], ["rectangle", "Rectangle"], ["fibonacci-retracement", "Fib"], ["text", "Text"]] as const;
 const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
@@ -123,6 +126,9 @@ function indicatorParameters(id: string): Record<string, unknown> {
     case "BOLLINGER_BANDS": return { period: 20, standardDeviations: 2 };
     case "STOCHASTIC": return { kPeriod: 14, dPeriod: 3 };
     case "VWAP": return { session: "utc-day" };
+    case "CCI": return { period: 20, constant: 0.015 };
+    case "KELTNER_CHANNELS": return { period: 20, multiplier: 2 };
+    case "OBV": return {};
     default: return { period: 14 };
   }
 }
@@ -417,7 +423,7 @@ export default function MultiChartStudioClient() {
   useEffect(() => { if (theme !== "dark") setNotice("Light theme applied without recreating the chart."); }, [theme]);
   useEffect(() => { if (!replayActive) { setPresentation("candles"); setScaleMode("linear"); activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" }); } }, [replayActive]);
   const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
-  const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
+  const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: alertName.trim() || "Price alert", condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
   const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };

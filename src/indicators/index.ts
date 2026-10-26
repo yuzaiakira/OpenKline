@@ -1,6 +1,18 @@
 import { IndicatorRegistry } from "./engine.js";
 import { builtInIndicatorDefinitions } from "./builtins.js";
 
+export {
+  adxDefinition,
+  advancedIndicatorDefinitions,
+  cciDefinition,
+  donchianChannelsDefinition,
+  keltnerChannelsDefinition,
+  mfiDefinition,
+  obvDefinition,
+  rateOfChangeDefinition,
+  williamsRDefinition,
+} from "./advanced.js";
+
 export { IndicatorRegistry } from "./engine.js";
 export {
   atrDefinition,
@@ -20,6 +32,7 @@ export {
 export type {
   IndicatorDefinition,
   IndicatorBandRole,
+  IndicatorCategory,
   IndicatorIncrementalContext,
   IndicatorIncrementalUpdate,
   IndicatorInstance,
@@ -41,6 +54,12 @@ export type {
   VwapParameters,
   VwapSession,
 } from "./builtins.js";
+export type {
+  AdxParameters,
+  CciParameters,
+  KeltnerParameters,
+  RateOfChangeParameters,
+} from "./advanced.js";
 
 export function createDefaultIndicatorRegistry(): IndicatorRegistry {
   const registry = new IndicatorRegistry();

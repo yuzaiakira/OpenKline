@@ -53,6 +53,11 @@ Built-ins currently use closing prices unless their formula requires OHLCV:
 - `ATR(period)` using true range and Wilder smoothing;
 - `STOCHASTIC(kPeriod, dPeriod)`;
 - `VWAP(session)`.
+- `ROC(period)`, `CCI(period, constant)`, and `WILLIAMS_R(period)`;
+- `OBV`, `MFI(period)`, and `ADX(period)` with `adx`, `plusDi`, and `minusDi`
+  outputs;
+- `DONCHIAN_CHANNELS(period)` and `KELTNER_CHANNELS(period, multiplier)` as
+  overlay band definitions.
 
 VWAP requires an explicit `session` value: `none` for a continuous cumulative
 calculation or `utc-day` for UTC calendar-day resets. The engine never infers a
@@ -78,3 +83,9 @@ only during a synchronous chart update and must not mutate it.
 Pane assignment and rendering are intentionally not part of this layer. The
 multi-pane chart consumes `IndicatorResult.outputs` and owns pane layout without
 duplicating formula or input alignment logic.
+
+Primary definitions also expose a stable metadata category (`trend`,
+`momentum`, `volatility`, `volume`, or `oscillator`) for Studio explorers and
+future plugin UIs. Category metadata is descriptive; it does not alter
+calculation, scale, or lifecycle behavior. A custom definition can use
+`category: "custom"` and the same output/band contracts.

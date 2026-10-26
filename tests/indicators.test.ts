@@ -115,6 +115,79 @@ test("built-in append updates match full calculations across all stateful indica
   }
 });
 
+test("advanced primary indicators expose metadata, warm-up, and reference values", () => {
+  const expected = ["ROC", "CCI", "WILLIAMS_R", "OBV", "MFI", "ADX", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"];
+  assert.deepEqual(expected.every((id) => registry.getMetadata(id) !== undefined), true);
+  assert.equal(registry.getMetadata("ROC")?.category, "momentum");
+  assert.equal(registry.getMetadata("OBV")?.category, "volume");
+  assert.equal(registry.getMetadata("DONCHIAN_CHANNELS")?.overlay, true);
+  assert.deepEqual(values("ROC", { period: 2 }, candles([100, 110, 121, 110])), [null, null, 21, 0]);
+
+  const rangeInput = candles([10, 12, 11, 13]);
+  assert.deepEqual(values("WILLIAMS_R", { period: 2 }, rangeInput), [null, -25, -66.66666666666666, -25]);
+  assert.deepEqual(values("OBV", {}, rangeInput), [0, 10, 0, 10]);
+  assert.deepEqual(values("CCI", { period: 2, constant: 0.015 }, candles([10, 12, 11])), [null, 66.66666666666667, -66.66666666666667]);
+
+  const money = candles([10, 12, 11, 13]);
+  const { volume: _volume, ...withoutVolume } = money[2]!;
+  money[2] = withoutVolume;
+  assert.equal(values("MFI", { period: 2 }, money)[0], null);
+  assert.notEqual(values("MFI", { period: 2 }, money)[1], null);
+  assert.equal(values("MFI", { period: 2 }, money)[2], 100);
+
+  const trendInput = candles([10, 12, 14, 16, 15, 17, 19, 18, 20, 22]);
+  const adx = registry.create("ADX", { period: 3 });
+  adx.setInput(trendInput);
+  assert.deepEqual(adx.getResult().outputs.map((output) => output.id), ["adx", "plusDi", "minusDi"]);
+  assert.equal(adx.getResult().outputs[1]?.points[1]?.value, null);
+  assert.notEqual(adx.getResult().outputs[1]?.points[2]?.value, null);
+  assert.ok(adx.getResult().outputs[0]?.points.some((point) => point.value !== null));
+
+  const channels = registry.create("DONCHIAN_CHANNELS", { period: 2 });
+  channels.setInput(candles([10, 12, 11]));
+  assert.deepEqual(channels.getResult().outputs.map((output) => output.points[1]?.value), [13, 11, 9]);
+
+  const keltner = registry.create("KELTNER_CHANNELS", { period: 3, multiplier: 2 });
+  keltner.setInput(trendInput);
+  const keltnerResult = keltner.getResult();
+  assert.equal(keltnerResult.outputs[1]?.points[1]?.value, null);
+  const middle = keltnerResult.outputs[1]?.points[2]?.value;
+  const upper = keltnerResult.outputs[0]?.points[2]?.value;
+  const lower = keltnerResult.outputs[2]?.points[2]?.value;
+  assert.ok(typeof middle === "number" && typeof upper === "number" && typeof lower === "number");
+  assert.ok(upper >= middle && middle >= lower);
+});
+
+test("advanced indicators handle append and correction paths like a fresh calculation", () => {
+  const input = candles([100, 101, 99, 102, 103, 101, 104, 105]);
+  const next = { ...candles([106])[0]!, time: input[input.length - 1]!.time + 60_000 };
+  const cases: Array<[string, Record<string, unknown>]> = [
+    ["ROC", { period: 3 }],
+    ["CCI", { period: 3, constant: 0.015 }],
+    ["WILLIAMS_R", { period: 3 }],
+    ["OBV", {}],
+    ["MFI", { period: 3 }],
+    ["ADX", { period: 3 }],
+    ["DONCHIAN_CHANNELS", { period: 3 }],
+    ["KELTNER_CHANNELS", { period: 3, multiplier: 2 }],
+  ];
+  for (const [id, parameters] of cases) {
+    const updated = registry.create(id, parameters);
+    updated.setInput(input);
+    updated.update(next);
+    const full = registry.create(id, parameters);
+    full.setInput([...input, next]);
+    assert.deepEqual(updated.getResult(), full.getResult(), `${id} append result differs from full calculation`);
+  }
+
+  const corrected = registry.create("OBV", {});
+  corrected.setInput(input);
+  corrected.update({ ...input[3]!, open: 119.75, high: 121, low: 119, close: 120 });
+  const expected = registry.create("OBV", {});
+  expected.setInput([input[0]!, input[1]!, input[2]!, { ...input[3]!, open: 119.75, high: 121, low: 119, close: 120 }, ...input.slice(4)]);
+  assert.deepEqual(corrected.getResult(), expected.getResult());
+});
+
 test("registry supports independent custom indicators and disposal", () => {
   const custom: IndicatorDefinition<{ multiplier: number }> = {
     metadata: {

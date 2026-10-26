@@ -11,6 +11,8 @@ export type IndicatorOutputKind = "line" | "histogram" | "band";
 
 export type IndicatorBandRole = "upper" | "lower";
 
+export type IndicatorCategory = "trend" | "momentum" | "volatility" | "volume" | "oscillator" | "custom";
+
 export interface IndicatorOutputDefinition {
   readonly id: string;
   readonly title: string;
@@ -35,6 +37,7 @@ export interface IndicatorMetadata {
   readonly name: string;
   readonly version: 1;
   readonly description: string;
+  readonly category?: IndicatorCategory;
   readonly overlay?: boolean;
   readonly parameters: readonly IndicatorParameterDefinition[];
   readonly outputs: readonly IndicatorOutputDefinition[];
