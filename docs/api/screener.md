@@ -20,4 +20,6 @@ Use `ScreenerInstrument` and `ScreenerUniverse` to identify instruments without 
 
 `runScreenerSnapshot` validates the universe and rule set, resolves every instrument, follows bounded history pagination, filters to confirmed bars, evaluates the rule set, and returns ordered per-instrument results and counts. `maxConcurrency`, `maxBarsPerInstrument`, `maxPagesPerInstrument`, and `maxPageSize` are explicit limits. Set `strict` only when one unavailable symbol should fail the whole job; the default isolates provider failures.
 
+`ScreenerWatchSession` adds lifecycle methods for `start`, `pause`, `resume`, `refresh`, rule/universe changes, `cancel`, and `dispose`. A confirmed append calls the existing indicator instance's incremental `update`; a duplicate is ignored; a correction or out-of-order event recalculates only that instrument. Developing events are ignored until a provider emits a confirmed revision. Watch mode requires `subscribeBars`; a provider without realtime support remains suitable for snapshots but raises `ScreenerWatchUnavailableError` for the session.
+
 

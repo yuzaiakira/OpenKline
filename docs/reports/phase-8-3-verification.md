@@ -27,4 +27,10 @@ The baseline test is `tests/screener-baseline.test.ts` and is included in the lo
 - Verified: `tests/screener-rules.test.ts` covers invalid ASTs, thresholds, percentages, volume, prior ranges, crossings, SMA reuse, compound unknown propagation, missing volume, invalid candles, developing-bar rejection, and future-bar isolation.
 - Not tested: worker scheduling, snapshot aggregation, incremental subscriptions, browser Studio workflows, external providers, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
 
+## 8.3.3 incremental watch session
+
+- Implemented: `ScreenerWatchSession` lifecycle, confirmed append path through existing indicator incremental instances, correction/out-of-order recalculation for one instrument, duplicate suppression, developing-event filtering, subscription cleanup, rule/universe refresh hooks, and provider error callbacks.
+- Verified: `tests/screener-watch.test.ts` covers initial snapshot, append, duplicate, correction, pause/resume, disposal, invalid event handling, and absence of fabricated events.
+- Not tested: dedicated Worker, Studio panel, external realtime providers, reconnection policy, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
+
 

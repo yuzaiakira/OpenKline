@@ -8,3 +8,7 @@ One symbol's provider failure produces an unavailable result with an explicit `p
 
 Results preserve instrument identity, selected timeframe, rule-set ID, generation, source bar time/revision, match state, data status, values, and diagnostics in a stable result ID. Reproducibility therefore depends on the provider's data and explicit evaluation inputs; wall-clock evaluation time is caller-controlled when deterministic output is required.
 
+## Incremental watch state
+
+`ScreenerWatchSession` owns one bounded bar cache and one `IndicatorInstance` per referenced indicator for each instrument. A confirmed append updates those instances through the existing incremental API and evaluates only the affected cache. A correction, out-of-order event, or cache trim resets that instrument's instances from its validated bars. Duplicate revisions are suppressed. Subscription cleanup and indicator disposal are idempotent, and a provider error is surfaced without fabricating a market event or changing unrelated instruments.
+

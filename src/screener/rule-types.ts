@@ -1,4 +1,4 @@
-import type { IndicatorRegistry } from "../indicators/index.js";
+import type { IndicatorRegistry, IndicatorResult } from "../indicators/index.js";
 
 export const OPENKLINE_SCREENER_RULE_VERSION = 1 as const;
 
@@ -145,5 +145,7 @@ export interface ScreenerEvaluationOptions {
   readonly index?: number;
   readonly latestFinality?: "confirmed" | "developing";
   readonly registry?: IndicatorRegistry;
+  /** Internal/runtime cache populated by incremental sessions; keys use screenerIndicatorReferenceKey. */
+  readonly indicatorResults?: ReadonlyMap<string, IndicatorResult>;
 }
 

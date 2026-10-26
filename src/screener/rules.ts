@@ -56,7 +56,7 @@ export function evaluateScreenerRuleSet(
   }
   if ((options.latestFinality ?? "confirmed") !== "confirmed") return unavailable("no-eligible-confirmed-bar", "Developing bars are not eligible for the default completed-bar evaluation");
   const registry = options.registry ?? createDefaultIndicatorRegistry();
-  const context = new EvaluationContext(prefix, index, registry);
+  const context = new EvaluationContext(prefix, index, registry, options.indicatorResults);
   return context.evaluate(validated.root);
 }
 
@@ -67,6 +67,7 @@ class EvaluationContext {
     private readonly candles: readonly Candle[],
     private readonly index: number,
     private readonly registry: IndicatorRegistry,
+    private readonly cachedIndicatorResults: ReadonlyMap<string, IndicatorResult> | undefined,
   ) {}
 
   public evaluate(node: ScreenerRuleNode): ScreenerRuleEvaluation {
@@ -152,7 +153,9 @@ class EvaluationContext {
   }
 
   private getIndicator(reference: ScreenerIndicatorReference): IndicatorResult | null {
-    const key = `${reference.indicatorId}:${JSON.stringify(reference.parameters)}`;
+    const key = screenerIndicatorReferenceKey(reference);
+    const cachedRuntime = this.cachedIndicatorResults?.get(key);
+    if (cachedRuntime !== undefined) return cachedRuntime;
     const cached = this.indicatorCache.get(key);
     if (cached !== undefined) return cached;
     try {
@@ -189,6 +192,10 @@ class EvaluationContext {
     const matched = direction === "above" ? previousLeft <= previousRight && currentLeft > currentRight : previousLeft >= previousRight && currentLeft < currentRight;
     return { state: matched ? "matched" : "not-matched", value: currentLeft, previousValue: previousLeft, diagnostics: [] };
   }
+}
+
+export function screenerIndicatorReferenceKey(reference: ScreenerIndicatorReference): string {
+  return `${reference.indicatorId.trim().toUpperCase()}:${JSON.stringify(reference.parameters)}:${reference.output.trim()}`;
 }
 
 function validateNode(node: ScreenerRuleNode, registry: IndicatorRegistry, limits: { maxDepth: number; maxNodes: number }, depth: number, count: () => void): ScreenerRuleNode {

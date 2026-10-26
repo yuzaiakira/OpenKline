@@ -360,10 +360,15 @@ export {
   ScreenerRuleValidationError,
   evaluateScreenerRuleSet,
   validateScreenerRuleSet,
+  screenerIndicatorReferenceKey,
   OPENKLINE_SCREENER_RULE_VERSION,
   runScreenerSnapshot,
+  loadScreenerHistory,
   ScreenerSnapshotCancellationError,
   ScreenerSnapshotValidationError,
+  ScreenerWatchLifecycleError,
+  ScreenerWatchSession,
+  ScreenerWatchUnavailableError,
 } from "./screener/index.js";
 export type {
   DeterministicScreenerOptions,
@@ -410,6 +415,10 @@ export type {
   ScreenerSnapshotResult,
   ScreenerSnapshotMatch,
   ScreenerSymbolSnapshot,
+  ScreenerWatchEvent,
+  ScreenerWatchOptions,
+  ScreenerWatchStatus,
+  ScreenerWatchUpdate,
 } from "./screener/index.js";
 export { BacktestSession, BacktestWorkerError, BacktestWorkerSession, createBacktest, createBacktestWorker, defaultBacktestWorkerFactory } from "./backtesting/index.js";
 export {

@@ -49,6 +49,7 @@ export interface ScreenerSnapshotOptions {
   readonly strict?: boolean;
   readonly limits?: Partial<ScreenerSnapshotLimits>;
   readonly onProgress?: (progress: ScreenerSnapshotProgress) => void;
+  readonly onInstrumentData?: (instrument: ScreenerInstrument, bars: readonly ScreenerBar[]) => void;
 }
 
 export interface ScreenerSymbolSnapshot {
@@ -163,7 +164,8 @@ async function evaluateInstrument(
     throwIfAborted(options.signal);
     const resolved = await options.provider.resolveInstrument(instrument, options.signal);
     if (canonicalInstrumentIdentity(resolved) !== identity) throw new Error("Provider resolved an instrument with a different canonical identity");
-    const bars = await loadConfirmedBars(options.provider, resolved, options.timeframe, options.signal, limits);
+    const bars = await loadScreenerHistory(options.provider, resolved, options.timeframe, options.signal, limits);
+    options.onInstrumentData?.(resolved, bars);
     if (bars.length === 0) return createUnavailable(base, "no-eligible-confirmed-bar", "No confirmed bar was returned", jobId);
     const candles = bars.map((bar) => bar.candle);
     const evaluation = evaluateScreenerRuleSet(ruleSet, candles);
@@ -187,7 +189,7 @@ async function evaluateInstrument(
   }
 }
 
-async function loadConfirmedBars(
+export async function loadScreenerHistory(
   provider: ScreenerMarketDataProvider,
   instrument: ScreenerInstrument,
   timeframe: string,
