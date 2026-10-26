@@ -397,3 +397,15 @@ new built-in tools, and destructive watchlist/workspace/panel actions use an
 in-page ARIA dialog rather than blocking browser prompts. Local Chromium
 coverage verifies these paths; other browser and physical accessibility gates
 remain open.
+
+## Phase 8.0 strategy engine and historical backtesting — in progress
+
+Phase 8 starts with a framework-independent, trusted-TypeScript strategy
+boundary. The initial StrategyRegistry validates versioned definitions and
+creates isolated evaluators whose contexts contain only the completed-bar
+historical prefix. Signals are timestamped separately from future execution;
+the initial order simulator, accounting, metrics, replay overlays, and Studio
+Strategy Tester remain subsequent Phase 8 increments. No live trading,
+brokerage connectivity, arbitrary user JavaScript, or milestone closure is
+claimed. See `docs/architecture/strategy-engine.md` and
+`docs/api/strategies.md`.

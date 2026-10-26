@@ -271,6 +271,30 @@ export type {
   WatchlistSymbol,
 } from "./studio/index.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
+export { StrategyRegistry } from "./strategies/index.js";
+export {
+  OPENKLINE_STRATEGY_VERSION,
+  StrategyCancellationError,
+  StrategyLifecycleError,
+  StrategyValidationError,
+} from "./strategies/index.js";
+export type {
+  StrategyBarContext,
+  StrategyDataInput,
+  StrategyDefinition,
+  StrategyDirection,
+  StrategyEvaluationInputSummary,
+  StrategyEvaluationOptions,
+  StrategyEvaluationProgress,
+  StrategyEvaluationResult,
+  StrategyEvaluator,
+  StrategyEvaluatorServices,
+  StrategyInstance,
+  StrategyMetadata,
+  StrategySignal,
+  StrategySignalAction,
+  StrategySignalDraft,
+} from "./strategies/index.js";
 export {
   builtInDrawingTools,
   dateRangeTool,

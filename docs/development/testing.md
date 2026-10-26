@@ -51,6 +51,13 @@ canvas creation, non-empty rendering, zoom, pan, theme changes, updates, and
 cleanup. Mobile projects additionally exercise a touch tap that creates a
 drawing. It is intentionally interaction-focused rather than screenshot-only.
 
+Strategy coverage is in `tests/strategies.test.ts`. It verifies versioned
+metadata and registry isolation, defensive historical-prefix contexts,
+completed-bar signal timestamps, deterministic IDs, progress callbacks,
+cancellation, invalid candles, and disposal. These tests cover signal
+generation only; order fills, portfolio accounting, and result metrics are
+separate Phase 8 milestones.
+
 Replay browser coverage is in `tests/browser/replay.spec.ts`. It asserts
 inclusive future-data masking across series, indicators, workspace exports,
 drawings, and crosshair values; source immutability; read-only structural/data

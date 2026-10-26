@@ -19,6 +19,11 @@ Phase 5 production preparation — **In progress; stable release not approved**.
 Phase 5.1 licensing, supply-chain, and developer-preview preparation is
 **verified locally with mandatory legal and browser gates open**.
 
+Phase 8.0 strategy engine and historical backtesting — **In progress**. The
+first increment defines the trusted TypeScript strategy boundary and
+anti-lookahead signal evaluation. Order simulation, accounting, metrics,
+replay/Studio integration, and final verification remain open.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.
