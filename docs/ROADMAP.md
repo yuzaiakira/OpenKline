@@ -200,7 +200,9 @@ Phase 8.4 universal data integration and library architecture hardening —
   OpenKline has no mandatory provider, backend, cloud service, framework, or
   network side effect. The audit and follow-up actions are recorded in
   `docs/reports/phase-8-4-architecture-audit.md`.
-- [Not Started] 8.4.1 direct-data consumer verification.
+- [Implemented / In Verification] 8.4.1 adds a standalone direct-data Vanilla
+  example and a network-deny browser scenario covering local data, corrections,
+  indicators, drawings, precision, and chart cleanup.
 - [Not Started] 8.4.2 custom Datafeed SDK hardening.
 - [Not Started] 8.4.3 standalone offline, custom-exchange, generic adapter,
   and optional provider examples.

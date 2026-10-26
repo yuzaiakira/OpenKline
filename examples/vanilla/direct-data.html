@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Direct Data Example</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+      #chart { height: 520px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+      code { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Direct application-owned data</h1>
+      <p>This example uses only local JavaScript data. No provider, backend, or network request is required.</p>
+      <div id="chart"></div>
+    </main>
+    <script type="module">
+      import { createChart } from "../../dist/src/index.js";
+
+      const chart = createChart(document.querySelector("#chart"), {
+        theme: "dark",
+        autoSize: true,
+        timeZone: "UTC",
+        pricePrecision: 4,
+      });
+      const start = Date.UTC(2026, 0, 1);
+      const candles = Array.from({ length: 32 }, (_, index) => {
+        const close = 100 + Math.sin(index / 4) * 3 + index * 0.15;
+        const open = close - 0.4;
+        return { time: start + index * 60 * 60 * 1000, open, high: close + 1.2, low: open - 1.1, close, volume: 1_000 + index * 20 };
+      });
+      chart.setData(candles);
+      const sma = chart.addIndicator("SMA", { period: 5, pane: "main" });
+      chart.addDrawing("horizontal-line", { id: "local-support", points: [{ time: candles.at(-1).time, price: candles.at(-1).close - 1 }], style: { color: "#f59e0b" } });
+      globalThis.__openklineDirectExample = { chart, candles, sma };
+    </script>
+  </body>
+</html>

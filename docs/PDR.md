@@ -582,3 +582,7 @@ architecture. Indicators, drawings, Replay, Screener, Backtesting,
 Optimization, Paper Trading, KlineScript, Workspaces, and Studio remain data
 source agnostic. Phase 8.4 audit findings and remaining verification are
 recorded in `docs/reports/phase-8-4-architecture-audit.md`.
+
+The 8.4.1 direct-data scenario verifies that a local consumer can render,
+correct, analyze, and destroy a chart without creating a Datafeed or making a
+network request. This is the primary offline integration path.
