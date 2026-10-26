@@ -10,6 +10,10 @@ function normalize(value) {
   return value.replace(/\/\/#[^\n]*|\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ").trim();
 }
 
+function normalizePublicDeclaration(value) {
+  return normalize(value.split("\n").filter((line) => !/^\s*(?:private|protected)\b/.test(line)).join("\n"));
+}
+
 function hash(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -65,7 +69,7 @@ function findDeclaration(text, name) {
 }
 
 function declarationEntry(entry, declarationText, packageName) {
-  const signature = normalize(findDeclaration(declarationText, entry.name));
+  const signature = normalizePublicDeclaration(findDeclaration(declarationText, entry.name));
   return {
     package: packageName,
     name: entry.name,
@@ -104,7 +108,7 @@ export function buildInventory() {
     runtimeExports: surface.filter((entry) => entry.kind === "runtime"),
     typeExports: surface.filter((entry) => entry.kind === "type"),
     notes: [
-      "The surface records package exports and normalized declaration signatures, not every internal declaration.",
+      "The surface records package exports and normalized public declaration signatures; private/protected implementation members are excluded.",
       "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
       "Additive exports are reported separately from removals and signature changes.",
     ],

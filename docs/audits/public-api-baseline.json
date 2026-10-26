@@ -605,7 +605,7 @@
       "name": "CandleStore",
       "kind": "runtime",
       "module": "./core/candle-store.js",
-      "signatureHash": "951cece0311fae9104285e652949d814bd8ec1d0494f1d3df762f71187ec14b7"
+      "signatureHash": "0aa122bb2c6a5c2da6802ad84a385cd93d85b92587887a272f4cd8a9bcba6ca2"
     },
     {
       "package": "openkline",
@@ -647,7 +647,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "78f64176102136842a82243ac8276421bce72d35d39e2daafd3954bf73885c96"
+      "signatureHash": "73377275f315aad8d301f42e72418dfcf11e9a06545f65219470f34f0941ce25"
     },
     {
       "package": "openkline",
@@ -703,7 +703,7 @@
       "name": "ChartModel",
       "kind": "runtime",
       "module": "./core/chart-model.js",
-      "signatureHash": "a541bb540464d15f85fa5aee0109e48c427a0139fe24f22e9152f2b44531a64a"
+      "signatureHash": "b92ed320d5b18e2440b7372b0a79790235c71dff6e72a1848d3fe51284caa0b1"
     },
     {
       "package": "openkline",
@@ -1382,7 +1382,7 @@
       "name": "InMemoryDatafeed",
       "kind": "runtime",
       "module": "./datafeed.js",
-      "signatureHash": "9ba1c7fc083aca007b4369c86f753d34785b69ca10985dfc633fe1ccd5fc65aa"
+      "signatureHash": "3c87c242f6e3eb88e2e438c7d7c4898a3121543756ec893e44c0ee434a1e6181"
     },
     {
       "package": "openkline",
@@ -2817,7 +2817,7 @@
       "name": "PointStore",
       "kind": "runtime",
       "module": "./core/point-store.js",
-      "signatureHash": "366b41ccb371dae7da2d046fdb1ecdd4ace58717d0a198412c4fa191dddcd4ab"
+      "signatureHash": "86acf36a31531fca77be43982f0e1400c0160dabb311e50b6dae54c4fdd64146"
     },
     {
       "package": "openkline",
@@ -2845,7 +2845,7 @@
       "name": "PriceScale",
       "kind": "runtime",
       "module": "./core/scales.js",
-      "signatureHash": "9570ca31f55a8d33f3e12f5f05a5dd07d4e7e4fee844c5dc79f8f6e4a3a32dad"
+      "signatureHash": "38dfd5aa20eff0b55b85b4f8ae2fd63e5e688cd5bed0396bab592827ebfcdd68"
     },
     {
       "package": "openkline",
@@ -3027,14 +3027,14 @@
       "name": "RestDatafeed",
       "kind": "runtime",
       "module": "./datafeed-rest.js",
-      "signatureHash": "ce5f84f0ec56d2186adc530c5373dd33cba8c39a01170706c89bdc11559345d9"
+      "signatureHash": "d3814f25d69a987c385f50e48664870ef84e5ac6ebb0818131bb40ed8278871d"
     },
     {
       "package": "openkline",
       "name": "RestDatafeedOptions",
       "kind": "type",
       "module": "./datafeed-rest.js",
-      "signatureHash": "5cc0bebf27ceebd3560fa9a25c7fffb1c8431b48c12ff203355cd9f7a1a79705"
+      "signatureHash": "792eebddd9d226c1473c5c70ae6762fa5c6bee95feff43f44e9c338dfb526102"
     },
     {
       "package": "openkline",
@@ -3713,7 +3713,7 @@
       "name": "SeriesCollection",
       "kind": "runtime",
       "module": "./core/series-store.js",
-      "signatureHash": "d6f45b20e3e4091d5086a9fd597d8fc0d5d17937223b17f4103561a5fd28bef1"
+      "signatureHash": "65adb6dd581899e56d7d0e818e51b5eade00815d6bbf6515ff7b6b075d7aa21c"
     },
     {
       "package": "openkline",
@@ -4028,7 +4028,7 @@
       "name": "TimeScale",
       "kind": "runtime",
       "module": "./core/scales.js",
-      "signatureHash": "be0ae9eaa448b85e19f768b71a87b1926e06df71cd63050e8a0e2ad1962e98df"
+      "signatureHash": "f5aab55cfc33b9cc51f7f43e18c587d0275c812218393b95d05006e2a33c89ff"
     },
     {
       "package": "openkline",
@@ -4252,7 +4252,7 @@
       "name": "WebSocketDatafeed",
       "kind": "runtime",
       "module": "./datafeed-websocket.js",
-      "signatureHash": "8d6324c94aa55e60c49aa115ae36d19dca8625281b7bfebc89a30e29ec194a73"
+      "signatureHash": "e08124f4c96b957915f2a7fa28c424fa13396b5cdacfa82bc6d94df058faa6a7"
     },
     {
       "package": "openkline",
@@ -4520,7 +4520,7 @@
       "name": "CandleStore",
       "kind": "runtime",
       "module": "./core/candle-store.js",
-      "signatureHash": "951cece0311fae9104285e652949d814bd8ec1d0494f1d3df762f71187ec14b7"
+      "signatureHash": "0aa122bb2c6a5c2da6802ad84a385cd93d85b92587887a272f4cd8a9bcba6ca2"
     },
     {
       "package": "openkline",
@@ -4555,7 +4555,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "78f64176102136842a82243ac8276421bce72d35d39e2daafd3954bf73885c96"
+      "signatureHash": "73377275f315aad8d301f42e72418dfcf11e9a06545f65219470f34f0941ce25"
     },
     {
       "package": "openkline",
@@ -4569,7 +4569,7 @@
       "name": "ChartModel",
       "kind": "runtime",
       "module": "./core/chart-model.js",
-      "signatureHash": "a541bb540464d15f85fa5aee0109e48c427a0139fe24f22e9152f2b44531a64a"
+      "signatureHash": "b92ed320d5b18e2440b7372b0a79790235c71dff6e72a1848d3fe51284caa0b1"
     },
     {
       "package": "openkline",
@@ -4912,7 +4912,7 @@
       "name": "InMemoryDatafeed",
       "kind": "runtime",
       "module": "./datafeed.js",
-      "signatureHash": "9ba1c7fc083aca007b4369c86f753d34785b69ca10985dfc633fe1ccd5fc65aa"
+      "signatureHash": "3c87c242f6e3eb88e2e438c7d7c4898a3121543756ec893e44c0ee434a1e6181"
     },
     {
       "package": "openkline",
@@ -5374,7 +5374,7 @@
       "name": "PointStore",
       "kind": "runtime",
       "module": "./core/point-store.js",
-      "signatureHash": "366b41ccb371dae7da2d046fdb1ecdd4ace58717d0a198412c4fa191dddcd4ab"
+      "signatureHash": "86acf36a31531fca77be43982f0e1400c0160dabb311e50b6dae54c4fdd64146"
     },
     {
       "package": "openkline",
@@ -5395,7 +5395,7 @@
       "name": "PriceScale",
       "kind": "runtime",
       "module": "./core/scales.js",
-      "signatureHash": "9570ca31f55a8d33f3e12f5f05a5dd07d4e7e4fee844c5dc79f8f6e4a3a32dad"
+      "signatureHash": "38dfd5aa20eff0b55b85b4f8ae2fd63e5e688cd5bed0396bab592827ebfcdd68"
     },
     {
       "package": "openkline",
@@ -5444,7 +5444,7 @@
       "name": "RestDatafeed",
       "kind": "runtime",
       "module": "./datafeed-rest.js",
-      "signatureHash": "ce5f84f0ec56d2186adc530c5373dd33cba8c39a01170706c89bdc11559345d9"
+      "signatureHash": "d3814f25d69a987c385f50e48664870ef84e5ac6ebb0818131bb40ed8278871d"
     },
     {
       "package": "openkline",
@@ -5633,7 +5633,7 @@
       "name": "SeriesCollection",
       "kind": "runtime",
       "module": "./core/series-store.js",
-      "signatureHash": "d6f45b20e3e4091d5086a9fd597d8fc0d5d17937223b17f4103561a5fd28bef1"
+      "signatureHash": "65adb6dd581899e56d7d0e818e51b5eade00815d6bbf6515ff7b6b075d7aa21c"
     },
     {
       "package": "openkline",
@@ -5710,7 +5710,7 @@
       "name": "TimeScale",
       "kind": "runtime",
       "module": "./core/scales.js",
-      "signatureHash": "be0ae9eaa448b85e19f768b71a87b1926e06df71cd63050e8a0e2ad1962e98df"
+      "signatureHash": "f5aab55cfc33b9cc51f7f43e18c587d0275c812218393b95d05006e2a33c89ff"
     },
     {
       "package": "openkline",
@@ -5780,7 +5780,7 @@
       "name": "WebSocketDatafeed",
       "kind": "runtime",
       "module": "./datafeed-websocket.js",
-      "signatureHash": "8d6324c94aa55e60c49aa115ae36d19dca8625281b7bfebc89a30e29ec194a73"
+      "signatureHash": "e08124f4c96b957915f2a7fa28c424fa13396b5cdacfa82bc6d94df058faa6a7"
     },
     {
       "package": "openkline",
@@ -7756,7 +7756,7 @@
       "name": "RestDatafeedOptions",
       "kind": "type",
       "module": "./datafeed-rest.js",
-      "signatureHash": "5cc0bebf27ceebd3560fa9a25c7fffb1c8431b48c12ff203355cd9f7a1a79705"
+      "signatureHash": "792eebddd9d226c1473c5c70ae6762fa5c6bee95feff43f44e9c338dfb526102"
     },
     {
       "package": "openkline",
@@ -8733,9 +8733,9 @@
     }
   ],
   "notes": [
-    "The surface records package exports and normalized declaration signatures, not every internal declaration.",
+    "The surface records package exports and normalized public declaration signatures; private/protected implementation members are excluded.",
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "baselineCommit": "68a06953b2eb94e620741d6329a0315d30765489"
+  "baselineCommit": "531a30a7785eaf1b4a21988f4a3ec4dba84a79d8"
 }
