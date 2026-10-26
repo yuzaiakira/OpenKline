@@ -503,12 +503,19 @@ export {
   compareOptimizationScores,
   createOptimizationWorker,
   createWalkForwardFolds,
+  analyzeParameterSensitivity,
+  analyzeWalkForwardRobustness,
   generateOptimizationCandidates,
   getOptimizationObjective,
   listOptimizationObjectives,
   runOptimization,
   scoreBacktestResult,
   runWalkForward,
+  serializeOptimizationLeaderboardCsv,
+  serializeOptimizationReportJson,
+  serializeWalkForwardFoldCsv,
+  serializeWalkForwardReportJson,
+  OPENKLINE_OPTIMIZATION_EXPORT_VERSION,
   OptimizationWorkerError,
   OptimizationWorkerSession,
 } from "./optimization/index.js";
@@ -536,3 +543,4 @@ export type {
 } from "./optimization/index.js";
 export type { OptimizationWorkerApi, OptimizationWorkerErrorCode, OptimizationWorkerFactory, OptimizationWorkerRuntimeOptions, OptimizationWorkerStatus, OptimizationWorkerStatusState } from "./optimization/index.js";
 export type { WalkForwardAggregate, WalkForwardFoldDefinition, WalkForwardFoldResult, WalkForwardMode, WalkForwardOptions, WalkForwardProgress, WalkForwardResult, WalkForwardSplitOptions } from "./optimization/index.js";
+export type { OptimizationExportMetadata, ParameterSensitivityOptions, ParameterSensitivityReport, VariationSummary, WalkForwardFoldRobustness, WalkForwardRobustnessReport } from "./optimization/index.js";

@@ -524,3 +524,9 @@ and starts an isolated flat out-of-sample account at the test boundary. Fold
 results retain separate training/OOS metrics and provenance. Aggregation is
 reset-per-fold and never fabricates a continuous curve; overlapping windows
 are warned about. Robustness diagnostics and Studio presentation remain open.
+
+Phase 8.2.4 adds deterministic parameter sensitivity, fold-level training vs
+OOS degradation, adjacent parameter stability, profitable-fold consistency,
+and data-only JSON/CSV exports with separate local analysis timestamps. The
+diagnostics are descriptive and explicitly warn about multiple testing and
+overfitting; no predictive probability or profitability guarantee is claimed.

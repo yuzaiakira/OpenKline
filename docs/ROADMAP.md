@@ -147,6 +147,11 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
   additive Backtest `tradingStartIndex` boundary, fold provenance, and
   reset-per-fold aggregation with overlap warnings. Robustness and Studio
   integration remain open.
+- [Implemented / Verified] Phase 8.2.4 adds deterministic neighboring-parameter
+  sensitivity, training/OOS degradation and parameter-stability diagnostics,
+  profitable-fold consistency, overfitting warnings, and reproducible data-only
+  JSON/CSV optimization and fold exports. Studio integration and benchmarks
+  remain open.
 
 ## Completed
 

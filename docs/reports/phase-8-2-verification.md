@@ -120,3 +120,29 @@ Verification:
 
 Robustness sensitivity/degradation analysis, Studio integration, and
 optimization benchmarks remain open.
+
+## Phase 8.2.4 — robustness and reporting
+
+Implemented:
+
+- Added deterministic neighboring-parameter sensitivity with valid-neighbor
+  counts, score distribution/range, drawdown variation, trade-count
+  variation, and descriptive stability diagnostics.
+- Added Walk-Forward training versus OOS return/drawdown/trade-count
+  degradation, adjacent parameter-change counts, profitable-fold consistency,
+  and explicit multiple-testing/overfitting warnings.
+- Added versioned JSON optimization and Walk-Forward reports, candidate
+  leaderboard CSV, and fold summary CSV. Exports separate local analysis time
+  from market timestamps and omit executable functions/secrets/full payloads.
+- Added deterministic tests for sensitivity, degradation, export metadata,
+  CSV columns, and data-only serialization.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Pass: 133 tests |
+| `npm run typecheck` | Pass |
+
+Studio integration and dedicated optimization performance benchmarks remain
+open.

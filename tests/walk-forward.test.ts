@@ -4,7 +4,14 @@ import {
   createBacktest,
   createDefaultStrategyRegistry,
   createWalkForwardFolds,
+  analyzeParameterSensitivity,
+  analyzeWalkForwardRobustness,
   runWalkForward,
+  runOptimization,
+  serializeOptimizationLeaderboardCsv,
+  serializeOptimizationReportJson,
+  serializeWalkForwardFoldCsv,
+  serializeWalkForwardReportJson,
   type Candle,
   type StrategyDefinition,
 } from "../src/index.js";
@@ -89,5 +96,28 @@ test("walk-forward aggregation reports overlap without inventing a continuous eq
   assert.equal(result.aggregate.executableEquityCurve, null);
   assert.equal(result.aggregate.overlappingTestWindows, true);
   assert.ok(result.warnings.some((warning) => /overlap/i.test(warning)));
+});
+
+test("robustness diagnostics and exports remain descriptive, reproducible, and data-only", () => {
+  const input = candles();
+  const optimization = runOptimization({ strategy: "EMA_CROSSOVER", candles: input, searchSpace: [{ name: "fastPeriod", type: "integer-range", start: 2, end: 3, step: 1 }, { name: "slowPeriod", type: "integer-range", start: 5, end: 6, step: 1 }], objective: "net-profit", initialCapital: 10_000, positionSizing: { type: "fixed-quantity", quantity: 1 }, commission: { type: "percent", value: 0 }, slippage: { type: "percent", value: 0 }, limits: { maxCandidates: 16 } });
+  const selected = optimization.rankedCandidates.find((candidate) => candidate.objective.available)?.candidate.parameters;
+  assert.ok(selected);
+  const sensitivity = analyzeParameterSensitivity({ strategy: "EMA_CROSSOVER", candles: input, selectedParameters: selected, objective: "net-profit", initialCapital: 10_000, positionSizing: { type: "fixed-quantity", quantity: 1 }, commission: { type: "percent", value: 0 }, slippage: { type: "percent", value: 0 }, limits: { maxCandidates: 16 }, radius: 1 });
+  assert.ok(sensitivity.neighborCount > 0);
+  assert.equal(sensitivity.scoreDistribution.length, sensitivity.neighborCount);
+  assert.match(sensitivity.diagnostic, /stable|varies|available/);
+  const walk = runWalkForward(walkOptions(input));
+  const robustness = analyzeWalkForwardRobustness(walk);
+  assert.equal(robustness.foldComparisons.length, walk.folds.length);
+  assert.equal(robustness.outOfSampleConsistency.evaluatedFoldCount, walk.aggregate.evaluatedFoldCount);
+  assert.ok(robustness.warnings.length > 0);
+  const optimizationJson = serializeOptimizationReportJson(optimization, { analysisCompletedAt: "2026-10-26T00:00:00.000Z", engineVersion: "test" });
+  const walkJson = serializeWalkForwardReportJson(walk, { analysisCompletedAt: "2026-10-26T00:00:00.000Z" });
+  assert.equal(JSON.parse(optimizationJson).metadata.analysisCompletedAt, "2026-10-26T00:00:00.000Z");
+  assert.equal(JSON.parse(walkJson).analysisType, "walk-forward");
+  assert.doesNotMatch(optimizationJson, /function\s*\(/u);
+  assert.match(serializeOptimizationLeaderboardCsv(optimization), /candidateId,.*objective/u);
+  assert.match(serializeWalkForwardFoldCsv(walk), /foldId,.*trainingStartIndex/u);
 });
 

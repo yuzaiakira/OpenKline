@@ -72,3 +72,18 @@ portfolio equity curve. Overlapping tests are detected and warned about.
 Fold reports include boundaries, fingerprints, selected parameters, training
 score, out-of-sample metrics/trades/equity, assumptions, and diagnostics.
 Out-of-sample results are historical simulated evidence, not predictions.
+
+## Robustness and export
+
+`analyzeParameterSensitivity()` evaluates valid neighboring parameter
+combinations and reports descriptive score, drawdown, and trade-count
+variation. `analyzeWalkForwardRobustness()` reports training/OOS degradation,
+adjacent parameter changes, profitable-fold consistency, and explicit
+overfitting warnings. Neither function produces predictive probabilities.
+
+Use `serializeOptimizationReportJson()` and
+`serializeOptimizationLeaderboardCsv()` for optimization output, or the
+corresponding Walk-Forward JSON/CSV helpers. Pass an explicit local
+`analysisCompletedAt` timestamp to make export provenance clear; market candle
+timestamps remain separate. Exports are data-only and do not include
+executable functions or secrets.
