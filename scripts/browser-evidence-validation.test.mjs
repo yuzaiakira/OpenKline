@@ -26,6 +26,7 @@ test("all versioned trusted evidence packs validate independently", () => {
   assert.deepEqual(result.packs.map((pack) => [pack.phase, pack.sourceCommit, pack.testRecords]), [
     ["8.6.1", EVIDENCE_PACK_POLICIES["8.6.1"].expectedSourceCommit, 70],
     ["8.8.1", EVIDENCE_PACK_POLICIES["8.8.1"].expectedSourceCommit, 70],
+    ["8.8.3", EVIDENCE_PACK_POLICIES["8.8.3"].expectedSourceCommit, 175],
   ]);
 });
 
@@ -39,6 +40,17 @@ test("duplicate or malformed records are rejected", () => {
   assert.equal(result.status, "FAIL");
   assert.ok(result.failures.some((failure) => failure.includes("duplicate test record")));
   assert.ok(result.failures.some((failure) => failure.includes("invalid test duration")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("failed Studio evidence is integrity-valid but falsified failure details are rejected", () => {
+  const root = copyPack("8.8.3");
+  editJson(root, "8.8.3", "studio-failures.json", (document) => {
+    document.failures[0].classification = "";
+  });
+  const result = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.3"] });
+  assert.equal(result.status, "FAIL");
+  assert.ok(result.failures.some((failure) => failure.includes("unknown Studio failure classification")));
   rmSync(root, { recursive: true, force: true });
 });
 
