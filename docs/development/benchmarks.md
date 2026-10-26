@@ -39,6 +39,12 @@ benchmark.
 
 Do not turn one machine's timings into universal performance guarantees.
 
+Phase 8.5 retains the 1k/10k/100k baseline and records the latest local
+observation in [`docs/development/performance.md`](performance.md). A higher
+pre-destroy heap sample or historical correction cost is not alone evidence of
+a leak or a safe optimization target; use the lifecycle test and profiler
+before changing runtime code.
+
 `benchmark:studio` starts the private Next.js host in local Chromium and
 measures the layout transition, visible Canvas2D count, and post-layout heap
 observation for single, two horizontal, two vertical, and four-grid layouts.
