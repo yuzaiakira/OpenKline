@@ -171,3 +171,11 @@ favorite/reorder controls, named workspace save/load, panel removal, and
 mobile panel selection. This is Chromium evidence only; it does not close the
 inherited Firefox, WebKit, Mobile Safari, accessibility, or physical-device
 gates.
+
+The Phase 8.2 Studio workflow in
+`tests/react-browser/optimization-studio.spec.ts` runs a real bounded grid
+optimization, checks the ranked table and candidate application path, runs
+Walk-Forward with fold output/export controls, verifies Paper Trading cash is
+unchanged, and exercises mobile cancellation against a deterministic large
+dataset. This is local Chromium evidence; Firefox, WebKit, Mobile Safari,
+physical-device, and formal accessibility gates remain open.

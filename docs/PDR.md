@@ -530,3 +530,13 @@ OOS degradation, adjacent parameter stability, profitable-fold consistency,
 and data-only JSON/CSV exports with separate local analysis timestamps. The
 diagnostics are descriptive and explicitly warn about multiple testing and
 overfitting; no predictive probability or profitability guarantee is claimed.
+
+Phase 8.2.5 connects these contracts to the private Studio. The chart-scoped
+Strategy Optimizer supports bounded built-in strategy grids, Worker
+progress/cancel, ranking/filtering, and data-only exports. Its Walk-Forward
+tab exposes anchored/rolling split controls, fold metrics, OOS return
+visualization, warnings, and exports. Applying a selection only updates
+Strategy Tester inputs; it does not create Paper Trading orders or change the
+virtual account. Local Chromium and compact mobile workflows are verified,
+while non-Chromium, physical-device, accessibility, and dedicated optimization
+benchmark gates remain open.

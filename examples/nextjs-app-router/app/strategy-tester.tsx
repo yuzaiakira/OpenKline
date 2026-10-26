@@ -27,6 +27,7 @@ interface StrategyTesterProps {
   readonly timeframe: string;
   readonly chart: Chart | null;
   readonly initialResult: BacktestResult | null;
+  readonly appliedParameters?: { readonly strategyId: string; readonly parameters: Readonly<Record<string, unknown>> } | null;
   readonly onResult: (result: BacktestResult | null) => void;
   readonly onNotice: (message: string) => void;
 }
@@ -118,11 +119,12 @@ function EquityCurve({ result }: { readonly result: BacktestResult }): ReactElem
   </div>;
 }
 
-export function StrategyTester({ panelId, symbol, timeframe, chart, initialResult, onResult, onNotice }: StrategyTesterProps): ReactElement {
+export function StrategyTester({ panelId, symbol, timeframe, chart, initialResult, appliedParameters = null, onResult, onNotice }: StrategyTesterProps): ReactElement {
   const mountedRef = useRef(true);
   const sessionRef = useRef<BacktestWorkerApi | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const runTokenRef = useRef(0);
+  const appliedParametersKeyRef = useRef<string | null>(null);
   const [strategyId, setStrategyId] = useState("EMA_CROSSOVER");
   const [parameters, setParameters] = useState<Record<string, unknown>>(() => defaultParameters("EMA_CROSSOVER"));
   const [initialCapital, setInitialCapital] = useState("10000");
@@ -158,6 +160,28 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
   useEffect(() => {
     if (result !== null && chart !== null && markersVisible) chart.setStrategyMarkers(createStrategyMarkers(result, chart.getData()));
   }, [chart, markersVisible, result]);
+
+  useEffect(() => {
+    if (appliedParameters === null) return;
+    const appliedKey = `${appliedParameters.strategyId}:${JSON.stringify(appliedParameters.parameters)}`;
+    if (appliedParametersKeyRef.current === appliedKey) return;
+    appliedParametersKeyRef.current = appliedKey;
+    runTokenRef.current += 1;
+    unsubscribeRef.current?.();
+    sessionRef.current?.dispose();
+    unsubscribeRef.current = null;
+    sessionRef.current = null;
+    setStrategyId(appliedParameters.strategyId);
+    setParameters({ ...appliedParameters.parameters });
+    setError(null);
+    setProgress(null);
+    setResult(null);
+    setStatus("idle");
+    setMarkersVisible(false);
+    onResult(null);
+    chart?.clearStrategyMarkers();
+    onNotice(`${panelId}: optimizer parameters applied to Strategy Tester; no paper order was submitted.`);
+  }, [appliedParameters, chart, onNotice, onResult, panelId]);
 
   const updateStrategy = (nextId: string): void => {
     runTokenRef.current += 1;

@@ -152,6 +152,13 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
   profitable-fold consistency, overfitting warnings, and reproducible data-only
   JSON/CSV optimization and fold exports. Studio integration and benchmarks
   remain open.
+- [Implemented / Verified] Phase 8.2.5 adds the private Studio Strategy
+  Optimizer and Walk-Forward tabs: bounded chart-scoped controls, Worker
+  progress/cancel, ranked candidate tables, safe Strategy Tester application,
+  fold metrics/timeline, warnings, and local JSON/CSV export. Local Chromium
+  and mobile cancellation paths pass; Phase 8.2.6 benchmarks and inherited
+  Firefox/WebKit/Mobile Safari, accessibility, and physical-device gates remain
+  open.
 
 ## Completed
 

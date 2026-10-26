@@ -146,3 +146,34 @@ Verification:
 
 Studio integration and dedicated optimization performance benchmarks remain
 open.
+
+## Phase 8.2.5 — Studio integration
+
+Implemented:
+
+- Added a chart/panel/symbol/timeframe-scoped Strategy Optimizer to the private
+  Next.js Studio. It exposes built-in strategy selection, bounded parameter
+  ranges, objectives, execution costs, dataset selection, progress, cancel,
+  sorting/filtering, ranked results, and data-only JSON/CSV export.
+- Added a Walk-Forward Studio tab for anchored/rolling configuration,
+  training/test/step/validation/gap/warm-up bars, fold timeline, training/OOS
+  metrics, selected parameters, warnings, fold-return visualization, and JSON
+  and CSV export.
+- Added an explicit Apply-to-Strategy-Tester path. It is scoped to the active
+  chart and does not submit or mutate Paper Trading orders or balances.
+- Added cleanup for optimization Worker sessions, Walk-Forward timers, abort
+  signals, stale results, and panel remounts. Deterministic large fixtures
+  support local cancel verification.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Pass: 133 tests |
+| `npm run typecheck` | Pass |
+| `npm --prefix examples/nextjs-app-router run build` | Pass |
+| `npx playwright test --config playwright.react.config.ts --project=chromium` | Pass: 15 tests |
+
+The new browser coverage is real local Chromium evidence only. Firefox,
+WebKit, Mobile Safari, physical-device, formal accessibility, and dedicated
+optimization benchmark gates remain open for Phase 8.2.6.

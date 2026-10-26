@@ -44,8 +44,11 @@ candidate details are needed; full results are still bounded by
 
 `createBacktest()` remains the financial reference. Optimization does not
 place Paper Trading orders, connect to a broker, or imply future performance.
-Worker execution, walk-forward splitting, robustness diagnostics, and Studio
-controls are documented when their later Phase 8.2 milestones are completed.
+Worker execution, walk-forward splitting, robustness diagnostics, and exports
+are available. The private Next.js Studio adds chart-scoped optimizer and
+Walk-Forward controls; see `docs/guides/studio-strategy-optimizer.md`.
+Applying a result updates only Strategy Tester inputs and never submits Paper
+Trading orders.
 
 ## Worker execution
 
