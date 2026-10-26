@@ -74,3 +74,18 @@ test("Studio dialogs keep keyboard focus inside the modal", async ({ page }) => 
   await page.keyboard.press("Shift+Tab");
   await expect(apply).toBeFocused();
 });
+
+test("Reduced-motion mode has no decorative Studio animation path", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.getByLabel("Search watchlist")).toBeVisible();
+  const motion = await page.evaluate(() => ({
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    animations: document.getAnimations().length,
+    transitions: Array.from(document.querySelectorAll<HTMLElement>("*"))
+      .some((element) => getComputedStyle(element).transitionDuration !== "0s"),
+  }));
+  expect(motion.reducedMotion).toBe(true);
+  expect(motion.animations).toBe(0);
+  expect(motion.transitions).toBe(false);
+});
