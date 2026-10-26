@@ -90,6 +90,11 @@ benchmark, and broader browser acceptance remain open.
   bounded reconnect backoff, and subscription cleanup. Deterministic fake
   fetch/socket tests pass locally; no vendor integration or credentials are
   claimed.
+- [Implemented / Verified] Phase 8.1.2 adds bounded order quantity/notional,
+  position exposure, session-loss, high-water drawdown, and pending-order
+  controls plus a journaled/restorable operator risk halt. Long-only,
+  non-leveraged behavior remains enforced; local risk rejection and drawdown
+  tests pass.
 
 ## Completed
 

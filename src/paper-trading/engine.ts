@@ -78,6 +78,8 @@ export class PaperTradingSession implements PaperTradingApi {
   private eventOrdinal = 0;
   private revision = 0;
   private diagnostic: string | null = null;
+  private tradingHalted = false;
+  private haltReason: string | null = null;
   private nextOrderNumber = 1;
   private nextTradeNumber = 1;
   private nextEventNumber = 1;
@@ -99,6 +101,8 @@ export class PaperTradingSession implements PaperTradingApi {
   public getStatus(): PaperTradingStatus {
     return {
       state: this.status,
+      tradingHalted: this.tradingHalted,
+      haltReason: this.haltReason,
       lastMarketEvent: this.lastMarketEvent === null ? null : { ...this.lastMarketEvent },
       pendingOrderCount: this.pending.size,
       diagnostic: this.diagnostic,
@@ -120,6 +124,7 @@ export class PaperTradingSession implements PaperTradingApi {
   public submitOrder(request: PaperOrderRequest): PaperOrder {
     this.assertActive();
     validateOrderRequest(request);
+    if (this.tradingHalted) throw new PaperTradingOrderError("RISK_HALTED", this.haltReason ?? "Paper Trading order entry is halted");
     const existingId = this.idempotency.get(request.idempotencyKey);
     if (existingId !== undefined) {
       const existing = this.orders.get(existingId);
@@ -134,8 +139,10 @@ export class PaperTradingSession implements PaperTradingApi {
     const estimatedNotional = quantity * estimatedExecution;
     const estimatedFee = calculateTransactionCost(this.options.execution.commission, estimatedNotional);
     if (this.options.risk?.maxOrderNotional !== undefined && estimatedNotional > this.options.risk.maxOrderNotional + 1e-12) throw new PaperTradingOrderError("MAX_ORDER_NOTIONAL", "Order exceeds the configured maximum notional");
+    if (this.options.risk?.maxOrderQuantity !== undefined && quantity > this.options.risk.maxOrderQuantity + 1e-12) throw new PaperTradingOrderError("MAX_ORDER_QUANTITY", "Order exceeds the configured maximum quantity");
     if (this.options.risk?.maxPositionExposure !== undefined && request.side === "buy" && (this.position?.quantity ?? 0) * market.price + estimatedNotional > this.options.risk.maxPositionExposure + 1e-12) throw new PaperTradingOrderError("MAX_POSITION_EXPOSURE", "Order exceeds the configured maximum position exposure");
     if (this.options.risk?.maxSessionLoss !== undefined && this.snapshot().equity <= this.options.initialBalance - this.options.risk.maxSessionLoss) throw new PaperTradingOrderError("MAX_SESSION_LOSS", "The maximum virtual session loss has been reached");
+    if (this.options.risk?.maxDrawdownPercent !== undefined && (this.snapshot().drawdownPercent ?? 0) <= -this.options.risk.maxDrawdownPercent) throw new PaperTradingOrderError("MAX_DRAWDOWN", "The maximum virtual drawdown has been reached");
     if (request.side === "sell") this.validateSellQuantity(quantity);
     const reserve = request.side === "buy" ? estimatedNotional + estimatedFee : 0;
     if (this.availableCash() + 1e-12 < reserve) throw new PaperTradingOrderError("INSUFFICIENT_FUNDS", "Insufficient available virtual cash");
@@ -181,6 +188,15 @@ export class PaperTradingSession implements PaperTradingApi {
     this.record("order-cancelled", "paper-ticket", { reason }, orderId);
     this.publish();
     return cloneOrder(cancelled);
+  }
+
+  public setRiskHalt(halted: boolean, reason = "Risk control halted order entry"): void {
+    this.assertActive();
+    if (halted === this.tradingHalted && (!halted || reason === this.haltReason)) return;
+    this.tradingHalted = halted;
+    this.haltReason = halted ? reason : null;
+    this.record(halted ? "risk-halted" : "risk-resumed", "risk-control", halted ? { reason } : undefined);
+    this.publish();
   }
 
   public processMarketEvent(event: PaperMarketEvent): PaperMarketProcessResult {
@@ -253,6 +269,8 @@ export class PaperTradingSession implements PaperTradingApi {
     this.nextOrderNumber = 1;
     this.nextTradeNumber = 1;
     this.diagnostic = null;
+    this.tradingHalted = false;
+    this.haltReason = null;
     this.record("account-reset", "account", { initialBalance: this.options.initialBalance });
     this.publish();
   }
@@ -303,6 +321,8 @@ export class PaperTradingSession implements PaperTradingApi {
     this.nextTradeNumber = this.trades.length + 1;
     this.nextEventNumber = this.journal.length + 1;
     this.diagnostic = null;
+    this.tradingHalted = document.snapshot.tradingHalted;
+    this.haltReason = document.snapshot.haltReason;
     this.publish();
   }
 
@@ -466,6 +486,8 @@ export class PaperTradingSession implements PaperTradingApi {
       highWaterMark,
       drawdown,
       drawdownPercent: highWaterMark > 0 ? drawdown / highWaterMark : null,
+      tradingHalted: this.tradingHalted,
+      haltReason: this.haltReason,
       lastMarketEvent: this.lastMarketEvent === null ? null : { ...this.lastMarketEvent },
       lastDiagnostic: this.diagnostic,
     };
@@ -514,9 +536,10 @@ function validateExecution(execution: PaperExecutionConfiguration): void {
 
 function validateLimits(limits: PaperRiskLimits | undefined): void {
   if (limits === undefined) return;
-  for (const value of [limits.maxOrderNotional, limits.maxPositionExposure, limits.maxSessionLoss, limits.maxPendingOrders]) {
+  for (const value of [limits.maxOrderNotional, limits.maxOrderQuantity, limits.maxPositionExposure, limits.maxSessionLoss, limits.maxPendingOrders]) {
     if (value !== undefined && (!Number.isFinite(value) || value <= 0)) throw new PaperTradingValidationError("Risk limits must be positive and finite");
   }
+  if (limits.maxDrawdownPercent !== undefined && (!Number.isFinite(limits.maxDrawdownPercent) || limits.maxDrawdownPercent <= 0 || limits.maxDrawdownPercent > 1)) throw new PaperTradingValidationError("maxDrawdownPercent must be between 0 and 1");
   if (limits.maxPendingOrders !== undefined && !Number.isInteger(limits.maxPendingOrders)) throw new PaperTradingValidationError("maxPendingOrders must be an integer");
 }
 

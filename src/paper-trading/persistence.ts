@@ -43,7 +43,7 @@ function parseAccount(value: unknown): PaperTradingDocument["account"] {
   const execution = value.execution;
   if (!isRecord(execution) || !isCost(execution.commission) || !isCost(execution.slippage) || !isNonNegativeInteger(execution.maxQuoteAgeMs) || typeof execution.allowFractionalQuantity !== "boolean") throw new PaperTradingPersistenceError("Paper Trading execution configuration is invalid");
   const risk = value.risk;
-  if (risk !== undefined && (!isRecord(risk) || !optionalPositive(risk.maxOrderNotional) || !optionalPositive(risk.maxPositionExposure) || !optionalPositive(risk.maxSessionLoss) || !optionalInteger(risk.maxPendingOrders))) throw new PaperTradingPersistenceError("Paper Trading risk configuration is invalid");
+  if (risk !== undefined && (!isRecord(risk) || !optionalPositive(risk.maxOrderNotional) || !optionalPositive(risk.maxOrderQuantity) || !optionalPositive(risk.maxPositionExposure) || !optionalPositive(risk.maxSessionLoss) || !optionalFraction(risk.maxDrawdownPercent) || !optionalInteger(risk.maxPendingOrders))) throw new PaperTradingPersistenceError("Paper Trading risk configuration is invalid");
   if (!isString(value.id) || !isString(value.displayName) || !isString(value.symbol) || !isString(value.currency) || !isPositive(value.initialBalance)) throw new PaperTradingPersistenceError("Paper Trading account identity is invalid");
   return {
     id: value.id,
@@ -77,8 +77,8 @@ function parseSnapshot(value: unknown, account: PaperTradingDocument["account"])
   const highWaterMark = numberField(value, "highWaterMark");
   const drawdown = numberField(value, "drawdown");
   if (value.drawdownPercent !== null && !isFiniteNumber(value.drawdownPercent)) throw new PaperTradingPersistenceError("Snapshot drawdownPercent must be finite or null");
-  if (value.version !== OPENKLINE_PAPER_TRADING_VERSION || value.accountId !== account.id || value.displayName !== account.displayName || value.symbol !== account.symbol || value.currency !== account.currency || value.status !== "active" && value.status !== "disposed" || typeof value.lastDiagnostic !== "string" && value.lastDiagnostic !== null) throw new PaperTradingPersistenceError("Paper Trading snapshot identity is invalid");
-  return { version: OPENKLINE_PAPER_TRADING_VERSION, accountId: account.id, displayName: account.displayName, symbol: account.symbol, currency: account.currency, status: value.status, initialBalance, cash, reservedCash, availableCash, position, realizedPnl, unrealizedPnl, equity, totalFees, highWaterMark, drawdown, drawdownPercent: value.drawdownPercent, lastMarketEvent, lastDiagnostic: value.lastDiagnostic };
+  if (value.version !== OPENKLINE_PAPER_TRADING_VERSION || value.accountId !== account.id || value.displayName !== account.displayName || value.symbol !== account.symbol || value.currency !== account.currency || value.status !== "active" && value.status !== "disposed" || typeof value.lastDiagnostic !== "string" && value.lastDiagnostic !== null || value.tradingHalted !== undefined && typeof value.tradingHalted !== "boolean" || value.haltReason !== undefined && typeof value.haltReason !== "string" && value.haltReason !== null) throw new PaperTradingPersistenceError("Paper Trading snapshot identity is invalid");
+  return { version: OPENKLINE_PAPER_TRADING_VERSION, accountId: account.id, displayName: account.displayName, symbol: account.symbol, currency: account.currency, status: value.status, initialBalance, cash, reservedCash, availableCash, position, realizedPnl, unrealizedPnl, equity, totalFees, highWaterMark, drawdown, drawdownPercent: value.drawdownPercent, tradingHalted: value.tradingHalted ?? false, haltReason: value.haltReason ?? null, lastMarketEvent, lastDiagnostic: value.lastDiagnostic };
 }
 
 function parseOrder(value: unknown): PaperOrder {
@@ -143,6 +143,7 @@ function isNonNegative(value: unknown): value is number { return isFiniteNumber(
 function isNonNegativeInteger(value: unknown): value is number { return isNonNegative(value) && Number.isInteger(value); }
 function optionalPositive(value: unknown): boolean { return value === undefined || isPositive(value); }
 function optionalInteger(value: unknown): boolean { return value === undefined || isNonNegativeInteger(value); }
+function optionalFraction(value: unknown): boolean { return value === undefined || isFiniteNumber(value) && value > 0 && value <= 1; }
 function requirePositive(value: unknown, name: string): number { if (!isPositive(value)) throw new PaperTradingPersistenceError(`${name} must be positive`); return value; }
 function requireTime(value: unknown, name: string): number { if (!isNonNegativeInteger(value)) throw new PaperTradingPersistenceError(`${name} must be a non-negative integer`); return value; }
 function requireString(value: unknown, name: string): string { if (!isString(value)) throw new PaperTradingPersistenceError(`${name} must be a non-empty string`); return value; }

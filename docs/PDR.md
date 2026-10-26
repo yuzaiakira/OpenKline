@@ -449,6 +449,12 @@ events, handle identical duplicates, reconnect with bounded backoff, and clean
 up timers and handlers. These adapters remain vendor-neutral and do not
 authorize live execution.
 
+Phase 8.1.2 adds simulation risk gates for order quantity/notional, position
+exposure, session loss, high-water drawdown, and pending-order count. A
+journaled `setRiskHalt()` switch blocks new orders while allowing data and
+mark-to-market processing. These controls do not claim to be broker or
+regulatory safeguards.
+
 The account, stream, and persistence contracts are documented in
 `docs/architecture/paper-trading-engine.md`,
 `docs/architecture/paper-market-data.md`,

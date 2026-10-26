@@ -36,6 +36,11 @@ drawdown; `getOrders()` and `getTrades()` for audit; `getJournal()` for
 diagnostics; `subscribe()` for UI updates; and `exportState()` plus the
 parse/serialize helpers for persistence. Call `dispose()` to remove listeners.
 
+Optional risk limits cover order quantity/notional, open exposure, session
+loss, high-water drawdown, and pending-order count. The explicit
+`setRiskHalt()` operator switch blocks new orders while preserving market
+updates and is included in the account snapshot and journal.
+
 The deterministic stream is a test/demo source. It does not represent a real
 exchange and does not authorize live execution.
 

@@ -17,6 +17,8 @@ export type PaperTradingEventType =
   | "order-rejected"
   | "order-cancelled"
   | "market-event-ignored"
+  | "risk-halted"
+  | "risk-resumed"
   | "account-reset";
 
 export type PaperJsonPrimitive = string | number | boolean | null;
@@ -48,8 +50,11 @@ export interface PaperExecutionConfiguration {
 
 export interface PaperRiskLimits {
   readonly maxOrderNotional?: number;
+  readonly maxOrderQuantity?: number;
   readonly maxPositionExposure?: number;
   readonly maxSessionLoss?: number;
+  /** Decimal fraction, for example 0.1 means a 10% high-water drawdown. */
+  readonly maxDrawdownPercent?: number;
   readonly maxPendingOrders?: number;
 }
 
@@ -158,6 +163,8 @@ export interface PaperAccountSnapshot {
   readonly highWaterMark: number;
   readonly drawdown: number;
   readonly drawdownPercent: number | null;
+  readonly tradingHalted: boolean;
+  readonly haltReason: string | null;
   readonly lastMarketEvent: PaperMarketEvent | null;
   readonly lastDiagnostic: string | null;
 }
@@ -193,6 +200,8 @@ export interface PaperMarketProcessResult {
 
 export interface PaperTradingStatus {
   readonly state: PaperTradingAccountStatus;
+  readonly tradingHalted: boolean;
+  readonly haltReason: string | null;
   readonly lastMarketEvent: PaperMarketEvent | null;
   readonly pendingOrderCount: number;
   readonly diagnostic: string | null;
@@ -209,6 +218,7 @@ export interface PaperTradingApi {
   submitOrder(request: PaperOrderRequest): PaperOrder;
   cancelOrder(orderId: string, reason?: string): PaperOrder;
   processMarketEvent(event: PaperMarketEvent): PaperMarketProcessResult;
+  setRiskHalt(halted: boolean, reason?: string): void;
   subscribe(listener: PaperTradingListener): () => void;
   exportState(): PaperTradingDocument;
   reset(): void;

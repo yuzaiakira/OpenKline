@@ -107,3 +107,38 @@ test("invalid market events fail closed", () => {
   const account = createPaperTradingAccount(f.options);
   assert.throws(() => account.processMarketEvent({ ...f.event("bad", 1_700_000_000_000, -1, 1) }), PaperTradingMarketEventError);
 });
+
+test("risk limits reject oversized orders, loss breaches, and manual halts", () => {
+  const f = fixture();
+  const account = createPaperTradingAccount({ ...f.options, risk: { maxOrderQuantity: 1, maxSessionLoss: 10 } });
+  account.processMarketEvent(f.event("m-1", 1_700_000_000_000, 100, 1));
+  assert.throws(() => account.submitOrder({ idempotencyKey: "too-large", side: "buy", type: "market", quantity: 2 }), (error: unknown) => error instanceof PaperTradingOrderError && error.code === "MAX_ORDER_QUANTITY");
+  const buy = account.submitOrder({ idempotencyKey: "buy", side: "buy", type: "market", quantity: 1 });
+  f.advance(1_000);
+  account.processMarketEvent(f.event("m-2", 1_700_000_001_000, 100, 2));
+  const sell = account.submitOrder({ idempotencyKey: "sell", side: "sell", type: "market", quantity: 1 });
+  f.advance(1_000);
+  account.processMarketEvent(f.event("m-3", 1_700_000_002_000, 80, 3));
+  assert.equal(account.getOrders().find((order) => order.id === sell.id)?.status, "filled");
+  assert.throws(() => account.submitOrder({ idempotencyKey: "after-loss", side: "buy", type: "market", quantity: 1 }), (error: unknown) => error instanceof PaperTradingOrderError && error.code === "MAX_SESSION_LOSS");
+
+  account.setRiskHalt(true, "operator stop");
+  assert.equal(account.getSnapshot().tradingHalted, true);
+  assert.throws(() => account.submitOrder({ idempotencyKey: "halted", side: "buy", type: "market", quantity: 1 }), (error: unknown) => error instanceof PaperTradingOrderError && error.code === "RISK_HALTED");
+  account.setRiskHalt(false);
+  assert.equal(account.getStatus().tradingHalted, false);
+  assert.equal(buy.status, "pending");
+});
+
+test("drawdown risk limit is evaluated against the account high-water mark", () => {
+  const f = fixture();
+  const account = createPaperTradingAccount({ ...f.options, risk: { maxDrawdownPercent: 0.05 } });
+  account.processMarketEvent(f.event("m-1", 1_700_000_000_000, 100, 1));
+  account.submitOrder({ idempotencyKey: "buy", side: "buy", type: "market", quantity: 1 });
+  f.advance(1_000);
+  account.processMarketEvent(f.event("m-2", 1_700_000_001_000, 100, 2));
+  f.advance(1_000);
+  account.processMarketEvent(f.event("m-3", 1_700_000_002_000, 50, 3));
+  assert.equal(account.getSnapshot().drawdownPercent, -0.05);
+  assert.throws(() => account.submitOrder({ idempotencyKey: "drawdown", side: "buy", type: "market", quantity: 1 }), (error: unknown) => error instanceof PaperTradingOrderError && error.code === "MAX_DRAWDOWN");
+});

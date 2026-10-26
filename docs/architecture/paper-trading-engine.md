@@ -45,3 +45,18 @@ are versioned and serializable. Future order types or multi-symbol accounts
 must introduce an explicit document version and compatibility policy rather
 than silently widening the current market-order assumptions.
 
+## Risk controls
+
+The account can enforce maximum order notional, maximum order quantity,
+maximum open position exposure, maximum session loss, maximum high-water
+drawdown percentage, and maximum pending orders. These controls reject order
+entry before a pending order is created; they do not cancel an already filled
+position or liquidate it. `setRiskHalt(true, reason)` is an explicit operator
+kill-switch for new orders. It is journaled, included in snapshots and
+restored state, and does not stop mark-to-market updates or market-data
+cleanup. Clearing the halt requires an explicit `setRiskHalt(false)` call.
+
+Risk controls are safety gates for a simulation, not financial advice or a
+broker risk guarantee. A host must apply its own account, regulatory, and
+operational controls before any real integration.
+
