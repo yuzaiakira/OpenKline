@@ -7,6 +7,7 @@ export {
 } from "./universe.js";
 export { createDeterministicScreenerUniverse, DeterministicScreenerMarketDataProvider } from "./demo.js";
 export { evaluateScreenerRuleSet, ScreenerRuleValidationError, validateScreenerRuleSet } from "./rules.js";
+export { runScreenerSnapshot, ScreenerSnapshotCancellationError, ScreenerSnapshotValidationError } from "./snapshot.js";
 export {
   DEFAULT_SCREENER_LIMITS,
   OPENKLINE_SCREENER_VERSION,
@@ -54,4 +55,13 @@ export type {
 export { DEFAULT_SCREENER_RULE_LIMITS, OPENKLINE_SCREENER_RULE_VERSION } from "./rule-types.js";
 export type { DeterministicScreenerOptions } from "./demo.js";
 export type { UniverseValidationOptions } from "./universe.js";
+export type {
+  ScreenerDataStatus,
+  ScreenerSnapshotLimits,
+  ScreenerSnapshotOptions,
+  ScreenerSnapshotProgress,
+  ScreenerSnapshotResult,
+  ScreenerSnapshotMatch,
+  ScreenerSymbolSnapshot,
+} from "./snapshot.js";
 

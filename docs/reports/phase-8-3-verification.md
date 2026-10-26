@@ -9,6 +9,12 @@ Phase 8.3 is open. This report records only the verified 8.3.0 baseline; it does
 - Implemented: versioned screener types, stable provider/venue-scoped instrument identity, bounded universe validation, Watchlist-to-universe conversion, and a deterministic paginated market-data provider.
 - Verified: identity normalization and collision resistance across provider, exchange, and instrument ID; duplicate universe rejection; Watchlist conversion; repeatable confirmed OHLCV pages and cursor pagination.
 - Not tested: external providers, credentials, live sockets, browser UI, mobile devices, accessibility, Firefox, WebKit, and visual compatibility.
+
+## 8.3.2 deterministic snapshot scanning
+
+- Implemented: bounded concurrent snapshot runner, provider resolution, cursor pagination, confirmed-bar filtering, duplicate/revision handling, out-of-order sorting, per-symbol error isolation, strict mode, cancellation, deterministic result identity, counts, progress, and diagnostics.
+- Verified: `tests/screener-snapshot.test.ts` covers deterministic pagination, reproducible output, bounded progress, correction revisions, provider failure isolation, developing-only data, pre-acquisition validation, and cancellation.
+- Not tested: live incremental watching, Worker protocol, Studio integration, external providers, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
 - Security boundary: no dynamic code execution, no external network access, no broker or trading integration.
 
 ## Evidence
