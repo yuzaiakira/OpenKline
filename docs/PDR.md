@@ -643,3 +643,38 @@ formal accessibility review, approved visual baselines, physical-device
 evidence, and owner release authorization are also open. The latest measured
 performance and gate matrix are recorded in
 `docs/reports/phase-8-5-verification.md` and the supporting release documents.
+
+## Phase 8.6 accessibility, visual review, and release evidence consolidation — verification open
+
+Phase 8.6 adds safe accessibility improvements to the public Canvas and the
+private Studio reference application. A rendered chart now exposes a concise
+dynamic text alternative containing its visible time range, latest close,
+series count, and pane count; an empty chart exposes an explicit empty state.
+Studio dialogs expose descriptions, close on Escape, and restore focus to the
+invoking control. Automated Chromium coverage verifies these semantics and
+the existing interactive controls, but this is not a manual screen-reader,
+WCAG conformance, contrast, reduced-motion, or physical-device assessment.
+
+The visual review tests capture deterministic desktop, light-theme, and narrow
+layout screenshots and write strict byte-comparison reports. A baseline is
+never approved automatically. The current run generated three candidate
+screenshots and three `*.image-difference.json` reports with status
+`SCREENSHOT GENERATED`; no owner-approved baseline exists, so the visual gate
+remains open.
+
+The trusted-machine report recorded 65/65 passes across the pinned official
+Playwright projects at source commit `4d689c8`, with Mobile Safari zoom clearly
+identified as public API zoom rather than native pinch. The named archive is
+not present in this environment, so its supplied SHA-256 has not been
+independently recomputed. The matrix is consequently documented as reported
+trusted-machine evidence, not locally validated evidence. Physical Android/iOS
+testing remains not tested.
+
+Phase 8.6 local engineering checks pass for typecheck, 156 Node tests,
+API compatibility, package portability/smoke/distribution, 14 Vanilla
+Chromium browser tests, and 20 React/Studio Chromium browser tests. The
+managed five-project runner remains blocked locally because the official
+Playwright executables are absent. Phase 8.6 is not release-ready and cannot
+be closed until archive validation, formal accessibility review, visual
+baseline approval, physical-device decisions, effective-license and notice
+approvals, and owner release authorization are resolved.

@@ -261,6 +261,33 @@ Phase 8.5 quality assurance and public API/release-readiness hardening —
   8.5 must not be marked closed until those mandatory gates are independently
   satisfied or the owner documents an authorized exception.
 
+Phase 8.6 accessibility, visual regression, and release evidence consolidation
+— **Engineering implemented; verification and approval gates open**.
+
+- [Implemented / Verified locally] 8.6.0 adds the Canvas chart text
+  alternative and empty-state label, Studio dialog descriptions, Escape
+  handling, focus restoration, and automated Chromium accessibility coverage.
+  Formal assistive-technology, WCAG, contrast, reduced-motion, and physical
+  device review remains open.
+- [Implemented / Review Required] 8.6.1 adds deterministic visual-review
+  captures and strict byte-difference JSON reports for desktop, light-theme,
+  and narrow layouts. The tests never approve a baseline automatically; no
+  owner-approved baselines are currently present.
+- [Reported / Not Independently Validated] 8.6.2 records the trusted
+  Manjaro/pinned Playwright report of 65/65 tests across Chromium, Firefox,
+  WebKit, Mobile Chrome emulation, and Mobile Safari emulation at source
+  commit `4d689c8`. The named archive is absent from this checkout, so its
+  supplied SHA-256 remains unverified here; request the archive and all JSON
+  and test-result files before upgrading this to independent verification.
+- [Verified locally] 8.6.3 passes typecheck, 156 Node tests, API compatibility,
+  package portability/smoke/distribution, 14 Vanilla Chromium browser tests,
+  and 20 React/Studio Chromium browser tests. The managed five-project runner
+  is accurately recorded as blocked when official binaries are unavailable.
+- [Gate Open] 8.6.4 keeps release status `NOT RELEASE READY` pending the
+  portable evidence archive, formal accessibility review, approved visual
+  baselines, physical-device decision/evidence, effective-license and
+  third-party-notice approvals, and owner release authorization.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

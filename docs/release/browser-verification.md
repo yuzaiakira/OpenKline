@@ -104,5 +104,11 @@ ran the full portable matrix for commit
 (65/65). Mobile Safari zoom coverage uses the public `chart.zoom()` API path
 because Playwright rejects `mouse.wheel` on mobile WebKit; desktop wheel zoom
 remains native. That result is automated emulation only—not native iOS or
-physical-device verification. See
+physical-device verification. The result is recorded from the trusted report;
+the named archive is not available in the current workspace, so its stated
+SHA-256 has not been independently recomputed here. Request
+`openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz` together with
+`environment.json`, `summary.json`, `playwright-results.json`, and
+`test-results/` before treating the five-browser result as independently
+validated. See
 [`browser-compatibility-matrix.md`](./browser-compatibility-matrix.md).
