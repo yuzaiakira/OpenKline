@@ -2,7 +2,7 @@
 
 Date: 2026-10-26  
 Branch: `work`  
-Implementation source commit: `64ddc323b8626cc6c74e38c78b58ab2a73dd124f`  
+Verified source commit: `943e43ae0f008622bee76495db4dc901f258eea7`
 Status: **NOT RELEASE READY**
 
 Phase 8.8 completes the cloud-verifiable accessibility, contrast, reduced-
@@ -18,6 +18,7 @@ anything.
 | CONTRAST-8.8-002 | Moderate | Studio control border `#2d405d` measured 1.54:1 against the control fill, below the 3:1 essential non-text reference. | Studio border token changed to `#53729a`; financial chart themes were not changed. | Rendered contrast test measures 3.56:1 against panel background. |
 | VIS-8.8-001 | Low | Dark/light review captures could occur before initial Canvas/theme repaint. | Review harness waits for actual Canvas pixels, dynamic data summary, deterministic quote state, theme repaint, and two animation frames. | Two consecutive runs produced identical hashes for all candidates. |
 | REL-8.8-001 | Observed | One prior release-readiness run recorded 2/28 local Chromium diagnostic timeouts. | Repeated current-revision diagnostics; no reproducible root cause and no blanket timeout or skipped coverage added. | Two sequential runs each passed 28/28. |
+| TOOL-8.8-001 | Low | The first comprehensive readiness run caught a strict TypeScript error in the new visual harness (`context` possibly `undefined`). | The harness now narrows the Canvas element and 2D context explicitly before sampling pixels. | `npm run typecheck` and the final readiness run pass. |
 
 No additional reproducible keyboard, Canvas semantics, cleanup, mobile-layout,
 or public-API defect was found. The Phase 8.7 modal focus trap remains intact.
@@ -128,8 +129,8 @@ no optimization was justified by this variance. Cleanup remains verified.
 
 | Check | Result |
 | --- | --- |
-| `npm run typecheck` | **PASS** |
-| `npm test` | **PASS — 156/156** |
+| `npm run typecheck` | **PASS — final readiness run** |
+| `npm test` | **PASS — 156/156; final readiness run** |
 | `npm run api:check` | **PASS — no removed or changed signatures** |
 | `npm run package:portability` | **PASS — zero core/React runtime dependencies** |
 | `npm run package:smoke` | **PASS — packed ESM consumer** |
@@ -142,7 +143,17 @@ no optimization was justified by this variance. Cleanup remains verified.
 | Reduced-motion audit | **PASS — automated smoke; manual review open** |
 | Visual review | **PASS — 2/2; repeated hashes stable; baseline pending** |
 | `npm run evidence:browser:check` | **PASS — historical 70 records; source remains 19c8698…** |
-| Next.js production build | **PASS when run by release readiness** |
+| Next.js production build | **PASS — final readiness run** |
+
+The final comprehensive artifact is
+`artifacts/release-readiness/2026-10-26T17-01-36-525Z/summary.json` for
+commit `943e43a…`. Its only automated environment blocker is the managed
+five-browser gate: all five Playwright-managed executables are absent in this
+cloud environment, while the explicit system-Chromium diagnostic passed
+28/28. The earlier artifact at
+`artifacts/release-readiness/2026-10-26T16-58-22-047Z/summary.json` is retained
+as evidence of the caught harness type error and is not the accepted final
+result.
 
 The local browser results use system Chromium. The compact trusted 70/70
 Playwright-managed matrix remains historical evidence for source commit
@@ -191,10 +202,14 @@ The implementation and visual-reliability commits use
   reduced-motion coverage;
 - `64ddc323b8626cc6c74e38c78b58ab2a73dd124f` — deterministic Canvas readiness
   waits.
+- `943e43ae0f008622bee76495db4dc901f258eea7` — strict Canvas context
+  narrowing in the visual review harness after readiness verification caught
+  the type error.
 
-Documentation changes are committed and pushed separately after the final
-readiness run. No force-push, GitHub Actions, tag, release, npm publication,
-license activation, or external evidence transfer was performed.
+Documentation was committed and pushed at `8bf95613e1d88b42506377559158825418c5fea6`;
+this final readiness correction is being committed separately. No
+force-push, GitHub Actions, tag, release, npm publication, license activation,
+or external evidence transfer was performed.
 
 **Phase 8.8 remains NOT RELEASE READY.** Cloud-verifiable engineering work is
 complete, but current-revision trusted five-browser verification, manual and
