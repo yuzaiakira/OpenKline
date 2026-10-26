@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./studio-test.js";
 
 async function placeChartPoint(page: Page, x: number, y: number): Promise<void> {
   const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
@@ -124,8 +124,10 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);
-  await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);
+  await test.step("place replay drawing anchors with the active input modality", async () => {
+    await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.22);
+    await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.34);
+  });
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
   await expect(page.getByText("Replay: ready", { exact: true })).toBeVisible();

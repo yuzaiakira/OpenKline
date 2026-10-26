@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./studio-test.js";
 
 test("Studio paper trading is visibly simulated, fills causally, and stays chart-scoped", async ({ page }) => {
   const errors: string[] = [];

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./studio-test.js";
 
 test("Studio runs real optimization, applies a selection to the tester, and preserves paper state", async ({ page }) => {
   const errors: string[] = [];
