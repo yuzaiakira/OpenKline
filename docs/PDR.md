@@ -483,3 +483,8 @@ observations. The measured Node results are recorded in
 `docs/reports/phase-8-1-performance.md`; they are observations rather than
 universal performance targets. Browser rendering and inherited compatibility
 gates remain open.
+
+Phase 8.1.6 records the final local verification matrix in
+`docs/reports/phase-8-1-final-verification.md`. The implementation is ready
+for owner review, but Phase 8.1 remains open while the inherited browser,
+physical-device, and formal accessibility gates are unverified.

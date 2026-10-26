@@ -111,6 +111,10 @@ benchmark, and broader browser acceptance remain open.
   order-submit latency, fill counts, and post-dispose heap observations. The
   recorded Node run is documented in `docs/reports/phase-8-1-performance.md`;
   it makes no browser FPS or production-capacity claim.
+- [Verified / Gate Open] Phase 8.1.6 records the final local acceptance
+  matrix in `docs/reports/phase-8-1-final-verification.md`. Node, package,
+  Next.js, and Chromium gates pass; Firefox, WebKit, Mobile Safari,
+  physical-device, and formal accessibility gates remain open.
 
 ## Completed
 
