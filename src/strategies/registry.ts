@@ -16,6 +16,8 @@ import {
   type StrategySignalDraft,
 } from "./types.js";
 
+const EMPTY_HISTORY: readonly Readonly<Candle>[] = Object.freeze([]);
+
 export class StrategyRegistry {
   private readonly definitions = new Map<string, StrategyDefinition>();
 
@@ -99,7 +101,7 @@ class ManagedStrategy implements StrategyInstance {
         if (options.signal?.aborted === true) throw new Error("__STRATEGY_CANCELLED__");
         const candle = source[index];
         if (candle === undefined) continue;
-        const history = Object.freeze(source.slice(0, index + 1));
+        const history = this.definition.requiresHistory === false ? EMPTY_HISTORY : createCausalHistoryView(source, index + 1);
         const previousCandle = index === 0 ? null : source[index - 1] ?? null;
         const drafts = evaluator.evaluateBar({
           index,
@@ -148,6 +150,44 @@ class ManagedStrategy implements StrategyInstance {
   private assertAlive(): void {
     if (this.disposed) throw new StrategyLifecycleError(`Strategy has been disposed: ${this.id}`);
   }
+}
+
+/**
+ * Presents one immutable, causal prefix without copying the growing source on
+ * every bar. The proxy target is still an Array, so native array methods and
+ * Array.isArray retain their legacy behavior. Each view closes over its own
+ * end boundary; retaining a view cannot reveal bars evaluated later.
+ */
+function createCausalHistoryView(source: readonly Readonly<Candle>[], length: number): readonly Readonly<Candle>[] {
+  const target: Readonly<Candle>[] = [];
+  target.length = length;
+  return new Proxy(target, {
+    get: (current, property, receiver) => {
+      const index = arrayIndex(property);
+      if (index !== null) return index < length ? source[index] : undefined;
+      return Reflect.get(current, property, receiver);
+    },
+    has: (current, property) => {
+      const index = arrayIndex(property);
+      return index === null ? Reflect.has(current, property) : index < length;
+    },
+    ownKeys: () => ["length", ...Array.from({ length }, (_, index) => String(index))],
+    getOwnPropertyDescriptor: (current, property) => {
+      const index = arrayIndex(property);
+      if (index === null) return Reflect.getOwnPropertyDescriptor(current, property);
+      if (index >= length) return undefined;
+      return { configurable: true, enumerable: true, value: source[index], writable: false };
+    },
+    set: () => false,
+    defineProperty: () => false,
+    deleteProperty: () => false,
+  });
+}
+
+function arrayIndex(property: PropertyKey): number | null {
+  if (typeof property !== "string" || property.length === 0 || !/^\d+$/.test(property)) return null;
+  const index = Number(property);
+  return Number.isSafeInteger(index) && String(index) === property ? index : null;
 }
 
 function normalizeId(id: string): string {

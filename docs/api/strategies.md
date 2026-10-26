@@ -27,6 +27,9 @@ not provided. A strategy signal records intent only:
 
 ```ts
 const definition: StrategyDefinition<{ period: number }> = {
+  // This definition does not read context.history. Omitting the field keeps
+  // the default causal history view for compatibility.
+  requiresHistory: false,
   metadata: {
     id: "MY_STRATEGY",
     name: "My Strategy",
@@ -48,6 +51,13 @@ const definition: StrategyDefinition<{ period: number }> = {
   }),
 };
 ```
+
+`requiresHistory` is additive and defaults to `true`. Trusted definitions that
+never read `context.history` may set it to `false`; the evaluator then avoids
+creating an unused per-bar history view. Definitions that use history, retain
+it, or omit the field receive an array-compatible causal view bounded to the
+current completed bar. Built-in strategies use `false` because they maintain
+their own Indicator Engine state and do not access the history field.
 
 ## Built-in strategies
 

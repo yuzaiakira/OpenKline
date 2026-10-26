@@ -74,11 +74,16 @@ incremental KlineScript optimization is accepted.
 performs two runs per strategy/size, checks deterministic JSON exports and
 fingerprints, measures result sizes, exercises cancellation at 1,024 bars of a
 100,000-bar run, and records Node heap observations after session disposal.
+Built-in strategies now declare that they do not require history; custom
+strategies retain the causal history-view path by default.
 The command uses `node --expose-gc`; heap values are local observations, not
 leak proofs or memory limits. The current evaluator intentionally supplies a
 defensive historical prefix to every callback, so full 100k runs are much
 slower than chart append operations; this is recorded as strategy-engine
-technical debt rather than hidden behind a performance claim.
+technical debt rather than hidden behind a performance claim. The benchmark
+also preserves the pre-optimization observation in the Phase 8.0 report so the
+improvement is attributable to the history-allocation change rather than a
+different fixture.
 
 ## Observed strategy benchmark
 
@@ -88,18 +93,22 @@ export size is the deterministic JSON result size for the first run.
 
 | Candles | Strategy | Run 1 / Run 2 (ms) | Signals | Trades | JSON bytes | Heap after dispose (MB) |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | EMA trend | 16.381 / 8.330 | 14 | 6 | 299,561 | 6.61 |
-| 1,000 | RSI reversal | 6.597 / 6.534 | 14 | 7 | 301,782 | 6.65 |
-| 10,000 | EMA trend | 81.169 / 75.025 | 138 | 68 | 3,099,840 | 17.30 |
-| 10,000 | RSI reversal | 52.782 / 79.825 | 138 | 69 | 3,106,795 | 17.38 |
-| 100,000 | EMA trend | 14,764.750 / 15,454.231 | 1,384 | 691 | 31,121,935 | 123.22 |
-| 100,000 | RSI reversal | 13,910.764 / 13,680.679 | 1,384 | 692 | 31,186,136 | 123.35 |
+| 1,000 | EMA trend | 16.433 / 9.221 | 14 | 6 | 299,561 | 6.61 |
+| 1,000 | RSI reversal | 9.270 / 4.633 | 14 | 7 | 301,782 | 6.67 |
+| 10,000 | EMA trend | 58.474 / 47.317 | 138 | 68 | 3,099,840 | 17.30 |
+| 10,000 | RSI reversal | 30.725 / 28.140 | 138 | 69 | 3,106,795 | 17.32 |
+| 100,000 | EMA trend | 353.875 / 337.547 | 1,384 | 691 | 31,121,935 | 123.23 |
+| 100,000 | RSI reversal | 306.741 / 345.386 | 1,384 | 692 | 31,186,136 | 123.36 |
 
 The cancellation run reached 1,024/100,000 bars and ended in
 `BacktestCancellationError` in 43.371 ms with final state `cancelled`.
 Deterministic JSON and input-fingerprint checks passed for all repeated runs.
-These values are evidence for this environment only; they are not universal
-throughput, latency, FPS, or memory guarantees.
+The pre-optimization 100k runs were approximately 14–15 seconds because a
+growing defensive prefix was copied for every bar. The optimized built-in
+path avoids that unused allocation while the default custom-strategy path
+retains the bounded history contract. These values are evidence for this
+environment only; they are not universal throughput, latency, FPS, or memory
+guarantees.
 
 ## Phase 7.3 append regression investigation
 

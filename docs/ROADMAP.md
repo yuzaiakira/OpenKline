@@ -57,6 +57,13 @@ replay/Studio integration, and final verification remain open.
   repeated runs, deterministic exports, cancellation, and post-disposal heap
   observations. Final acceptance remains open while inherited browser and
   accessibility gates are unresolved.
+- [Implemented / Verified] Phase 8.0.7.1 profiles the strategy bottleneck and
+  adds the additive `requiresHistory` optimization. Built-in strategies avoid
+  unused per-bar history construction; custom strategies retain an
+  array-compatible bounded causal view by default. Legacy array consumers,
+  retained references, anti-lookahead, deterministic outputs, and 1k/10k/100k
+  benchmark parity pass. The Strategy Worker and responsive Studio execution
+  remain the next 8.0.7 increments.
 
 ## Completed
 

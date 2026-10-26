@@ -422,4 +422,10 @@ markers through the existing overlay renderer. See
 `docs/api/strategies.md`. Local Chromium verifies the tester controls,
 generated result dashboard, export actions, marker visibility, and chart
 scope isolation. The 100k strategy benchmark records measurable latency and
-memory observations; it does not establish universal performance targets.
+memory observations; it does not establish universal performance targets. The
+first Phase 8.0.7 increment removes the unused per-bar historical-prefix copy
+for built-in strategies through an additive `requiresHistory` hint while
+retaining an array-compatible causal view for custom strategies. The measured
+100k built-in strategy workload is now approximately 0.3–0.4 seconds in the
+recorded Node environment; parity tests cover signals, fingerprints, and
+exports.

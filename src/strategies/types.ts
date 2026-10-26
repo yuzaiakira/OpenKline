@@ -52,6 +52,8 @@ export interface StrategyEvaluator {
 
 export interface StrategyDefinition<P extends Record<string, unknown> = Record<string, unknown>> {
   readonly metadata: StrategyMetadata;
+  /** Set false for trusted definitions that never read `context.history`. */
+  readonly requiresHistory?: boolean;
   validateParameters(parameters: unknown): P;
   /** Creates a stateful evaluator for one isolated historical run. */
   createEvaluator(parameters: P, services: StrategyEvaluatorServices): StrategyEvaluator;

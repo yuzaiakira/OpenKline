@@ -116,3 +116,58 @@ test("built-in strategies use real indicator outputs and preserve a causal prefi
   const rsi = registry.create("RSI_REVERSAL", { period: 3, oversold: 35, overbought: 65 }).evaluate(input);
   assert.ok(rsi.signals.every((signal) => signal.value !== undefined));
 });
+
+test("causal history views preserve legacy array consumers without exposing future bars", () => {
+  let retained: readonly Candle[] | null = null;
+  const observed: Array<{ length: number; first: number; last: number; reduced: number; future: unknown; isArray: boolean }> = [];
+  const definition: StrategyDefinition = {
+    metadata: {
+      id: "HISTORY_VIEW_PROBE",
+      name: "History View Probe",
+      version: 1,
+      description: "Exercises array-compatible causal history access.",
+      parameters: [],
+      requiredInputs: ["ohlcv"],
+    },
+    validateParameters: () => ({}),
+    createEvaluator: () => ({
+      evaluateBar: (context) => {
+        retained ??= context.history;
+        const mapped = context.history.map((candle) => candle.close);
+        const reduced = context.history.reduce((total, candle) => total + candle.close, 0);
+        observed.push({
+          length: context.history.length,
+          first: context.history[0]?.close ?? -1,
+          last: mapped.at(-1) ?? -1,
+          reduced,
+          future: context.history[context.index + 1],
+          isArray: Array.isArray(context.history),
+        });
+        return [];
+      },
+    }),
+  };
+  const input = candles([10, 11, 12]);
+  const registry = new StrategyRegistry();
+  registry.register(definition);
+  registry.create("HISTORY_VIEW_PROBE", {}).evaluate(input);
+  assert.deepEqual(observed, [
+    { length: 1, first: 10, last: 10, reduced: 10, future: undefined, isArray: true },
+    { length: 2, first: 10, last: 11, reduced: 21, future: undefined, isArray: true },
+    { length: 3, first: 10, last: 12, reduced: 33, future: undefined, isArray: true },
+  ]);
+  const retainedHistory = retained as unknown as readonly Candle[];
+  assert.equal(retainedHistory.length, 1);
+  assert.equal(retainedHistory[1], undefined);
+  assert.deepEqual(retainedHistory.slice().map((candle) => candle.close), [10]);
+});
+
+test("large causal history evaluation remains deterministic without prefix-copy growth", () => {
+  const registry = new StrategyRegistry();
+  registry.register(prefixProbe);
+  const input = candles(Array.from({ length: 10_000 }, (_, index) => index + 1));
+  const first = registry.create("PREFIX_PROBE", {}).evaluate(input);
+  const second = registry.create("PREFIX_PROBE", {}).evaluate(input);
+  assert.equal(first.signals.length, 9_999);
+  assert.deepEqual(first.signals, second.signals);
+});

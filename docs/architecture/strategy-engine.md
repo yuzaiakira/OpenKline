@@ -45,6 +45,14 @@ state is part of a strategy context. A signal is timestamped at the completed
 bar where it was generated. The future fill policy belongs to the backtest
 execution layer and remains separate from signal generation.
 
+The additive `StrategyDefinition.requiresHistory` hint defaults to `true`.
+Trusted definitions that never read the history field may set it to `false`
+to avoid constructing an unused view. All other definitions receive an
+array-compatible causal view with a fixed per-bar boundary; indexing,
+iteration, `slice`, `map`, and `reduce` remain bounded to that bar, and a
+retained view cannot expose later source candles. The optimization does not
+hand a full source array to a strategy.
+
 This is a correctness boundary, not a security boundary for trusted code. A
 host must not register an evaluator that closes over external future data.
 Untrusted source must use the restricted KlineScript path after a separate

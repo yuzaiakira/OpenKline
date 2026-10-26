@@ -23,6 +23,7 @@ export interface EmaTrendParameters extends Record<string, unknown> {
 }
 
 export const emaCrossoverDefinition: StrategyDefinition<EmaCrossoverParameters> = {
+  requiresHistory: false,
   metadata: {
     id: "EMA_CROSSOVER",
     name: "EMA Crossover",
@@ -47,6 +48,7 @@ export const emaCrossoverDefinition: StrategyDefinition<EmaCrossoverParameters> 
 };
 
 export const rsiReversalDefinition: StrategyDefinition<RsiReversalParameters> = {
+  requiresHistory: false,
   metadata: {
     id: "RSI_REVERSAL",
     name: "RSI Threshold Reversal",
@@ -89,6 +91,7 @@ export const rsiReversalDefinition: StrategyDefinition<RsiReversalParameters> = 
 };
 
 export const donchianBreakoutDefinition: StrategyDefinition<DonchianBreakoutParameters> = {
+  requiresHistory: false,
   metadata: {
     id: "DONCHIAN_BREAKOUT",
     name: "Donchian Breakout",
@@ -120,6 +123,7 @@ export const donchianBreakoutDefinition: StrategyDefinition<DonchianBreakoutPara
 };
 
 export const emaTrendDefinition: StrategyDefinition<EmaTrendParameters> = {
+  requiresHistory: false,
   metadata: {
     id: "EMA_TREND",
     name: "EMA Trend Following",
