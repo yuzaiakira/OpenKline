@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./studio-test.js";
 
 test("Studio interactive controls expose names, keyboard focus, status, and dialog semantics", async ({ page }) => {
   await page.goto("/");

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./studio-test.js";
 
 test("Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode", async ({ page }) => {
   const errors: string[] = [];
