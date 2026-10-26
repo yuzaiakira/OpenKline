@@ -1,5 +1,10 @@
 # Local release check
 
+For the Phase 8.5 explicit gate-status model, run `npm run release:readiness`.
+It records PASS/FAIL/BLOCKED/NOT TESTED/REQUIRES OWNER APPROVAL separately and
+does not publish or authorize a release. The legacy `npm run release:check`
+command below remains a broad hard gate for historical reproducibility.
+
 Run:
 
 ```bash
