@@ -80,6 +80,10 @@ focused rerun observes the expected behavior.
 ## Acceptance boundary
 
 The local Chromium focused run after the diagnostic/test-harness changes passed
-4/4 selected tests. This is not a replacement for the five-browser managed
-rerun. No row above is marked resolved from local Chromium evidence, and Phase
-8.8.6 remains open until the trusted focused and full matrices are rerun.
+4/4 selected tests, and the complete local Studio suite passed 24/24. A direct
+Pixel 7-context system-Chromium probe exposed `navigator.maxTouchPoints = 1`
+but `window.innerWidth = 870` for a 412px emulated page; its hit-test output is
+an environment limitation and is not accepted as product evidence. This is not
+a replacement for the five-browser managed rerun. No row above is marked
+resolved from local Chromium evidence, and Phase 8.8.6 remains open until the
+trusted focused and full matrices are rerun.
