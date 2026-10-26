@@ -1,0 +1,654 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.5",
+  "comparedAgainstPhase": "8.8.3",
+  "newSourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "oldSourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "identityMatch": "project + file basename + test title",
+  "aggregate": {
+    "old": {
+      "passed": 75,
+      "failed": 30,
+      "total": 105
+    },
+    "new": {
+      "passed": 79,
+      "failed": 31,
+      "total": 110,
+      "skipped": 0,
+      "flaky": 0
+    }
+  },
+  "perProject": {
+    "studio-chromium": {
+      "old": {
+        "passed": 21,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "new": {
+        "passed": 22,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "testsAdded": 1
+    },
+    "studio-firefox": {
+      "old": {
+        "passed": 21,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "new": {
+        "passed": 22,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "testsAdded": 1
+    },
+    "studio-webkit": {
+      "old": {
+        "passed": 18,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "new": {
+        "passed": 19,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "testsAdded": 1
+    },
+    "studio-mobile-chrome": {
+      "old": {
+        "passed": 5,
+        "failed": 16,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "new": {
+        "passed": 5,
+        "failed": 17,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "testsAdded": 1
+    },
+    "studio-mobile-safari": {
+      "old": {
+        "passed": 10,
+        "failed": 11,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "new": {
+        "passed": 11,
+        "failed": 11,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 22
+      },
+      "testsAdded": 1
+    }
+  },
+  "testsAddedSincePreviousRevision": [
+    {
+      "project": "studio-chromium",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "ok": true,
+      "resultStatus": "passed"
+    },
+    {
+      "project": "studio-firefox",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "ok": true,
+      "resultStatus": "passed"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "ok": true,
+      "resultStatus": "passed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "ok": false,
+      "resultStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "ok": true,
+      "resultStatus": "passed"
+    }
+  ],
+  "previouslyFailingNowPassing": [],
+  "previouslyFailingStillFailing": [
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "oldClassification": "page-error-resizeobserver",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "oldClassification": "timeout-pointer-interception",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "oldClassification": "assertion-element-hidden",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "oldClassification": "page-error-resizeobserver",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "oldClassification": "timeout-pointer-interception",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "oldClassification": "page-error-resizeobserver",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "oldClassification": "assertion-element-not-found",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "oldClassification": "timeout",
+      "newStatus": "timedOut"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "oldClassification": "page-error-resizeobserver",
+      "newStatus": "failed"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "oldClassification": "page-error-resizeobserver",
+      "newStatus": "failed"
+    }
+  ],
+  "newlyFailing": [
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "reason": "new-test",
+      "resultStatus": "timedOut"
+    }
+  ],
+  "counts": {
+    "oldFailuresResolved": 0,
+    "oldFailuresRemaining": 30,
+    "newFailures": 1,
+    "testsAdded": 5
+  },
+  "oldFailureOutcomes": [
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "phase883Classification": "timeout-pointer-interception",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "phase883Classification": "timeout-pointer-interception",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout-pointer-interception"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "phase883Classification": "assertion-element-hidden",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-hidden"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "phase883Classification": "page-error-resizeobserver",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "phase883Classification": "page-error-resizeobserver",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout-pointer-interception"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "phase883Classification": "page-error-resizeobserver",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "phase883Classification": "page-error-resizeobserver",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "phase883Classification": "timeout",
+      "phase885Ok": false,
+      "phase885Status": "timedOut",
+      "phase885Classification": "timeout"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "phase883Classification": "assertion-element-not-found",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "assertion-element-not-found"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "phase883Classification": "page-error-resizeobserver",
+      "phase885Ok": false,
+      "phase885Status": "failed",
+      "phase885Classification": "page-error-resizeobserver"
+    }
+  ],
+  "interpretation": [
+    "Increased total test count (105\u2192110) reflects one new Phase 8.8.4 regression test \u00d7 5 projects, not an automatic quality improvement.",
+    "Chromium and Firefox remain fully green including the new regression test.",
+    "Zero of the 30 Phase 8.8.3 Studio failures resolved on this revision.",
+    "One new failure: Phase 8.8.4 hit-test regression test timed out on studio-mobile-chrome.",
+    "WebKit and mobile Safari still fail drawing persistence (Drawings remains 0), paper pending visibility, alerts, and ResizeObserver page-error assertions.",
+    "Mobile Chrome still dominated by timeouts; at least one confirmed pointer interception by strategy-optimizer overlay on Run Backtest."
+  ]
+}
