@@ -11,6 +11,7 @@ npm run profile:browser
 npm run benchmark:plugins
 npm run benchmark:klinescript
 npm run benchmark:studio
+npm run benchmark:strategies
 ```
 
 `benchmark` measures the framework-independent model. `benchmark:browser`
@@ -67,6 +68,38 @@ Worker transport is not represented as a universal performance claim yet. The
 separate structured-clone transfer cost, compile-cache hits, full execution,
 incremental session updates, restart cost, and memory after disposal before an
 incremental KlineScript optimization is accepted.
+
+`benchmark:strategies` runs the synchronous reference backtester at 1,000,
+10,000, and 100,000 candles with EMA trend and RSI reversal strategies. It
+performs two runs per strategy/size, checks deterministic JSON exports and
+fingerprints, measures result sizes, exercises cancellation at 1,024 bars of a
+100,000-bar run, and records Node heap observations after session disposal.
+The command uses `node --expose-gc`; heap values are local observations, not
+leak proofs or memory limits. The current evaluator intentionally supplies a
+defensive historical prefix to every callback, so full 100k runs are much
+slower than chart append operations; this is recorded as strategy-engine
+technical debt rather than hidden behind a performance claim.
+
+## Observed strategy benchmark
+
+Environment: Node.js v24.19.0, 2026-10-26, `npm run benchmark:strategies`.
+Each latency cell is the two printed run observations in milliseconds. The
+export size is the deterministic JSON result size for the first run.
+
+| Candles | Strategy | Run 1 / Run 2 (ms) | Signals | Trades | JSON bytes | Heap after dispose (MB) |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | EMA trend | 16.381 / 8.330 | 14 | 6 | 299,561 | 6.61 |
+| 1,000 | RSI reversal | 6.597 / 6.534 | 14 | 7 | 301,782 | 6.65 |
+| 10,000 | EMA trend | 81.169 / 75.025 | 138 | 68 | 3,099,840 | 17.30 |
+| 10,000 | RSI reversal | 52.782 / 79.825 | 138 | 69 | 3,106,795 | 17.38 |
+| 100,000 | EMA trend | 14,764.750 / 15,454.231 | 1,384 | 691 | 31,121,935 | 123.22 |
+| 100,000 | RSI reversal | 13,910.764 / 13,680.679 | 1,384 | 692 | 31,186,136 | 123.35 |
+
+The cancellation run reached 1,024/100,000 bars and ended in
+`BacktestCancellationError` in 43.371 ms with final state `cancelled`.
+Deterministic JSON and input-fingerprint checks passed for all repeated runs.
+These values are evidence for this environment only; they are not universal
+throughput, latency, FPS, or memory guarantees.
 
 ## Phase 7.3 append regression investigation
 

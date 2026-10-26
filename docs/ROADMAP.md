@@ -45,8 +45,18 @@ replay/Studio integration, and final verification remain open.
 - [Implemented / Verified] Phase 8.0.4 adds result-to-marker conversion and
   Chart-scoped strategy marker APIs using the existing overlay renderer.
   Markers remain non-persistent, replay-aware, price-scale-aware, and separate
-  from alerts/drawings; full Studio integration and Worker execution remain
-  open.
+  from alerts/drawings; Chromium replay verification passes.
+- [Implemented / Verified] Phase 8.0.5 adds a chart-scoped Studio Strategy
+  Tester with public strategy/backtest APIs, editable parameters and costs,
+  running/cancel controls, generated metrics, equity/drawdown SVGs, trade
+  history, JSON/CSV exports, marker visibility, and responsive Chromium E2E
+  coverage. The UI uses the synchronous reference engine; Worker execution,
+  accessibility audit, and broader browser/device verification remain open.
+- [Implemented / In Verification] Phase 8.0.6 adds a deterministic Node
+  strategy benchmark for 1k/10k/100k candles, two built-in strategies,
+  repeated runs, deterministic exports, cancellation, and post-disposal heap
+  observations. Final acceptance remains open while inherited browser and
+  accessibility gates are unresolved.
 
 ## Completed
 

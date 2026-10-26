@@ -408,13 +408,18 @@ the initial built-ins are EMA crossover, RSI reversal, Donchian breakout, and
 EMA trend following. The deterministic single-symbol market simulator now
 implements next-bar-open fills, required costs, validated sizing, explicit
 short limits, reversal policy, cash/equity accounting, and trade ledgers.
-Performance metrics, replay overlays, and Studio Strategy Tester remain
-subsequent Phase 8 increments. The result model now includes deterministic
+Performance metrics, replay overlays, and a functional chart-scoped Studio
+Strategy Tester are now implemented. The result model includes deterministic
 metrics, input fingerprint metadata, JSON result export, and CSV completed
-trade export. No live trading, brokerage connectivity,
+trade export. The tester uses the synchronous reference engine and existing
+Chart overlay API; it does not claim Worker execution or background-thread
+isolation. No live trading, brokerage connectivity,
 arbitrary user JavaScript, or milestone closure is
 claimed. Strategy results can now produce replay-aware, non-persistent Chart
 markers through the existing overlay renderer. See
 `docs/architecture/strategy-engine.md`,
 `docs/architecture/strategy-replay-integration.md`, and
-`docs/api/strategies.md`.
+`docs/api/strategies.md`. Local Chromium verifies the tester controls,
+generated result dashboard, export actions, marker visibility, and chart
+scope isolation. The 100k strategy benchmark records measurable latency and
+memory observations; it does not establish universal performance targets.

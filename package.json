@@ -30,6 +30,7 @@
     "benchmark:alerts": "npm run build && node scripts/alert-benchmark.mjs",
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
     "benchmark:studio": "npm run build && node scripts/studio-benchmark.mjs",
+    "benchmark:strategies": "npm run build && node --expose-gc scripts/strategy-benchmark.mjs",
     "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",
     "browser:diagnostic": "npm run build && node scripts/browser-local-diagnostic.mjs",
