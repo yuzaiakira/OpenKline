@@ -46,6 +46,7 @@
     "package:check": "npm run build && NPM_CONFIG_CACHE=/tmp/openkline-npm-cache npm pack --dry-run --ignore-scripts",
     "package:audit": "npm run build && node scripts/audit-package-artifacts.mjs",
     "package:portability": "npm run build && node scripts/package-portability.mjs",
+    "distribution:check": "npm run build && node scripts/distribution-check.mjs",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
     "studio:check": "node scripts/studio-separation-check.mjs",
     "preview:prepare": "npm run build && node scripts/preview-candidate.mjs prepare",
