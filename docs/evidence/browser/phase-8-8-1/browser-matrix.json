@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "2aabccf184e3c791c18ac3daa4bbeef89d89ed63",
+  "playwrightVersion": "1.64.1",
+  "containerImage": "mcr.microsoft.com/playwright:v1.64.1-noble",
+  "containerDigest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+  "projects": [
+    {
+      "project": "chromium",
+      "browserName": "chromium",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "156.0.8078.4",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+    },
+    {
+      "project": "firefox",
+      "browserName": "firefox",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "157.0",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/firefox-1555/firefox/firefox",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0"
+    },
+    {
+      "project": "webkit",
+      "browserName": "webkit",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "27.2",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/webkit-2370/pw_run.sh",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15"
+    },
+    {
+      "project": "mobile-chrome",
+      "browserName": "chromium",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "156.0.8078.4",
+      "deviceEmulation": "mobile-chrome",
+      "executablePathInContainer": "/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36"
+    },
+    {
+      "project": "mobile-safari",
+      "browserName": "webkit",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "27.2",
+      "deviceEmulation": "mobile-safari",
+      "executablePathInContainer": "/ms-playwright/webkit-2370/pw_run.sh",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1"
+    }
+  ],
+  "perProjectTotals": {
+    "chromium": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "firefox": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "webkit": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "mobile-chrome": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "mobile-safari": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    }
+  },
+  "overall": {
+    "expected": 70,
+    "unexpected": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "status": "verified"
+  },
+  "studioSupplemental": {
+    "reliableFiveBrowserStudioMatrix": false,
+    "officialClaim": "Studio cross-browser coverage remains limited to the previously verified Chromium suite.",
+    "managedBrowserProbeExitCode": 1,
+    "managedBrowserProbeStats": {
+      "startTime": "2026-10-26T17:20:13.140Z",
+      "duration": 1170876.161,
+      "expected": 75,
+      "skipped": 0,
+      "unexpected": 30,
+      "flaky": 0
+    },
+    "managedBrowserProbePerProject": {
+      "chromium": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "firefox": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "webkit": {
+        "passed": 18,
+        "failed": 3,
+        "total": 21
+      },
+      "mobile-chrome": {
+        "passed": 5,
+        "failed": 16,
+        "total": 21
+      },
+      "mobile-safari": {
+        "passed": 10,
+        "failed": 11,
+        "total": 21
+      }
+    }
+  }
+}
