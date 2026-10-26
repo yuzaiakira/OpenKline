@@ -194,7 +194,7 @@ acceptance open**.
   physical-device, visual, and external-provider gates remain open.
 
 Phase 8.4 universal data integration and library architecture hardening —
-**In progress; final acceptance open**.
+**Implemented locally; final acceptance open**.
 
 - [Implemented / Verified] 8.4.0 confirms the library-first boundary: core
   OpenKline has no mandatory provider, backend, cloud service, framework, or
@@ -217,7 +217,11 @@ Phase 8.4 universal data integration and library architecture hardening —
 - [Implemented / In Verification] 8.4.5 adds an executable Studio separation
   audit. Core source remains framework/example independent, the Next.js app is
   private, and public-package consumption remains the Studio boundary.
-- [Not Started] 8.4.6 full verification and final report.
+- [Implemented / In Verification] 8.4.6 records the local Node, type, package,
+  Chromium, Mobile Chrome emulation, React/Next.js, and Canvas2D evidence in
+  `docs/reports/phase-8-4-verification.md`. Managed Firefox/WebKit/Mobile
+  Safari, physical-device, formal accessibility, visual-regression, and real
+  external-provider gates remain open; Phase 8.4 is not formally closed.
 
 ## Completed
 

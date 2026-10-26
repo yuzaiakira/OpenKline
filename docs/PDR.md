@@ -567,7 +567,7 @@ snapshot/Watch benchmark and acceptance matrix are now recorded, but Phase 8.3
 remains open until the remaining browser/accessibility/device gates and
 external-provider verification are completed.
 
-## Phase 8.4 universal data integration and library-first architecture — in progress
+## Phase 8.4 universal data integration and library-first architecture — verification open
 
 OpenKline's permanent product boundary is a universal, framework-independent
 JavaScript/TypeScript charting and analysis library. The consuming application
@@ -606,3 +606,10 @@ keeps existing Studio browser locators unambiguous.
 The 8.4.1 direct-data scenario verifies that a local consumer can render,
 correct, analyze, and destroy a chart without creating a Datafeed or making a
 network request. This is the primary offline integration path.
+
+Phase 8.4.6 local verification passes the Node, type, package-portability,
+package-install, Chromium, Mobile Chrome emulation, React/Next.js, and
+Canvas2D benchmark gates listed in `docs/reports/phase-8-4-verification.md`.
+The report intentionally leaves managed Firefox, WebKit, Mobile Safari,
+physical-device, formal accessibility, visual-regression, and real external
+provider gates open. Phase 8.4 is therefore not marked fully accepted.
