@@ -140,11 +140,12 @@ The local system-Chromium diagnostic separately passed 28/28 on source
 `658d65d5`, but its report explicitly identifies `/usr/bin/chromium` and is
 not portable managed-browser evidence.
 
-`npm run release:readiness` produced
-`artifacts/release-readiness/2026-10-26T18-52-56-521Z/summary.json` with
-status `NOT READY`. Its automated gates passed except the repository-clean
-check observed while this documentation change was in progress and the
-managed-browser gate; its manual/approval gates remain intentionally open.
+`npm run release:readiness` produced the final clean-tree result at
+`artifacts/release-readiness/2026-10-26T18-56-33-923Z/summary.json` with
+status `NOT READY`. Repository, API, typecheck, unit/integration, diagnostic,
+package, audit, consumer, evidence, and Next production gates passed. The
+managed-browser gate is BLOCKED by missing official binaries; manual and owner
+approval gates remain intentionally open.
 
 ## Evidence validation and provenance
 
