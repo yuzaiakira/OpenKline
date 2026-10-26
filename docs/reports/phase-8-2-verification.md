@@ -257,7 +257,7 @@ regression review, and long-duration mobile memory evidence were not tested.
 All Phase 8.2 commits were created with author and committer
 `Akira Yuzai <yuzai.akira@gmail.com>`, use Conventional Commit messages, and
 were pushed immediately to `origin/work`. The 8.2.6 documentation/benchmark
-commit is `ad3a00f6c17a4af0351d49b2501bd89d62564102`; a final report-only
+commit is `ad3a00f49ce9e175cb3194b9ba896ba8479331f4`; a final report-only
 follow-up commit records this hash in the report and is also pushed after
 verification.
 
