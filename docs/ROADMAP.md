@@ -311,6 +311,27 @@ Phase 8.6.2 GitHub evidence integration and release-quality completion —
   legal, third-party-notice, and owner release-authorization gates remain
   unresolved. Phase 8.6.2 does not mark the project release-ready.
 
+Phase 8.7 accessibility hardening and visual review readiness — **Engineering
+implemented; review and release gates open**.
+
+- [Implemented / Verified locally] Studio dialogs now contain keyboard focus
+  with Tab and Shift+Tab, while Escape and trigger-focus restoration remain
+  covered. This is a focused accessibility fix; it does not claim formal WCAG
+  conformance or screen-reader support.
+- [Implemented / Verified locally] Visual review captures freeze the demo
+  clock before app startup, eliminating time-dependent quote-label drift. Two
+  visual tests pass repeatedly and produce stable dark, light, and narrow
+  candidates. No baseline is approved or stored in the repository.
+- [Verified locally] Phase 8.7 passes the evidence consistency check, typecheck,
+  156 Node tests, API compatibility, 14 standalone Chromium tests, 21 React/
+  Studio Chromium tests, and the Canvas2D benchmark. Performance is reported
+  as local diagnostic data, not a universal device claim.
+- [Gate Open] The trusted 70/70 matrix belongs to the pre-Phase-8.7 source
+  commit and cannot certify the new revision. Managed current-revision
+  Firefox/WebKit/mobile execution, screen-reader review, formal conformance,
+  measured contrast, physical devices, approved visual baselines, legal and
+  third-party approvals, and owner release authorization remain unresolved.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

@@ -700,3 +700,23 @@ pass, while the local managed-browser runner remains blocked and formal
 accessibility, physical-device, visual approval, legal, and owner release
 gates remain open. See
 `docs/reports/phase-8-6-2-verification.md` for the acceptance matrix.
+
+## Phase 8.7 accessibility hardening and visual review readiness — engineering complete; approval gates open
+
+Phase 8.7 audits the standalone Canvas library and the private Next.js Studio
+without adding charting, trading, backend, or provider scope. It fixes the
+reproducible Studio dialog focus-containment defect: dialogs now keep Tab and
+Shift+Tab within their enabled controls while retaining Escape dismissal and
+focus restoration. Chromium coverage verifies the cycle. The visual review
+harness also freezes the demo clock before application startup because the
+demo quote provider otherwise used `Date.now()` in screenshot-visible labels.
+
+The local Phase 8.7 review passes the evidence consistency validator, typecheck,
+156 Node tests, API compatibility, 14 standalone Chromium tests, 21 React/
+Studio Chromium tests, and the Canvas2D benchmark. Repeated captures are
+byte-stable but remain unapproved candidates. The trusted 70/70 evidence pack
+targets the earlier source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`
+and is not evidence for the current Phase 8.7 revision. Screen-reader review,
+formal WCAG conformance, measured contrast, physical-device testing, managed
+cross-browser execution for the current revision, legal approval, and owner
+release authorization remain open.
