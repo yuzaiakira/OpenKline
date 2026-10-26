@@ -1,4 +1,4 @@
-export { createPaperTradingAccount, PaperTradingSession, restorePaperTradingAccount } from "./engine.js";
+export { createPaperTradingAccount, PaperTradingSession, restorePaperTradingAccount, restorePaperTradingAccountFromJson } from "./engine.js";
 export { createDeterministicPaperMarketStream, DeterministicPaperMarketStream } from "./market.js";
 export type {
   PaperMarketStreamApi,
@@ -8,7 +8,7 @@ export type {
   PaperMarketStreamState,
   PaperMarketStreamStatus,
 } from "./market.js";
-export { parsePaperTradingDocument, serializePaperTradingDocument } from "./persistence.js";
+export { deserializePaperTradingDocument, parsePaperTradingDocument, serializePaperTradingDocument } from "./persistence.js";
 export { PaperMarketDataStaleResponseError, PaperMarketDataValidationError, PaperRestMarketAdapter, normalizePaperEvent } from "./rest.js";
 export { PaperWebSocketMarketAdapter } from "./websocket.js";
 export { createPaperTradingMarkers, validatePaperTradingMarkers } from "./markers.js";

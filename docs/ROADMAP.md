@@ -101,6 +101,11 @@ benchmark, and broader browser acceptance remain open.
   responsive layout, and accessible controls. A focused Chromium E2E flow
   passes. Firefox, WebKit, Mobile Safari, physical-device, and formal
   accessibility gates remain open.
+- [Implemented / Verified] Phase 8.1.4 hardens versioned recovery with JSON
+  deserialization, accounting/reserve integrity checks, restored source
+  sequence and risk-halt state, corruption rejection, and no-auto-fill
+  recovery tests. Persistence is still caller-controlled and not silently
+  added to workspace export.
 
 ## Completed
 

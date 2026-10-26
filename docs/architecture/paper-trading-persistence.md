@@ -11,6 +11,13 @@ never serialized.
 finite numeric fields, order/fill/trade structure, unique identifiers, and
 JSON-safe shape before a host passes the result to a restored account.
 
+`deserializePaperTradingDocument()` adds the same validation boundary for a
+JSON string, and `restorePaperTradingAccountFromJson()` composes it with
+account construction. Recovery checks the cash/available/reserve identity,
+pending-order reserve total, and the last-event application set. The source
+sequence is restored from the last market event so a post-restart older event
+cannot become eligible merely because the process restarted.
+
 Restoration is fail-closed: the caller must provide matching account identity
 and execution configuration, and a pending order retains its serialized cash
 reserve. Restoring does not emit a fill from the last event. A subsequent

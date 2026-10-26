@@ -27,6 +27,9 @@ export function parsePaperTradingDocument(value: unknown): PaperTradingDocument 
   assertUnique(orders.map((order) => order.idempotencyKey), "order idempotency keys");
   assertUnique(journal.map((event) => event.id), "journal ids");
   assertUnique(processedMarketEventIds, "processed market event ids");
+  const pendingReserve = orders.filter((order) => order.status === "pending").reduce((total, order) => total + order.reservedCash, 0);
+  if (Math.abs(snapshot.reservedCash - pendingReserve) > 1e-8) throw new PaperTradingPersistenceError("Snapshot reserved cash does not match pending orders");
+  if (snapshot.lastMarketEvent !== null && !processedMarketEventIds.includes(snapshot.lastMarketEvent.id)) throw new PaperTradingPersistenceError("Snapshot last market event is not in the processed event set");
   for (const order of orders) if (order.accountId !== account.id || order.symbol !== account.symbol) throw new PaperTradingPersistenceError(`Order ${order.id} does not belong to account ${account.id}`);
   for (const trade of trades) if (trade.accountId !== account.id || trade.symbol !== account.symbol) throw new PaperTradingPersistenceError(`Trade ${trade.id} does not belong to account ${account.id}`);
   return { version: OPENKLINE_PAPER_TRADING_VERSION, revision: value.revision, account, snapshot, orders, trades, journal, processedMarketEventIds };
@@ -36,6 +39,17 @@ export function parsePaperTradingDocument(value: unknown): PaperTradingDocument 
 export function serializePaperTradingDocument(document: PaperTradingDocument): string {
   const parsed = parsePaperTradingDocument(document);
   return JSON.stringify(parsed);
+}
+
+/** Decode and validate persisted JSON without constructing or mutating an account. */
+export function deserializePaperTradingDocument(serialized: string): PaperTradingDocument {
+  if (typeof serialized !== "string" || serialized.length === 0) throw new PaperTradingPersistenceError("Paper Trading state must be a non-empty JSON string");
+  try {
+    return parsePaperTradingDocument(JSON.parse(serialized) as unknown);
+  } catch (error) {
+    if (error instanceof PaperTradingPersistenceError) throw error;
+    throw new PaperTradingPersistenceError(`Paper Trading state JSON is invalid: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function parseAccount(value: unknown): PaperTradingDocument["account"] {
@@ -78,6 +92,7 @@ function parseSnapshot(value: unknown, account: PaperTradingDocument["account"])
   const drawdown = numberField(value, "drawdown");
   if (value.drawdownPercent !== null && !isFiniteNumber(value.drawdownPercent)) throw new PaperTradingPersistenceError("Snapshot drawdownPercent must be finite or null");
   if (value.version !== OPENKLINE_PAPER_TRADING_VERSION || value.accountId !== account.id || value.displayName !== account.displayName || value.symbol !== account.symbol || value.currency !== account.currency || value.status !== "active" && value.status !== "disposed" || typeof value.lastDiagnostic !== "string" && value.lastDiagnostic !== null || value.tradingHalted !== undefined && typeof value.tradingHalted !== "boolean" || value.haltReason !== undefined && typeof value.haltReason !== "string" && value.haltReason !== null) throw new PaperTradingPersistenceError("Paper Trading snapshot identity is invalid");
+  if (initialBalance !== account.initialBalance || cash < 0 || reservedCash < 0 || Math.abs(availableCash - (cash - reservedCash)) > 1e-8 || totalFees < 0 || highWaterMark <= 0) throw new PaperTradingPersistenceError("Paper Trading snapshot accounting is inconsistent");
   return { version: OPENKLINE_PAPER_TRADING_VERSION, accountId: account.id, displayName: account.displayName, symbol: account.symbol, currency: account.currency, status: value.status, initialBalance, cash, reservedCash, availableCash, position, realizedPnl, unrealizedPnl, equity, totalFees, highWaterMark, drawdown, drawdownPercent: value.drawdownPercent, tradingHalted: value.tradingHalted ?? false, haltReason: value.haltReason ?? null, lastMarketEvent, lastDiagnostic: value.lastDiagnostic };
 }
 

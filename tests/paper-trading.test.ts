@@ -3,10 +3,12 @@ import test from "node:test";
 import {
   createDeterministicPaperMarketStream,
   createPaperTradingAccount,
+  deserializePaperTradingDocument,
   PaperTradingMarketEventError,
   PaperTradingOrderError,
   parsePaperTradingDocument,
   restorePaperTradingAccount,
+  restorePaperTradingAccountFromJson,
   serializePaperTradingDocument,
   type PaperClock,
   type PaperMarketEvent,
@@ -83,6 +85,20 @@ test("paper account state round-trips and does not auto-fill from restored histo
   f.advance(1_000);
   assert.equal(restored.processMarketEvent(f.event("m-2", 1_700_000_001_000, 105, 2)).fills.length, 1);
   assert.equal(restored.getSnapshot().position?.averageEntryPrice, 105);
+});
+
+test("paper recovery preserves risk halt and rejects corrupted accounting state", () => {
+  const f = fixture();
+  const account = createPaperTradingAccount(f.options);
+  account.processMarketEvent(f.event("m-1", 1_700_000_000_000, 100, 1));
+  account.submitOrder({ idempotencyKey: "pending", side: "buy", type: "market", quantity: 1 });
+  account.setRiskHalt(true, "recovery fixture halt");
+  const serialized = JSON.stringify(account.exportState());
+  const restored = restorePaperTradingAccountFromJson(f.options, serialized);
+  assert.equal(restored.getSnapshot().tradingHalted, true);
+  assert.equal(restored.getSnapshot().reservedCash, 100);
+  assert.throws(() => deserializePaperTradingDocument(serialized.replace('"reservedCash":100', '"reservedCash":99')), /reserved cash|accounting/i);
+  assert.throws(() => deserializePaperTradingDocument("not-json"), /JSON/);
 });
 
 test("deterministic market stream reconnects without replaying events", () => {

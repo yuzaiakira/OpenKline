@@ -34,7 +34,9 @@ conflict.
 Use `getSnapshot()` for cash, reserve, position, P&L, equity, fees, and
 drawdown; `getOrders()` and `getTrades()` for audit; `getJournal()` for
 diagnostics; `subscribe()` for UI updates; and `exportState()` plus the
-parse/serialize helpers for persistence. Call `dispose()` to remove listeners.
+parse/serialize helpers for persistence. `restorePaperTradingAccountFromJson()`
+is the validated JSON recovery convenience. Call `dispose()` to remove
+listeners.
 
 Optional risk limits cover order quantity/notional, open exposure, session
 loss, high-water drawdown, and pending-order count. The explicit

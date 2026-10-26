@@ -1,4 +1,5 @@
 import { applyAdverseSlippage, calculateLongGrossPnl, calculateTransactionCost } from "../financial.js";
+import { deserializePaperTradingDocument, parsePaperTradingDocument } from "./persistence.js";
 import {
   OPENKLINE_PAPER_TRADING_VERSION,
   type PaperAccountSnapshot,
@@ -51,8 +52,12 @@ export function createPaperTradingAccount(options: PaperTradingAccountOptions): 
 
 export function restorePaperTradingAccount(options: PaperTradingAccountOptions, document: PaperTradingDocument): PaperTradingApi {
   const session = new PaperTradingSession(options);
-  session.restore(document);
+  session.restore(parsePaperTradingDocument(document));
   return session;
+}
+
+export function restorePaperTradingAccountFromJson(options: PaperTradingAccountOptions, serialized: string): PaperTradingApi {
+  return restorePaperTradingAccount(options, deserializePaperTradingDocument(serialized));
 }
 
 export class PaperTradingSession implements PaperTradingApi {
@@ -299,6 +304,7 @@ export class PaperTradingSession implements PaperTradingApi {
     this.highWaterMark = document.snapshot.highWaterMark;
     this.lastMarketEvent = document.snapshot.lastMarketEvent === null ? null : { ...document.snapshot.lastMarketEvent };
     this.lastFreshMarketEvent = this.lastMarketEvent?.quoteStatus === "fresh" ? { ...this.lastMarketEvent } : null;
+    this.lastSourceSequence = this.lastMarketEvent?.sourceSequence ?? null;
     this.position = document.snapshot.position === null ? null : {
       quantity: document.snapshot.position.quantity,
       costBasis: document.snapshot.position.costBasis,

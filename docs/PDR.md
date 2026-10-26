@@ -470,3 +470,9 @@ halt, and chart-scoped non-persistent paper markers. Chromium verifies the
 causal fill flow, marker scope, responsive control path, and no page errors.
 Paper state remains in memory in this example and is not silently included in
 workspace export.
+
+Phase 8.1.4 hardens recovery with validated JSON deserialization, pending
+reserve/accounting consistency checks, restored source-sequence ordering, and
+preserved risk-halt state. Corrupted documents are rejected before account
+construction and restored history/stale events cannot fill an order. Durable
+storage remains an explicit host responsibility.
