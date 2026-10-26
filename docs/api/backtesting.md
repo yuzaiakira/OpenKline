@@ -48,6 +48,23 @@ multi-asset portfolios, and live trading are not implemented.
 `dispose()` is terminal. This API does not execute arbitrary JavaScript and is
 not a prediction or profitability service.
 
+## Worker execution
+
+`createBacktestWorker()` runs the same built-in strategies and backtest engine
+in a dedicated versioned Worker. It is intended for browser UI work where a
+long simulation must not occupy the main thread. Its serializable options
+contain validated candles, strategy ID/parameters, and execution assumptions;
+custom registries, callbacks, abort signals, and arbitrary source are not
+accepted at this boundary. See `docs/api/backtesting-worker.md` and
+`docs/architecture/strategy-worker-runtime.md`.
+
+Subscribe to `BacktestWorkerStatus` for throttled progress. `cancel()` is a
+hard cancellation: the active Worker is terminated, the promise rejects with
+`BacktestWorkerError` code `CANCELLED`, and no partial result is retained.
+Repeated runs reuse the initialized defensive dataset. Superseding a run,
+timeouts, Worker crashes, malformed messages, and disposal have stable error
+codes and do not apply stale results.
+
 The result includes deterministic `inputFingerprint` metadata and
 `engineVersion`. `calculatePerformanceMetrics()` reports total return, net and
 gross P&L, drawdown, trade counts, win rate, averages, profit factor,

@@ -66,6 +66,16 @@ fingerprints, and JSON/CSV export. Annualized risk ratios are intentionally
 not tested or claimed until their calendar and sampling assumptions are
 specified.
 
+Worker backtesting coverage is in `tests/backtesting-worker.test.ts`. It
+verifies the versioned protocol guards, one-time defensive initialization,
+repeat-run reuse, byte-for-byte serialized parity with the synchronous engine,
+progress/status updates, cancellation by termination, timeout, recovery,
+supersession, invalid input, and disposal. The Next.js Chromium suite adds a
+real Worker run over a deterministic 500,000-bar fixture and asserts that
+Cancel leaves no partial export/result. This is real Chromium evidence; it is
+not a Firefox, WebKit, Mobile Safari, physical-device, or formal accessibility
+claim.
+
 Replay browser coverage is in `tests/browser/replay.spec.ts`. It asserts
 inclusive future-data masking across series, indicators, workspace exports,
 drawings, and crosshair values; source immutability; read-only structural/data

@@ -271,11 +271,14 @@ export type {
   WatchlistSymbol,
 } from "./studio/index.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
-export { BacktestSession, createBacktest } from "./backtesting/index.js";
+export { BacktestSession, BacktestWorkerError, BacktestWorkerSession, createBacktest, createBacktestWorker, defaultBacktestWorkerFactory } from "./backtesting/index.js";
 export {
+  OPENKLINE_BACKTEST_WORKER_PROTOCOL_VERSION,
   OPENKLINE_BACKTEST_RESULT_VERSION,
   calculatePerformanceMetrics,
   fingerprintCandles,
+  isBacktestWorkerRequest,
+  isBacktestWorkerResponse,
   serializeBacktestResult,
   serializeTradeLedgerCsv,
   createStrategyMarkers,
@@ -304,6 +307,26 @@ export type {
   ShortSellingOptions,
   TransactionCost,
   PerformanceMetrics,
+  BacktestWorkerApi,
+  BacktestWorkerAckResponse,
+  BacktestWorkerCancelRequest,
+  BacktestWorkerCompleteResponse,
+  BacktestWorkerDisposeRequest,
+  BacktestWorkerErrorCode,
+  BacktestWorkerErrorPayload,
+  BacktestWorkerErrorResponse,
+  BacktestWorkerFactory,
+  BacktestWorkerInitializeRequest,
+  BacktestWorkerLike,
+  BacktestWorkerOptions,
+  BacktestWorkerProgressResponse,
+  BacktestWorkerRequest,
+  BacktestWorkerResponse,
+  BacktestWorkerRunOptions,
+  BacktestWorkerRunRequest,
+  BacktestWorkerRuntimeOptions,
+  BacktestWorkerStatus,
+  BacktestWorkerStatusState,
 } from "./backtesting/index.js";
 export type { StrategyMarker, StrategyMarkerDirection, StrategyMarkerKind } from "./backtesting/index.js";
 export { StrategyRegistry } from "./strategies/index.js";

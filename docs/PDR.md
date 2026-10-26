@@ -411,19 +411,21 @@ short limits, reversal policy, cash/equity accounting, and trade ledgers.
 Performance metrics, replay overlays, and a functional chart-scoped Studio
 Strategy Tester are now implemented. The result model includes deterministic
 metrics, input fingerprint metadata, JSON result export, and CSV completed
-trade export. The tester uses the synchronous reference engine and existing
-Chart overlay API; it does not claim Worker execution or background-thread
-isolation. No live trading, brokerage connectivity,
+trade export. `createBacktest()` remains the synchronous reference while the
+tester uses the versioned built-in Strategy Worker for background execution,
+hard cancellation, progress, generation checks, and lifecycle cleanup. No live
+trading, brokerage connectivity,
 arbitrary user JavaScript, or milestone closure is
 claimed. Strategy results can now produce replay-aware, non-persistent Chart
 markers through the existing overlay renderer. See
 `docs/architecture/strategy-engine.md`,
 `docs/architecture/strategy-replay-integration.md`, and
 `docs/api/strategies.md`. Local Chromium verifies the tester controls,
-generated result dashboard, export actions, marker visibility, and chart
-scope isolation. The 100k strategy benchmark records measurable latency and
-memory observations; it does not establish universal performance targets. The
-first Phase 8.0.7 increment removes the unused per-bar historical-prefix copy
+generated result dashboard, export actions, marker visibility, chart scope
+isolation, and real Worker cancellation on a deterministic 500k fixture. The
+100k strategy benchmark records measurable latency and memory observations; it
+does not establish universal performance targets. The first Phase 8.0.7
+increment removes the unused per-bar historical-prefix copy
 for built-in strategies through an additive `requiresHistory` hint while
 retaining an array-compatible causal view for custom strategies. The measured
 100k built-in strategy workload is now approximately 0.3–0.4 seconds in the

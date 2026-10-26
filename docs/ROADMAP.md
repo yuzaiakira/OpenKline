@@ -41,7 +41,8 @@ replay/Studio integration, and final verification remain open.
 - [Implemented / Verified] Phase 8.0.3 adds independently tested performance
   metrics, deterministic candle fingerprints, JSON result export, and CSV
   completed-trade export. Annualized Sharpe/Sortino/Calmar assumptions,
-  replay overlays, Worker execution, and Studio remain open.
+  replay overlays, Worker execution, and Studio were open at this milestone;
+  they are addressed by the later Phase 8.0.4–8.0.7 increments.
 - [Implemented / Verified] Phase 8.0.4 adds result-to-marker conversion and
   Chart-scoped strategy marker APIs using the existing overlay renderer.
   Markers remain non-persistent, replay-aware, price-scale-aware, and separate
@@ -50,8 +51,9 @@ replay/Studio integration, and final verification remain open.
   Tester with public strategy/backtest APIs, editable parameters and costs,
   running/cancel controls, generated metrics, equity/drawdown SVGs, trade
   history, JSON/CSV exports, marker visibility, and responsive Chromium E2E
-  coverage. The UI uses the synchronous reference engine; Worker execution,
-  accessibility audit, and broader browser/device verification remain open.
+  coverage. The synchronous engine remains the financial reference; the later
+  Phase 8.0.7.2 increment adds the built-in Worker execution path. Accessibility
+  audit and broader browser/device verification remain open.
 - [Implemented / In Verification] Phase 8.0.6 adds a deterministic Node
   strategy benchmark for 1k/10k/100k candles, two built-in strategies,
   repeated runs, deterministic exports, cancellation, and post-disposal heap
@@ -62,8 +64,15 @@ replay/Studio integration, and final verification remain open.
   unused per-bar history construction; custom strategies retain an
   array-compatible bounded causal view by default. Legacy array consumers,
   retained references, anti-lookahead, deterministic outputs, and 1k/10k/100k
-  benchmark parity pass. The Strategy Worker and responsive Studio execution
-  remain the next 8.0.7 increments.
+  benchmark parity pass.
+- [Implemented / Verified] Phase 8.0.7.2 adds the versioned built-in Strategy
+  Worker and typed public API. It reuses `createBacktest()` for financial
+  execution, keeps initialization data reusable, throttles progress, and
+  terminates the Worker for hard cancellation. Protocol, parity, timeout,
+  recovery, supersession, disposal, and invalid-input tests pass. Studio
+  applies only current mounted run results and includes deterministic 100k/
+  500k fixtures for Chromium responsiveness checks. Firefox, WebKit, Mobile
+  Safari, physical-device, and formal accessibility gates remain open.
 
 ## Completed
 

@@ -3,18 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import {
-  createBacktest,
+  createBacktestWorker,
   createDefaultStrategyRegistry,
   createStrategyMarkers,
   serializeBacktestResult,
   serializeTradeLedgerCsv,
 } from "openkline";
 import type {
-  BacktestApi,
+  BacktestWorkerApi,
+  BacktestWorkerOptions,
   BacktestProgress,
   BacktestResult,
-  BacktestStatusState,
+  BacktestWorkerStatusState,
   Chart,
+  Candle,
   StrategyMetadata,
 } from "openkline";
 import styles from "./studio.module.css";
@@ -32,6 +34,7 @@ interface StrategyTesterProps {
 type TesterTab = "overview" | "trades" | "equity" | "settings" | "diagnostics";
 type SizingType = "fixed-quantity" | "fixed-notional" | "percent-equity";
 type CostType = "percent" | "fixed";
+type DatasetMode = "chart" | "deterministic-100k" | "deterministic-500k";
 
 const strategyRegistry = createDefaultStrategyRegistry();
 const strategyMetadata = strategyRegistry.listMetadata();
@@ -47,6 +50,20 @@ function defaultParameters(id: string): Record<string, unknown> {
 
 function metadataFor(id: string): StrategyMetadata {
   return strategyMetadata.find((item) => item.id === id) ?? strategyMetadata[0]!;
+}
+
+function deterministicCandles(count: number): Candle[] {
+  return Array.from({ length: count }, (_, index) => {
+    const close = 100 + Math.sin(index / 23) * 3 + Math.cos(index / 71) * 2 + index * 0.002;
+    return {
+      time: Date.UTC(2020, 0, 1) + index * 60_000,
+      open: close - 0.35,
+      high: close + 0.8,
+      low: close - 0.8,
+      close,
+      volume: 1_000 + (index % 97) * 10,
+    };
+  });
 }
 
 function asNumber(value: string, integer: boolean): number {
@@ -103,7 +120,9 @@ function EquityCurve({ result }: { readonly result: BacktestResult }): ReactElem
 
 export function StrategyTester({ panelId, symbol, timeframe, chart, initialResult, onResult, onNotice }: StrategyTesterProps): ReactElement {
   const mountedRef = useRef(true);
-  const sessionRef = useRef<BacktestApi | null>(null);
+  const sessionRef = useRef<BacktestWorkerApi | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const runTokenRef = useRef(0);
   const [strategyId, setStrategyId] = useState("EMA_CROSSOVER");
   const [parameters, setParameters] = useState<Record<string, unknown>>(() => defaultParameters("EMA_CROSSOVER"));
   const [initialCapital, setInitialCapital] = useState("10000");
@@ -114,7 +133,8 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
   const [commissionValue, setCommissionValue] = useState("0.001");
   const [slippageType, setSlippageType] = useState<CostType>("percent");
   const [slippageValue, setSlippageValue] = useState("0.0005");
-  const [status, setStatus] = useState<BacktestStatusState>(initialResult === null ? "idle" : "completed");
+  const [datasetMode, setDatasetMode] = useState<DatasetMode>("chart");
+  const [status, setStatus] = useState<BacktestWorkerStatusState>(initialResult === null ? "idle" : "completed");
   const [progress, setProgress] = useState<BacktestProgress | null>(null);
   const [result, setResult] = useState<BacktestResult | null>(initialResult);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +147,10 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      runTokenRef.current += 1;
+      unsubscribeRef.current?.();
       sessionRef.current?.dispose();
+      unsubscribeRef.current = null;
       sessionRef.current = null;
     };
   }, []);
@@ -137,6 +160,11 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
   }, [chart, markersVisible, result]);
 
   const updateStrategy = (nextId: string): void => {
+    runTokenRef.current += 1;
+    unsubscribeRef.current?.();
+    sessionRef.current?.dispose();
+    unsubscribeRef.current = null;
+    sessionRef.current = null;
     setStrategyId(nextId);
     setParameters(defaultParameters(nextId));
     setError(null);
@@ -152,23 +180,25 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
 
   const runBacktest = (): void => {
     if (chart === null) { setError("The active chart is not ready."); return; }
-    const candles = chart.getData();
+    const candles = datasetMode === "chart" ? chart.getData() : deterministicCandles(datasetMode === "deterministic-100k" ? 100_000 : 500_000);
     if (candles.length === 0) { setError("The active chart has no historical candles."); return; }
     setError(null);
     setResult(null);
     onResult(null);
     setProgress(null);
-    setStatus("running");
+    setStatus("initializing");
     chart.clearStrategyMarkers();
+    unsubscribeRef.current?.();
     sessionRef.current?.dispose();
-    let session: BacktestApi;
+    const runToken = ++runTokenRef.current;
+    let session: BacktestWorkerApi;
     try {
       const value = asNumber(sizingValue, false);
       const capital = asNumber(initialCapital, false);
       const commission = asNumber(commissionValue, false);
       const slippage = asNumber(slippageValue, false);
       const positionSizing = sizingType === "fixed-quantity" ? { type: sizingType, quantity: value } : sizingType === "fixed-notional" ? { type: sizingType, amount: value } : { type: sizingType, percent: value };
-      session = createBacktest({
+      const workerOptions: BacktestWorkerOptions = {
         strategy: strategyId,
         parameters,
         candles,
@@ -177,37 +207,52 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
         commission: { type: commissionType, value: commission },
         slippage: { type: slippageType, value: slippage },
         allowFractionalQuantity: allowFractional,
-        onProgress: (nextProgress) => { if (mountedRef.current) setProgress(nextProgress); },
-      });
+      };
+      session = createBacktestWorker(workerOptions);
     } catch (nextError) {
       setStatus("failed");
       setError(nextError instanceof Error ? nextError.message : String(nextError));
       return;
     }
     sessionRef.current = session;
-    window.setTimeout(() => {
-      try {
-        const nextResult = session.run();
-        if (!mountedRef.current) return;
-        setResult(nextResult);
-        onResult(nextResult);
-        setStatus("completed");
-        setMarkersVisible(true);
-        chart.setStrategyMarkers(createStrategyMarkers(nextResult, candles));
-        setTab("overview");
-        onNotice(`${panelId}: ${nextResult.trades.length} completed trades from ${candles.length} candles.`);
-      } catch (nextError) {
-        if (!mountedRef.current) return;
-        const nextStatus = session.getStatus();
-        setStatus(nextStatus.state);
-        setError(nextError instanceof Error ? nextError.message : String(nextError));
-      }
-    }, 0);
+    unsubscribeRef.current = session.subscribe((nextStatus) => {
+      if (!mountedRef.current || runTokenRef.current !== runToken || sessionRef.current !== session) return;
+      setStatus(nextStatus.state);
+      if (nextStatus.progress !== undefined) setProgress(nextStatus.progress);
+      if (nextStatus.error !== undefined) setError(nextStatus.error);
+    });
+    void session.run().then((nextResult) => {
+      if (!mountedRef.current || runTokenRef.current !== runToken || sessionRef.current !== session) return;
+      setResult(nextResult);
+      onResult(nextResult);
+      setStatus("completed");
+      setMarkersVisible(true);
+      chart.setStrategyMarkers(createStrategyMarkers(nextResult, candles));
+      setTab("overview");
+      onNotice(`${panelId}: ${nextResult.trades.length} completed trades from ${candles.length} candles.`);
+    }).catch((nextError: unknown) => {
+      if (!mountedRef.current || runTokenRef.current !== runToken || sessionRef.current !== session) return;
+      const nextStatus = session.getStatus();
+      setStatus(nextStatus.state);
+      if (nextError instanceof Error) setError(nextError.message);
+      else setError(String(nextError));
+    });
+  };
+
+  const updateDatasetMode = (nextMode: DatasetMode): void => {
+    if (isRunning) return;
+    setDatasetMode(nextMode);
+    setResult(null);
+    setProgress(null);
+    setError(null);
+    setMarkersVisible(false);
+    onResult(null);
+    chart?.clearStrategyMarkers();
   };
 
   const cancelBacktest = (): void => {
     sessionRef.current?.cancel();
-    if (status === "running") { setStatus("cancelled"); setError("Backtest cancelled; no partial result was retained."); }
+    if (status === "running" || status === "initializing") { setStatus("cancelled"); setError("Backtest cancelled; no partial result was retained."); }
   };
 
   const toggleMarkers = (): void => {
@@ -220,12 +265,13 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
 
   const metric = result?.metrics;
   const selectedTrade = result?.trades.find((trade) => trade.id === selectedTradeId) ?? null;
-  const isRunning = status === "running";
+  const isRunning = status === "running" || status === "initializing";
 
   return <section className={styles.strategyTester} aria-label={`Strategy Tester for ${panelId}`}>
     <div className={styles.strategyTesterHeading}><div><h2>Strategy Tester</h2><small>{panelId} · {symbol} · {timeframe} · historical simulation only</small></div><span className={isRunning ? styles.strategyRunning : styles.strategyStatus}>{status}</span></div>
     <div className={styles.strategyControls}>
       <label>Strategy<select aria-label="Backtest strategy" value={strategyId} disabled={isRunning} onChange={(event) => updateStrategy(event.target.value)}>{strategyMetadata.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Dataset<select aria-label="Backtest dataset" value={datasetMode} disabled={isRunning} onChange={(event) => updateDatasetMode(event.target.value as DatasetMode)}><option value="chart">Active chart history</option><option value="deterministic-100k">Deterministic 100,000 bars</option><option value="deterministic-500k">Deterministic 500,000 bars</option></select></label>
       <p className={styles.strategyDescription}>{metadata.description}</p>
       <fieldset><legend>Parameters</legend>{metadata.parameters.map((parameter) => <label key={parameter.name}>{parameter.name}<input aria-label={`Strategy parameter ${parameter.name}`} type={parameter.type === "integer" || parameter.type === "number" ? "number" : "text"} min={parameter.min} max={parameter.max} step={parameter.type === "integer" ? 1 : "any"} value={String(parameters[parameter.name] ?? "")} disabled={isRunning} onChange={(event) => setParameter(parameter.name, event.target.value, parameter.type)} /></label>)}</fieldset>
       <fieldset><legend>Execution</legend><label>Initial capital<input aria-label="Backtest initial capital" type="number" min="0.01" step="0.01" value={initialCapital} disabled={isRunning} onChange={(event) => setInitialCapital(event.target.value)} /></label><label>Position sizing<select aria-label="Backtest position sizing" value={sizingType} disabled={isRunning} onChange={(event) => setSizingType(event.target.value as SizingType)}><option value="fixed-quantity">Fixed quantity</option><option value="fixed-notional">Fixed notional</option><option value="percent-equity">Percent equity</option></select></label><label>Size/value<input aria-label="Backtest position size" type="number" min="0.000001" step="any" value={sizingValue} disabled={isRunning} onChange={(event) => setSizingValue(event.target.value)} /></label><label className={styles.check}><input aria-label="Allow fractional quantity" type="checkbox" checked={allowFractional} disabled={isRunning} onChange={(event) => setAllowFractional(event.target.checked)} />Allow fractional quantity</label></fieldset>
@@ -234,14 +280,14 @@ export function StrategyTester({ panelId, symbol, timeframe, chart, initialResul
       {error === null ? null : <p className={styles.strategyError} role="alert">{error}</p>}
       {isRunning && progress !== null ? <progress aria-label="Backtest progress" max={progress.totalBars} value={progress.processedBars} /> : null}
     </div>
-    {result === null ? <p className={styles.strategyEmpty}>Run a simulation against the active chart’s validated OHLCV history. The synchronous reference engine does not make network requests or place orders.</p> : <>
+    {result === null ? <p className={styles.strategyEmpty}>Run a simulation against the active chart’s validated OHLCV history. Built-in strategies run in a dedicated Worker; the synchronous engine remains the parity reference.</p> : <>
       <nav className={styles.strategyTabs} aria-label="Strategy Tester results">{(["overview", "trades", "equity", "settings", "diagnostics"] as const).map((item) => <button key={item} type="button" aria-selected={tab === item} onClick={() => setTab(item)}>{item[0]!.toUpperCase() + item.slice(1)}</button>)}</nav>
       <div className={styles.strategyResults}>
         {tab === "overview" ? <div className={styles.strategyOverview}><div className={styles.strategyMetricGrid}><div><small>Net profit</small><strong>{formatNumber(metric?.netProfit ?? null)}</strong></div><div><small>Total return</small><strong>{formatPercent(metric?.totalReturn ?? null)}</strong></div><div><small>Max drawdown</small><strong>{formatNumber(metric?.maxDrawdown ?? null)}</strong></div><div><small>Win rate</small><strong>{formatPercent(metric?.winRate ?? null)}</strong></div><div><small>Profit factor</small><strong>{formatNumber(metric?.profitFactor ?? null)}</strong></div><div><small>Closed trades</small><strong>{metric?.closedTradeCount ?? 0}</strong></div></div><EquityCurve result={result} /><p className={styles.strategyFootnote}>Results are historical observations under the displayed assumptions, not a prediction of future performance.</p></div> : null}
         {tab === "trades" ? <div><p>{result.trades.length} completed trades · {result.orders.length} orders · {result.signals.length} signals</p>{result.trades.length === 0 ? <p className={styles.strategyEmpty}>No completed trades were generated.</p> : <div className={styles.strategyTableWrap}><table className={styles.strategyTable}><caption>Completed trade ledger</caption><thead><tr><th>Direction</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Net P&amp;L</th><th>Fees</th></tr></thead><tbody>{result.trades.map((trade) => <tr key={trade.id} className={selectedTradeId === trade.id ? styles.selectedTrade : ""} onClick={() => setSelectedTradeId(trade.id)}><td>{trade.direction}</td><td>{formatNumber(trade.entryPrice)}</td><td>{formatNumber(trade.exitPrice)}</td><td>{formatNumber(trade.quantity)}</td><td>{formatNumber(trade.netPnl)}</td><td>{formatNumber(trade.fees)}</td></tr>)}</tbody></table></div>}{selectedTrade === null ? null : <p className={styles.strategyFootnote}>Selected {selectedTrade.id}: {new Date(selectedTrade.entryFillTime).toLocaleString()} → {new Date(selectedTrade.exitFillTime).toLocaleString()} · {selectedTrade.exitReason}</p>}</div> : null}
         {tab === "equity" ? <div><h3>Equity and drawdown</h3><EquityCurve result={result} /><div className={styles.strategyTableWrap}><table className={styles.strategyTable}><caption>Final account</caption><tbody><tr><th>Cash</th><td>{formatNumber(result.finalAccount.cash)}</td></tr><tr><th>Equity</th><td>{formatNumber(result.finalAccount.equity)}</td></tr><tr><th>Realized P&amp;L</th><td>{formatNumber(result.finalAccount.realizedPnl)}</td></tr><tr><th>Unrealized P&amp;L</th><td>{formatNumber(result.finalAccount.unrealizedPnl)}</td></tr></tbody></table></div></div> : null}
         {tab === "settings" ? <div className={styles.strategySettings}><h3>Strategy settings</h3><dl><dt>Strategy</dt><dd>{result.strategyId} v{result.strategyVersion}</dd><dt>Input</dt><dd>{result.input.barCount} bars · {result.input.firstTime === null ? "—" : new Date(result.input.firstTime).toLocaleDateString()} → {result.input.lastTime === null ? "—" : new Date(result.input.lastTime).toLocaleDateString()}</dd><dt>Execution</dt><dd>{result.assumptions.execution} · {result.assumptions.endOfData}</dd><dt>Position sizing</dt><dd>{result.assumptions.positionSizing.type}</dd><dt>Commission / slippage</dt><dd>{result.assumptions.commission.type} {result.assumptions.commission.value} / {result.assumptions.slippage.type} {result.assumptions.slippage.value}</dd></dl></div> : null}
-        {tab === "diagnostics" ? <div className={styles.strategySettings}><h3>Diagnostics</h3><dl><dt>Engine</dt><dd>Backtest engine v{result.engineVersion}</dd><dt>Input fingerprint</dt><dd><code>{result.inputFingerprint}</code></dd><dt>Markers</dt><dd>{markersVisible ? "Visible on active chart" : "Hidden"}</dd><dt>Open position</dt><dd>{result.openPosition === null ? "None" : `${result.openPosition.direction} · ${formatNumber(result.openPosition.unrealizedPnl)} unrealized`}</dd><dt>Resource policy</dt><dd>One chart-scoped synchronous session; disposed on panel unmount.</dd></dl></div> : null}
+        {tab === "diagnostics" ? <div className={styles.strategySettings}><h3>Diagnostics</h3><dl><dt>Engine</dt><dd>Backtest engine v{result.engineVersion}</dd><dt>Input fingerprint</dt><dd><code>{result.inputFingerprint}</code></dd><dt>Markers</dt><dd>{markersVisible ? "Visible on active chart" : "Hidden"}</dd><dt>Open position</dt><dd>{result.openPosition === null ? "None" : `${result.openPosition.direction} · ${formatNumber(result.openPosition.unrealizedPnl)} unrealized`}</dd><dt>Resource policy</dt><dd>One Worker-scoped built-in strategy session; terminated on cancel, supersession, or panel unmount.</dd></dl></div> : null}
       </div>
     </>}
   </section>;

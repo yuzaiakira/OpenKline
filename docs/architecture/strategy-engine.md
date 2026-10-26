@@ -83,9 +83,12 @@ fabricated. Empty input is valid and produces an empty evaluation result.
 `StrategyInstance.evaluate()` is synchronous and deterministic. It accepts an
 `AbortSignal`, emits optional progress observations, and throws a typed
 `StrategyCancellationError` without returning partial results when cancelled.
-`dispose()` is terminal for the instance. Backtest orchestration will add
-async status, worker generation tracking, result ownership, and concurrent-run
-isolation without changing this reference evaluation contract.
+`dispose()` is terminal for the instance. Backtest orchestration adds async
+status, Worker generation tracking, result ownership, and concurrent-run
+isolation without changing this reference evaluation contract. The implemented
+Backtest Worker delegates to this synchronous engine rather than duplicating
+signal or accounting logic; see
+`docs/architecture/strategy-worker-runtime.md`.
 
 ## Decisions recorded for Phase 8.0.0
 

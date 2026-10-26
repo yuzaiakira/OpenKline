@@ -138,3 +138,16 @@ test("Studio runs a real chart-scoped backtest, exposes generated results, marke
   await expect(page.getByRole("button", { name: "Export JSON" })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("Studio cancels a large Worker backtest without retaining a partial result", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.getByLabel("Backtest dataset").selectOption("deterministic-500k");
+  await page.getByRole("button", { name: "Run Backtest" }).click();
+  await expect(page.getByRole("button", { name: "Cancel Backtest" })).toBeEnabled();
+  await page.getByRole("button", { name: "Cancel Backtest" }).click();
+  await expect(page.getByText("cancelled", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export JSON" })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
