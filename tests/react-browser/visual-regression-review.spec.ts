@@ -62,6 +62,16 @@ async function openDeterministicStudio(page: Page, viewport: { readonly width: n
   await page.setViewportSize(viewport);
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(1);
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("canvas");
+    const context = canvas?.getContext("2d");
+    if (canvas === null || context === null) return false;
+    const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+    return red === 17 && green === 24 && blue === 39;
+  });
+  await expect(page.getByText("Demo", { exact: true }).first()).toBeVisible();
+  await expect(page.locator("canvas")).toHaveAttribute("aria-label", /\d+ visible bars/);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
 test("captures deterministic desktop and light-theme review artifacts", async ({ page }, testInfo) => {
@@ -69,6 +79,13 @@ test("captures deterministic desktop and light-theme review artifacts", async ({
   const dark = await page.screenshot({ path: testInfo.outputPath("studio-dark.png"), fullPage: true, animations: "disabled" });
   await reviewScreenshot(dark, "studio-dark.png", testInfo, page);
   await page.getByLabel("Theme").selectOption("light");
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("canvas");
+    const context = canvas?.getContext("2d");
+    if (canvas === null || context === null) return false;
+    const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+    return red !== undefined && green !== undefined && blue !== undefined && red > 240 && green > 240 && blue > 240;
+  });
   const light = await page.screenshot({ path: testInfo.outputPath("studio-light.png"), fullPage: true, animations: "disabled" });
   await reviewScreenshot(light, "studio-light.png", testInfo, page);
   expect(dark.byteLength).toBeGreaterThan(10_000);
