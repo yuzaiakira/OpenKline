@@ -431,3 +431,21 @@ retaining an array-compatible causal view for custom strategies. The measured
 100k built-in strategy workload is now approximately 0.3–0.4 seconds in the
 recorded Node environment; parity tests cover signals, fingerprints, and
 exports.
+
+## Phase 8.1 paper trading foundation — in progress
+
+The first paper-trading increment adds a framework-independent virtual
+single-symbol spot account. It supports long-only market orders, deterministic
+market events, next-event fills, shared commission/slippage mathematics,
+cash reservation, P&L/equity/drawdown snapshots, order/trade/journal audit,
+idempotency, stale and ordering protection, replay isolation, and versioned
+JSON persistence. It is explicitly simulated and has no broker or live-order
+side effect. The deterministic market stream is a test/demo source only.
+
+The account, stream, and persistence contracts are documented in
+`docs/architecture/paper-trading-engine.md`,
+`docs/architecture/paper-market-data.md`,
+`docs/architecture/paper-trading-persistence.md`, and
+`docs/api/paper-trading.md`. The Studio ticket/dashboard, REST/WebSocket
+transport adapters, risk policy expansion, recovery hardening, performance
+benchmarks, and inherited browser/accessibility gates remain open.

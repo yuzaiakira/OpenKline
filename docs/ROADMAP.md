@@ -74,6 +74,17 @@ replay/Studio integration, and final verification remain open.
   500k fixtures for Chromium responsiveness checks. Firefox, WebKit, Mobile
   Safari, physical-device, and formal accessibility gates remain open.
 
+Phase 8.1 paper trading — **In progress**. Phase 8.1.0 establishes the
+framework-independent virtual single-symbol spot-account contract,
+deterministic market-event source, market-order lifecycle, causal event
+filtering, and versioned persistence. UI, transport adapters, risk, recovery,
+benchmark, and broader browser acceptance remain open.
+
+- [Implemented / Verified] Phase 8.1.0 adds `src/paper-trading/` account,
+  order, event, deterministic stream, and persistence contracts. Local Node
+  tests cover causal fills, idempotency, stale/duplicate/out-of-order/replay
+  isolation, state round trips, disconnect/reconnect, and invalid events.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

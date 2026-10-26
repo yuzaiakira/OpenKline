@@ -1,4 +1,5 @@
 import { CandleStore } from "../core/candle-store.js";
+import { applyAdverseSlippage, calculateLongGrossPnl, calculateTransactionCost } from "../financial.js";
 import { createDefaultStrategyRegistry, type StrategySignal } from "../strategies/index.js";
 import { StrategyCancellationError, type StrategyInstance, type StrategyRegistry } from "../strategies/index.js";
 import type { Candle } from "../types.js";
@@ -303,7 +304,7 @@ export class BacktestSession implements BacktestApi {
 
     const referencePrice = candle.open;
     const buy = action === "enter-long" || action === "exit-short";
-    const executionPrice = applySlippage(referencePrice, this.assumptions.slippage, buy);
+    const executionPrice = applyBacktestSlippage(referencePrice, this.assumptions.slippage, buy);
     const slippage = Math.abs(executionPrice - referencePrice);
     order.referencePrice = referencePrice;
     order.executionPrice = executionPrice;
@@ -330,7 +331,7 @@ export class BacktestSession implements BacktestApi {
         return reject(order, "Position sizing produced an invalid quantity", cash, position, account.realizedPnl, tradeSequence);
       }
       if (targetDirection === "long") {
-        const fee = costFor(this.assumptions.commission, quantity * executionPrice);
+        const fee = calculateTransactionCost(this.assumptions.commission, quantity * executionPrice);
         if (quantity * executionPrice + fee > nextCash + 1e-12) {
           trades.length = originalTradeCount;
           return reject(order, "Insufficient cash for the long entry", cash, position, account.realizedPnl, tradeSequence);
@@ -344,7 +345,7 @@ export class BacktestSession implements BacktestApi {
           trades.length = originalTradeCount;
           return reject(order, "Short entry exceeds the configured maxNotional", cash, position, account.realizedPnl, tradeSequence);
         }
-        const fee = costFor(this.assumptions.commission, quantity * executionPrice);
+        const fee = calculateTransactionCost(this.assumptions.commission, quantity * executionPrice);
         nextCash += quantity * executionPrice - fee;
         totalFee += fee;
         nextPosition = { id: `${order.id}-position`, direction: "short", quantity, entrySignalTime: signal.time, entryFillTime: candle.time, entryPrice: executionPrice, entryFees: fee };
@@ -409,16 +410,12 @@ function quantityForEntry(sizing: PositionSizing, equity: number, price: number,
   return Number.isInteger(raw) ? raw : 0;
 }
 
-function costFor(cost: TransactionCost, notional: number): number {
-  return cost.type === "percent" ? notional * cost.value : cost.value;
-}
-
-function applySlippage(reference: number, slippage: TransactionCost, buy: boolean): number {
-  const adverse = buy ? 1 : -1;
-  const value = slippage.type === "percent" ? reference * slippage.value : slippage.value;
-  const price = reference + adverse * value;
-  if (!Number.isFinite(price) || price <= 0) throw new BacktestValidationError("Slippage produced a non-positive execution price");
-  return price;
+function applyBacktestSlippage(referencePrice: number, slippage: TransactionCost, buy: boolean): number {
+  try {
+    return applyAdverseSlippage(referencePrice, slippage, buy);
+  } catch (error) {
+    throw new BacktestValidationError(error instanceof Error ? error.message : String(error));
+  }
 }
 
 function accountAtPrice(cash: number, position: MutablePosition | null, price: number | null, realizedPnl: number, peakEquity: number, time: number | null): AccountSnapshot {
@@ -439,8 +436,8 @@ function snapshotWithPeak(snapshot: AccountSnapshot, peakEquity: number): Accoun
 
 function closePosition(position: MutablePosition, order: MutableOrder, signal: StrategySignal, price: number, commission: TransactionCost, cash: number, trades: MutableTrade[]): { cash: number; netPnl: number; fee: number } {
   const notional = position.quantity * price;
-  const fee = costFor(commission, notional);
-  const grossPnl = position.direction === "long" ? (price - position.entryPrice) * position.quantity : (position.entryPrice - price) * position.quantity;
+  const fee = calculateTransactionCost(commission, notional);
+  const grossPnl = position.direction === "long" ? calculateLongGrossPnl(position.entryPrice, price, position.quantity) : (position.entryPrice - price) * position.quantity;
   const netPnl = grossPnl - position.entryFees - fee;
   const nextCash = position.direction === "long" ? cash + notional - fee : cash - notional - fee;
   trades.push({
