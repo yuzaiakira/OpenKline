@@ -15,7 +15,7 @@ test("Studio interactive controls expose names, keyboard focus, status, and dial
       const ariaText = node.getAttribute("aria-label") ?? "";
       return (ariaText || labelledText || labelText || node.textContent || "").replace(/\s+/g, " ").trim();
     };
-    return [...document.querySelectorAll("button,input,select,textarea,[role=button]")]
+    return Array.from(document.querySelectorAll("button,input,select,textarea,[role=button]"))
       .filter(visible)
       .filter((element) => (element as HTMLInputElement).type !== "hidden")
       .filter((element) => labelFor(element).length === 0)
