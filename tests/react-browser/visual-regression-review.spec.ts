@@ -54,10 +54,18 @@ async function reviewScreenshot(bytes: Buffer, fileName: string, testInfo: TestI
   }, null, 2)}\n`);
 }
 
-test("captures deterministic desktop and light-theme review artifacts", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+async function openDeterministicStudio(page: Page, viewport: { readonly width: number; readonly height: number }): Promise<void> {
+  await page.addInitScript(() => {
+    const fixedNow = Date.UTC(2026, 0, 2, 12, 0, 0);
+    Date.now = () => fixedNow;
+  });
+  await page.setViewportSize(viewport);
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(1);
+}
+
+test("captures deterministic desktop and light-theme review artifacts", async ({ page }, testInfo) => {
+  await openDeterministicStudio(page, { width: 1280, height: 900 });
   const dark = await page.screenshot({ path: testInfo.outputPath("studio-dark.png"), fullPage: true, animations: "disabled" });
   await reviewScreenshot(dark, "studio-dark.png", testInfo, page);
   await page.getByLabel("Theme").selectOption("light");
@@ -68,9 +76,7 @@ test("captures deterministic desktop and light-theme review artifacts", async ({
 });
 
 test("captures a deterministic narrow-layout review artifact", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await openDeterministicStudio(page, { width: 390, height: 844 });
   const mobile = await page.screenshot({ path: testInfo.outputPath("studio-mobile.png"), fullPage: true, animations: "disabled" });
   await reviewScreenshot(mobile, "studio-mobile.png", testInfo, page);
   expect(mobile.byteLength).toBeGreaterThan(5_000);
