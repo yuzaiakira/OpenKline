@@ -182,13 +182,16 @@ acceptance open**.
 - [Implemented / Verified] Phase 8.3.4 adds a separate versioned Screener
   Worker protocol and runtime with serializable tasks, reference evaluation,
   generation guards, timeout, cancellation, supersession, and disposal.
-- [Implemented / In Verification] Phase 8.3.5 adds the private Studio Market
+- [Implemented / Verified locally] Phase 8.3.5 adds the private Studio Market
   Screener panel with Watchlist universe selection, rule controls, snapshot/
   watch operations, table search/filter/sort, chart navigation, favorites,
   versioned JSON presets, and deterministic demo stepping. Local Chromium and
-  Next.js production build pass; final benchmark and inherited compatibility,
+  Next.js production build pass; inherited compatibility,
   accessibility, and physical-device gates remain open.
-- [Not Started] Phase 8.3.6 final verification and screener benchmark report.
+- [Implemented / In Verification] Phase 8.3.6 adds the deterministic Node
+  screener benchmark and final acceptance matrix. Local Node/Next/Chromium
+  evidence passes, while managed Firefox/WebKit/mobile, accessibility,
+  physical-device, visual, and external-provider gates remain open.
 
 ## Completed
 

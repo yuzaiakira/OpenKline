@@ -63,4 +63,53 @@ The baseline test is `tests/screener-baseline.test.ts` and is included in the lo
   devices, formal accessibility, visual-regression baselines, and external
   market-data providers. These gates remain open.
 
+## 8.3.6 final local verification and benchmark
+
+- Implemented: `npm run benchmark:screener` measures deterministic Node
+  snapshot and incremental Watch work at 10, 100, 500, and 1,000 instruments.
+  Each size runs three snapshot repetitions and three Watch sessions with five
+  synchronous provider steps per session. The script checks that every result
+  matches and that every subscribed instrument receives every step update
+  before reporting timing values.
+- Verified: the benchmark completed on 2026-10-26 with Node.js v24.19.0,
+  Linux x64, five reported CPUs, and OpenKline's deterministic provider. These
+  values are local reference-engine observations, not browser FPS, Worker
+  throughput, network latency, production capacity, or memory limits.
+
+| Instruments | Bars/instrument | Snapshot median / p95 (ms) | Watch start median / p95 (ms) | Watch step median / p95 (ms) | Matched / updates | Heap after dispose (MB) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 240 | 4.677 / 8.103 | 4.003 / 5.030 | 0.995 / 1.686 | 10 / 50 | 6.03 |
+| 100 | 240 | 34.021 / 37.792 | 46.415 / 53.116 | 4.296 / 13.997 | 100 / 500 | 6.19 |
+| 500 | 240 | 573.279 / 596.981 | 618.942 / 621.338 | 21.849 / 45.232 | 500 / 2,500 | 6.23 |
+| 1,000 | 240 | 2,209.262 / 2,593.837 | 2,280.816 / 2,292.877 | 43.318 / 73.977 | 1,000 / 5,000 | 6.24 |
+
+The benchmark's post-dispose heap observations were 0.30 MB, 0.17 MB,
+0.13 MB, and 0.11 MB above the per-size pre-run observations respectively.
+The process was invoked with `--expose-gc`; those observations are not leak
+proofs. The deterministic provider regenerates fixture history for each page,
+so these numbers are useful for regression detection only.
+
+### Local acceptance matrix
+
+| Criterion | State | Evidence / limitation |
+| --- | --- | --- |
+| Versioned identity and Universe boundary | Implemented / Verified | Node unit tests and deterministic Watchlist conversion tests pass. |
+| Declarative rules and tri-state evaluation | Implemented / Verified | Rule validation/evaluation tests pass, including no-lookahead and developing-bar cases. |
+| Bounded historical snapshot scan | Implemented / Verified | Pagination, limits, cancellation, revisions, diagnostics, and error isolation tests pass. |
+| Incremental Watch lifecycle | Implemented / Verified | Append/correction/duplicate/pause/resume/dispose tests pass; deterministic provider cleanup is covered. |
+| Dedicated Screener Worker protocol | Implemented / Verified | In-process handler/runtime tests pass; browser Worker throughput is not claimed. |
+| Private Studio integration | Implemented / Verified locally | Next.js 16.4.3 production build and one real Chromium screener workflow pass. |
+| Deterministic Node benchmark | Implemented / Verified | `npm run benchmark:screener` completed with the table above. |
+| Full local Node regression suite | Verified | `npm test`: 151 passing, 0 failing. |
+| Root/package and Next type/build checks | Verified | Root typecheck, Next TypeScript check, package build, and Next production build pass. |
+| Firefox and WebKit Playwright projects | Blocked by environment / Not verified | Managed Playwright cache is absent; only system Chromium is available. No substitution was made. |
+| Mobile Chrome and Mobile Safari emulation | Not verified | Compatibility suite was not treated as passing without managed artifacts. |
+| Physical-device verification | Not tested | No physical device is attached to this environment. |
+| Formal accessibility and visual regression | Not tested | No formal audit or screenshot baseline was executed. |
+| External provider, credentials, alerts, signals, or trading | Not tested / Out of scope | Phase 8.3 uses the deterministic offline provider only. |
+
+Phase 8.3 therefore remains open. The implemented local milestones are
+complete, but the unverified compatibility, accessibility, physical-device,
+and external-provider gates must not be converted into a release claim.
+
 

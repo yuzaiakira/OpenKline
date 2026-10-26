@@ -179,3 +179,22 @@ Walk-Forward with fold output/export controls, verifies Paper Trading cash is
 unchanged, and exercises mobile cancellation against a deterministic large
 dataset. This is local Chromium evidence; Firefox, WebKit, Mobile Safari,
 physical-device, and formal accessibility gates remain open.
+
+## Phase 8.3 screener tests
+
+The Node suite covers screener identity, bounded universes, declarative rules,
+confirmed-bar snapshot scans, provider failures, correction revisions,
+incremental Watch lifecycle, and the versioned Worker protocol. The deterministic
+provider test also verifies provider-scoped Watchlist symbols and subscription
+cleanup.
+
+`tests/react-browser/screener.spec.ts` runs the private Studio screener in
+local Chromium. It verifies a real Watchlist-derived scan, matched-row
+filtering, rule changes, preset saving, Watch start/step, chart navigation,
+and page-error cleanup. This is Chromium evidence only; Firefox, WebKit,
+Mobile Safari, physical devices, visual regression, and formal accessibility
+gates remain open.
+
+`npm run benchmark:screener` is a deterministic Node reference-provider
+benchmark for historical snapshot and incremental Watch work. It is not a
+browser performance or production-capacity claim.

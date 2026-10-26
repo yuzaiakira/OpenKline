@@ -265,3 +265,20 @@ fingerprints, and process heap observations. It also measures a deterministic
 The script intentionally reports Node reference-engine work; it does not
 claim browser FPS, Worker throughput, predictive quality, or a universal
 memory limit. Candidate summaries retain no full backtest payloads.
+
+## Phase 8.3 screener observations
+
+`npm run benchmark:screener` builds the package and measures the deterministic
+Node screener provider at 10, 100, 500, and 1,000 instruments with 240 bars
+per instrument. It reports repeated snapshot-scan median/p95 time, incremental
+Watch start and step median/p95 time, matched/update invariants, and process
+heap observations after an exposed-GC opportunity. The provider is an offline
+fixture: these measurements do not represent a vendor, browser, Worker,
+network, physical-device, FPS, or production capacity claim.
+
+Snapshot scanning and Watch stepping are reported separately because the
+former performs bounded paginated historical acquisition while the latter
+measures the existing incremental indicator/session lifecycle. Browser and
+mobile compatibility gates remain separate from this Node benchmark. Record
+the exact JSON output, Node version, platform, and date in the Phase 8.3
+verification report; do not turn local values into universal budgets.

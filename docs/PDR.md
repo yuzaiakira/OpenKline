@@ -562,6 +562,7 @@ browser dependencies.
 The private Studio now exposes real Watchlist scans, progress/results,
 diagnostics, table filtering/sorting, open-in-chart/favorite actions, watch
 lifecycle controls, deterministic demo stepping, and JSON presets. Browser
-Chromium and Next.js production evidence is local only. Phase 8.3 remains open
-until the dedicated benchmark, remaining browser/accessibility/device gates,
-and final acceptance report are completed.
+Chromium and Next.js production evidence is local only. The deterministic Node
+snapshot/Watch benchmark and acceptance matrix are now recorded, but Phase 8.3
+remains open until the remaining browser/accessibility/device gates and
+external-provider verification are completed.
