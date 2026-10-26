@@ -540,3 +540,28 @@ Strategy Tester inputs; it does not create Paper Trading orders or change the
 virtual account. Local Chromium and compact mobile workflows are verified,
 while non-Chromium, physical-device, accessibility, and dedicated optimization
 benchmark gates remain open.
+
+## Phase 8.3 market screener and multi-symbol analytics — in progress
+
+Phase 8.3 establishes a framework-independent Market Screener. Instrument
+identity is provider/venue/asset/currency/instrument-ID scoped; symbols alone
+are never combined. Versioned Universes can be explicit, Watchlist-derived,
+or deterministic demo data, and market-data bars carry provider-declared
+confirmed/developing finality.
+
+The implemented baseline includes bounded declarative rule validation and
+evaluation for price, volume, crossings, nested AND/OR/NOT, and registered
+Indicator outputs. Snapshot scans paginate historical data with cancellation,
+duplicate/revision handling, per-symbol error isolation, tri-state results,
+stable provenance, and no lookahead. Incremental Watch sessions reuse the
+existing Indicator Engine append path and recalculate only affected symbols
+for corrections. A separate structured-clone-safe Screener Worker protocol
+provides cancellable reference evaluation without provider credentials or
+browser dependencies.
+
+The private Studio now exposes real Watchlist scans, progress/results,
+diagnostics, table filtering/sorting, open-in-chart/favorite actions, watch
+lifecycle controls, deterministic demo stepping, and JSON presets. Browser
+Chromium and Next.js production evidence is local only. Phase 8.3 remains open
+until the dedicated benchmark, remaining browser/accessibility/device gates,
+and final acceptance report are completed.

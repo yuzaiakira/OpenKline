@@ -2,7 +2,9 @@
 
 ## Status
 
-Phase 8.3 is open. This report records only the verified 8.3.0 baseline; it does not claim rule evaluation, live watching, Worker orchestration, or Studio completion.
+Phase 8.3 is open. This report records verified milestones through 8.3.5;
+the final benchmark, acceptance matrix, and inherited browser/accessibility/
+physical-device gates remain open.
 
 ## 8.3.0 baseline
 
@@ -38,5 +40,27 @@ The baseline test is `tests/screener-baseline.test.ts` and is included in the lo
 - Implemented: dedicated versioned Screener Worker protocol/handler/runtime, serializable calculation boundary, synchronous reference evaluator, progress, stale generation filtering, cancellation, timeout, supersession, crash/disposal cleanup, and structured errors.
 - Verified: `tests/screener-worker.test.ts` covers protocol guards, handler evaluation, completion, cancellation, timeout, supersession, and disposal.
 - Not tested: Studio integration, external Worker hosts, browser Worker performance, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
+
+## 8.3.5 Studio integration
+
+- Implemented: the private Next.js Studio now exposes a Market Screener panel
+  backed by the public screener contracts. It supports Watchlist-derived
+  universes, timeframe and price/indicator rules, nested AND/OR selection,
+  bounded snapshot scans, Watch pause/resume/cancel controls, deterministic
+  demo stepping, progress/status, result search/filter/sort, source-bar and
+  diagnostic display, Open chart/Favorite actions, and versioned JSON preset
+  save/load/import/export.
+- Implemented: the deterministic demo provider accepts provider-scoped
+  Watchlist identities outside its generated demo universe and emits only
+  subscribed, confirmed bars for the local Watch workflow. This is a local
+  fixture; it is not a vendor adapter, alert service, trading signal, or
+  financial advice.
+- Verified: `npm test` passed with 151 tests; root typecheck passed; the Next
+  example typecheck passed; `npm run build` in
+  `examples/nextjs-app-router` passed on Next.js 16.4.3; and the real local
+  Chromium test `tests/react-browser/screener.spec.ts` passed (1 test).
+- Not tested: Firefox, WebKit, Mobile Chrome, Mobile Safari, physical mobile
+  devices, formal accessibility, visual-regression baselines, and external
+  market-data providers. These gates remain open.
 
 

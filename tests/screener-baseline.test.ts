@@ -51,3 +51,27 @@ test("deterministic provider paginates repeatable completed bars", async () => {
   assert.ok(first.bars[0]!.candle.time < first.bars[1]!.candle.time);
 });
 
+test("deterministic provider supports provider-scoped watchlist symbols and cleanup", async () => {
+  const provider = new DeterministicScreenerMarketDataProvider({ barsPerInstrument: 3, pageSize: 3 });
+  const instrument: ScreenerInstrument = {
+    symbol: "AAPL",
+    provider: "OPENKLINE-DEMO",
+    exchange: "NASDAQ",
+    assetClass: "EQUITY",
+    quoteCurrency: "USD",
+    instrumentId: "nasdaq-aapl",
+  };
+  const resolved = await provider.resolveInstrument(instrument);
+  assert.equal(resolved.symbol, "AAPL");
+  const events: number[] = [];
+  const unsubscribe = provider.subscribeBars({ instrument: resolved, timeframe: "1h", signal: new AbortController().signal }, (bar) => events.push(bar.candle.time));
+  provider.step();
+  assert.equal(events.length, 1);
+  unsubscribe();
+  provider.step();
+  assert.equal(events.length, 1);
+  const page = await provider.getHistory({ instrument: resolved, timeframe: "1h", limit: 3 });
+  assert.equal(page.bars.length, 3);
+  assert.equal(page.bars[0]?.source, "OPENKLINE-DEMO");
+});
+

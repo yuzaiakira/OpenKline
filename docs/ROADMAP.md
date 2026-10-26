@@ -160,6 +160,36 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
   Firefox/WebKit/Mobile Safari, accessibility, and physical-device gates remain
   open.
 
+Phase 8.3 market screener and multi-symbol analytics — **In progress; final
+acceptance open**.
+
+- [Implemented / Verified] Phase 8.3.0 adds the framework-independent
+  versioned instrument identity, bounded Universe validation, Watchlist
+  conversion, explicit-finality market-data boundary, and deterministic
+  paginated demo provider.
+- [Implemented / Verified] Phase 8.3.1 adds the declarative bounded rule AST,
+  nested tri-state logic, causal price/volume predicates, strict crossings,
+  previous-channel breakout, and Indicator Registry reuse without duplicate
+  formulas.
+- [Implemented / Verified] Phase 8.3.2 adds bounded concurrent snapshot
+  scans, confirmed-bar filtering, revision/correction handling, provider
+  error isolation, cancellation, progress, stable result identity, and
+  diagnostics.
+- [Implemented / Verified] Phase 8.3.3 adds incremental Watch sessions with
+  append-only indicator updates, affected-symbol correction recalculation,
+  duplicate/developing suppression, lifecycle cleanup, and provider error
+  reporting.
+- [Implemented / Verified] Phase 8.3.4 adds a separate versioned Screener
+  Worker protocol and runtime with serializable tasks, reference evaluation,
+  generation guards, timeout, cancellation, supersession, and disposal.
+- [Implemented / In Verification] Phase 8.3.5 adds the private Studio Market
+  Screener panel with Watchlist universe selection, rule controls, snapshot/
+  watch operations, table search/filter/sort, chart navigation, favorites,
+  versioned JSON presets, and deterministic demo stepping. Local Chromium and
+  Next.js production build pass; final benchmark and inherited compatibility,
+  accessibility, and physical-device gates remain open.
+- [Not Started] Phase 8.3.6 final verification and screener benchmark report.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

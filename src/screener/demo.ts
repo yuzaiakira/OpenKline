@@ -1,6 +1,6 @@
 import { validateCandle } from "../core/candle-store.js";
 import type { Candle } from "../types.js";
-import { canonicalInstrumentIdentity } from "./identity.js";
+import { canonicalInstrumentIdentity, normalizeScreenerInstrument } from "./identity.js";
 import { createScreenerUniverse } from "./universe.js";
 import type {
   ScreenerBar,
@@ -8,6 +8,7 @@ import type {
   ScreenerHistoryRequest,
   ScreenerInstrument,
   ScreenerMarketDataProvider,
+  ScreenerBarSubscriptionRequest,
   ScreenerUniverse,
 } from "./types.js";
 
@@ -39,6 +40,9 @@ export class DeterministicScreenerMarketDataProvider implements ScreenerMarketDa
   public readonly id = "OPENKLINE-DEMO";
   private readonly options: Required<DeterministicScreenerOptions>;
   private readonly universe: ScreenerUniverse;
+  private readonly subscriptions = new Map<string, Set<(bar: ScreenerBar) => void>>();
+  private readonly subscriptionInstruments = new Map<string, ScreenerInstrument>();
+  private readonly steps = new Map<string, number>();
 
   public constructor(options: DeterministicScreenerOptions = {}) {
     this.options = {
@@ -61,8 +65,10 @@ export class DeterministicScreenerMarketDataProvider implements ScreenerMarketDa
   public async resolveInstrument(instrument: ScreenerInstrument, signal?: AbortSignal): Promise<ScreenerInstrument> {
     throwIfAborted(signal);
     const resolved = this.universe.instruments.find((candidate) => canonicalInstrumentIdentity(candidate) === canonicalInstrumentIdentity(instrument));
-    if (resolved === undefined) throw new Error(`Unknown deterministic instrument: ${instrument.symbol}`);
-    return { ...resolved };
+    if (resolved !== undefined) return { ...resolved };
+    const normalized = normalizeScreenerInstrument(instrument);
+    if (normalized.provider === this.id) return normalized;
+    throw new Error(`Unknown deterministic instrument: ${instrument.symbol}`);
   }
 
   public async getHistory(request: ScreenerHistoryRequest): Promise<ScreenerHistoryPage> {
@@ -83,6 +89,33 @@ export class DeterministicScreenerMarketDataProvider implements ScreenerMarketDa
       nextCursor: nextOffset < filtered.length ? String(nextOffset) : null,
       complete: nextOffset >= filtered.length,
     };
+  }
+
+  public subscribeBars(request: ScreenerBarSubscriptionRequest, onBar: (bar: ScreenerBar) => void): () => void {
+    const identity = canonicalInstrumentIdentity(request.instrument);
+    const listeners = this.subscriptions.get(identity) ?? new Set<(bar: ScreenerBar) => void>();
+    listeners.add(onBar);
+    this.subscriptions.set(identity, listeners);
+    this.subscriptionInstruments.set(identity, { ...request.instrument });
+    return () => {
+      listeners.delete(onBar);
+      if (listeners.size === 0) { this.subscriptions.delete(identity); this.subscriptionInstruments.delete(identity); }
+    };
+  }
+
+  /** Advances every subscribed instrument by one deterministic confirmed bar. */
+  public step(): void {
+    for (const [identity, listeners] of this.subscriptions) {
+      const instrument = this.subscriptionInstruments.get(identity);
+      if (instrument === undefined) continue;
+      const step = (this.steps.get(identity) ?? 0) + 1;
+      this.steps.set(identity, step);
+      const index = this.options.barsPerInstrument + step - 1;
+      const bars = createBars(instrument, { ...this.options, barsPerInstrument: index + 1 });
+      const bar = bars[index];
+      if (bar === undefined) continue;
+      for (const listener of listeners) listener(cloneBar(bar));
+    }
   }
 }
 
