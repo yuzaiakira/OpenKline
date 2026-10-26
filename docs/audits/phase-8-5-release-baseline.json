@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.5.0",
+  "baselineCommit": "7a590abdc22ef09f31cdf86f0e85aff3bd24a981",
+  "branch": "work",
+  "upstream": "origin/work",
+  "productBoundary": "provider-independent, framework-independent JavaScript/TypeScript library",
+  "findings": [
+    {
+      "id": "repository-branch",
+      "status": "PASS",
+      "severity": "P0",
+      "evidence": "work tracking origin/work",
+      "action": "Run release checks only from work tracking origin/work."
+    },
+    {
+      "id": "core-runtime-dependencies",
+      "status": "PASS",
+      "severity": "P0",
+      "evidence": "{}",
+      "action": "Keep the core package provider and runtime dependency free."
+    },
+    {
+      "id": "react-boundary",
+      "status": "PASS",
+      "severity": "P1",
+      "evidence": "{\"dependencies\":{},\"peerDependencies\":{\"openkline\":\"^0.1.0\",\"react\":\">=18\"}}",
+      "action": null
+    },
+    {
+      "id": "package-exports",
+      "status": "PASS",
+      "severity": "P0",
+      "evidence": "{\"types\":\"./dist/src/index.d.ts\",\"import\":\"./dist/src/index.js\"}",
+      "action": null
+    },
+    {
+      "id": "worker-artifacts",
+      "status": "PASS",
+      "severity": "P1",
+      "evidence": "dist/src/klinescript/worker.js and dist/src/screener/worker.js",
+      "action": null
+    },
+    {
+      "id": "effective-license",
+      "status": "REQUIRES OWNER APPROVAL",
+      "severity": "P0",
+      "evidence": "Package license metadata remains absent while legal adoption is pending.",
+      "action": "Obtain owner and qualified counsel approval before changing or adopting license metadata."
+    },
+    {
+      "id": "github-actions",
+      "status": "PASS",
+      "severity": "P0",
+      "evidence": "No .github/workflows directory.",
+      "action": "Do not add GitHub Actions."
+    },
+    {
+      "id": "public-api-docs",
+      "status": "PASS",
+      "severity": "docs/api/chart.md and docs/api/datafeed.md",
+      "action": null
+    },
+    {
+      "id": "browser-artifacts",
+      "status": "BLOCKED",
+      "severity": "P0",
+      "evidence": "Managed Firefox/WebKit artifacts are not part of this environment.",
+      "action": "Run browser:verify on an authorized host with exact Playwright-managed artifacts."
+    },
+    {
+      "id": "accessibility-conformance",
+      "status": "NOT TESTED",
+      "severity": "P1",
+      "evidence": "No formal assistive-technology audit is claimed.",
+      "action": "Complete the documented manual and automated accessibility review."
+    },
+    {
+      "id": "visual-baselines",
+      "status": "NOT TESTED",
+      "severity": "P1",
+      "evidence": "No approved screenshot baseline set is currently claimed.",
+      "action": "Prepare and review deterministic visual baselines without auto-approval."
+    },
+    {
+      "id": "third-party-notices",
+      "status": "BLOCKED",
+      "severity": "P0",
+      "evidence": "The dependency inventory is generated, but legal notice contents remain under review.",
+      "action": "Review actual dependency license texts and required notices before publication."
+    }
+  ],
+  "notes": [
+    "This is an engineering release baseline, not a release authorization.",
+    "No package version, effective license, tag, release, or distribution channel was changed.",
+    "BLOCKED, NOT TESTED, and REQUIRES OWNER APPROVAL are intentionally distinct states."
+  ]
+}
