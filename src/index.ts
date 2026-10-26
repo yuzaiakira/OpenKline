@@ -344,6 +344,34 @@ export type {
   WatchlistSymbol,
 } from "./studio/index.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
+export {
+  canonicalInstrumentIdentity,
+  createDeterministicScreenerUniverse,
+  createScreenerUniverse,
+  createUniverseFromWatchlist,
+  DeterministicScreenerMarketDataProvider,
+  instrumentFromWatchlistSymbol,
+  normalizeScreenerInstrument,
+  sameScreenerInstrument,
+  validateScreenerUniverse,
+  DEFAULT_SCREENER_LIMITS,
+  OPENKLINE_SCREENER_VERSION,
+  ScreenerValidationError,
+} from "./screener/index.js";
+export type {
+  DeterministicScreenerOptions,
+  ScreenerBar,
+  ScreenerBarFinality,
+  ScreenerBarSubscriptionRequest,
+  ScreenerHistoryPage,
+  ScreenerHistoryRequest,
+  ScreenerInstrument,
+  ScreenerLimits,
+  ScreenerMarketDataProvider,
+  ScreenerUniverse,
+  ScreenerUniverseSource,
+  UniverseValidationOptions,
+} from "./screener/index.js";
 export { BacktestSession, BacktestWorkerError, BacktestWorkerSession, createBacktest, createBacktestWorker, defaultBacktestWorkerFactory } from "./backtesting/index.js";
 export {
   OPENKLINE_BACKTEST_WORKER_PROTOCOL_VERSION,
