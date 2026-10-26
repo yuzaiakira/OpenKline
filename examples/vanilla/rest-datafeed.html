@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Generic REST Datafeed</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+      #chart { height: 520px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Generic REST Datafeed</h1>
+      <p>The adapter uses an injected local fetcher. Replace it with your application API.</p>
+      <div id="chart"></div>
+    </main>
+    <script type="module">
+      import { createChart, RestDatafeed } from "../../dist/src/index.js";
+
+      const start = Date.UTC(2026, 0, 1);
+      const pages = [
+        { bars: [{ time: start, open: 10, high: 12, low: 9, close: 11, volume: 100 }, { time: start + 3_600_000, open: 11, high: 13, low: 10, close: 12, volume: 110 }], next: "page-2" },
+        { bars: [{ time: start + 7_200_000, open: 12, high: 14, low: 11, close: 13, volume: 120 }], next: null },
+      ];
+      let pageIndex = 0;
+      const requests = [];
+      const datafeed = new RestDatafeed({
+        baseUrl: "https://exchange.example.invalid",
+        symbols: { "LOCAL-USD": { symbol: "LOCAL-USD", exchange: "LOCAL", currency: "USD", timezone: "UTC", pricePrecision: 2 } },
+        fetcher: async (input) => {
+          requests.push(input);
+          return new Response(JSON.stringify(pages[pageIndex++] ?? { bars: [], next: null }), { status: 200 });
+        },
+      });
+      const chart = createChart(document.querySelector("#chart"), { theme: "dark", autoSize: true });
+      const ready = chart.setDatafeed(datafeed, { symbol: "LOCAL-USD", timeframe: "1h", from: start, to: start + 10_800_000 });
+      globalThis.__openklineRestExample = { chart, datafeed, requests, ready };
+      await ready;
+      chart.addIndicator("EMA", { period: 2, pane: "main" });
+    </script>
+  </body>
+</html>

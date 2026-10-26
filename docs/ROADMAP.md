@@ -206,8 +206,10 @@ Phase 8.4 universal data integration and library architecture hardening —
 - [Implemented / In Verification] 8.4.2 hardens the provider-neutral Datafeed
   lifecycle by resolving symbols before history, preserving cancellation and
   stale-request guards, and adding a custom-exchange consumer scenario.
-- [Not Started] 8.4.3 standalone offline, custom-exchange, generic adapter,
-  and optional provider examples.
+- [Implemented / In Verification] 8.4.3 adds standalone offline JSON,
+  custom-exchange, generic REST, generic WebSocket, and opt-in Binance example
+  pages. Fixture tests verify normalization and cleanup without external
+  connectivity; real Binance connectivity remains separately unverified.
 - [Not Started] 8.4.4 package portability verification.
 - [Not Started] 8.4.5 Studio/reference-application separation audit.
 - [Not Started] 8.4.6 full verification and final report.

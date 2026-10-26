@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Optional Binance Example</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+      #chart { height: 520px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+      button { padding: .55rem .8rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Optional Binance public-data example</h1>
+      <p>This page is the only example that contacts Binance, and only after the explicit button is clicked. It requires public internet access and has no credentials.</p>
+      <button id="connect" type="button">Connect public BTCUSDT 1m data</button>
+      <p id="status" aria-live="polite">Disconnected</p>
+      <div id="chart"></div>
+    </main>
+    <script type="module">
+      import { createChart } from "../../dist/src/index.js";
+      import { createBinanceDatafeed } from "./binance-datafeed.js";
+
+      const chart = createChart(document.querySelector("#chart"), { theme: "dark", autoSize: true, pricePrecision: 8 });
+      const status = document.querySelector("#status");
+      document.querySelector("#connect").addEventListener("click", async () => {
+        status.textContent = "Connecting to Binance public endpoints…";
+        try {
+          const now = Date.now();
+          await chart.setDatafeed(createBinanceDatafeed(), { symbol: "BTCUSDT", timeframe: "1m", from: now - 60 * 60 * 1000, to: now });
+          chart.addIndicator("SMA", { period: 20, pane: "main" });
+          status.textContent = "Connected to the optional public example.";
+        } catch (error) {
+          status.textContent = `Binance example unavailable: ${error instanceof Error ? error.message : String(error)}`;
+        }
+      });
+      globalThis.__openklineBinanceExample = { chart };
+      if (new URLSearchParams(location.search).has("fixture")) {
+        class FixtureSocket {
+          constructor() { this.readyState = 0; this.onopen = null; this.onmessage = null; this.onerror = null; this.onclose = null; this.sent = []; }
+          send(data) { this.sent.push(data); }
+          close() { this.onclose?.(); }
+          open() { this.readyState = 1; this.onopen?.(); }
+          message(data) { this.onmessage?.({ data }); }
+        }
+        let socket;
+        const fixtureBars = [[0, "100", "102", "99", "101", "40"], [1000, "101", "103", "100", "102", "44"]];
+        const datafeed = createBinanceDatafeed({
+          symbol: "BTCUSDT",
+          interval: "1m",
+          restBaseUrl: "https://binance.example.invalid",
+          wsBaseUrl: "wss://binance.example.invalid/ws",
+          fetcher: async () => new Response(JSON.stringify(fixtureBars), { status: 200 }),
+          createSocket: () => { socket = new FixtureSocket(); return socket; },
+        });
+        globalThis.__openklineBinanceFixture = { datafeed, get socket() { return socket; }, bars: fixtureBars };
+      }
+    </script>
+  </body>
+</html>

@@ -73,3 +73,11 @@ stream messages to `{ symbol, timeframe, candle }` by default. Supply
 
 Inject `createSocket` in tests. Production applications should supply a socket
 implementation appropriate to their browser or runtime.
+
+## Consumer examples
+
+The repository includes standalone consumers for [direct local data](../guides/direct-data-input.md),
+[offline JSON](../guides/offline-usage.md), [custom exchanges](../guides/integrating-with-your-exchange.md),
+and generic REST/WebSocket transports. The optional
+[Binance example](../guides/optional-binance-example.md) is outside the core
+package and is never initialized by importing `openkline`.

@@ -198,3 +198,17 @@ gates remain open.
 `npm run benchmark:screener` is a deterministic Node reference-provider
 benchmark for historical snapshot and incremental Watch work. It is not a
 browser performance or production-capacity claim.
+
+## Phase 8.4 data ownership tests
+
+`tests/browser/data-ownership.spec.ts` loads the direct-data example while
+aborting non-local requests and verifies local history, correction/update,
+indicators, drawings, price configuration, and chart destruction. The custom
+exchange scenario in `tests/browser/custom-datafeed.spec.ts` verifies symbol
+resolution, history, corrections, append events, stop/disposal, and no
+external network.
+
+`tests/browser/provider-examples.spec.ts` verifies the offline JSON, generic
+REST, generic WebSocket, and optional Binance adapter with injected fixtures.
+It does not claim live Binance connectivity. The examples are intentionally
+outside the core source tree and can be removed or replaced by a consumer.
