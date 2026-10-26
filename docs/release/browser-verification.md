@@ -96,9 +96,13 @@ The current cloud machine has no official managed browser executables. Its
 report is intentionally blocked; use it only as reproducible diagnostics, not
 as a passing compatibility claim.
 
-On the Phase 8.5 verification run, the official pinned container
-`mcr.microsoft.com/playwright:v1.64.1-noble` was attempted once. The registry
-returned `Forbidden` while downloading the image configuration, including on an
-approved-network retry. No untrusted image or browser binary was substituted.
-The exact result and current matrix are recorded in
+On a trusted Manjaro host, the official pinned container
+`mcr.microsoft.com/playwright:v1.64.1-noble`
+(`sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea`)
+ran the full portable matrix for commit
+`4d689c86f619f32e4d91f90c4e3b03576ea38d6c` with all five projects passing
+(65/65). Mobile Safari zoom coverage uses the public `chart.zoom()` API path
+because Playwright rejects `mouse.wheel` on mobile WebKit; desktop wheel zoom
+remains native. That result is automated emulation only—not native iOS or
+physical-device verification. See
 [`browser-compatibility-matrix.md`](./browser-compatibility-matrix.md).
