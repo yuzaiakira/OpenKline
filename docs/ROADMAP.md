@@ -354,6 +354,28 @@ reliability — **Engineering implemented; release gates open**.
   release authorization remain unresolved. The historical 70/70 pack is not
   current-revision evidence.
 
+Phase 8.8.2 browser evidence integration and Studio compatibility —
+**Implemented; Studio cross-browser gates open**.
+
+- [Implemented / Verified] Integrated the trusted Phase 8.8.1 standalone
+  evidence pack at `f77e124`, preserving its exact source commit
+  `2aabccf` and 70/70 five-project result. The multi-pack validator retains
+  Phase 8.6.1 validation and rejects missing, duplicate, malformed, or
+  provenance-inconsistent records.
+- [Implemented / Verified locally] Added an independent optional Studio
+  managed-browser workflow with deterministic Next readiness, five projects,
+  visual tests excluded, timestamped evidence, and PASS/BLOCKED/FAIL status.
+- [Fixed / Verified locally] Added the Next Studio device viewport contract
+  and regression assertion after reproducing responsive hit-testing failures
+  in the cloud system-browser lane. Standalone and local Chromium Studio
+  tests remain separate.
+- [Gate Open] The trusted supplemental Studio result remains 75 expected with
+  30 failures (WebKit 3, Mobile Chrome 16, Mobile Safari 11). The compact
+  pack lacks individual failure details; a trusted machine must rerun the
+  final source with the new Studio workflow before Studio support claims are
+  changed. Legal, accessibility, physical-device, visual, and owner release
+  gates remain open.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

@@ -13,6 +13,28 @@ Local Chromium diagnostic evidence (system `/usr/bin/chromium`) remains a
 separate provenance lane and is **not** a substitute for the portable
 managed-browser gate below.
 
+## Phase 8.8.1 integrated standalone evidence
+
+The compact evidence pack from `qa/phase-8-8-1-browser-evidence` was reviewed
+and integrated at commit `f77e124f8277022e36247fd5ab2326fdf192c5ea`. It tests
+source commit `2aabccf184e3c791c18ac3daa4bbeef89d89ed63` in the official
+Playwright 1.64.1 container. The cloud validator keeps this provenance
+separate from current source verification and does not recompute the trusted
+archive SHA-256.
+
+| Project | Result | Browser distribution |
+| --- | --- | --- |
+| Chromium | **14/14** | Playwright-managed |
+| Firefox | **14/14** | Playwright-managed |
+| WebKit | **14/14** | Playwright-managed |
+| Mobile Chrome | **14/14** | Playwright-managed Pixel 7 emulation |
+| Mobile Safari | **14/14** | Playwright-managed iPhone 13 / WebKit emulation |
+| **Total** | **70 expected, 0 unexpected, 0 skipped, 0 flaky** | |
+
+Archive SHA-256 stated by the trusted host:
+`ade5be7fb4fb598d2db79b59c489673244c73315f6e060f059f2880687634bbe`.
+The archive remains on that host and was not transferred to the cloud.
+
 | Project | Status | Evidence |
 | --- | --- | --- |
 | Chromium desktop | **PASS — TRUSTED MACHINE; RECORDS VALIDATED** | 14/14 Playwright-managed tests for source commit `19c8698`; compact records validated from GitHub. |
@@ -46,12 +68,43 @@ original archive remains on the trusted machine.
 
 ## Phase 8.8 current-revision boundary
 
-Phase 8.8 changes are prepared on `work` after the trusted source commit above.
-Cloud verification uses system Chromium only; the trusted 70/70 records remain
-historical provenance and were not rerun or relabeled for Phase 8.8. The next
-trusted-machine handoff must run the final Phase 8.8 source revision in all
-five Playwright-managed projects before any current-revision compatibility
-statement is made.
+Phase 8.8.2 changes are prepared on `work` after the Phase 8.8.1 evidence run.
+The latest source commit is `81ce4c351ab13419ed21852f549063ea9cdb6bdc`; the
+trusted 70/70 records target the earlier `2aabccf…` source and do not certify
+the viewport fix or the Studio workflow. The next trusted-machine handoff
+must run the final source revision in both the standalone and separate Studio
+managed-browser workflows before any current-revision compatibility statement
+is made.
+
+## Phase 8.8.2 Studio compatibility boundary
+
+Studio is a private Next.js reference consumer, not part of the standalone
+library acceptance matrix. The trusted supplemental probe (21 functional
+tests per project, visual captures excluded) remains unresolved:
+
+| Project | Passed | Failed | Status |
+| --- | ---: | ---: | --- |
+| Chromium | 21 | 0 | Trusted supplemental result |
+| Firefox | 21 | 0 | Trusted supplemental result |
+| WebKit | 18 | 3 | **Open** |
+| Mobile Chrome | 5 | 16 | **Open** |
+| Mobile Safari | 10 | 11 | **Open** |
+
+The compact GitHub pack contains aggregate totals only, not individual failure
+names, errors, or traces. No cause is inferred for the WebKit or mobile
+failures from those totals. Cloud system Chromium ran 42 diagnostic cases
+(21 desktop + 21 mobile emulation) before the viewport fix: desktop passed
+21/21 and mobile passed 5/21. A focused post-fix diagnostic confirmed the
+viewport metadata is rendered, but this system browser still reported a
+870px layout viewport for a 390/412px emulated page; it is insufficient to
+certify managed mobile behavior.
+
+The new optional workflow is `npm run studio:browser:verify` with
+`playwright.studio.compat.config.ts`. It excludes only the two visual-review
+capture tests, uses five Playwright-managed projects, writes timestamped
+artifacts under `artifacts/studio-browser-verification/`, and classifies
+results as `PASS`, `BLOCKED`, or `FAIL`. It is independent from
+`playwright.portable.config.ts` and never falls back to system browsers.
 
 ## Historical Phase 8.5 evidence
 

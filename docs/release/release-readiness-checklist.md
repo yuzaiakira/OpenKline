@@ -26,6 +26,9 @@ approval blockers.
 - Playwright-managed cross-browser verification.
 - compact trusted-machine browser evidence consistency:
   `npm run evidence:browser:check`.
+- optional Studio-only managed-browser verification:
+  `npm run studio:browser:verify`; its matrix is separate from standalone
+  library acceptance and reports `PASS`, `BLOCKED`, or `FAIL`.
 - rendered Studio contrast audit and reduced-motion smoke coverage;
 
 ## Manual/approval gates
@@ -46,6 +49,12 @@ that does not permit the cloud to claim it executed Firefox, WebKit, or mobile
 projects. The original trusted-machine archive SHA-256 values are recorded
 provenance and are not recomputed unless the archives are transferred through
 an authorized channel.
+
+Phase 8.8.2 additionally distinguishes the standalone library matrix from
+the private Studio matrix. Aggregate Studio failures from a trusted
+supplemental probe remain open until named failures and traces are available
+or a reproducible fix is independently verified. System Chromium emulation
+does not certify Playwright WebKit or mobile Safari.
 
 The command never publishes npm packages, creates tags or releases, changes the
 effective license, uses GitHub Actions, or selects a public version/channel.

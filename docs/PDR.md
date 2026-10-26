@@ -749,3 +749,26 @@ source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa` and cannot certify
 Phase 8.8. Current-revision managed Firefox/WebKit/mobile execution, manual
 screen-reader and physical-device review, formal conformance, visual approval,
 legal approval, and release authorization remain open.
+
+## Phase 8.8.2 browser evidence integration and Studio compatibility — engineering complete; Studio gates open
+
+The trusted Phase 8.8.1 compact evidence pack is integrated under
+`docs/evidence/browser/phase-8-8-1/` and validated alongside the historical
+Phase 8.6.1 pack. The validator now checks each versioned pack independently:
+source SHA, five managed projects, all individual records, durations,
+duplicates, totals reconciliation, container provenance, archive checksum
+formats, and sanitization. It does not recompute trusted-host archives.
+
+The supplemental Studio probe remains a separate, unresolved matrix: 21/21
+Chromium and Firefox, 18/21 WebKit, 5/21 Mobile Chrome, and 10/21 Mobile
+Safari. Its aggregate evidence does not identify individual failures, so no
+unverified cause is claimed. Investigation reproduced a responsive-layout
+environment limitation in cloud system Chromium and fixed the Studio
+viewport metadata contract. A separate optional Studio workflow now uses only
+Playwright-managed projects and emits explicit PASS/BLOCKED/FAIL artifacts;
+it does not alter standalone library acceptance.
+
+The latest cloud Chromium suite passes 23/23 and Next production build passes.
+Current-revision trusted standalone and Studio five-browser runs, formal
+accessibility, physical devices, legal review, and owner release approval
+remain open.
