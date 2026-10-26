@@ -191,8 +191,9 @@ performed.
 
 The evidence integration commit `13091be` and QA tooling commit `84025fc` were
 created with `Akira Yuzai <yuzai.akira@gmail.com>` as author and committer and
-pushed to `origin/work`. The documentation commit containing this report will
-be recorded in the final handoff. No history was rewritten or force-pushed.
+pushed to `origin/work`. The documentation commit containing this report is
+`85910925af97117d21bdbd9609eb3829c1cbc387`; a final metadata correction is
+listed in the delivery handoff. No history was rewritten or force-pushed.
 
 **Phase 8.6.2 engineering work is complete within the executable scope, but
 OpenKline remains NOT RELEASE READY.** Trusted browser evidence is now
