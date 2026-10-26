@@ -118,6 +118,25 @@ measured Studio samples**, while the overall formal accessibility gate remains
 **NOT TESTED** because manual keyboard, screen-reader, physical-device, and
 owner conformance decisions are still outstanding.
 
+## Phase 8.8.2 Studio viewport and compatibility investigation
+
+The trusted supplemental aggregate was not promoted to a Studio compatibility
+claim: it recorded 75 expected functional cases with 30 failures (WebKit 3,
+Mobile Chrome 16, Mobile Safari 11), but the compact evidence contains no
+failure names, errors, or traces. The available cloud diagnostic reproduced a
+different but concrete environment condition: Playwright reported a 390/412px
+device viewport while system Chromium exposed an 870px layout viewport. This
+made responsive CSS breakpoints and pointer hit-testing unsuitable for
+classifying the managed mobile failures.
+
+The private Next.js Studio now declares `width=device-width` and
+`initial-scale=1` through the App Router viewport contract. The existing
+touch-sized Studio test asserts the metadata, and the local Chromium suite
+passes 23/23. The focused cloud diagnostic confirmed the metadata is rendered,
+but the system browser still exposes the non-device layout viewport; no full
+post-fix mobile compatibility claim is made. The formal accessibility gate,
+physical-device review, and trusted managed-browser Studio rerun remain open.
+
 The trusted 70/70 five-project evidence pack predates Phase 8.7 and targets
 source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`; it must not be used
 to claim that the Phase 8.7 fix was executed in Firefox, WebKit, or mobile
