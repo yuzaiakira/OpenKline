@@ -26,6 +26,7 @@ approval blockers.
 - Playwright-managed cross-browser verification.
 - compact trusted-machine browser evidence consistency:
   `npm run evidence:browser:check`.
+- rendered Studio contrast audit and reduced-motion smoke coverage;
 
 ## Manual/approval gates
 

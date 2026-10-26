@@ -723,3 +723,29 @@ and is not evidence for the current Phase 8.7 revision. Screen-reader review,
 formal WCAG conformance, measured contrast, physical-device testing, managed
 cross-browser execution for the current revision, legal approval, and owner
 release authorization remain open.
+
+## Phase 8.8 accessibility verification, contrast audit, and browser reliability — engineering complete; release gates open
+
+Phase 8.8 measures rendered Studio contrast and fixes only reproducible
+presentation issues. Placeholder text now uses the existing readable muted
+token, and Studio control borders use a measured 3.56:1 token; public chart
+financial colors and API contracts remain unchanged. Automated Chromium
+coverage records the measured text, placeholder, disabled-state, border, and
+focus ratios. Public Canvas theme measurements are recorded as text/graphic or
+decorative-chart observations, not as an owner-approved WCAG claim.
+
+Reduced-motion coverage observes no decorative Studio animations or transitions
+under `prefers-reduced-motion: reduce`; required market updates, replay, and
+Worker behavior remain enabled. Keyboard coverage preserves the Phase 8.7
+dialog trap and restoration. The previous diagnostic timeout was not
+reproducible: two sequential current-revision local diagnostics each passed
+28/28, so no root cause is invented and no blanket timeout was added.
+
+Visual capture readiness now waits for actual Canvas repaint/data signals and
+two frames. Two consecutive runs produced identical dark, light, and mobile
+candidate hashes; no baseline is approved. Current local engineering and
+package checks pass, but the historical trusted 70/70 evidence still targets
+source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa` and cannot certify
+Phase 8.8. Current-revision managed Firefox/WebKit/mobile execution, manual
+screen-reader and physical-device review, formal conformance, visual approval,
+legal approval, and release authorization remain open.
