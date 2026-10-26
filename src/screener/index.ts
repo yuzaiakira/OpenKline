@@ -9,6 +9,9 @@ export { createDeterministicScreenerUniverse, DeterministicScreenerMarketDataPro
 export { evaluateScreenerRuleSet, ScreenerRuleValidationError, screenerIndicatorReferenceKey, validateScreenerRuleSet } from "./rules.js";
 export { loadScreenerHistory, runScreenerSnapshot, ScreenerSnapshotCancellationError, ScreenerSnapshotValidationError } from "./snapshot.js";
 export { ScreenerWatchLifecycleError, ScreenerWatchSession, ScreenerWatchUnavailableError } from "./watch.js";
+export { createScreenerWorker, ScreenerWorkerError, ScreenerWorkerSession } from "./worker-runtime.js";
+export { createScreenerWorkerHandler } from "./worker-handler.js";
+export { isScreenerWorkerRequest, isScreenerWorkerResponse, OPENKLINE_SCREENER_WORKER_PROTOCOL_VERSION } from "./worker-protocol.js";
 export {
   DEFAULT_SCREENER_LIMITS,
   OPENKLINE_SCREENER_VERSION,
@@ -66,4 +69,28 @@ export type {
   ScreenerSymbolSnapshot,
 } from "./snapshot.js";
 export type { ScreenerWatchEvent, ScreenerWatchOptions, ScreenerWatchStatus, ScreenerWatchUpdate } from "./watch.js";
+export type {
+  ScreenerWorkerApi,
+  ScreenerWorkerFactory,
+  ScreenerWorkerLike,
+  ScreenerWorkerRuntimeOptions,
+  ScreenerWorkerStatus,
+  ScreenerWorkerStatusState,
+} from "./worker-runtime.js";
+export type {
+  ScreenerWorkerAckResponse,
+  ScreenerWorkerCancelRequest,
+  ScreenerWorkerCompleteResponse,
+  ScreenerWorkerDisposeRequest,
+  ScreenerWorkerErrorCode,
+  ScreenerWorkerErrorResponse,
+  ScreenerWorkerProgress,
+  ScreenerWorkerProgressResponse,
+  ScreenerWorkerRequest,
+  ScreenerWorkerResponse,
+  ScreenerWorkerRunRequest,
+  ScreenerWorkerResult,
+  ScreenerWorkerRunOptions,
+  ScreenerWorkerTask,
+} from "./worker-protocol.js";
 

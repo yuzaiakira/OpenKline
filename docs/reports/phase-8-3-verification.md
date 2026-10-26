@@ -33,4 +33,10 @@ The baseline test is `tests/screener-baseline.test.ts` and is included in the lo
 - Verified: `tests/screener-watch.test.ts` covers initial snapshot, append, duplicate, correction, pause/resume, disposal, invalid event handling, and absence of fabricated events.
 - Not tested: dedicated Worker, Studio panel, external realtime providers, reconnection policy, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
 
+## 8.3.4 Screener Worker hardening
+
+- Implemented: dedicated versioned Screener Worker protocol/handler/runtime, serializable calculation boundary, synchronous reference evaluator, progress, stale generation filtering, cancellation, timeout, supersession, crash/disposal cleanup, and structured errors.
+- Verified: `tests/screener-worker.test.ts` covers protocol guards, handler evaluation, completion, cancellation, timeout, supersession, and disposal.
+- Not tested: Studio integration, external Worker hosts, browser Worker performance, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
+
 

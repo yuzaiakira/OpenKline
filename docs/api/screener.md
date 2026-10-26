@@ -22,4 +22,6 @@ Use `ScreenerInstrument` and `ScreenerUniverse` to identify instruments without 
 
 `ScreenerWatchSession` adds lifecycle methods for `start`, `pause`, `resume`, `refresh`, rule/universe changes, `cancel`, and `dispose`. A confirmed append calls the existing indicator instance's incremental `update`; a duplicate is ignored; a correction or out-of-order event recalculates only that instrument. Developing events are ignored until a provider emits a confirmed revision. Watch mode requires `subscribeBars`; a provider without realtime support remains suitable for snapshots but raises `ScreenerWatchUnavailableError` for the session.
 
+`createScreenerWorker` accepts only serializable `ScreenerWorkerRunOptions`. Its protocol is versioned and exposes bounded progress, cancellation, timeout, supersession, and disposal errors. Use the synchronous rule evaluator as the reference when testing a Worker adapter. The Worker is optional for small synchronous scans and is not the Backtest Worker.
+
 
