@@ -22,6 +22,22 @@ manual keyboard audit across all workflows, screen-reader verification,
 reduced-motion review, color-contrast measurement, or physical-device touch
 target review. No `axe` dependency was added merely to imply conformance.
 
+## Phase 8.6.1 browser evidence
+
+The compact trusted-machine evidence pack records the accessibility test
+scenario on all five Playwright-managed projects for source commit
+`19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`: Chromium, Firefox, WebKit,
+Mobile Chrome emulation, and Mobile Safari emulation each contain 14/14
+passing records. The cloud validator confirms the records are complete,
+unique, and internally consistent; it did not execute those browsers or
+recompute the original archive.
+
+This is stronger automated browser evidence for the chart empty-state and
+interaction assertions, but it remains an automated behavior result. It does
+not establish a formal WCAG target, screen-reader output, contrast ratio,
+reduced-motion conformance, native pinch behavior, or physical-device support.
+Those decisions and manual checks remain explicit owner gates.
+
 ## Review checklist
 
 | Area | Status | Evidence / next action |

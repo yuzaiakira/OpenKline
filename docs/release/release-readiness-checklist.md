@@ -24,6 +24,8 @@ approval blockers.
 - license inventory validation and root/example npm audits;
 - Next.js production build;
 - Playwright-managed cross-browser verification.
+- compact trusted-machine browser evidence consistency:
+  `npm run evidence:browser:check`.
 
 ## Manual/approval gates
 
@@ -34,6 +36,15 @@ approval blockers.
 - approved visual regression baselines;
 - physical Android/iOS evidence;
 - owner-approved package version, release channel, and publication action.
+
+Phase 8.6.2 distinguishes the compact GitHub evidence gate from local browser
+availability. The evidence consistency gate may be `PASS` when the exact
+source SHA, 70 records, provenance, and sanitization validate. The local
+managed-browser runner may remain `BLOCKED` in this restricted environment;
+that does not permit the cloud to claim it executed Firefox, WebKit, or mobile
+projects. The original trusted-machine archive SHA-256 values are recorded
+provenance and are not recomputed unless the archives are transferred through
+an authorized channel.
 
 The command never publishes npm packages, creates tags or releases, changes the
 effective license, uses GitHub Actions, or selects a public version/channel.
