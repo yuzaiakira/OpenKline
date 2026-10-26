@@ -33,3 +33,17 @@ and one lifecycle correctness fix, not a rewrite of the chart engine.
 4. Verify package and framework boundaries with independent consumers.
 5. Record local benchmark and unverified browser/device gates in the Phase 8.4
    verification report.
+
+## 8.4.4 portability evidence
+
+The local `npm run package:portability` gate passed on Node.js v24.19.0 and
+npm 11.9.0. It found zero runtime dependencies in the core and React packages,
+`sideEffects: false` in both manifests, usable public ESM/type exports, and
+the KlineScript/Screener worker entry artifacts. The core build contained no
+Binance, Alpaca, OANDA, or hosted-provider strings.
+
+The independent consumer smoke test passed for Vanilla ESM and TypeScript
+React. `npm run package:check` and `npm run package:smoke` passed, the Next.js
+App Router TypeScript check passed, and the Next.js 16.4.3 production build
+passed. These checks do not replace a bundler-specific tree-shaking analysis,
+Firefox/WebKit verification, or a physical-device test.

@@ -588,6 +588,11 @@ WebSocket, and optional Binance examples under `examples/vanilla`. Only the
 explicit Binance button opts into external public endpoints; the root package
 and offline examples remain network-independent.
 
+Phase 8.4.4 verifies the ESM/type package boundary, optional React package,
+Worker artifacts, zero runtime dependencies, and independent Vanilla,
+TypeScript/React, and Next.js consumption. It does not claim every bundler,
+browser engine, accessibility mode, or physical device.
+
 The 8.4.1 direct-data scenario verifies that a local consumer can render,
 correct, analyze, and destroy a chart without creating a Datafeed or making a
 network request. This is the primary offline integration path.

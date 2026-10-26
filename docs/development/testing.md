@@ -199,6 +199,11 @@ gates remain open.
 benchmark for historical snapshot and incremental Watch work. It is not a
 browser performance or production-capacity claim.
 
+`npm run package:portability` checks the root and React package exports,
+declarations, worker artifacts, tree-shaking metadata, runtime dependency
+boundary, and provider-neutral core build text. It is not a replacement for a
+bundler-specific tree-shaking analysis or cross-browser verification.
+
 ## Phase 8.4 data ownership tests
 
 `tests/browser/data-ownership.spec.ts` loads the direct-data example while

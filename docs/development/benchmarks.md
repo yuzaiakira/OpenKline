@@ -282,3 +282,8 @@ measures the existing incremental indicator/session lifecycle. Browser and
 mobile compatibility gates remain separate from this Node benchmark. Record
 the exact JSON output, Node version, platform, and date in the Phase 8.3
 verification report; do not turn local values into universal budgets.
+
+Package portability is verified separately by `npm run package:portability`.
+It reports selected artifact sizes and validates package boundaries; it does
+not claim a universal bundle-size budget or prove every downstream bundler's
+tree-shaking behavior.

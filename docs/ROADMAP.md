@@ -210,7 +210,10 @@ Phase 8.4 universal data integration and library architecture hardening —
   custom-exchange, generic REST, generic WebSocket, and opt-in Binance example
   pages. Fixture tests verify normalization and cleanup without external
   connectivity; real Binance connectivity remains separately unverified.
-- [Not Started] 8.4.4 package portability verification.
+- [Implemented / In Verification] 8.4.4 adds a local package portability gate
+  for ESM/type exports, worker artifacts, tree-shaking metadata, runtime
+  dependency boundaries, and provider-neutral core output. Independent
+  consumer and Next.js checks remain part of final verification.
 - [Not Started] 8.4.5 Studio/reference-application separation audit.
 - [Not Started] 8.4.6 full verification and final report.
 
