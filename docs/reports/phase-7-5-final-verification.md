@@ -129,7 +129,7 @@ runtime modules are included in the tarball.
 
 ## Git and publication verification
 
-This increment is intended to be committed as a Conventional Commit with
+This increment was committed as the following Conventional Commit with
 author and committer:
 
 `Akira Yuzai <yuzai.akira@gmail.com>`
@@ -141,9 +141,11 @@ The preceding Phase 7.5 commits already pushed to `origin/work` are:
 - `ae47a0d1b4c305bdaa99531a6723997ed6b34c39`
   (`feat(drawings): add professional analysis tools`)
 
-The final commit and remote synchronization will be recorded here after the
-documentation commit is created. No GitHub Actions, npm publication, release
-tag, or GitHub release was created.
+`a2db82f` — `feat(studio): harden phase 7.5 analysis workflow`
+
+The commit was pushed immediately from `ae47a0d` to `origin/work`, and the
+remote reported the update as `ae47a0d..a2db82f`. No GitHub Actions, npm
+publication, release tag, or GitHub release was created.
 
 ## Phase 7.5 readiness decision
 
