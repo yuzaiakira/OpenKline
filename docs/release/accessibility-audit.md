@@ -144,3 +144,18 @@ projects. Current Phase 8.7 browser verification is local system Chromium.
 
 Any formal support statement requires owner-approved criteria and review of
 manual evidence; automated checks must not silently close this gate.
+
+## Phase 8.8.4 responsive interaction follow-up
+
+The Phase 8.8.3 Studio ledger showed that a narrow-layout test expected the
+inactive chart panel to remain visible while the responsive design intentionally
+hides inactive panels. The test now asserts the intended hidden state and
+switches to the panel before checking its local summary. This is a test/design
+alignment correction, not a claim that mobile accessibility is complete.
+
+The remediation also moves mobile Studio summary blocks into normal flow,
+checks pointer hit targets before interaction, and normalizes chart Canvas
+coordinates for touch and CSS scaling. Local system-Chromium Studio coverage
+passes 24/24. Managed WebKit/mobile execution, manual keyboard and
+screen-reader review, physical touch-target review, and any owner-approved
+conformance decision remain open.

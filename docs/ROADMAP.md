@@ -376,6 +376,28 @@ Phase 8.8.2 browser evidence integration and Studio compatibility —
   changed. Legal, accessibility, physical-device, visual, and owner release
   gates remain open.
 
+Phase 8.8.4 Studio cross-browser defect remediation — **Engineering implemented;
+Studio compatibility gates remain open**.
+
+- [Implemented / Verified locally] The 30 Phase 8.8.3 Studio failures are
+  preserved in a structured ledger with exact classifications and an explicit
+  distinction between observed facts, insufficient diagnostics, and confirmed
+  responsive defects. The evidence validator independently validates the
+  8.8.3 pack and preserves its 75/30 behavior result.
+- [Fixed / Verified locally] Mobile Studio object-tree, watchlist, chart, and
+  sidebar blocks use responsive normal flow so controls are not covered by
+  desktop overlays. A real hit-test regression covers Add and Run Backtest;
+  no forced click is used.
+- [Fixed / Verified locally] Canvas pointer/touch coordinates are normalized
+  for CSS scaling and touch contexts, with chart-owned touch gestures enabled.
+  Unchanged resize notifications no longer trigger redundant chart work.
+- [Verified locally] Typecheck, 160 Node tests, 14 standalone Chromium tests,
+  24 Studio Chromium tests, and all versioned evidence checks pass.
+- [Gate Open] The trusted 8.8.3 records target the pre-remediation source
+  `8a62e324`. Managed current-revision Firefox, WebKit, mobile emulation,
+  async-state diagnostics, physical devices, formal accessibility, visual
+  approval, legal review, and owner release authorization remain unresolved.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

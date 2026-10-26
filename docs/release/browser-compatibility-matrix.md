@@ -106,6 +106,32 @@ artifacts under `artifacts/studio-browser-verification/`, and classifies
 results as `PASS`, `BLOCKED`, or `FAIL`. It is independent from
 `playwright.portable.config.ts` and never falls back to system browsers.
 
+## Phase 8.8.4 remediation boundary
+
+The Phase 8.8.3 Studio probe is preserved as 105 records: 75 expected/passed
+and 30 unexpected. The complete failure ledger is in
+[`docs/reports/phase-8-8-4-verification.md`](../reports/phase-8-8-4-verification.md)
+and the source records remain under
+[`docs/evidence/browser/phase-8-8-3/`](../evidence/browser/phase-8-8-3/).
+
+Phase 8.8.4 locally fixes the two observed mobile pointer-interception paths,
+normalizes Canvas pointer/touch coordinates, and guards unchanged resize
+notifications. The responsive Studio suite passes 24/24 in local system
+Chromium. This is engineering evidence only: the 8.8.3 managed-browser
+records target the pre-remediation source `8a62e324`.
+
+| Current-revision Studio gate | Status | Required evidence |
+| --- | --- | --- |
+| Chromium | **PASS locally** | 24/24 system-Chromium React/Studio tests; managed rerun still required for release evidence. |
+| Firefox | **OPEN** | Trusted official Playwright rerun on the final source. |
+| WebKit | **OPEN** | Trusted official Playwright rerun and review of ResizeObserver/async records. |
+| Mobile Chrome | **OPEN** | Trusted Pixel 7 emulation rerun after responsive/pointer remediation. |
+| Mobile Safari | **OPEN** | Trusted iPhone/WebKit emulation rerun after touch/resize remediation. |
+| Physical Android/iOS | **NOT TESTED** | Separate authorized physical-device review. |
+
+Evidence integrity and behavior acceptance are separate: the Phase 8.8.3 pack
+validates successfully even though its Studio behavior matrix remains open.
+
 ## Historical Phase 8.5 evidence
 
 Archive: `openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz`
