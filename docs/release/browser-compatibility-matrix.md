@@ -1,54 +1,56 @@
 # Phase 8.5 browser compatibility matrix
 
 Playwright version: `1.64.1`  
-Local diagnostic commit: `686602150b25ba51ac39b82b69c6f9b5f6250c68`  
-Local Chromium: `154.0.8037.57` at `/usr/bin/chromium`  
+Portable managed-browser commit: `4d689c86f619f32e4d91f90c4e3b03576ea38d6c`  
+Official container: `mcr.microsoft.com/playwright:v1.64.1-noble`  
+Container digest: `sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea`  
 Managed artifact policy: exact Playwright-managed binaries only
 
-`verified-local-diagnostic` is not the same status as portable managed-browser
-acceptance. The repository's Chromium projects intentionally use the explicit
-system executable for local diagnostic evidence. The portable config contains
-no such fallback.
+Local Chromium diagnostic evidence (system `/usr/bin/chromium`) remains a
+separate provenance lane and is **not** a substitute for the portable
+managed-browser gate below.
 
 | Project | Status | Evidence |
 | --- | --- | --- |
-| Chromium desktop | PASS (local diagnostic) | 12/12 Vanilla tests passed through `/usr/bin/chromium`. |
-| Mobile Chrome / Pixel 7 emulation | PASS (local diagnostic) | 12/12 Vanilla tests passed through Chromium 154 with Pixel 7 emulation. |
-| Firefox | BLOCKED | Playwright-managed Firefox 157 build 1555 executable absent. |
-| WebKit | BLOCKED | Playwright-managed WebKit 27.2 build 2370 executable absent. |
-| Mobile Safari / iPhone 13 emulation | BLOCKED | Requires unavailable managed WebKit build 2370. |
-| Physical Android/iOS | NOT TESTED | No physical-device or device-lab evidence. |
+| Chromium desktop | **PASS** (portable managed) | 13/13 on commit `4d689c8` inside the pinned Playwright container. |
+| Firefox | **PASS** (portable managed) | 13/13 on the same commit and container. |
+| WebKit | **PASS** (portable managed) | 13/13; desktop wheel zoom remains native `mouse.wheel`. |
+| Mobile Chrome / Pixel 7 emulation | **PASS** (portable managed) | 13/13; touch drawing and native wheel zoom covered. |
+| Mobile Safari / iPhone 13 emulation | **PASS** (portable managed) | 13/13. Zoom uses labeled **API** `chart.zoom(0.8)` because Playwright rejects `mouse.wheel` on mobile WebKit; not a native pinch claim. |
+| Physical Android/iOS | **NOT TESTED** | Emulation is not physical-device verification. |
+
+**Gate label:** `CROSS-BROWSER AUTOMATED EMULATION VERIFIED`  
+This is **not** native iOS Safari verification, physical-device compatibility,
+accessibility conformance, visual-regression approval, or release authorization.
+
+## Trusted-machine evidence
+
+Host: Manjaro Linux (`CodeLab`, `7.1.13-2-MANJARO`)  
+Archive: `openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz`  
+SHA-256: `3cec7e41be217ade9aa0c3275daf7d4f2ecacbad332f2b60e7cefa12b2d230ec`  
+Totals: 65 expected, 0 unexpected, 0 skipped, 0 flaky; status `verified`
+
+Prior Manjaro reports are preserved, including
+`openkline-webkit-container-verification-20261026T140430Z.tar.gz`
+(SHA-256 `48057d80fa79d6dd9e0b77abfbbd20c7a14a7125662725508aea84b79cff5c14`),
+which recorded the pre-fix Mobile Safari `mouse.wheel` harness failure.
 
 ## Executed commands
 
 ```bash
-npm run browser:diagnostic
-npm run browser:verify
+docker run --rm \
+  -v "$REPO:/work" -w /work \
+  -e HOME=/tmp \
+  -e npm_config_cache=/tmp/npm-cache \
+  -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+  mcr.microsoft.com/playwright:v1.64.1-noble \
+  bash -lc 'npm ci && npm run build && npm run browser:verify'
 ```
-
-The diagnostic returned 24 expected tests, 0 unexpected, and status
-`verified-local-diagnostic`. The portable runner returned
-`blocked-missing-official-browser` with all five managed executable paths
-missing; it did not substitute system Firefox, Safari, or WebKit.
-
-The official pinned container was also attempted once:
-
-```bash
-docker pull mcr.microsoft.com/playwright:v1.64.1-noble
-```
-
-Both the sandboxed and approved-network attempts ended with Docker registry
-`Forbidden` while downloading the image configuration. No arbitrary image or
-binary was used. A trusted machine must follow
-[`browser-verification.md`](./browser-verification.md), preserve the generated
-`summary.json` and test artifacts, and transfer those review materials back to
-the repository before any managed-browser gate is marked PASS.
 
 ## Behavioral scope
 
-The available suite exercises chart rendering, candle/OHLC/line/area/volume
-series, indicators, panes, Bollinger fills, pan/zoom, crosshair, drawings,
-pointer/touch interactions, themes, resize, replay, alerts, Datafeed cleanup,
-Workers, Screener fixtures, and chart destruction. A passing launch is not
-treated as sufficient behavior evidence. Accessibility, visual regression, and
-physical-device gates are tracked separately.
+The suite exercises chart rendering, candle/OHLC/line/area/volume series,
+indicators, panes, Bollinger fills, pan/zoom (desktop wheel + Mobile Safari API
+zoom), crosshair, drawings, pointer/touch interactions, themes, resize, replay,
+alerts, Datafeed cleanup, Workers, Screener fixtures, and chart destruction.
+Accessibility, visual regression, and physical-device gates remain separate.
