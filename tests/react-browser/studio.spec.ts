@@ -86,6 +86,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
 test("Studio remains operable at a touch-sized viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", /width=device-width/);
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Fit", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Area", exact: true }).click();
