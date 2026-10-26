@@ -488,3 +488,12 @@ Phase 8.1.6 records the final local verification matrix in
 `docs/reports/phase-8-1-final-verification.md`. The implementation is ready
 for owner review, but Phase 8.1 remains open while the inherited browser,
 physical-device, and formal accessibility gates are unverified.
+
+## Phase 8.2 strategy optimization and walk-forward analysis — in progress
+
+Phase 8.2 begins with a focused Paper Trading recovery hardening increment.
+The private Studio now exposes explicit, chart-and-symbol-scoped local Save
+and Restore controls backed by the validated public persistence API. This is
+account persistence only; chart workspace serialization and concurrent-tab
+coordination are separate concerns. The controls do not connect optimization
+or historical signals to Paper Trading orders.

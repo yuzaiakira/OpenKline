@@ -13,6 +13,14 @@ test("Studio paper trading is visibly simulated, fills causally, and stays chart
   await page.getByRole("button", { name: "Advance simulated quote", exact: true }).click();
   await expect(page.getByText("filled", { exact: true })).toBeVisible();
   await expect(page.getByText("Position audit").locator("..")?.getByText(/BTC-USD/)).toBeVisible();
+  await page.getByRole("button", { name: "Save account locally", exact: true }).click();
+  await page.getByLabel("Paper order side").selectOption("sell");
+  await page.getByRole("button", { name: "Submit simulated sell", exact: true }).click();
+  await page.getByRole("button", { name: "Advance simulated quote", exact: true }).click();
+  await expect(page.getByText("Flat", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Restore account locally", exact: true }).click();
+  await expect(page.getByText(/0\.1 BTC-USD @/)).toBeVisible();
+  await page.getByLabel("Paper order side").selectOption("buy");
   await page.getByRole("button", { name: "Risk halt", exact: true }).click();
   await expect(page.getByRole("button", { name: "Order entry halted", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Resume order entry", exact: true }).click();

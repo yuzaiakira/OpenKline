@@ -149,3 +149,14 @@ into workspace persistence, and add any real vendor integration only behind a
 separate reviewed safety boundary. No Phase 3 or live-execution authorization
 is implied by this report.
 
+## Phase 8.2.0 follow-up
+
+The Studio now provides explicit `Save account locally` and `Restore account
+locally` actions. These actions serialize and restore the validated account
+document using the public persistence API, with a key scoped to the chart panel
+and symbol. They do not silently restore state, serialize chart workspaces, or
+permit concurrent-tab conflict resolution; the example remains a deliberate
+single-writer local-storage demonstration. Chromium coverage for the causal
+fill, save, restore, and account isolation flow is part of the Phase 8.2
+verification increment.
+

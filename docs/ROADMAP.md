@@ -116,6 +116,19 @@ benchmark, and broader browser acceptance remain open.
   Next.js, and Chromium gates pass; Firefox, WebKit, Mobile Safari,
   physical-device, and formal accessibility gates remain open.
 
+Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
+
+- [Implemented / Verified] Phase 8.2.0 adds explicit Studio local Save and
+  Restore actions for the simulated Paper Trading account. The implementation
+  uses the versioned persistence API, scopes state by chart panel and symbol,
+  and keeps account state separate from chart workspace state. Baseline Node,
+  TypeScript, and Mobile Chrome emulation evidence is recorded in the Phase
+  8.2 verification report; inherited managed-browser, accessibility, and
+  physical-device gates remain open.
+- [Not Started] Phase 8.2.1–8.2.6 Strategy Optimization, bounded Worker
+  orchestration, leakage-safe Walk-Forward Analysis, robustness reporting,
+  Studio optimizer integration, and final verification.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.
