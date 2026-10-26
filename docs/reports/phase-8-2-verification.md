@@ -256,9 +256,10 @@ regression review, and long-duration mobile memory evidence were not tested.
 
 All Phase 8.2 commits were created with author and committer
 `Akira Yuzai <yuzai.akira@gmail.com>`, use Conventional Commit messages, and
-were pushed immediately to `origin/work`. The final documentation/benchmark
-commit is the only remaining synchronization step for this report; its hash
-will be recorded after push.
+were pushed immediately to `origin/work`. The 8.2.6 documentation/benchmark
+commit is `ad3a00f6c17a4af0351d49b2501bd89d62564102`; a final report-only
+follow-up commit records this hash in the report and is also pushed after
+verification.
 
 Phase 8.2 remains **open**. The optimization, WFA, Worker, robustness, Studio,
 testing, package, and local benchmark implementation gates are complete and
