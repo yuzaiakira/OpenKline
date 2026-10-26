@@ -497,3 +497,13 @@ and Restore controls backed by the validated public persistence API. This is
 account persistence only; chart workspace serialization and concurrent-tab
 coordination are separate concerns. The controls do not connect optimization
 or historical signals to Paper Trading orders.
+
+Phase 8.2.1 adds the framework-independent Strategy Optimization Core. It
+generates bounded deterministic grids from integer/numeric ranges, explicit
+lists, and fixed parameters; validates every combination through the actual
+Strategy Registry; evaluates only through `createBacktest()`; and ranks
+null-safe financial objectives with stable tie-breaking. Candidate summaries
+carry strategy/version, parameters, status, metrics, assumptions, and candle
+fingerprints. Full backtest retention is opt-in and bounded. Worker
+orchestration, strict Walk-Forward isolation, robustness analysis, and Studio
+controls remain subsequent milestones.

@@ -128,6 +128,13 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
 - [Not Started] Phase 8.2.1–8.2.6 Strategy Optimization, bounded Worker
   orchestration, leakage-safe Walk-Forward Analysis, robustness reporting,
   Studio optimizer integration, and final verification.
+- [Implemented / Verified] Phase 8.2.1 adds the bounded deterministic Grid
+  Optimization Core under `src/optimization/`. It supports integer/numeric
+  ranges, explicit values, fixed parameters, Strategy Registry constraints,
+  null-safe objectives, deterministic ranking, resource limits, compact result
+  summaries, cancellation, and financial parity with `createBacktest()`.
+  Worker scheduling, Walk-Forward isolation, robustness, and Studio controls
+  remain open.
 
 ## Completed
 

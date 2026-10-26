@@ -39,3 +39,33 @@ Firefox, WebKit, Mobile Safari, physical-device testing, formal accessibility
 review, and visual-regression review remain open. No claim is made for those
 targets. Optimization and Walk-Forward acceptance are not started by this
 focused hardening increment.
+
+## Phase 8.2.1 — optimization core
+
+Implemented:
+
+- Framework-independent `src/optimization/` public API.
+- Deterministic bounded Grid Search with integer ranges, decimal ranges,
+  explicit values, fixed parameters, canonical serialization, stable IDs, and
+  duplicate accounting.
+- Strategy-specific validation through the actual `StrategyRegistry`, with
+  invalid combinations recorded instead of silently repaired.
+- Net profit, total return, maximum drawdown, win rate, and profit factor
+  objectives with explicit maximize/minimize direction, minimum trade and
+  observation filters, null-safe ratios, zero-trade exclusion, and stable
+  tie-breaking.
+- Candidate progress, resource-limit diagnostics, cancellation that cannot
+  publish a partial completed report, input fingerprints, assumptions, and
+  opt-in bounded full-result retention.
+- Direct parity test against `serializeBacktestResult()` from `createBacktest()`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Pass: 126 tests |
+| `npm run typecheck` | Pass |
+
+Worker execution, walk-forward leakage tests, robustness reports, Studio
+optimizer UI, optimization benchmarks, and export formats remain open for
+their specified milestones.
