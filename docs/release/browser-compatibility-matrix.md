@@ -132,6 +132,34 @@ records target the pre-remediation source `8a62e324`.
 Evidence integrity and behavior acceptance are separate: the Phase 8.8.3 pack
 validates successfully even though its Studio behavior matrix remains open.
 
+## Phase 8.8.6 root-cause and current-source boundary
+
+The Phase 8.8.5 trusted Studio result remains **79 passed / 31 failed of 110**
+for source `241026e3b1eb3cebd0bbb78dd17daea8028b3203`. The complete failure
+records and the 31-row reconciliation are preserved in
+[`docs/reports/phase-8-8-6-root-cause-matrix.md`](../reports/phase-8-8-6-root-cause-matrix.md).
+
+Current behavioral/test source `796b930658353b22300955789efc90aa635b3327`
+adds bounded failure diagnostics and repairs only two test-contract/input
+paths supported by the observed records. Local system Chromium passes 24/24;
+this is not a current managed-browser result. The cloud managed collector
+reports `BLOCKED` for all five projects because the required Playwright
+binaries are absent, and it does not substitute `/usr/bin/chromium`.
+
+| Current-source project | Status | Required next evidence |
+| --- | --- | --- |
+| Chromium | **OPEN** | Trusted managed rerun; local system result is 24/24 only |
+| Firefox | **OPEN** | Trusted official Playwright project |
+| WebKit | **OPEN** | Trusted project plus ResizeObserver review |
+| Mobile Chrome | **OPEN** | Focused pointer/optimizer and drawing rerun, then full matrix |
+| Mobile Safari | **OPEN** | Focused touch/resize/async rerun, then full matrix |
+| Physical Android/iOS | **NOT TESTED** | Separate device review |
+
+Phase 8.8.6 is therefore engineering work with verification gates open, not a
+cross-browser compatibility or release approval claim. See
+[`phase-8-8-6-targeted-browser-handoff.md`](../reports/phase-8-8-6-targeted-browser-handoff.md)
+for the trusted-machine procedure.
+
 ## Historical Phase 8.5 evidence
 
 Archive: `openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz`

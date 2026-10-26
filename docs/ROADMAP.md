@@ -688,6 +688,15 @@ Studio compatibility gates remain open**.
 - [In Progress] Accessible Studio controls are implemented, but formal
   keyboard/assistive-technology audits and visual regression baselines remain
   open.
+- [Implemented / Verification Open] Phase 8.8.6 adds a failure-only Studio
+  diagnostic fixture, a falsifiable 31-record root-cause matrix, touch-aware
+  drawing/replay test input, and a responsive hidden-panel assertion aligned
+  with the existing mobile layout contract. Local system-Chromium Studio
+  coverage passes 24/24 and versioned evidence validation passes, while the
+  current trusted five-project Studio rerun remains required. ResizeObserver,
+  pointer-interception, asynchronous panel, physical-device, accessibility,
+  legal, and release gates remain open; see
+  `docs/reports/phase-8-8-6-verification.md`.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's
   narrow exception recorded in `docs/reports/phase-3-verification.md`. It does

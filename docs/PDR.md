@@ -798,3 +798,26 @@ timeouts remain open where the evidence did not identify a causal runtime
 defect. Physical-device, formal accessibility, visual approval, legal, and
 owner release gates also remain open; Phase 8.8.4 is not a release-approval
 claim.
+
+## Phase 8.8.6 Studio root-cause isolation and targeted repair — verification open
+
+Phase 8.8.6 integrates and validates the Phase 8.8.5 evidence pack, preserving
+the distinction between evidence-integrity PASS and the recorded Studio
+behavior result of 79 passed / 31 failed. A complete 31-record root-cause
+matrix is maintained in `docs/reports/phase-8-8-6-root-cause-matrix.md`.
+
+The Studio browser fixture now records bounded failure-only viewport,
+hit-testing, active-panel, page-error, console, and ResizeObserver diagnostics.
+Mobile drawing/replay test input follows the active touch contract, and the
+narrow-layout synchronized-panel assertion follows the existing intentional
+inactive-panel visibility rule. These are targeted test/harness repairs; no
+unverified production fix is claimed for ResizeObserver, optimizer overlays,
+paper trading, alerts, screener, or other asynchronous failures.
+
+The current local system-Chromium suite passes 24/24 and the evidence validator
+passes all four versioned packs. The current managed-browser collector is
+correctly BLOCKED in the cloud because the Playwright-managed executables are
+absent. Trusted focused and full five-project reruns against the current source
+remain mandatory. Physical devices, formal accessibility, visual approval,
+legal review, owner authorization, and release readiness remain open; Phase
+8.8.6 is not closed and is not release-ready.
