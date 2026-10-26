@@ -1,9 +1,17 @@
 export { DrawingEngine } from "./engine.js";
 export {
   builtInDrawingTools,
+  dateRangeTool,
+  extendedLineTool,
+  fibonacciExtensionTool,
   fibonacciRetracementTool,
   horizontalLineTool,
+  longPositionTool,
+  parallelChannelTool,
+  priceRangeTool,
+  rayTool,
   rectangleTool,
+  shortPositionTool,
   textTool,
   trendLineTool,
   verticalLineTool,

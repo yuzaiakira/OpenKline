@@ -2,8 +2,16 @@ export type DrawingToolType =
   | "horizontal-line"
   | "vertical-line"
   | "trend-line"
+  | "ray"
+  | "extended-line"
+  | "parallel-channel"
   | "rectangle"
   | "fibonacci-retracement"
+  | "fibonacci-extension"
+  | "price-range"
+  | "date-range"
+  | "long-position"
+  | "short-position"
   | "text";
 
 export interface DrawingPoint {

@@ -374,3 +374,12 @@ accessible Studio explorer/object-tree UI, real multi-chart synchronization and
 workspace hardening coverage, performance/memory evidence, and the inherited
 Firefox, WebKit, Mobile Safari, accessibility, and physical-device gates. This
 section does not mark those items complete.
+
+The current drawing increment completes the framework-neutral geometry and
+validation foundation for rays, extended lines, parallel channels, Fibonacci
+extensions, price/date ranges, and long/short risk-reward annotations. These
+objects reuse the existing DrawingEngine, Canvas primitives, coordinate
+converter, hit testing, edit lock, undo/redo, and version-1 workspace
+serialization. Position objects remain visual analysis annotations and do not
+place broker orders. Browser interaction verification and the Studio toolbar
+integration remain open.

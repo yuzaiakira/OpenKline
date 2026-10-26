@@ -271,9 +271,17 @@ export type {
 } from "./studio/index.js";
 export {
   builtInDrawingTools,
+  dateRangeTool,
+  extendedLineTool,
+  fibonacciExtensionTool,
   fibonacciRetracementTool,
   horizontalLineTool,
+  longPositionTool,
+  parallelChannelTool,
+  priceRangeTool,
+  rayTool,
   rectangleTool,
+  shortPositionTool,
   textTool,
   trendLineTool,
   verticalLineTool,

@@ -296,6 +296,13 @@ Phase 5.1 licensing, supply-chain, and developer-preview preparation is
   memory evidence. No Phase 7.5 acceptance claim is made until those checks
   and the inherited Firefox/WebKit/Mobile Safari/accessibility/device gates are
   verified.
+- [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
+  definitions for rays, extended lines, parallel channels, Fibonacci
+  extensions, price/date ranges, and long/short risk-reward annotations. They
+  reuse the existing coordinate converter, Canvas primitives, hit testing,
+  locked editing, undo/redo, and workspace serialization. Node geometry and
+  validation coverage passes; browser interaction coverage and Studio toolbar
+  exposure remain open.
 - [Not Started] Accessibility UI and visual regression baselines.
 - [Not Started] Vendor-specific datafeed packages and authentication helpers.
 - [Authorized Exception] Phase 3 work may proceed under the project owner's

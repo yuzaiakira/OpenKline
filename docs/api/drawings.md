@@ -39,9 +39,25 @@ chart.restoreDrawings(document);
 ## Built-in types and options
 
 The built-in types are `horizontal-line`, `vertical-line`, `trend-line`,
-`rectangle`, `fibonacci-retracement`, and `text`. A drawing point is
+`ray`, `extended-line`, `parallel-channel`, `rectangle`,
+`fibonacci-retracement`, `fibonacci-extension`, `price-range`, `date-range`,
+`long-position`, `short-position`, and `text`. A drawing point is
 `{ time: number, price: number }`. Text drawings also require a non-empty
 `text` option.
+
+The ray extends from its first anchor through its second anchor to the visible
+pane edge. An extended line clips the infinite line in both directions. A
+parallel channel uses two baseline anchors and a third point to define the
+offset. Fibonacci extension uses a start, impulse end, and retracement anchor
+with levels 0%, 61.8%, 100%, 127.2%, 161.8%, and 261.8%. Price range reports
+absolute and percentage change; date range reports elapsed wall-clock time in
+UTC milliseconds converted to a compact duration. Date range intentionally does
+not infer trading sessions or bar counts from timestamps.
+
+Long/short position drawings use three anchors in the order entry, stop,
+target. They validate the required trading order and render risk/reward zones,
+price labels, and a calculated R:R ratio. Position sizing and broker orders are
+outside this drawing contract; these objects are analysis annotations only.
 
 `DrawingStyle` supports `color`, `fillColor`, `textColor`, `lineWidth`,
 `visible`, and `locked`. Hidden objects are not rendered or hit-tested. Locked

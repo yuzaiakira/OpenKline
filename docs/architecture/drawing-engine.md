@@ -15,11 +15,18 @@ Chart pointer events -> coordinate converter -> DrawingEngine
 
 ## Built-in tools
 
-The first implementation provides horizontal lines, vertical lines, trend
-lines, rectangles, Fibonacci retracements, and anchored text. Tools declare a
-point count, validate snapshots, produce pure screen geometry, and implement
-pixel hit testing. Fibonacci levels are deterministic at 0%, 23.6%, 38.2%,
-50%, 61.8%, 78.6%, and 100%.
+The built-in set provides horizontal and vertical lines, trend lines, rays,
+extended lines, parallel channels, rectangles, Fibonacci retracements and
+extensions, price/date ranges, long/short risk-reward positions, and anchored
+text. Tools declare a point count, validate snapshots, produce pure screen
+geometry, and implement pixel hit testing. Fibonacci retracement levels are
+deterministic at 0%, 23.6%, 38.2%, 50%, 61.8%, 78.6%, and 100%; extension levels
+are 0%, 61.8%, 100%, 127.2%, 161.8%, and 261.8%.
+
+Ranges and position tools are annotations only. A date range reports elapsed
+timestamp duration rather than assuming exchange sessions. A position tool
+requires entry/stop/target ordering and calculates a displayed R:R ratio; it
+does not place orders or imply broker integration.
 
 Drawings are anchored to UTC millisecond timestamps and prices. The chart maps
 them through the main pane's time and price scales, so zoom and pan preserve

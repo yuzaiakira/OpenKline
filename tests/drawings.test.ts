@@ -32,6 +32,30 @@ test("built-in drawings validate anchors and expose geometry/hit testing", () =>
   assert.equal(engine.get(text.id).text, "support");
 });
 
+test("professional drawing tools reuse geometry, hit testing, and validation contracts", () => {
+  const engine = new DrawingEngine();
+  const ray = engine.create("ray", { points: [{ time: 10, price: 20 }, { time: 20, price: 30 }] });
+  const extended = engine.create("extended-line", { points: [{ time: 10, price: 20 }, { time: 20, price: 30 }] });
+  const channel = engine.create("parallel-channel", { points: [{ time: 10, price: 20 }, { time: 40, price: 40 }, { time: 10, price: 30 }] });
+  const extension = engine.create("fibonacci-extension", { points: [{ time: 10, price: 20 }, { time: 40, price: 40 }, { time: 60, price: 30 }] });
+  const priceRange = engine.create("price-range", { points: [{ time: 20, price: 20 }, { time: 60, price: 40 }] });
+  const dateRange = engine.create("date-range", { points: [{ time: 20, price: 20 }, { time: 60, price: 40 }] });
+  const long = engine.create("long-position", { points: [{ time: 30, price: 50 }, { time: 35, price: 45 }, { time: 70, price: 65 }], style: { fillColor: "#22c55e33" } });
+  const short = engine.create("short-position", { points: [{ time: 30, price: 50 }, { time: 35, price: 55 }, { time: 70, price: 35 }] });
+
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === ray.id)?.geometries.length, 1);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === extended.id)?.geometries.length, 1);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === channel.id)?.geometries.length, 2);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === extension.id)?.geometries.length, 6);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === priceRange.id)?.geometries.length, 2);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === dateRange.id)?.geometries.length, 2);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === long.id)?.geometries.length, 5);
+  assert.equal(engine.getRenderItems(converter, bounds).find((item) => item.snapshot.id === short.id)?.geometries.length, 5);
+  assert.ok(engine.getTool("ray").hitTest(engine.get(ray.id), 50, 40, converter, bounds, 1) >= 0);
+  assert.throws(() => engine.create("long-position", { points: [{ time: 30, price: 50 }, { time: 35, price: 55 }, { time: 70, price: 65 }] }), DrawingValidationError);
+  assert.throws(() => engine.create("parallel-channel", { points: [{ time: 10, price: 20 }, { time: 10, price: 20 }, { time: 10, price: 30 }] }), DrawingValidationError);
+});
+
 test("drawings support locked editing, undo/redo, and versioned round trips", () => {
   const engine = new DrawingEngine();
   const line = engine.create("horizontal-line", { points: [{ time: 10, price: 50 }] });
@@ -66,7 +90,7 @@ test("drawings support locked editing, undo/redo, and versioned round trips", ()
 
 test("custom drawing tools use the same registration contract", () => {
   const custom: DrawingToolDefinition = {
-    type: "ray",
+    type: "custom-ray",
     minPoints: 2,
     maxPoints: 2,
     validate: (snapshot) => {
@@ -81,8 +105,8 @@ test("custom drawing tools use the same registration contract", () => {
   };
   const engine = new DrawingEngine();
   engine.registerTool(custom);
-  const drawing = engine.create("ray", { points: [{ time: 1, price: 10 }, { time: 2, price: 20 }] });
-  assert.equal(drawing.type, "ray");
-  assert.equal(engine.unregisterTool("ray"), true);
-  assert.throws(() => engine.create("ray", { points: [{ time: 1, price: 10 }, { time: 2, price: 20 }] }), /Unknown drawing tool/);
+  const drawing = engine.create("custom-ray", { points: [{ time: 1, price: 10 }, { time: 2, price: 20 }] });
+  assert.equal(drawing.type, "custom-ray");
+  assert.equal(engine.unregisterTool("custom-ray"), true);
+  assert.throws(() => engine.create("custom-ray", { points: [{ time: 1, price: 10 }, { time: 2, price: 20 }] }), /Unknown drawing tool/);
 });
