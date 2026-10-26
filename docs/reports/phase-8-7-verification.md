@@ -72,8 +72,17 @@ committed, or compared. Owner/designated-reviewer inspection is required.
 | `npm run api:check` | **PASS** — no removed or changed signatures |
 | `npm run test:browser` | **PASS — 14/14 local system Chromium** |
 | `npm run test:react:browser` | **PASS — 21/21 local system Chromium** |
+| `npm run browser:diagnostic` | **PASS — 28/28 local system Chromium + Mobile Chrome emulation** |
 | Visual review tests | **PASS — 2/2; repeated hashes stable; baseline pending** |
 | `npm run benchmark:browser` | **PASS diagnostic** — results below |
+
+`npm run release:readiness` completed at
+`artifacts/release-readiness/2026-10-26T16-34-52-909Z/summary.json` with
+`NOT READY`. Its serial Chromium diagnostic gate recorded a transient 2/28
+timeout failure, while the managed-browser gate was correctly `BLOCKED` and
+the manual/legal/owner gates remained open. The independent diagnostic rerun
+then passed 28/28; the transient failure is retained in the readiness
+artifact and is not reclassified as a code failure.
 
 The local browser suites use system Chromium and do not replace the trusted
 Playwright-managed evidence. No current-revision Firefox, WebKit, Mobile
@@ -134,10 +143,12 @@ Phase 8.7 engineering commits were created with
 `origin/work`:
 
 - `61beddb1a0d25e466b05e70123ce76b62ad8f557` — dialog focus containment;
-- `cf806cba1fdcabfc46ab16ef79353b6f97dedacd` — deterministic visual clock.
+- `cf806cba1fdcabfc46ab16ef79353b6f97dedacd` — deterministic visual clock;
+- `cb06f0c8f79428184a646dc14d63f1d371ebff03` — Phase 8.7 verification and
+  audit documentation.
 
-The documentation commit containing this report is verified separately in the
-final Git handoff. No history was rewritten and no force-push was used.
+The listed commits were pushed to `origin/work`; no history was rewritten and
+no force-push was used.
 
 **Phase 8.7 is not release-ready.** The local engineering checks and targeted
 accessibility/visual hardening are complete, but current-revision managed
