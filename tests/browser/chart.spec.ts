@@ -99,7 +99,19 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(priceScaleResult.logarithmic.activeMode).toBe("logarithmic");
 
   const beforeZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
-  await page.mouse.wheel(0, -500);
+  // Desktop + Mobile Chrome: real native wheel zoom via Playwright mouse.wheel.
+  // Mobile Safari: Playwright rejects mouse.wheel on mobile WebKit. Native
+  // multi-touch pinch is not reliably available here, so assert the public
+  // chart.zoom() path (same 0.8 factor as wheel-in) and label it API zoom —
+  // not a native pinch-gesture claim.
+  if (test.info().project.name === "mobile-safari") {
+    await page.evaluate(() => {
+      const chart = (globalThis as unknown as { __openklineChart: { zoom(scale: number, anchorRatio?: number): void } }).__openklineChart;
+      chart.zoom(0.8, 0.5);
+    });
+  } else {
+    await page.mouse.wheel(0, -500);
+  }
   const afterZoom = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getVisibleRange(): { from: number; to: number } } }).__openklineChart.getVisibleRange());
   expect(afterZoom.to - afterZoom.from).toBeLessThan(beforeZoom.to - beforeZoom.from);
 
