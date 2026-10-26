@@ -6,6 +6,7 @@ export {
   validateScreenerUniverse,
 } from "./universe.js";
 export { createDeterministicScreenerUniverse, DeterministicScreenerMarketDataProvider } from "./demo.js";
+export { evaluateScreenerRuleSet, ScreenerRuleValidationError, validateScreenerRuleSet } from "./rules.js";
 export {
   DEFAULT_SCREENER_LIMITS,
   OPENKLINE_SCREENER_VERSION,
@@ -23,6 +24,34 @@ export type {
   ScreenerUniverse,
   ScreenerUniverseSource,
 } from "./types.js";
+export type {
+  ScreenerComparisonOperator,
+  ScreenerCrossDirection,
+  ScreenerEvaluationOptions,
+  ScreenerEvaluationState,
+  ScreenerIndicatorBreakoutRule,
+  ScreenerIndicatorCrossRule,
+  ScreenerIndicatorReference,
+  ScreenerIndicatorThresholdRule,
+  ScreenerPriceChangeRule,
+  ScreenerPriceCrossRule,
+  ScreenerPriceField,
+  ScreenerPriceThresholdRule,
+  ScreenerRelativePriceRule,
+  ScreenerRuleDiagnostic,
+  ScreenerRuleEvaluation,
+  ScreenerRuleGroup,
+  ScreenerRuleNode,
+  ScreenerRuleNot,
+  ScreenerRulePredicate,
+  ScreenerRuleSet,
+  ScreenerRuleValidationLimits,
+  ScreenerRuleValidationOptions,
+  ScreenerSeriesReference,
+  ScreenerUnavailableReason,
+  ScreenerVolumeRule,
+} from "./rule-types.js";
+export { DEFAULT_SCREENER_RULE_LIMITS, OPENKLINE_SCREENER_RULE_VERSION } from "./rule-types.js";
 export type { DeterministicScreenerOptions } from "./demo.js";
 export type { UniverseValidationOptions } from "./universe.js";
 

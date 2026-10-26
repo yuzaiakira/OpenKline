@@ -15,3 +15,10 @@ Phase 8.3 is open. This report records only the verified 8.3.0 baseline; it does
 
 The baseline test is `tests/screener-baseline.test.ts` and is included in the local Node test command. Build/typecheck and the complete test command must be rerun after each subsequent milestone.
 
+## 8.3.1 rule AST and reference evaluator
+
+- Implemented: versioned typed rule AST, bounded validation, price/volume predicates, nested AND/OR/NOT, registered-indicator references, strict crossings, prior-channel breakout, causal cutoff evaluation, and tri-state unavailable diagnostics.
+- Verified: `tests/screener-rules.test.ts` covers invalid ASTs, thresholds, percentages, volume, prior ranges, crossings, SMA reuse, compound unknown propagation, missing volume, invalid candles, developing-bar rejection, and future-bar isolation.
+- Not tested: worker scheduling, snapshot aggregation, incremental subscriptions, browser Studio workflows, external providers, Firefox, WebKit, mobile Safari, physical devices, accessibility, and visual compatibility.
+
+
