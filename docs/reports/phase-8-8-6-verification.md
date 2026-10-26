@@ -94,6 +94,13 @@ Chromium executable. It is useful regression evidence only and does not close
 Firefox, WebKit, mobile emulation, managed-browser, physical-device, or
 accessibility gates.
 
+An additional direct system-Chromium Pixel 7-context probe was not accepted as
+mobile evidence: the context exposed `navigator.maxTouchPoints = 1` but the
+layout viewport reported `window.innerWidth = 870` for a 412px emulated page.
+Its resulting pointer-interception observation is therefore environment-
+limited and is not used as a product root-cause confirmation. The trusted
+managed project must provide the authoritative geometry.
+
 The current managed collector was also run:
 
 ```text
@@ -111,7 +118,7 @@ not committed evidence.
 | Integrate and validate 8.8.5 compact evidence | PASS | Validator and 8.8.5 schema tests; behavior remains 79/31 |
 | Reconcile every prior Studio failure | PASS as accounting; OPEN as behavior | 31-row matrix, no failure marked resolved |
 | Capture falsifiable geometry/hit-test diagnostics | IMPLEMENTED | Failure-only fixture; trusted failure attachments still required |
-| Repair mobile drawing input contract | IMPLEMENTED LOCALLY | 24/24 local Studio pass; trusted mobile rerun required |
+| Repair mobile drawing input contract | IMPLEMENTED, TOUCH VERIFICATION OPEN | Local 24/24 suite does not provide valid managed touch geometry; trusted mobile rerun required |
 | Align hidden-panel assertion with responsive contract | IMPLEMENTED LOCALLY | Local pass; trusted mobile rerun required |
 | Resolve pointer interception | OPEN | Trusted F1/F2 geometry and full rerun required |
 | Resolve ResizeObserver errors | OPEN | Trusted WebKit/Safari F5 required; no speculative suppression |
