@@ -7,6 +7,11 @@ integrations. The repository is not yet a stable release and currently has no
 declared software license; do not redistribute it as a licensed package until
 the project owner adds the appropriate `LICENSE` and package metadata.
 
+OpenKline is a library, not a market-data service or hosted trading platform.
+The consuming application owns and supplies data directly or through its own
+optional `Datafeed`. No provider, backend, cloud service, account, API key,
+framework, or internet connection is required by the core package.
+
 ## Current status
 
 The repository currently contains the Phase 1 chart foundation and the

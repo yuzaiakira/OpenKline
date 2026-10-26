@@ -193,6 +193,21 @@ acceptance open**.
   evidence passes, while managed Firefox/WebKit/mobile, accessibility,
   physical-device, visual, and external-provider gates remain open.
 
+Phase 8.4 universal data integration and library architecture hardening —
+**In progress; final acceptance open**.
+
+- [Implemented / Verified] 8.4.0 confirms the library-first boundary: core
+  OpenKline has no mandatory provider, backend, cloud service, framework, or
+  network side effect. The audit and follow-up actions are recorded in
+  `docs/reports/phase-8-4-architecture-audit.md`.
+- [Not Started] 8.4.1 direct-data consumer verification.
+- [Not Started] 8.4.2 custom Datafeed SDK hardening.
+- [Not Started] 8.4.3 standalone offline, custom-exchange, generic adapter,
+  and optional provider examples.
+- [Not Started] 8.4.4 package portability verification.
+- [Not Started] 8.4.5 Studio/reference-application separation audit.
+- [Not Started] 8.4.6 full verification and final report.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

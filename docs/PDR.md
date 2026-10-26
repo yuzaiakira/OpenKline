@@ -566,3 +566,19 @@ Chromium and Next.js production evidence is local only. The deterministic Node
 snapshot/Watch benchmark and acceptance matrix are now recorded, but Phase 8.3
 remains open until the remaining browser/accessibility/device gates and
 external-provider verification are completed.
+
+## Phase 8.4 universal data integration and library-first architecture — in progress
+
+OpenKline's permanent product boundary is a universal, framework-independent
+JavaScript/TypeScript charting and analysis library. The consuming application
+owns and supplies its market data. No provider, backend, cloud service, API
+key, account, database, internet connection, React, or Next.js runtime is
+mandatory.
+
+Direct `Chart.setData`/`Chart.update` and series data APIs are the primary local
+integration path. The provider-neutral `Datafeed` contract is optional;
+generic REST/WebSocket adapters and any Binance example live outside the core
+architecture. Indicators, drawings, Replay, Screener, Backtesting,
+Optimization, Paper Trading, KlineScript, Workspaces, and Studio remain data
+source agnostic. Phase 8.4 audit findings and remaining verification are
+recorded in `docs/reports/phase-8-4-architecture-audit.md`.
