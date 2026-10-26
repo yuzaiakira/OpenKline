@@ -44,6 +44,15 @@ container provenance, five project totals, unique test records, SHA-256
 formats, and sanitization. It does not recompute the archive hash because the
 original archive remains on the trusted machine.
 
+## Phase 8.8 current-revision boundary
+
+Phase 8.8 changes are prepared on `work` after the trusted source commit above.
+Cloud verification uses system Chromium only; the trusted 70/70 records remain
+historical provenance and were not rerun or relabeled for Phase 8.8. The next
+trusted-machine handoff must run the final Phase 8.8 source revision in all
+five Playwright-managed projects before any current-revision compatibility
+statement is made.
+
 ## Historical Phase 8.5 evidence
 
 Archive: `openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz`

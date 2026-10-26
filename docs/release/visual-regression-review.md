@@ -71,6 +71,15 @@ These are ignored local review artifacts, not approved repository baselines.
 The current Phase 8.7 source has not been rerun in the trusted managed
 Firefox, WebKit, or mobile projects.
 
+## Phase 8.8 readiness waits
+
+The review harness now waits for the actual dark/light Canvas background pixel,
+the chart's dynamic visible-bar `aria-label`, deterministic demo quote state,
+and two animation frames before capture. These condition-based waits address
+observed initial-render and theme-repaint races without fixed sleeps or
+baseline relaxation. Two consecutive local runs produced identical hashes
+for all three candidates after the change. No baseline was approved.
+
 ## Review procedure
 
 ```bash

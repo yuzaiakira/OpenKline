@@ -332,6 +332,28 @@ implemented; review and release gates open**.
   measured contrast, physical devices, approved visual baselines, legal and
   third-party approvals, and owner release authorization remain unresolved.
 
+Phase 8.8 accessibility verification, contrast audit, and browser test
+reliability — **Engineering implemented; release gates open**.
+
+- [Implemented / Verified locally] Rendered Studio contrast is measured in
+  Chromium. Placeholder text and control borders were corrected from measured
+  deficiencies; automated coverage records primary, muted, status, disabled,
+  border, and focus ratios. Public financial chart colors remain consumer/
+  theme-controlled and unchanged.
+- [Implemented / Verified locally] Reduced-motion coverage observes no
+  decorative Studio animations or transitions while retaining required data,
+  replay, and Worker updates. Formal assistive-technology review remains open.
+- [Implemented / Verified locally] Two sequential browser diagnostics each
+  pass 28/28 after the earlier transient release-readiness timeout. No root
+  cause was claimed, no blanket timeout or skipped coverage was introduced.
+- [Implemented / Verified locally] Visual capture waits for rendered Canvas
+  state and produces stable dark, light, and mobile candidates. Baselines
+  remain unapproved and uncommitted.
+- [Gate Open] The current-revision five-browser matrix, physical devices,
+  screen readers, formal conformance, visual approval, legal review, and owner
+  release authorization remain unresolved. The historical 70/70 pack is not
+  current-revision evidence.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

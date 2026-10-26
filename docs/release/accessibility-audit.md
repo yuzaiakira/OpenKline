@@ -41,6 +41,46 @@ The visual-review harness also pins the clock used by the deterministic demo
 quote provider. This is a test-fixture correction, not a runtime behavior
 change; without it, quote labels could vary between screenshots.
 
+## Phase 8.8 contrast and reduced-motion audit
+
+The Phase 8.8 audit measures rendered Studio colors in Chromium rather than
+inferring ratios from screenshots. WCAG 2.2 AA values below are technical
+reference thresholds only; the owner has not adopted a formal conformance
+target.
+
+| Element / state | Foreground | Effective background | Measured ratio | Reference |
+| --- | --- | --- | ---: | --- |
+| Primary button text | `#e7eef9` | `#132138` | 13.82:1 | Normal text 4.5:1 |
+| Muted header text | `#9eb0c9` | `#0d192b` | 7.98:1 | Normal text 4.5:1 |
+| Live status text | `#9eb0c9` | `#0b1525` | 8.28:1 | Normal text 4.5:1 |
+| Placeholder text | `#9eb0c9` | `#132138` | 7.30:1 | Normal text 4.5:1 |
+| Disabled button text | `#e7eef9` | `#132138` | 13.82:1 | Reference only; disabled-state interpretation applies |
+| Control border | `#53729a` | `#111c2f` | 3.56:1 | Essential non-text UI 3:1 |
+| Focus outline | `#fbbf24` | `#132138` | 9.66:1 | Essential non-text UI 3:1 |
+
+Two real Studio findings were fixed in commit
+`f44e1b8011ced9eb7c04eb74c0f653a99897cadb`: the browser-default placeholder
+color measured approximately 3.50:1 before correction, and the prior shared
+border `#2d405d` measured 1.54:1 against the control fill. The updated
+placeholder and border tokens are covered by
+`tests/react-browser/contrast-audit.spec.ts`. No user-configured chart series,
+indicator, drawing, or theme colors were changed.
+
+The public Canvas themes were measured separately from their direct rendered
+colors. Light-theme text is 6.46:1 on white; light up/down candle colors are
+3.30:1 and 4.83:1, and the light crosshair is 4.76:1. Dark-theme text,
+up/down candles, and crosshair are 8.68:1, 7.79:1, 4.71:1, and 6.92:1 on
+the dark background. Light/dark band fills composited at their configured
+opacities measure 1.25:1 and 1.42:1; grid and border strokes are decorative
+chart structure rather than text and require human interpretation. These
+measurements do not override consumer-supplied financial colors.
+
+With `prefers-reduced-motion: reduce`, Chromium observed zero document
+animations and no non-zero CSS transition durations in the Studio. Necessary
+data updates, replay timers, and Worker progress are not disabled. Manual
+observation of live updates, replay, and assistive-technology behavior
+remains open.
+
 ## Phase 8.6.1 browser evidence
 
 The compact trusted-machine evidence pack records the accessibility test
@@ -72,6 +112,11 @@ Those decisions and manual checks remain explicit owner gates.
 | Reduced motion | NOT TESTED | Review animation/timer behavior with prefers-reduced-motion. |
 | Color contrast | NOT TESTED | Measure representative themes and states. |
 | Physical touch targets | NOT TESTED | Validate on authorized devices, not emulation alone. |
+
+Phase 8.8 updates the local automated contrast status to **PASS for the
+measured Studio samples**, while the overall formal accessibility gate remains
+**NOT TESTED** because manual keyboard, screen-reader, physical-device, and
+owner conformance decisions are still outstanding.
 
 The trusted 70/70 five-project evidence pack predates Phase 8.7 and targets
 source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`; it must not be used
