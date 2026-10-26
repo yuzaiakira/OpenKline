@@ -94,6 +94,13 @@ chart.destroy();
   at the right edge remains right-edge anchored as new data arrives.
 - `resize(width, height)` updates CSS-pixel dimensions and the device-pixel
   backing store.
+- The Canvas2D surface is keyboard focusable and exposes `role="img"` with a
+  dynamic accessible summary. The summary distinguishes an empty chart from
+  visible time points or bars and includes the latest close, visible series,
+  and pane counts when available. Hosts should provide surrounding controls
+  with labels and a live status region for crosshair/navigation updates. This
+  summary is an accessible overview, not a replacement for a complete data
+  table or a formal screen-reader/WCAG conformance claim.
 - `setOptions(options)` updates theme, locale, timezone, precision, direction,
   price-scale configuration, interaction policy, or explicit dimensions without
   recreating the chart.

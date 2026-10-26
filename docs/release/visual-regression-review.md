@@ -19,6 +19,14 @@ required managed browser engines before a visual-regression gate can be marked
 PASS. Canvas rendering can vary by browser/font/OS, so a baseline must record
 engine, viewport, device scale, locale, timezone, fonts, and fixture data.
 
+Each capture also writes an `image-difference.json` report. Without
+`OPENKLINE_VISUAL_BASELINE_DIR`, its status is `SCREENSHOT GENERATED`. When a
+matching baseline file is supplied, the test performs strict byte comparison
+and records `SCREENSHOT COMPARED` or `REGRESSION DETECTED`; a missing baseline
+is reported as `UNABLE TO VERIFY`. The comparison never writes or approves a
+baseline and its byte-difference count is only a review signal, not a pixel,
+WCAG, or cross-browser compatibility claim.
+
 ## Review procedure
 
 ```bash
@@ -28,3 +36,11 @@ npm run test:react:browser -- --grep "review artifact"
 Inspect the generated PNGs and any diffs manually. Do not update baselines just
 to make a failing visual test green. Firefox/WebKit/Mobile Safari visual
 artifacts remain blocked with the managed browser gate.
+
+To compare against an owner-approved local review set, provide its directory
+without copying it into the repository:
+
+```bash
+OPENKLINE_VISUAL_BASELINE_DIR=/trusted/review/baselines \
+  npm run test:react:browser -- --grep "review artifact"
+```

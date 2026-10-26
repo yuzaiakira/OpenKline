@@ -1,4 +1,4 @@
-import { ChartModel } from "./core/chart-model.js";
+import { ChartModel, type VisibleChartData } from "./core/chart-model.js";
 import { isCandleSeriesType } from "./core/candle-series.js";
 import { normalizePriceScaleOptions, normalizePriceScaleRange, TimeScale } from "./core/scales.js";
 import { CanvasRenderer, createPanePriceScale, getPaneBounds, getPaneScaleRange } from "./renderer/canvas-renderer.js";
@@ -1452,9 +1452,11 @@ export class Chart {
   }
 
   private render(): void {
+    const visibleData = this.model.getVisibleData();
+    this.updateCanvasAccessibility(visibleData);
     const drawingContext = this.getDrawingContext();
     this.renderer.render(
-      this.model.getVisibleData(),
+      visibleData,
       { width: this.width, height: this.height, devicePixelRatio: this.devicePixelRatio },
       this.theme,
       {
@@ -1468,6 +1470,25 @@ export class Chart {
         drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds, (drawing) => this.isDrawingReplayVisible(drawing)),
       this.selectedDrawingId,
       this.getPluginOverlayItems(),
+    );
+  }
+
+  /** Keep the Canvas2D chart discoverable to assistive technology without exposing internal stores. */
+  private updateCanvasAccessibility(data: VisibleChartData): void {
+    if (data.times.length === 0) {
+      this.canvas.setAttribute("aria-label", "Financial price chart; no data loaded");
+      return;
+    }
+    const visibleSeries = data.series.filter((series) => series.style.visible !== false).length;
+    const visiblePanes = data.panes.filter((pane) => pane.series.some((series) => series.style.visible !== false)).length;
+    const unit = data.candles.length > 0 ? `${data.candles.length} visible bars` : `${data.times.length} visible time points`;
+    const latest = data.candles.at(-1);
+    const latestClose = latest === undefined
+      ? ""
+      : `; latest close ${latest.close.toLocaleString(this.locale, { maximumFractionDigits: this.pricePrecision })}`;
+    this.canvas.setAttribute(
+      "aria-label",
+      `Financial price chart; ${unit}${latestClose}; ${visibleSeries} visible series; ${Math.max(1, visiblePanes)} panes`,
     );
   }
 

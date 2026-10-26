@@ -238,3 +238,18 @@ scenario in Chromium: repeated chart creation, direct data replacement,
 indicator/drawing setup, event subscription, update, destruction, and host
 removal. It asserts no page errors and no remaining canvases. This is a
 resource-cleanup regression check, not proof of zero browser heap leakage.
+## Phase 8.6 accessibility and visual review tests
+
+The React browser suite includes deterministic checks for visible control names,
+keyboard focus, dialog semantics, focus restoration, Escape dismissal, canvas
+text summaries, and visual-review screenshot generation. The static browser
+suite also verifies the explicit accessible state of an empty chart. Run the
+focused checks with:
+
+```bash
+npm run test:react:browser -- --grep "Canvas charts expose|Studio interactive controls|review artifact"
+npm run test:browser -- --grep "empty Canvas charts"
+```
+
+These are automated smoke/regression checks. They do not constitute a manual
+screen-reader, contrast, reduced-motion, WCAG, or physical-device review.

@@ -1,6 +1,6 @@
 # Accessibility audit status
 
-Status: **Automated review prepared; formal conformance gate open**
+Status: **Automated review improved; formal conformance gate open**
 
 The local React/Next test
 [`tests/react-browser/accessibility.spec.ts`](../../tests/react-browser/accessibility.spec.ts)
@@ -8,6 +8,14 @@ checks visible interactive controls for accessible names, keyboard focus, live
 status attachment, and dialog semantics. The existing UI tests also exercise
 touch-sized layouts, accessible selectors, confirmation dialogs, and page-error
 cleanup.
+
+Phase 8.6 adds regression coverage for dialog focus restoration and Escape
+closure, a keyboard-focusable chart canvas with a dynamic text summary, and an
+empty-chart summary (`Financial price chart; no data loaded`). The core chart
+keeps the Canvas2D surface as `role="img"` and updates its summary with visible
+bars/time points, latest close when available, visible series, and pane count.
+This is an overview for assistive technology, not a full data-table
+replacement.
 
 This is not an WCAG conformance claim. The repository has not completed a
 manual keyboard audit across all workflows, screen-reader verification,
@@ -19,8 +27,10 @@ target review. No `axe` dependency was added merely to imply conformance.
 | Area | Status | Evidence / next action |
 | --- | --- | --- |
 | Accessible control names | PASS locally | Automated visible-control audit and existing labels. |
-| Keyboard focus smoke | PASS locally | Tab focus and dialog controls are exercised. |
-| Dialog semantics | PASS locally | Rename dialog role/name/input/cancel behavior. |
+| Keyboard focus smoke | PASS locally | Tab focus, canvas focus, and dialog controls are exercised. |
+| Dialog semantics | PASS locally | Rename dialog role/name/description/input/cancel behavior. |
+| Dialog focus restoration | PASS locally | Cancel, confirm, and Escape return focus to the triggering control. |
+| Canvas text alternative | PASS locally | Data and empty-chart summaries are tested in Chromium. |
 | Live status/error semantics | PASS locally | Existing `aria-live` and page-error assertions. |
 | Screen reader behavior | NOT TESTED | Manual NVDA/JAWS/VoiceOver review required. |
 | Reduced motion | NOT TESTED | Review animation/timer behavior with prefers-reduced-motion. |

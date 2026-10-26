@@ -35,3 +35,23 @@ test("Studio interactive controls expose names, keyboard focus, status, and dial
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toBeHidden();
 });
+
+test("Canvas charts expose a text summary and dialogs restore focus on Escape", async ({ page }) => {
+  await page.goto("/");
+  const canvas = page.locator("canvas").first();
+  await expect(canvas).toHaveRole("img");
+  await expect(canvas).toHaveAttribute("tabindex", "0");
+  await expect(canvas).toHaveAttribute("aria-label", /Financial price chart; .*visible bars/);
+  await canvas.focus();
+  await expect(canvas).toBeFocused();
+
+  const trigger = page.getByRole("button", { name: "Rename watchlist", exact: true });
+  await trigger.focus();
+  await trigger.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Rename watchlist" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("aria-describedby", "studio-dialog-message");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});

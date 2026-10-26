@@ -371,15 +371,42 @@ export default function MultiChartStudioClient() {
   const [alertFrequency, setAlertFrequency] = useState<AlertFrequency>("once-per-bar");
   const [dialog, setDialog] = useState<StudioDialog | null>(null);
   const [dialogValue, setDialogValue] = useState("");
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
+  const dialogWasOpenRef = useRef(false);
 
   const showConfirm = (title: string, message: string, onConfirm: () => void): void => {
+    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogWasOpenRef.current = true;
     setDialogValue("");
     setDialog({ kind: "confirm", title, message, onSubmit: () => { setDialog(null); onConfirm(); } });
   };
   const showPrompt = (title: string, message: string, initialValue: string, onSubmit: (value: string) => void): void => {
+    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogWasOpenRef.current = true;
     setDialogValue(initialValue);
     setDialog({ kind: "prompt", title, message, initialValue, onSubmit: (value) => { setDialog(null); onSubmit(value); } });
   };
+
+  useEffect(() => {
+    if (dialog !== null) return undefined;
+    if (!dialogWasOpenRef.current) return undefined;
+    dialogWasOpenRef.current = false;
+    const trigger = dialogTriggerRef.current;
+    dialogTriggerRef.current = null;
+    if (trigger !== null && document.contains(trigger)) trigger.focus();
+    return undefined;
+  }, [dialog]);
+
+  useEffect(() => {
+    if (dialog === null) return undefined;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setDialog(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [dialog]);
 
   const activePanel = panels.find((panel) => panel.panelId === activePanelId) ?? panels[0]!;
   const activeHandle = panelRefs.current.get(activePanel.panelId) ?? null;
@@ -534,7 +561,7 @@ export default function MultiChartStudioClient() {
     <StrategyOptimizer key={`optimizer-${strategyScopeKey}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onApplyParameters={applyStrategyParameters} onNotice={setNotice} />
     <StrategyTester key={strategyScopeKey} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} initialResult={strategyResultsRef.current.get(strategyScopeKey) ?? null} appliedParameters={appliedStrategyParametersRef.current.get(strategyScopeKey) ?? null} onResult={(nextResult) => { if (nextResult === null) strategyResultsRef.current.delete(strategyScopeKey); else strategyResultsRef.current.set(strategyScopeKey, nextResult); }} onNotice={setNotice} />
     <PaperTradingPanel key={`paper-${activePanel.panelId}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onNotice={setNotice} />
-    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation"><section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title"><h2 id="studio-dialog-title">{dialog.title}</h2><p>{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
+    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation"><section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby="studio-dialog-message"><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
   </main>;
 }
 
