@@ -1,4 +1,4 @@
-# Phase 8.5 browser compatibility matrix
+# Phase 8.6 browser compatibility matrix
 
 Playwright version: `1.64.1`  
 Portable managed-browser commit: `4d689c86f619f32e4d91f90c4e3b03576ea38d6c`  
@@ -12,16 +12,19 @@ managed-browser gate below.
 
 | Project | Status | Evidence |
 | --- | --- | --- |
-| Chromium desktop | **PASS** (portable managed) | 13/13 on commit `4d689c8` inside the pinned Playwright container. |
-| Firefox | **PASS** (portable managed) | 13/13 on the same commit and container. |
-| WebKit | **PASS** (portable managed) | 13/13; desktop wheel zoom remains native `mouse.wheel`. |
-| Mobile Chrome / Pixel 7 emulation | **PASS** (portable managed) | 13/13; touch drawing and native wheel zoom covered. |
-| Mobile Safari / iPhone 13 emulation | **PASS** (portable managed) | 13/13. Zoom uses labeled **API** `chart.zoom(0.8)` because Playwright rejects `mouse.wheel` on mobile WebKit; not a native pinch claim. |
+| Chromium desktop | **REPORTED PASS; ARCHIVE NOT LOCALLY VALIDATED** | 13/13 on commit `4d689c8` inside the pinned Playwright container, according to the trusted-machine report. |
+| Firefox | **REPORTED PASS; ARCHIVE NOT LOCALLY VALIDATED** | 13/13 on the same commit and container, according to the trusted-machine report. |
+| WebKit | **REPORTED PASS; ARCHIVE NOT LOCALLY VALIDATED** | 13/13; desktop wheel zoom remains native `mouse.wheel`, according to the trusted-machine report. |
+| Mobile Chrome / Pixel 7 emulation | **REPORTED PASS; ARCHIVE NOT LOCALLY VALIDATED** | 13/13; touch drawing and native wheel zoom covered, according to the trusted-machine report. |
+| Mobile Safari / iPhone 13 emulation | **REPORTED PASS; ARCHIVE NOT LOCALLY VALIDATED** | 13/13. Zoom uses labeled **API** `chart.zoom(0.8)` because Playwright rejects `mouse.wheel` on mobile WebKit; not a native pinch claim. |
 | Physical Android/iOS | **NOT TESTED** | Emulation is not physical-device verification. |
 
-**Gate label:** `CROSS-BROWSER AUTOMATED EMULATION VERIFIED`  
-This is **not** native iOS Safari verification, physical-device compatibility,
-accessibility conformance, visual-regression approval, or release authorization.
+**Gate label:** `TRUSTED-MACHINE CROSS-BROWSER PASS REPORTED; LOCAL ARCHIVE VALIDATION OPEN`
+The trusted-machine result is recorded from the source commit and report below,
+but the named archive is not present in this checkout. Its SHA-256 therefore
+has not been independently recomputed here. This is **not** native iOS Safari
+verification, physical-device compatibility, accessibility conformance,
+visual-regression approval, or release authorization.
 
 ## Trusted-machine evidence
 
@@ -34,6 +37,22 @@ Prior Manjaro reports are preserved, including
 `openkline-webkit-container-verification-20261026T140430Z.tar.gz`
 (SHA-256 `48057d80fa79d6dd9e0b77abfbbd20c7a14a7125662725508aea84b79cff5c14`),
 which recorded the pre-fix Mobile Safari `mouse.wheel` harness failure.
+
+### Local availability and validation status
+
+The Phase 8.6 environment searched the workspace for
+`openkline-post-harness-fix-matrix-20261026T1545Z.tar.gz` and did not find it.
+The report metadata is present in commit `83e619c`, but the archive,
+`environment.json`, `summary.json`, `playwright-results.json`, and the
+associated `test-results/` directory were not available for independent
+inspection. The recorded archive hash
+`3cec7e41be217ade9aa0c3275daf7d4f2ecacbad332f2b60e7cefa12b2d230ec` is
+therefore provenance supplied by the report, not a locally validated hash.
+
+The owner or trusted-machine operator must provide that archive and its
+matching evidence files before this repository can mark the portable matrix
+independently validated. Until then, the five rows above remain reported
+results rather than local verification results.
 
 ## Executed commands
 
