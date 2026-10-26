@@ -1,0 +1,1529 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "playwrightVersion": "1.64.1",
+  "derivedFrom": "playwright-results.json failure records from initial full Studio suite",
+  "priorPhase881Probe": {
+    "perProjectPassedFailed": {
+      "chromium": {
+        "passed": 21,
+        "failed": 0
+      },
+      "firefox": {
+        "passed": 21,
+        "failed": 0
+      },
+      "webkit": {
+        "passed": 18,
+        "failed": 3
+      },
+      "mobile-chrome": {
+        "passed": 5,
+        "failed": 16
+      },
+      "mobile-safari": {
+        "passed": 10,
+        "failed": 11
+      }
+    },
+    "overall": {
+      "expected": 75,
+      "unexpected": 30
+    }
+  },
+  "currentTotals": {
+    "studio-chromium": {
+      "passed": 21,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 21
+    },
+    "studio-firefox": {
+      "passed": 21,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 21
+    },
+    "studio-webkit": {
+      "passed": 18,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 21
+    },
+    "studio-mobile-chrome": {
+      "passed": 5,
+      "failed": 16,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 21
+    },
+    "studio-mobile-safari": {
+      "passed": 10,
+      "failed": 11,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 21
+    }
+  },
+  "failureCount": 30,
+  "classificationCounts": {
+    "timeout": 13,
+    "timeout-pointer-interception": 2,
+    "assertion-element-not-found": 9,
+    "assertion-element-hidden": 1,
+    "page-error-resizeobserver": 5
+  },
+  "failures": [
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "fullTitle": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio interactive controls expose names, keyboard focus, status, and dialog semantics\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "accessibility-Studio-inter-7a927-status-and-dialog-semantics-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "accessibility.spec.ts",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "fullTitle": "Studio dialogs keep keyboard focus inside the modal",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio dialogs keep keyboard focus inside the modal\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "accessibility-Studio-dialo-347c8-oard-focus-inside-the-modal-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "fullTitle": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "resultStatus": "timedOut",
+      "classification": "timeout-pointer-interception",
+      "errorMessage": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Add', exact: true })\n    - locator resolved to <button type=\"button\">Add</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <li class=\"\">\u2026</li> from <aside aria-label=\"Watchlists\" class=\"studio_sidebar__Aq3oN studio_watchlistSidebar__DHhr0\">\u2026</aside> subtree intercepts pointer events\n  - retrying click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <canvas role=\"img\" tabindex=\"0\" width=\"1036\" height=\"1036\" aria-label=\"Financial price chart; 1 visible bars; latest close 69,211.04; 4 visible series; 3 panes\"></canvas> from <section class=\"studio_multiChartArea__6B9t6\" aria-label=\"OpenKline multi-chart workspace\">\u2026</section> subtree intercepts pointer events\n  - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <small>Apple Inc.</small> from <aside aria-label=\"Watchlists\" class=\"studio_sidebar__Aq3oN studio_watchlistSidebar__DHhr0\">\u2026</aside> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    13 \u00d7 waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": true,
+        "detail": "- <li class=\"\">\u2026</li> from <aside aria-label=\"Watchlists\" class=\"studio_sidebar__Aq3oN studio_watchlistSidebar__DHhr0\">\u2026</aside> subtree intercepts pointer events"
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-multi-c-98a80-hlists-and-named-workspaces-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate-via-error-context"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "fullTitle": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio management actions use accessible dialogs instead of browser blocking prompts\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--fa393-of-browser-blocking-prompts-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "fullTitle": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  102 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  103 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 104 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  105 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  106 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  107 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:104:65",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--bba5f-nchors-across-scale-changes-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "fullTitle": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "resultStatus": "timedOut",
+      "classification": "timeout-pointer-interception",
+      "errorMessage": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Run Backtest' })\n    - locator resolved to <button type=\"button\">Run Backtest</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <fieldset>\u2026</fieldset> from <section data-testid=\"strategy-optimizer\" class=\"studio_strategyOptimizer__Hw2Kz\" aria-label=\"Strategy Optimizer for chart-1\">\u2026</section> subtree intercepts pointer events\n  - retrying click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <label>\u2026</label> intercepts pointer events\n  - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <fieldset>\u2026</fieldset> from <section data-testid=\"strategy-optimizer\" class=\"studio_strategyOptimizer__Hw2Kz\" aria-label=\"Strategy Optimizer for chart-1\">\u2026</section> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    14 \u00d7 waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": true,
+        "detail": "- <fieldset>\u2026</fieldset> from <section data-testid=\"strategy-optimizer\" class=\"studio_strategyOptimizer__Hw2Kz\" aria-label=\"Strategy Optimizer for chart-1\">\u2026</section> subtree intercepts pointer events"
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--dc2c7-rkers-exports-and-isolation-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate-via-error-context"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "fullTitle": "Studio cancels a large Worker backtest without retaining a partial result",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio cancels a large Worker backtest without retaining a partial result\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--938f6--retaining-a-partial-result-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "fullTitle": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "resultStatus": "failed",
+      "classification": "assertion-element-hidden",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator:  locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n  - Expect \"toBeVisible\" locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true }) with timeout 10000ms\n  - waiting for locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })\n    23 \u00d7 locator resolved to <span>\u2026</span>\n       - unexpected value \"hidden\"\n\n\n  15 |   await page.getByRole(\"button\", { name: \"Add\", exact: true }).click();\n  16 |   await expect(page.locator('[data-panel-id=\"chart-2\"]').getByText(\"3 indicators\", { exact: true })).toBeVisible();\n> 17 |   await expect(page.locator('[data-panel-id=\"chart-1\"]').getByText(\"2 indicators\", { exact: true })).toBeVisible();\n     |                                                                                                      ^\n  18 |\n  19 |   await page.getByLabel(\"Sync symbols\").check();\n  20 |   await page.getByLabel(\"Active symbol\").selectOption(\"AAPL\");\n    at /tests/react-browser/multi-chart-studio.spec.ts:17:102",
+      "assertion": {
+        "locator": "locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })",
+        "expected": "visible",
+        "received": "hidden"
+      },
+      "expectedVsActual": {
+        "locator": "locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })",
+        "expected": "visible",
+        "received": "hidden"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-multi-c-98a80-hlists-and-named-workspaces-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "fullTitle": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  102 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  103 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 104 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  105 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  106 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  107 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:104:65",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--bba5f-nchors-across-scale-changes-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "fullTitle": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  138 |   await page.getByLabel(\"Active chart panel\").selectOption(\"chart-1\");\n  139 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toBeVisible();\n> 140 |   expect(errors).toEqual([]);\n      |                  ^\n  141 | });\n  142 |\n  143 | test(\"Studio cancels a large Worker backtest without retaining a partial result\", async ({ page }) => {\n    at /tests/react-browser/multi-chart-studio.spec.ts:140:18",
+      "assertion": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "expectedVsActual": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--dc2c7-rkers-exports-and-isolation-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "fullTitle": "Studio cancels a large Worker backtest without retaining a partial result",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  151 |   await expect(page.getByText(\"cancelled\", { exact: true })).toBeVisible();\n  152 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toHaveCount(0);\n> 153 |   expect(errors).toEqual([]);\n      |                  ^\n  154 | });\n  155 |\n    at /tests/react-browser/multi-chart-studio.spec.ts:153:18",
+      "assertion": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "expectedVsActual": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio cancels a large Worker backtest without retaining a partial result\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "multi-chart-studio-Studio--938f6--retaining-a-partial-result-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "fullTitle": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio runs real optimization, applies a selection to the tester, and preserves paper state\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "optimization-studio-Studio-c3f3a-r-and-preserves-paper-state-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "fullTitle": "mobile Studio exposes bounded optimization controls and cancellation",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"mobile Studio exposes bounded optimization controls and cancellation\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "optimization-studio-mobile-416fb-n-controls-and-cancellation-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "optimization-studio.spec.ts",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "fullTitle": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  29 |   await expect(page.getByTestId(\"wfa-fold-chart\")).toBeVisible();\n  30 |   await expect(page.getByRole(\"button\", { name: \"Export WFA JSON\" })).toBeVisible();\n> 31 |   expect(errors).toEqual([]);\n     |                  ^\n  32 | });\n  33 |\n  34 | test(\"mobile Studio exposes bounded optimization controls and cancellation\", async ({ page }) => {\n    at /tests/react-browser/optimization-studio.spec.ts:31:18",
+      "assertion": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "expectedVsActual": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio runs real optimization, applies a selection to the tester, and preserves paper state\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "optimization-studio-Studio-c3f3a-r-and-preserves-paper-state-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60",
+      "assertion": {
+        "locator": "getByText('pending', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('pending', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (Playwright default desktop)",
+        "note": "Not Pixel/iPhone emulation",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-webkit -g \"Studio paper trading is visibly simulated, fills causally, and stays chart-scoped\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "paper-trading-studio-Studi-0b65c-ally-and-stays-chart-scoped-studio-webkit"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio paper trading is visibly simulated, fills causally, and stays chart-scoped\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "paper-trading-studio-Studi-0b65c-ally-and-stays-chart-scoped-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "fullTitle": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60",
+      "assertion": {
+        "locator": "getByText('pending', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('pending', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio paper trading is visibly simulated, fills causally, and stays chart-scoped\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "paper-trading-studio-Studi-0b65c-ally-and-stays-chart-scoped-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "fullTitle": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "screener-Studio-screener-r-e16f3-ts-deterministic-watch-mode-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "fullTitle": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('completed', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('completed', { exact: true }) with timeout 10000ms\n  - waiting for getByText('completed', { exact: true })\n\n\n   7 |   await expect(page.getByRole(\"heading\", { name: \"Market Screener\" })).toBeVisible();\n   8 |   await page.getByRole(\"button\", { name: \"Run scan\", exact: true }).click();\n>  9 |   await expect(page.getByText(\"completed\", { exact: true })).toBeVisible();\n     |                                                              ^\n  10 |   const resultRows = page.locator(\"table\").filter({ hasText: \"Screening results. Developing bars are not eligible.\" }).locator(\"tbody tr\");\n  11 |   await expect(resultRows).toHaveCount(3);\n  12 |   await page.getByLabel(\"Screener match filter\").selectOption(\"matched\");\n    at /tests/react-browser/screener.spec.ts:9:62",
+      "assertion": {
+        "locator": "getByText('completed', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('completed', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "screener-Studio-screener-r-e16f3-ts-deterministic-watch-mode-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  81 |   await page.getByRole(\"button\", { name: \"Fit\", exact: true }).click();\n  82 |   await expect(page.getByLabel(\"Price scale\")).toHaveValue(\"linear\");\n> 83 |   expect(errors).toEqual([]);\n     |                  ^\n  84 | });\n  85 |\n  86 | test(\"Studio remains operable at a touch-sized viewport\", async ({ page }) => {\n    at /tests/react-browser/studio.spec.ts:83:18",
+      "assertion": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "expectedVsActual": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (Playwright default desktop)",
+        "note": "Not Pixel/iPhone emulation",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-webkit -g \"Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-preserves-ch-3e54c--through-a-workspace-reload-studio-webkit"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  171 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  172 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  173 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:170:72",
+      "assertion": {
+        "locator": "getByText('Studio close alert')",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Studio close alert')",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "1280x720 (Playwright default desktop)",
+        "note": "Not Pixel/iPhone emulation",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-webkit -g \"Studio creates, pauses, persists, and removes a local alert\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-creates-paus-d133e-s-and-removes-a-local-alert-studio-webkit"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-preserves-ch-3e54c--through-a-workspace-reload-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "fullTitle": "Studio remains operable at a touch-sized viewport",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio remains operable at a touch-sized viewport\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-remains-operable-at-a-touch-sized-viewport-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "fullTitle": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio exposes deterministic replay playback controls and restores the workspace\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-exposes-dete-8ef25--and-restores-the-workspace-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio creates, pauses, persists, and removes a local alert\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-creates-paus-d133e-s-and-removes-a-local-alert-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "fullTitle": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "resultStatus": "timedOut",
+      "classification": "timeout",
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "assertion": null,
+      "expectedVsActual": null,
+      "timeoutOrPointerInterception": {
+        "isTimeout": true,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "412x915 (Pixel 7 device profile)",
+        "device": "Pixel 7",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-chrome -g \"Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-provides-Kli-83b4c-e-and-Worker-runtime-status-studio-mobile-chrome"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": "Likely blocked or stalled UI under mobile Chromium emulation; nested action error was not captured before the test-level timeout."
+      },
+      "diagnosticSufficiency": "insufficient-diagnostic-information: bare test timeout without nested action error"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "fullTitle": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  32 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  33 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 34 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n     |                                                                 ^\n  35 |   const objectTree = page.getByRole(\"complementary\", { name: \"Object tree\" });\n  36 |   await expect(objectTree).toBeVisible();\n  37 |   await objectTree.getByRole(\"button\", { name: \"Lock drawing-1\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:34:65",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-preserves-ch-3e54c--through-a-workspace-reload-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "fullTitle": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  121 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  122 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 123 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  124 |   await page.getByRole(\"button\", { name: \"Enter replay\", exact: true }).click();\n  125 |   await expect(page.getByText(\"Replay: ready\", { exact: true })).toBeVisible();\n  126 |   await expect(page.getByLabel(\"Replay position\")).toBeEnabled();\n    at /tests/react-browser/studio.spec.ts:123:65",
+      "assertion": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Drawings (1)', { exact: true })",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio exposes deterministic replay playback controls and restores the workspace\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-exposes-dete-8ef25--and-restores-the-workspace-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "fullTitle": "Studio creates, pauses, persists, and removes a local alert",
+      "resultStatus": "failed",
+      "classification": "assertion-element-not-found",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  171 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  172 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  173 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:170:72",
+      "assertion": {
+        "locator": "getByText('Studio close alert')",
+        "expected": "visible"
+      },
+      "expectedVsActual": {
+        "locator": "getByText('Studio close alert')",
+        "expected": "visible"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": null,
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio creates, pauses, persists, and removes a local alert\""
+      ],
+      "reproducible": "yes-on-focused-retry",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-creates-paus-d133e-s-and-removes-a-local-alert-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "fullTitle": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "resultStatus": "failed",
+      "classification": "page-error-resizeobserver",
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  203 |   await page.getByRole(\"button\", { name: \"Delete My KlineScript\", exact: true }).click();\n  204 |   await expect(page.getByText(\"My KlineScript\", { exact: true })).toHaveCount(0);\n> 205 |   expect(errors).toEqual([]);\n      |                  ^\n  206 | });\n  207 |\n    at /tests/react-browser/studio.spec.ts:205:18",
+      "assertion": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "expectedVsActual": {
+        "expected": "[] (no page errors)",
+        "received": "[\"ResizeObserver loop completed with undelivered notifications.\"]",
+        "assertion": "expect(errors).toEqual([])"
+      },
+      "timeoutOrPointerInterception": {
+        "isTimeout": false,
+        "pointerInterceptionObserved": false,
+        "detail": null
+      },
+      "viewport": {
+        "emulatedViewport": "390x664 (iPhone 13 device profile)",
+        "device": "iPhone 13",
+        "windowInnerWidthMeasured": null,
+        "measurementNote": "window.innerWidth was not programmatically captured in the full-suite JSON; values below are Playwright device profile sizes unless an error text measurement exists."
+      },
+      "consoleOrPageErrors": [
+        "ResizeObserver loop completed with undelivered notifications."
+      ],
+      "reproductionSteps": [
+        "In official container mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea, at source 8a62e324cf0bcb25c79d380d25269ddda33c3deb:",
+        "npm ci (root) && npm ci (examples/nextjs-app-router) && npm run build",
+        "npx playwright test --config playwright.studio.compat.config.ts --project=studio-mobile-safari -g \"Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status\""
+      ],
+      "reproducible": "recorded-in-full-suite-not-separately-retried",
+      "localTraceOrScreenshot": {
+        "available": true,
+        "errorContextBasename": "error-context.md",
+        "note": "Screenshots/traces/error-context remain on the trusted machine only; not published to GitHub.",
+        "localEvidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z",
+        "localFolderBasename": "studio-Studio-provides-Kli-83b4c-e-and-Worker-runtime-status-studio-mobile-safari"
+      },
+      "observedFactVsHypothesis": {
+        "observed": "Failure status and error message taken verbatim from Playwright JSON for the initial full Studio suite.",
+        "hypothesis": null
+      },
+      "diagnosticSufficiency": "adequate"
+    }
+  ],
+  "focusedDiagnosticRetry": {
+    "occurred": true,
+    "purpose": "Reproducibility check for representative failures; initial full-suite results preserved separately",
+    "stats": {
+      "startTime": "2026-10-26T18:21:17.496Z",
+      "duration": 95802.32500000001,
+      "expected": 2,
+      "skipped": 0,
+      "unexpected": 7,
+      "flaky": 0
+    },
+    "failures": [
+      {
+        "project": "studio-webkit",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "status": "failed",
+        "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  81 |   await page.getByRole(\"button\", { name: \"Fit\", exact: true }).click();\n  82 |   await expect(page.getByLabel(\"Price scale\")).toHaveValue(\"linear\");\n> 83 |   expect(errors).toEqual([]);\n     |                  ^\n  84 | });\n  85 |\n  86 | test(\"Studio remains operable at a touch-sized viewport\", async ({ p",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-webkit",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "status": "failed",
+        "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-mobile-chrome",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "status": "timedOut",
+        "error": "Test timeout of 30000ms exceeded.",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-mobile-chrome",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "status": "timedOut",
+        "error": "Test timeout of 30000ms exceeded.",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-mobile-chrome",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "status": "timedOut",
+        "error": "Test timeout of 30000ms exceeded.",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-mobile-safari",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "status": "failed",
+        "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  32 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  33 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 34 | ",
+        "outcome": "unexpected"
+      },
+      {
+        "project": "studio-mobile-safari",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "status": "failed",
+        "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(",
+        "outcome": "unexpected"
+      }
+    ],
+    "note": "Focused retry used the same playwright.studio.compat.config.ts and managed browser projects. Failures reproduced; no test was marked passing solely due to a single later pass."
+  },
+  "remainingViewportOrTouchIssues": [
+    {
+      "fact": "studio-mobile-chrome: 15/16 failures are test-level 30000ms timeouts; several error-context files show click actions blocked by overlapping chrome (watchlist aside / strategy section / fieldset) \u2014 pointer interception under Pixel 7 emulation.",
+      "hypothesis": "Mobile layout stacking still covers actionable controls despite viewport meta width=device-width;initial-scale=1 being present in examples/nextjs-app-router/app/layout.tsx."
+    },
+    {
+      "fact": "studio-mobile-safari and some studio-webkit cases fail to create drawings (Drawings (1) never appears) when tests use page.mouse.click on the canvas.",
+      "hypothesis": "Touch/WebKit pointer path may not register the same canvas hit-testing as desktop Chromium/Firefox; not proven as a product bug vs harness limitation without additional instrumentation."
+    },
+    {
+      "fact": "Multiple WebKit/Mobile Safari tests fail solely because pageerror \"ResizeObserver loop completed with undelivered notifications.\" is collected into an errors[] array asserted empty.",
+      "hypothesis": "Benign WebKit ResizeObserver noise vs real layout thrash; product code may need to filter or avoid the loop \u2014 unresolved by this QA evidence pack."
+    },
+    {
+      "fact": "Touch-sized viewport operability test passed on studio-webkit and studio-mobile-safari but timed out on studio-mobile-chrome in both full suite and focused retry.",
+      "hypothesis": null
+    }
+  ],
+  "limitations": [
+    "Automated Playwright container emulation only",
+    "Not physical-device verification",
+    "window.innerWidth not captured in every failure record",
+    "Screenshots/traces remain local-only"
+  ]
+}

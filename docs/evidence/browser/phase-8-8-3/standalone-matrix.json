@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.3",
+  "kind": "standalone-portable-library",
+  "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "playwrightVersion": "1.64.1",
+  "containerImage": "mcr.microsoft.com/playwright:v1.64.1-noble",
+  "containerDigest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+  "config": "playwright.portable.config.ts",
+  "workflowScript": "scripts/browser-verification.mjs",
+  "status": "verified",
+  "exitCode": 0,
+  "stats": {
+    "startTime": "2026-10-26T18:16:29.025Z",
+    "duration": 8001.075000000001,
+    "expected": 70,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "projects": [
+    {
+      "project": "chromium",
+      "browserName": "chromium",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "156.0.8078.4",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+    },
+    {
+      "project": "firefox",
+      "browserName": "firefox",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "157.0",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/firefox-1555/firefox/firefox",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0"
+    },
+    {
+      "project": "webkit",
+      "browserName": "webkit",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "27.2",
+      "deviceEmulation": null,
+      "executablePathInContainer": "/ms-playwright/webkit-2370/pw_run.sh",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15"
+    },
+    {
+      "project": "mobile-chrome",
+      "browserName": "chromium",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "156.0.8078.4",
+      "deviceEmulation": "mobile-chrome",
+      "executablePathInContainer": "/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36"
+    },
+    {
+      "project": "mobile-safari",
+      "browserName": "webkit",
+      "distribution": "Playwright-managed",
+      "status": "available",
+      "browserVersion": "27.2",
+      "deviceEmulation": "mobile-safari",
+      "executablePathInContainer": "/ms-playwright/webkit-2370/pw_run.sh",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1"
+    }
+  ],
+  "perProject": {
+    "chromium": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "firefox": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "webkit": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "mobile-chrome": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    },
+    "mobile-safari": {
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 14
+    }
+  }
+}
