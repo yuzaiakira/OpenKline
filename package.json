@@ -39,6 +39,7 @@
     "profile:browser": "npm run build && node scripts/profile-browser.mjs",
     "browser:diagnostic": "npm run build && node scripts/browser-local-diagnostic.mjs",
     "browser:verify": "npm run build && node scripts/browser-verification.mjs",
+    "studio:browser:verify": "npm run build && node scripts/studio-browser-verification.mjs",
     "evidence:browser:check": "node scripts/validate-browser-evidence.mjs",
     "release:baseline": "npm run build && node scripts/release-baseline.mjs",
     "api:inventory": "npm run build && node scripts/public-api-inventory.mjs",
