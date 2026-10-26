@@ -476,3 +476,10 @@ reserve/accounting consistency checks, restored source-sequence ordering, and
 preserved risk-halt state. Corrupted documents are rejected before account
 construction and restored history/stale events cannot fill an order. Durable
 storage remains an explicit host responsibility.
+
+Phase 8.1.5 adds a local deterministic benchmark for 1k/10k/100k paper market
+events, order submission, latency percentiles, fills, and post-dispose heap
+observations. The measured Node results are recorded in
+`docs/reports/phase-8-1-performance.md`; they are observations rather than
+universal performance targets. Browser rendering and inherited compatibility
+gates remain open.

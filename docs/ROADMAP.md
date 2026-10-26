@@ -106,6 +106,11 @@ benchmark, and broader browser acceptance remain open.
   sequence and risk-halt state, corruption rejection, and no-auto-fill
   recovery tests. Persistence is still caller-controlled and not silently
   added to workspace export.
+- [Implemented / Observed] Phase 8.1.5 adds the local deterministic paper
+  account benchmark for 1k/10k/100k events, append median/p95/max latency,
+  order-submit latency, fill counts, and post-dispose heap observations. The
+  recorded Node run is documented in `docs/reports/phase-8-1-performance.md`;
+  it makes no browser FPS or production-capacity claim.
 
 ## Completed
 
