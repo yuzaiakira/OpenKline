@@ -27,6 +27,7 @@ npm run package:check
 npm run package:smoke
 npm run preview:verify
 npm run browser:verify
+npm run evidence:browser:check
 ```
 
 The default `npm run test:browser` runs the Chromium project. The compatibility
@@ -146,6 +147,14 @@ The cloud's local Chromium test config is diagnostic evidence. Do not edit the
 portable config to add system browser paths; formal browser claims require the
 managed artifacts. A browser test that times out is a failed or blocked test,
 never a pass.
+
+`npm run evidence:browser:check` validates the compact trusted-machine Phase
+8.6.1 evidence committed under `docs/evidence/browser/phase-8-6-1/`. It checks
+the tested source SHA, Playwright/container provenance, all five project
+totals, all 70 unique passing records, recorded artifact/archive SHA-256
+formats, and the sanitization policy. It validates GitHub records and
+provenance; it does not recompute the original trusted-machine tarball hashes
+or claim that cloud browsers executed the trusted matrix.
 
 `npm run test:react:browser` starts the private Next.js example locally and
 uses Chromium to exercise the actual React adapter in Strict Mode. It verifies
