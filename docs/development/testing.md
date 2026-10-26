@@ -222,3 +222,19 @@ external network.
 REST, generic WebSocket, and optional Binance adapter with injected fixtures.
 It does not claim live Binance connectivity. The examples are intentionally
 outside the core source tree and can be removed or replaced by a consumer.
+
+## Phase 8.5 release hardening
+
+`tests/release-hardening.test.ts` adds deterministic invariant coverage for
+ordered candle corrections, invalid OHLCV input, concurrent Datafeed
+subscriptions, duplicate cleanup, and repeated disposal of replay/drawing
+resources. It uses bounded deterministic state rather than an unbounded fuzz
+workload. The existing KlineScript fuzz seeds, worker protocol tests, drawing
+round trips, workspace validation, and adapter race tests remain part of the
+same local suite.
+
+`tests/browser/release-hardening.spec.ts` runs a real Canvas2D lifecycle stress
+scenario in Chromium: repeated chart creation, direct data replacement,
+indicator/drawing setup, event subscription, update, destruction, and host
+removal. It asserts no page errors and no remaining canvases. This is a
+resource-cleanup regression check, not proof of zero browser heap leakage.
