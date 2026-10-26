@@ -713,8 +713,11 @@ demo quote provider otherwise used `Date.now()` in screenshot-visible labels.
 
 The local Phase 8.7 review passes the evidence consistency validator, typecheck,
 156 Node tests, API compatibility, 14 standalone Chromium tests, 21 React/
-Studio Chromium tests, and the Canvas2D benchmark. Repeated captures are
-byte-stable but remain unapproved candidates. The trusted 70/70 evidence pack
+Studio Chromium tests, the 28/28 system-Chromium diagnostic, and the Canvas2D
+benchmark. The readiness aggregate remains `NOT READY`: it retained one
+transient 2/28 Chromium diagnostic timeout even though the independent rerun
+passed 28/28. Repeated captures are byte-stable but remain unapproved
+candidates. The trusted 70/70 evidence pack
 targets the earlier source commit `19c86987453e2f5ae5572c4028ba9cb2e1f2f4aa`
 and is not evidence for the current Phase 8.7 revision. Screen-reader review,
 formal WCAG conformance, measured contrast, physical-device testing, managed
