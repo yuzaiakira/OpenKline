@@ -98,6 +98,7 @@ export interface OptimizationCounts {
 
 export interface OptimizationResult {
   readonly engineVersion: 1;
+  readonly jobId: string;
   readonly strategyId: string;
   readonly strategyVersion: number;
   readonly objective: OptimizationObjectiveName;

@@ -69,3 +69,27 @@ Verification:
 Worker execution, walk-forward leakage tests, robustness reports, Studio
 optimizer UI, optimization benchmarks, and export formats remain open for
 their specified milestones.
+
+## Phase 8.2.2 — Worker orchestration
+
+Implemented:
+
+- Added `createOptimizationWorker()` over the existing typed
+  `createBacktestWorker()` boundary.
+- Added bounded concurrency, deterministic candidate-index result ownership,
+  progress/status aggregation, job IDs, candidate timeout, overall timeout,
+  crash/startup retry, cancellation, supersession, and disposal cleanup.
+- Kept Worker execution restricted to the built-in trusted strategy registry;
+  custom registries remain synchronous.
+- Added tests for maximum active Worker count, financial result ranking,
+  startup crash recovery, cancellation, supersession, and cleanup.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Pass: 128 tests |
+| `npm run typecheck` | Pass |
+
+Strict Walk-Forward isolation, robustness analysis, Studio workflows, and
+optimization benchmarks remain open.

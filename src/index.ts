@@ -501,11 +501,14 @@ export {
   OptimizationValidationError,
   canonicalParameterSerialization,
   compareOptimizationScores,
+  createOptimizationWorker,
   generateOptimizationCandidates,
   getOptimizationObjective,
   listOptimizationObjectives,
   runOptimization,
   scoreBacktestResult,
+  OptimizationWorkerError,
+  OptimizationWorkerSession,
 } from "./optimization/index.js";
 export type {
   FixedParameter,
@@ -529,3 +532,4 @@ export type {
   ParameterGenerationResult,
   ValuesParameter,
 } from "./optimization/index.js";
+export type { OptimizationWorkerApi, OptimizationWorkerErrorCode, OptimizationWorkerFactory, OptimizationWorkerRuntimeOptions, OptimizationWorkerStatus, OptimizationWorkerStatusState } from "./optimization/index.js";

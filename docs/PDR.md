@@ -507,3 +507,12 @@ carry strategy/version, parameters, status, metrics, assumptions, and candle
 fingerprints. Full backtest retention is opt-in and bounded. Worker
 orchestration, strict Walk-Forward isolation, robustness analysis, and Studio
 controls remain subsequent milestones.
+
+Phase 8.2.2 adds typed bounded Worker orchestration over the existing
+`createBacktestWorker()` API. The pool limits concurrent candidate sessions,
+preserves original candidate identity for deterministic ranking, reports
+aggregate progress, retries recoverable Worker startup/crash failures once,
+and rejects cancellation, timeout, supersession, and disposal without
+publishing stale or partial completed results. Worker execution remains
+restricted to the trusted built-in strategy boundary; Paper Trading remains
+isolated.

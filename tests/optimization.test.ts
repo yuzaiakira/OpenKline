@@ -6,13 +6,34 @@ import {
   OptimizationValidationError,
   canonicalParameterSerialization,
   createBacktest,
+  createOptimizationWorker,
   generateOptimizationCandidates,
   runOptimization,
   scoreBacktestResult,
   serializeBacktestResult,
+  type BacktestWorkerLike,
+  type BacktestWorkerResponse,
   type Candle,
   type OptimizationOptions,
 } from "../src/index.js";
+import { createBacktestWorkerHandler } from "../src/backtesting/worker-handler.js";
+
+class HandlerWorker implements BacktestWorkerLike {
+  public onmessage: ((event: { readonly data: unknown }) => void) | null = null;
+  public onerror: ((event: unknown) => void) | null = null;
+  public onmessageerror: ((event: unknown) => void) | null = null;
+  public terminated = false;
+  private readonly handle: (message: unknown) => void;
+
+  public constructor() {
+    this.handle = createBacktestWorkerHandler((response: BacktestWorkerResponse) => queueMicrotask(() => this.onmessage?.({ data: response })));
+  }
+
+  public postMessage(message: unknown): void { if (this.terminated) throw new Error("Worker is terminated"); queueMicrotask(() => { if (!this.terminated) this.handle(message); }); }
+  public terminate(): void { this.terminated = true; }
+}
+
+class HangingWorker extends HandlerWorker { public override postMessage(_message: unknown): void { if (this.terminated) throw new Error("Worker is terminated"); } }
 
 function candles(count = 240): Candle[] {
   return Array.from({ length: count }, (_, index) => {
@@ -99,4 +120,40 @@ test("cancellation never returns a partial completed result", () => {
   const controller = new AbortController();
   controller.abort();
   assert.throws(() => runOptimization(options({ signal: controller.signal })), (error: unknown) => error instanceof OptimizationCancellationError && error.progress?.evaluatedCandidates === 0);
+});
+
+test("bounded Worker orchestration preserves ranking, progress, and crash recovery", async () => {
+  let maximumActiveWorkers = 0;
+  const runtime = createOptimizationWorker(options({ retainBacktestResults: true }), { workerCount: 2, factory: () => new HandlerWorker() });
+  runtime.subscribe((status) => { maximumActiveWorkers = Math.max(maximumActiveWorkers, status.activeWorkers); });
+  const result = await runtime.run();
+  assert.equal(result.jobId, "optimization-worker-1");
+  assert.equal(result.counts.evaluated, 9);
+  assert.equal(result.counts.failed, 0);
+  assert.ok(maximumActiveWorkers <= 2);
+  assert.equal(runtime.getStatus().state, "completed");
+  runtime.dispose();
+
+  let factoryCalls = 0;
+  const recovering = createOptimizationWorker(options(), { workerCount: 1, factory: () => { factoryCalls += 1; if (factoryCalls === 1) throw new Error("simulated worker startup crash"); return new HandlerWorker(); } });
+  const recovered = await recovering.run();
+  assert.equal(recovered.counts.evaluated, 9);
+  assert.ok(factoryCalls > 9);
+  recovering.dispose();
+});
+
+test("Worker cancellation, supersession, and cleanup reject stale jobs", async () => {
+  const hanging = createOptimizationWorker(options(), { workerCount: 2, candidateTimeoutMs: 1_000, factory: () => new HangingWorker() });
+  const cancelled = hanging.run();
+  hanging.cancel();
+  await assert.rejects(cancelled, (error: unknown) => error instanceof Error && "code" in error && error.code === "CANCELLED");
+  assert.equal(hanging.getStatus().state, "cancelled");
+  hanging.dispose();
+
+  const supersededRuntime = createOptimizationWorker(options(), { factory: () => new HandlerWorker() });
+  const first = supersededRuntime.run();
+  const second = supersededRuntime.run();
+  await assert.rejects(first, (error: unknown) => error instanceof Error && "code" in error && error.code === "SUPERSEDED");
+  await second;
+  supersededRuntime.dispose();
 });

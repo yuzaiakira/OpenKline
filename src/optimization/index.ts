@@ -1,4 +1,5 @@
 export { runOptimization } from "./engine.js";
+export { createOptimizationWorker, OptimizationWorkerError, OptimizationWorkerSession } from "./worker-runtime.js";
 export { canonicalParameterSerialization, generateOptimizationCandidates } from "./parameter-space.js";
 export { compareOptimizationScores, getOptimizationObjective, listOptimizationObjectives, scoreBacktestResult } from "./objectives.js";
 export type {
@@ -23,4 +24,5 @@ export type {
   ValuesParameter,
 } from "./types.js";
 export type { ObjectiveDefinition } from "./objectives.js";
+export type { OptimizationWorkerApi, OptimizationWorkerErrorCode, OptimizationWorkerFactory, OptimizationWorkerRuntimeOptions, OptimizationWorkerStatus, OptimizationWorkerStatusState } from "./worker-runtime.js";
 export { OptimizationCancellationError, OptimizationResourceLimitError, OptimizationTimeoutError, OptimizationValidationError } from "./types.js";

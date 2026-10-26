@@ -135,6 +135,12 @@ Phase 8.2 strategy optimization and walk-forward analysis — **In progress**.
   summaries, cancellation, and financial parity with `createBacktest()`.
   Worker scheduling, Walk-Forward isolation, robustness, and Studio controls
   remain open.
+- [Implemented / Verified] Phase 8.2.2 adds typed bounded optimization Worker
+  orchestration over `createBacktestWorker()`. It supports configurable
+  concurrency, progress/status aggregation, candidate timeout, overall
+  timeout, crash/startup retry, cancellation, supersession, generation-safe
+  result ownership, and disposal cleanup. Walk-Forward, robustness, and Studio
+  integration remain open.
 
 ## Completed
 

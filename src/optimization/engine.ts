@@ -66,6 +66,7 @@ export function runOptimization(options: OptimizationOptions): OptimizationResul
   const rankedCandidates = [...results].sort(compareCandidateResults);
   return {
     engineVersion: 1,
+    jobId: `optimization-${datasetFingerprint}-${objective.name}-${generation.generatedCount}`,
     strategyId: candidates[0]?.strategyId ?? registry.getMetadata(options.strategy).id,
     strategyVersion: candidates[0]?.strategyVersion ?? registry.getMetadata(options.strategy).version,
     objective: options.objective,

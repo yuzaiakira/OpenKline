@@ -46,3 +46,13 @@ candidate details are needed; full results are still bounded by
 place Paper Trading orders, connect to a broker, or imply future performance.
 Worker execution, walk-forward splitting, robustness diagnostics, and Studio
 controls are documented when their later Phase 8.2 milestones are completed.
+
+## Worker execution
+
+`createOptimizationWorker(options, { workerCount, candidateTimeoutMs,
+overallTimeoutMs })` runs the same candidate summaries through a bounded pool
+of the existing Backtest Workers. Its status includes job ID, active Worker
+count, aggregate progress, and lifecycle state. A second run supersedes the
+first; `cancel()` rejects the active job and disposes all active Worker
+sessions. Worker startup/crash failures receive one fresh-session retry by
+default. No partial cancellation result is reported as completed.
