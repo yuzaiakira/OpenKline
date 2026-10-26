@@ -47,3 +47,13 @@ React. `npm run package:check` and `npm run package:smoke` passed, the Next.js
 App Router TypeScript check passed, and the Next.js 16.4.3 production build
 passed. These checks do not replace a bundler-specific tree-shaking analysis,
 Firefox/WebKit verification, or a physical-device test.
+
+## 8.4.5 Studio separation evidence
+
+`npm run studio:check` passed after auditing 98 core source files and 13 Studio
+application files. The root package has no React or Next runtime dependency,
+the Next.js example remains private, and the Studio imports public package
+entry points rather than private `src/` paths. Local Chromium regression tests
+for the multi-chart Studio and the Market Screener passed after resolving a
+unique accessible-label collision. Studio remains a reference application;
+this does not claim formal accessibility or non-Chromium compatibility.

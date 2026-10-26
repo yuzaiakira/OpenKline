@@ -47,6 +47,10 @@ The private Next.js Studio is a reference consumer. Its deterministic demo
 provider, Watchlists, and UI controls are not part of the package's required
 runtime or data boundary.
 
+`npm run studio:check` protects this separation. Studio may compose public
+APIs and demonstrate optional providers, but the core cannot import Studio,
+Next.js, React, or example source paths.
+
 ## Non-negotiable invariants
 
 - No automatic third-party request or provider initialization.

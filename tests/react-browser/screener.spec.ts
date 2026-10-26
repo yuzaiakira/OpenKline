@@ -11,7 +11,7 @@ test("Studio screener runs a real watchlist scan, filters results, and starts de
   await expect(resultRows).toHaveCount(3);
   await page.getByLabel("Screener match filter").selectOption("matched");
   await expect(resultRows).toHaveCount(3);
-  await page.getByLabel("Screener indicator").selectOption("SMA");
+  await page.getByLabel("Screener rule").selectOption("SMA");
   await page.getByLabel("Screener indicator threshold").fill("0");
   await page.getByRole("button", { name: "Run scan", exact: true }).click();
   await expect(page.getByText("completed", { exact: true })).toBeVisible();

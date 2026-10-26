@@ -204,6 +204,11 @@ declarations, worker artifacts, tree-shaking metadata, runtime dependency
 boundary, and provider-neutral core build text. It is not a replacement for a
 bundler-specific tree-shaking analysis or cross-browser verification.
 
+`npm run studio:check` audits the reference Studio boundary: core source files
+must not import Next.js, React, or example paths; the core package must not
+gain Studio runtime dependencies; and the Next.js example must remain private
+and consume public package entry points.
+
 ## Phase 8.4 data ownership tests
 
 `tests/browser/data-ownership.spec.ts` loads the direct-data example while

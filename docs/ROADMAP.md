@@ -214,7 +214,9 @@ Phase 8.4 universal data integration and library architecture hardening —
   for ESM/type exports, worker artifacts, tree-shaking metadata, runtime
   dependency boundaries, and provider-neutral core output. Independent
   consumer and Next.js checks remain part of final verification.
-- [Not Started] 8.4.5 Studio/reference-application separation audit.
+- [Implemented / In Verification] 8.4.5 adds an executable Studio separation
+  audit. Core source remains framework/example independent, the Next.js app is
+  private, and public-package consumption remains the Studio boundary.
 - [Not Started] 8.4.6 full verification and final report.
 
 ## Completed

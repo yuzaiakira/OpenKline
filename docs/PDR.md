@@ -593,6 +593,16 @@ Worker artifacts, zero runtime dependencies, and independent Vanilla,
 TypeScript/React, and Next.js consumption. It does not claim every bundler,
 browser engine, accessibility mode, or physical device.
 
+Phase 8.4.5 keeps the Next.js Studio as a private reference application. An
+executable audit rejects core imports from Studio/example paths or framework
+runtime dependencies and rejects direct private-source imports from the Studio
+consumer.
+
+The 8.4.5 Studio audit passes: the private Next.js application consumes public
+package entry points, while core source remains free of framework/example
+imports and runtime Studio dependencies. A unique screener control label also
+keeps existing Studio browser locators unambiguous.
+
 The 8.4.1 direct-data scenario verifies that a local consumer can render,
 correct, analyze, and destroy a chart without creating a Datafeed or making a
 network request. This is the primary offline integration path.
