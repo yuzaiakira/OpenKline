@@ -20,6 +20,12 @@ existing timestamp or insert a correction before later bars.
 `pushBar` method exercises correction and subscription behavior without
 credentials or network access.
 
+`Chart.setDatafeed(datafeed, query)` calls `resolveSymbol` before
+`getBars`. Resolution is a lifecycle validation step; the returned symbol
+metadata remains application-owned and does not turn the chart into a provider
+registry. If a stale request is stopped, destroyed, or replaced while symbol
+resolution or history is pending, the result is ignored.
+
 ## REST adapter
 
 `RestDatafeed` expects pages shaped like `{ bars, next }`, where `next` is a

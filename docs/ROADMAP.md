@@ -203,7 +203,9 @@ Phase 8.4 universal data integration and library architecture hardening —
 - [Implemented / In Verification] 8.4.1 adds a standalone direct-data Vanilla
   example and a network-deny browser scenario covering local data, corrections,
   indicators, drawings, precision, and chart cleanup.
-- [Not Started] 8.4.2 custom Datafeed SDK hardening.
+- [Implemented / In Verification] 8.4.2 hardens the provider-neutral Datafeed
+  lifecycle by resolving symbols before history, preserving cancellation and
+  stale-request guards, and adding a custom-exchange consumer scenario.
 - [Not Started] 8.4.3 standalone offline, custom-exchange, generic adapter,
   and optional provider examples.
 - [Not Started] 8.4.4 package portability verification.

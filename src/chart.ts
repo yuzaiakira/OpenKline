@@ -966,6 +966,10 @@ export class Chart {
     this.indicators.clear();
     const requestId = this.datafeedRequestId;
     try {
+      await datafeed.resolveSymbol(query.symbol, query.signal);
+      if (this.destroyed || requestId !== this.datafeedRequestId) {
+        return;
+      }
       const bars = await datafeed.getBars(query);
       if (this.destroyed || requestId !== this.datafeedRequestId) {
         return;

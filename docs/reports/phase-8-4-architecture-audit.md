@@ -12,7 +12,7 @@ Audit baseline: branch `work`, commit `abf8f10aee328984696d9900a53edb97c201db22`
 | Browser side effects | `Chart` touches DOM/canvas in its constructor, while model and non-rendering modules remain import-safe. | Pass; keep chart construction in browser/client lifecycle. |
 | Framework coupling | React is isolated under `packages/react`; Next.js is isolated under `examples/nextjs-app-router`. | Pass; package consumer checks remain required. |
 | Direct data input | `Chart.setData`, `Chart.update`, and series `setData`/`update` already support local arrays, corrections, empty input, and custom symbols. | Implemented; add a standalone offline consumer scenario. |
-| Datafeed lifecycle | The public contract is provider-neutral and adapters are generic, but `Chart.setDatafeed` currently loads via `getBars` without explicitly calling `resolveSymbol`. | Action required in 8.4.2. |
+| Datafeed lifecycle | The public contract is provider-neutral and adapters are generic. The audit found that `Chart.setDatafeed` did not explicitly call `resolveSymbol`. | Fixed in 8.4.2; regression coverage is in the custom-exchange consumer scenario. |
 | Optional providers | No provider adapter is required by the package. The repository has no Binance example yet. | Add isolated examples/docs; do not export provider code from the core. |
 | Advanced features | Indicators, drawings, replay, screener, backtesting, optimization, paper trading, and workspaces consume supplied data or explicit host adapters. | Pass from source audit; test consumer boundaries. |
 | Package exports | Root exports are ESM/types and include framework-neutral modules; React remains a separate package. | Pass; verify installed ESM/TS/React/Next consumers. |

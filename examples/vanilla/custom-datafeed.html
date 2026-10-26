@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Custom Exchange Datafeed</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+      #chart { height: 520px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Custom exchange Datafeed</h1>
+      <p>This fake exchange owns symbol resolution, history, and streaming. It has no vendor or OpenKline network connection.</p>
+      <div id="chart"></div>
+    </main>
+    <script type="module">
+      import { createChart } from "../../dist/src/index.js";
+
+      class CompanyExchangeDatafeed {
+        constructor() {
+          this.info = { symbol: "ACME-USD", exchange: "ACME-X", currency: "USD", timezone: "UTC", pricePrecision: 3 };
+          this.start = Date.UTC(2026, 0, 1);
+          this.bars = Array.from({ length: 24 }, (_, index) => {
+            const close = 50 + Math.sin(index / 3) * 2 + index * 0.12;
+            return { time: this.start + index * 60 * 60 * 1000, open: close - 0.3, high: close + 1, low: close - 1, close, volume: 500 + index * 11 };
+          });
+          this.listeners = new Set();
+          this.resolveCalls = 0;
+          this.historyCalls = 0;
+          this.unsubscribeCalls = 0;
+        }
+        async resolveSymbol(symbol, signal) {
+          if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+          this.resolveCalls += 1;
+          if (symbol !== this.info.symbol) throw new Error(`Unknown company symbol: ${symbol}`);
+          return { ...this.info };
+        }
+        async getBars(query) {
+          this.historyCalls += 1;
+          if (query.symbol !== this.info.symbol) throw new Error(`Unknown company symbol: ${query.symbol}`);
+          return this.bars.filter((bar) => bar.time >= query.from && bar.time < query.to).map((bar) => ({ ...bar }));
+        }
+        subscribeBars(args) {
+          this.listeners.add(args.onBar);
+          return () => { this.listeners.delete(args.onBar); this.unsubscribeCalls += 1; };
+        }
+        pushBar(bar) {
+          this.bars = [...this.bars.filter((item) => item.time !== bar.time), bar].sort((left, right) => left.time - right.time);
+          for (const listener of this.listeners) listener({ ...bar });
+        }
+      }
+
+      const exchange = new CompanyExchangeDatafeed();
+      const chart = createChart(document.querySelector("#chart"), { theme: "dark", autoSize: true, pricePrecision: 3 });
+      const ready = chart.setDatafeed(exchange, { symbol: exchange.info.symbol, timeframe: "1h", from: exchange.start, to: exchange.start + 24 * 60 * 60 * 1000 });
+      globalThis.__openklineCustomExchange = { chart, exchange, ready };
+      await ready;
+      chart.addIndicator("EMA", { period: 5, pane: "main" });
+      chart.addDrawing("horizontal-line", { id: "exchange-level", points: [{ time: exchange.bars.at(-1).time, price: exchange.bars.at(-1).close }] });
+    </script>
+  </body>
+</html>

@@ -24,7 +24,7 @@ consumer explicitly calls `setDatafeed`.
 1. The application constructs or injects a datafeed.
 2. `chart.setDatafeed(datafeed, query)` resolves the symbol, loads the bounded
    historical interval, validates the returned candles, and installs the
-   optional subscription.
+   optional subscription. Resolution is performed before history acquisition.
 3. A subscription may deliver a newer bar or a correction for an existing
    timestamp. `Chart.update` preserves the existing ordered-store semantics.
 4. `stopDatafeed()` or `destroy()` invalidates stale loads and calls the
