@@ -218,7 +218,7 @@ render lifecycle; no measurable regression was identified by this run.
 All Phase 8.6 commits use `Akira Yuzai <yuzai.akira@gmail.com>` as both author
 and committer. Each successful commit was pushed to `origin/work` without
 force-push. The Phase 8.6 documentation/evidence delivery commit is
-`6519bf2c37ea06bccca1e995f9dcf046f84c6a6d`, and its push to `origin/work`
+`6519bf2505e2fb072805beb37ea3163e7826a1a8`, and its push to `origin/work`
 succeeded. The final synchronization must be checked with:
 
 ```bash
