@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.3",
+  "evidenceKind": "trusted-machine-standalone-and-studio-browser-matrix",
+  "createdAtUtc": "2026-10-26T18:24:55.601Z",
+  "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "sourceCommitNote": "Host-confirmed and container-confirmed git SHA. environment.json gitCommit recorded the exact target revision (safe.directory configured).",
+  "priorStandaloneSeventyOfSeventyEvidenceCommit": "2aabccf184e3c791c18ac3daa4bbeef89d89ed63",
+  "priorStudioProbePhase": "8.8.1",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "standaloneConfig": "playwright.portable.config.ts",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override is accepted by this workflow."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "how": "Official Playwright Docker image bind-mounted the repository at /work; isolated HOME=/tmp and npm_config_cache=/tmp/npm-cache; PLAYWRIGHT_BROWSERS_PATH=/ms-playwright; ran npm ci --ignore-scripts --no-audit --no-fund at repo root and in examples/nextjs-app-router; npm run build; then node scripts/browser-verification.mjs and node scripts/studio-browser-verification.mjs.",
+    "notCloudWorkspace": true,
+    "cloudVerification": "not-used-for-this-evidence",
+    "physicalDeviceTesting": false,
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false
+  },
+  "standaloneResults": {
+    "status": "verified",
+    "exitCode": 0,
+    "stats": {
+      "startTime": "2026-10-26T18:16:29.025Z",
+      "duration": 8001.075000000001,
+      "expected": 70,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "perProject": {
+      "chromium": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "firefox": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "webkit": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "mobile-chrome": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      },
+      "mobile-safari": {
+        "passed": 14,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 14
+      }
+    },
+    "testRecordCount": 70
+  },
+  "studioResults": {
+    "status": "FAIL",
+    "exitCode": 1,
+    "stats": {
+      "startTime": "2026-10-26T18:16:47.737Z",
+      "duration": 171995.94100000002,
+      "expected": 75,
+      "skipped": 0,
+      "unexpected": 30,
+      "flaky": 0
+    },
+    "perProject": {
+      "studio-chromium": {
+        "passed": 21,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "studio-firefox": {
+        "passed": 21,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "studio-webkit": {
+        "passed": 18,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "studio-mobile-chrome": {
+        "passed": 5,
+        "failed": 16,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      },
+      "studio-mobile-safari": {
+        "passed": 10,
+        "failed": 11,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 21
+      }
+    },
+    "testRecordCount": 105,
+    "failureCount": 30,
+    "comparisonToPhase881": "identical-totals-75-expected-30-unexpected"
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "standalone": {
+      "filename": "openkline-phase-8-8-3-standalone-20261026T181441Z.tar.gz",
+      "sha256": "05061c332e2f5e89f2330c494a9e4611924d1cf7a1ad93a6913b8b1811930643",
+      "evidenceDirectoryBasename": "phase-8-8-3-standalone-20261026T181441Z"
+    },
+    "studio": {
+      "filename": "openkline-phase-8-8-3-studio-20261026T181441Z.tar.gz",
+      "sha256": "07e3f123cf23bcea5a9e09954d7c3b8f592c075e2ba5d4373855c36d814e7ac8",
+      "evidenceDirectoryBasename": "phase-8-8-3-studio-20261026T181441Z"
+    },
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-3-studio-focused-diag-20261026T181441Z.tar.gz",
+      "sha256": "e48caf64c616825312e024cd5212e77f3356df75e98b492dd6d292065ee84ac5",
+      "evidenceDirectoryBasename": "phase-8-8-3-studio-focused-diag-20261026T181441Z",
+      "note": "Supplemental focused retries; does not replace the initial full Studio suite archive."
+    }
+  },
+  "sourceArtifactHashes": {
+    "standalone": {
+      "environment.json": {
+        "sha256": "cc0aeae96ae9b1669edb3fb4a0aa9720dea2dd39cebe422620efc7c33e6a1ad5",
+        "bytes": 3604
+      },
+      "playwright-results.json": {
+        "sha256": "9ff31af412cedae5f195234b9f66b895eb02cc132323d174d991646bee8daf0e",
+        "bytes": 85316
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "e63a13ae08941c7ddd817fc5082a3f72ce54daebcd3e71abf2109e2c784a02b7",
+        "bytes": 4663
+      }
+    },
+    "studio": {
+      "environment.json": {
+        "sha256": "5e363b3cbef0a2168ee3d1217293da31f14ca30c7cd4a7e9c397316b41c9e923",
+        "bytes": 3392
+      },
+      "playwright-results.json": {
+        "sha256": "8c2ecacae8cd846c386b6d2bffbe8962e01a020846e6975016d69565cff396a8",
+        "bytes": 214129
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "45a7f4c6aa3a7b87638d0c5deff016fa40410370dd73b3cf1e9ed1f1564d05bb",
+        "bytes": 11417
+      }
+    }
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname and other unnecessary machine identifiers",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, binaries, node_modules, Next.js .next build output",
+      "Access credentials, auth headers, and environment secrets"
+    ],
+    "note": "This GitHub evidence pack is a compact sanitized derivative. Original archives and full artifact directories remain only on the trusted Manjaro machine and are not part of this branch."
+  },
+  "limitations": [
+    "Automated Playwright container emulation only",
+    "Not native iOS Safari verification",
+    "Not physical Android/iOS device verification",
+    "Not accessibility conformance certification",
+    "Not visual-regression baseline approval",
+    "Not release authorization",
+    "Studio five-browser matrix still fails on WebKit and mobile managed browsers",
+    "Passing Chromium/Firefox Studio projects does not imply physical-device compatibility"
+  ]
+}

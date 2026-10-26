@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "playwrightVersion": "1.64.1",
+  "derivedFrom": "playwright-results.json from trusted-machine Phase 8.8.3 standalone run (not reconstructed from expected counts)",
+  "totalRecords": 70,
+  "byBrowser": {
+    "chromium": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "empty Canvas charts expose an explicit accessible state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 490
+      },
+      {
+        "file": "alerts.spec.ts",
+        "title": "public alerts evaluate live and replay data with deterministic simulated history",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 539
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders candles and supports interaction and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 894
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "loads the standalone vanilla plugin example",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 160
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 146
+      },
+      {
+        "file": "custom-datafeed.spec.ts",
+        "title": "custom exchange owns history and stream without external network",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 404
+      },
+      {
+        "file": "data-ownership.spec.ts",
+        "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 436
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 701
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 274
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "offline JSON and generic REST examples use local sources",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 526
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 268
+      },
+      {
+        "file": "release-hardening.spec.ts",
+        "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 467
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 633
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "suspends a datafeed during replay and resubscribes after restoration",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 223
+      }
+    ],
+    "firefox": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "empty Canvas charts expose an explicit accessible state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1037
+      },
+      {
+        "file": "alerts.spec.ts",
+        "title": "public alerts evaluate live and replay data with deterministic simulated history",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1460
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders candles and supports interaction and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2263
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "loads the standalone vanilla plugin example",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 520
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 514
+      },
+      {
+        "file": "custom-datafeed.spec.ts",
+        "title": "custom exchange owns history and stream without external network",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1787
+      },
+      {
+        "file": "data-ownership.spec.ts",
+        "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1393
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2065
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 524
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "offline JSON and generic REST examples use local sources",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2303
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 627
+      },
+      {
+        "file": "release-hardening.spec.ts",
+        "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1897
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1601
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "suspends a datafeed during replay and resubscribes after restoration",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 465
+      }
+    ],
+    "webkit": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "empty Canvas charts expose an explicit accessible state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 445
+      },
+      {
+        "file": "alerts.spec.ts",
+        "title": "public alerts evaluate live and replay data with deterministic simulated history",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 445
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders candles and supports interaction and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1993
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "loads the standalone vanilla plugin example",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 434
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 552
+      },
+      {
+        "file": "custom-datafeed.spec.ts",
+        "title": "custom exchange owns history and stream without external network",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 672
+      },
+      {
+        "file": "data-ownership.spec.ts",
+        "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 859
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1376
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 512
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "offline JSON and generic REST examples use local sources",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 704
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 491
+      },
+      {
+        "file": "release-hardening.spec.ts",
+        "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 503
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 739
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "suspends a datafeed during replay and resubscribes after restoration",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 439
+      }
+    ],
+    "mobile-chrome": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "empty Canvas charts expose an explicit accessible state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 287
+      },
+      {
+        "file": "alerts.spec.ts",
+        "title": "public alerts evaluate live and replay data with deterministic simulated history",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 321
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders candles and supports interaction and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 898
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "loads the standalone vanilla plugin example",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 148
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 175
+      },
+      {
+        "file": "custom-datafeed.spec.ts",
+        "title": "custom exchange owns history and stream without external network",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 348
+      },
+      {
+        "file": "data-ownership.spec.ts",
+        "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 294
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 499
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 295
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "offline JSON and generic REST examples use local sources",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 578
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 302
+      },
+      {
+        "file": "release-hardening.spec.ts",
+        "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 184
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 379
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "suspends a datafeed during replay and resubscribes after restoration",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 188
+      }
+    ],
+    "mobile-safari": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "empty Canvas charts expose an explicit accessible state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 321
+      },
+      {
+        "file": "alerts.spec.ts",
+        "title": "public alerts evaluate live and replay data with deterministic simulated history",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 404
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders candles and supports interaction and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1011
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "loads the standalone vanilla plugin example",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 233
+      },
+      {
+        "file": "chart.spec.ts",
+        "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 275
+      },
+      {
+        "file": "custom-datafeed.spec.ts",
+        "title": "custom exchange owns history and stream without external network",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 410
+      },
+      {
+        "file": "data-ownership.spec.ts",
+        "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 408
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 545
+      },
+      {
+        "file": "klinescript.spec.ts",
+        "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 285
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "offline JSON and generic REST examples use local sources",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 521
+      },
+      {
+        "file": "provider-examples.spec.ts",
+        "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 306
+      },
+      {
+        "file": "release-hardening.spec.ts",
+        "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 336
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 526
+      },
+      {
+        "file": "replay.spec.ts",
+        "title": "suspends a datafeed during replay and resubscribes after restoration",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 312
+      }
+    ]
+  }
+}

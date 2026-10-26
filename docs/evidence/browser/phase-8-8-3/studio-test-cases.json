@@ -1,0 +1,785 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "8a62e324cf0bcb25c79d380d25269ddda33c3deb",
+  "playwrightVersion": "1.64.1",
+  "derivedFrom": "playwright-results.json from trusted-machine Phase 8.8.3 Studio run (not reconstructed from expected counts)",
+  "totalRecords": 105,
+  "includesPassAndFail": true,
+  "byBrowser": {
+    "studio-chromium": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4373
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1586
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio dialogs keep keyboard focus inside the modal",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1624
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Reduced-motion mode has no decorative Studio animation path",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1079
+      },
+      {
+        "file": "contrast-audit.spec.ts",
+        "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4095
+      },
+      {
+        "file": "lifecycle.spec.ts",
+        "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4547
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 6591
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1359
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1549
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1989
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1638
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio cancels a large Worker backtest without retaining a partial result",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1471
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4842
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "mobile Studio exposes bounded optimization controls and cancellation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3391
+      },
+      {
+        "file": "paper-trading-studio.spec.ts",
+        "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4930
+      },
+      {
+        "file": "screener.spec.ts",
+        "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4675
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 7544
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1723
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2810
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1662
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1512
+      }
+    ],
+    "studio-firefox": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3988
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2295
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio dialogs keep keyboard focus inside the modal",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1420
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Reduced-motion mode has no decorative Studio animation path",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1010
+      },
+      {
+        "file": "contrast-audit.spec.ts",
+        "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3246
+      },
+      {
+        "file": "lifecycle.spec.ts",
+        "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4455
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 5958
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1619
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1793
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1908
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2035
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio cancels a large Worker backtest without retaining a partial result",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1753
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3431
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "mobile Studio exposes bounded optimization controls and cancellation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3205
+      },
+      {
+        "file": "paper-trading-studio.spec.ts",
+        "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3561
+      },
+      {
+        "file": "screener.spec.ts",
+        "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3256
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 4819
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2170
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2781
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1570
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1729
+      }
+    ],
+    "studio-webkit": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3587
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1594
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio dialogs keep keyboard focus inside the modal",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1632
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Reduced-motion mode has no decorative Studio animation path",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1169
+      },
+      {
+        "file": "contrast-audit.spec.ts",
+        "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1819
+      },
+      {
+        "file": "lifecycle.spec.ts",
+        "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1859
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 3874
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1225
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1551
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1333
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1552
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio cancels a large Worker backtest without retaining a partial result",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1686
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2559
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "mobile Studio exposes bounded optimization controls and cancellation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 6668
+      },
+      {
+        "file": "paper-trading-studio.spec.ts",
+        "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11874,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60"
+      },
+      {
+        "file": "screener.spec.ts",
+        "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 2645
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 4115,
+        "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  81 |   await page.getByRole(\"button\", { name: \"Fit\", exact: true }).click();\n  82 |   await expect(page.getByLabel(\"Price scale\")).toHaveValue(\"linear\");\n> 83 |   expect(errors).toEqual([]);\n     |                  ^\n  84 | });\n  85 |\n  86 | test(\"Studio remains operable at a touch-sized viewport\", async ({ page }) => {\n    at /tests/react-browser/studio.spec.ts:83:18"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1515
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1971
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11117,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  171 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  172 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  173 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:170:72"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1459
+      }
+    ],
+    "studio-mobile-chrome": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30038,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 825
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio dialogs keep keyboard focus inside the modal",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30030,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Reduced-motion mode has no decorative Studio animation path",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 613
+      },
+      {
+        "file": "contrast-audit.spec.ts",
+        "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 982
+      },
+      {
+        "file": "lifecycle.spec.ts",
+        "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1581
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30048,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 872
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30031,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 10926,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  102 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  103 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 104 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  105 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  106 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  107 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:104:65"
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30048,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio cancels a large Worker backtest without retaining a partial result",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30038,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30042,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "mobile Studio exposes bounded optimization controls and cancellation",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30041,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "paper-trading-studio.spec.ts",
+        "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30034,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "screener.spec.ts",
+        "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30041,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30032,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30035,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30031,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30041,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+        "outcome": "unexpected",
+        "resultStatus": "timedOut",
+        "durationMs": 30040,
+        "errorMessage": "Test timeout of 30000ms exceeded."
+      }
+    ],
+    "studio-mobile-safari": [
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1349
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1182
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Studio dialogs keep keyboard focus inside the modal",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 976
+      },
+      {
+        "file": "accessibility.spec.ts",
+        "title": "Reduced-motion mode has no decorative Studio animation path",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 815
+      },
+      {
+        "file": "contrast-audit.spec.ts",
+        "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 845
+      },
+      {
+        "file": "lifecycle.spec.ts",
+        "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1176
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11178,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator:  locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n  - Expect \"toBeVisible\" locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true }) with timeout 10000ms\n  - waiting for locator('[data-panel-id=\"chart-1\"]').getByText('2 indicators', { exact: true })\n    23 \u00d7 locator resolved to <span>\u2026</span>\n       - unexpected value \"hidden\"\n\n\n  15 |   await page.getByRole(\"button\", { name: \"Add\", exact: true }).click();\n  16 |   await expect(page.locator('[data-panel-id=\"chart-2\"]').getByText(\"3 indicators\", { exact: true })).toBeVisible();\n> 17 |   await expect(page.locator('[data-panel-id=\"chart-1\"]').getByText(\"2 indicators\", { exact: true })).toBeVisible();\n     |                                                                                                      ^\n  18 |\n  19 |   await page.getByLabel(\"Sync symbols\").check();\n  20 |   await page.getByLabel(\"Active symbol\").selectOption(\"AAPL\");\n    at /tests/react-browser/multi-chart-studio.spec.ts:17:102"
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 901
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1054
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 10969,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  102 |   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.25);\n  103 |   await page.mouse.click(box.x + box.width * 0.72, box.y + box.height * 0.45);\n> 104 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  105 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n  106 |   const before = await page.evaluate(() => (JSON.parse(window.localStorage.getItem(\"openkline-studio-workspace-v1\") ?? \"null\") as { drawings: { drawings: Array<{ points: Array<{ time: number; price: number }> }> } }).drawings.drawings[0]?.points);\n  107 |   expect(before).toHaveLength(2);\n    at /tests/react-browser/multi-chart-studio.spec.ts:104:65"
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 1406,
+        "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  138 |   await page.getByLabel(\"Active chart panel\").selectOption(\"chart-1\");\n  139 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toBeVisible();\n> 140 |   expect(errors).toEqual([]);\n      |                  ^\n  141 | });\n  142 |\n  143 | test(\"Studio cancels a large Worker backtest without retaining a partial result\", async ({ page }) => {\n    at /tests/react-browser/multi-chart-studio.spec.ts:140:18"
+      },
+      {
+        "file": "multi-chart-studio.spec.ts",
+        "title": "Studio cancels a large Worker backtest without retaining a partial result",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 1610,
+        "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  151 |   await expect(page.getByText(\"cancelled\", { exact: true })).toBeVisible();\n  152 |   await expect(page.getByRole(\"region\", { name: \"Strategy Tester for chart-1\" }).getByRole(\"button\", { name: \"Export JSON\" })).toHaveCount(0);\n> 153 |   expect(errors).toEqual([]);\n      |                  ^\n  154 | });\n  155 |\n    at /tests/react-browser/multi-chart-studio.spec.ts:153:18"
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 1543,
+        "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  29 |   await expect(page.getByTestId(\"wfa-fold-chart\")).toBeVisible();\n  30 |   await expect(page.getByRole(\"button\", { name: \"Export WFA JSON\" })).toBeVisible();\n> 31 |   expect(errors).toEqual([]);\n     |                  ^\n  32 | });\n  33 |\n  34 | test(\"mobile Studio exposes bounded optimization controls and cancellation\", async ({ page }) => {\n    at /tests/react-browser/optimization-studio.spec.ts:31:18"
+      },
+      {
+        "file": "optimization-studio.spec.ts",
+        "title": "mobile Studio exposes bounded optimization controls and cancellation",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 5252
+      },
+      {
+        "file": "paper-trading-studio.spec.ts",
+        "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11067,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n\n\n  10 |   await page.getByLabel(\"Paper order quantity\").fill(\"0.1\");\n  11 |   await page.getByRole(\"button\", { name: \"Submit simulated buy\", exact: true }).click();\n> 12 |   await expect(page.getByText(\"pending\", { exact: true })).toBeVisible();\n     |                                                            ^\n  13 |   await page.getByRole(\"button\", { name: \"Advance simulated quote\", exact: true }).click();\n  14 |   await expect(page.getByText(\"filled\", { exact: true })).toBeVisible();\n  15 |   await expect(page.getByText(\"Position audit\").locator(\"..\")?.getByText(/BTC-USD/)).toBeVisible();\n    at /tests/react-browser/paper-trading-studio.spec.ts:12:60"
+      },
+      {
+        "file": "screener.spec.ts",
+        "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 10976,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('completed', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('completed', { exact: true }) with timeout 10000ms\n  - waiting for getByText('completed', { exact: true })\n\n\n   7 |   await expect(page.getByRole(\"heading\", { name: \"Market Screener\" })).toBeVisible();\n   8 |   await page.getByRole(\"button\", { name: \"Run scan\", exact: true }).click();\n>  9 |   await expect(page.getByText(\"completed\", { exact: true })).toBeVisible();\n     |                                                              ^\n  10 |   const resultRows = page.locator(\"table\").filter({ hasText: \"Screening results. Developing bars are not eligible.\" }).locator(\"tbody tr\");\n  11 |   await expect(resultRows).toHaveCount(3);\n  12 |   await page.getByLabel(\"Screener match filter\").selectOption(\"matched\");\n    at /tests/react-browser/screener.spec.ts:9:62"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11371,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  32 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  33 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 34 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n     |                                                                 ^\n  35 |   const objectTree = page.getByRole(\"complementary\", { name: \"Object tree\" });\n  36 |   await expect(objectTree).toBeVisible();\n  37 |   await objectTree.getByRole(\"button\", { name: \"Lock drawing-1\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:34:65"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio remains operable at a touch-sized viewport",
+        "outcome": "expected",
+        "resultStatus": "passed",
+        "durationMs": 1191
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 11027,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n\n\n  121 |   await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.22);\n  122 |   await page.mouse.click(box.x + box.width * 0.65, box.y + box.height * 0.34);\n> 123 |   await expect(page.getByText(\"Drawings (1)\", { exact: true })).toBeVisible();\n      |                                                                 ^\n  124 |   await page.getByRole(\"button\", { name: \"Enter replay\", exact: true }).click();\n  125 |   await expect(page.getByText(\"Replay: ready\", { exact: true })).toBeVisible();\n  126 |   await expect(page.getByLabel(\"Replay position\")).toBeEnabled();\n    at /tests/react-browser/studio.spec.ts:123:65"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio creates, pauses, persists, and removes a local alert",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 10987,
+        "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n\n\n  168 |   await page.getByRole(\"button\", { name: \"Create alert\", exact: true }).click();\n  169 |   await expect(page.getByText(\"Alerts (1)\", { exact: true })).toBeVisible();\n> 170 |   await expect(page.getByText(\"Studio close alert\", { exact: false })).toBeVisible();\n      |                                                                        ^\n  171 |   await page.getByRole(\"complementary\", { name: \"Chart settings\" }).getByRole(\"button\", { name: \"Pause\", exact: true }).click();\n  172 |   await expect(page.getByRole(\"button\", { name: \"Enable\", exact: true })).toBeVisible();\n  173 |   await page.getByRole(\"button\", { name: \"Save\", exact: true }).click();\n    at /tests/react-browser/studio.spec.ts:170:72"
+      },
+      {
+        "file": "studio.spec.ts",
+        "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+        "outcome": "unexpected",
+        "resultStatus": "failed",
+        "durationMs": 1311,
+        "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]\n\n  203 |   await page.getByRole(\"button\", { name: \"Delete My KlineScript\", exact: true }).click();\n  204 |   await expect(page.getByText(\"My KlineScript\", { exact: true })).toHaveCount(0);\n> 205 |   expect(errors).toEqual([]);\n      |                  ^\n  206 | });\n  207 |\n    at /tests/react-browser/studio.spec.ts:205:18"
+      }
+    ]
+  }
+}
