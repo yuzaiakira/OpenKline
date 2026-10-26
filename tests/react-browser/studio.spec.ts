@@ -67,7 +67,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
 
   await page.reload();
   await expect(page.locator("canvas")).toHaveCount(1);
-  await page.getByRole("button", { name: "Load", exact: true }).click();
+  await page.getByRole("button", { name: "Load", exact: true }).first().click();
   await expect(page.getByRole("button", { name: "Heikin-Ashi", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Price scale")).toHaveValue("linear");
   await expect(page.getByLabel("Theme")).toHaveValue("light");
@@ -143,7 +143,7 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   await expect(page.getByLabel("Replay speed")).toHaveValue("5");
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(page.getByText("Replay: playing", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("complementary", { name: "Chart settings" }).getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.getByText("Replay: paused", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Exit replay", exact: true }).click();
   await expect(page.getByText("Replay: idle", { exact: true })).toBeVisible();
@@ -167,7 +167,7 @@ test("Studio creates, pauses, persists, and removes a local alert", async ({ pag
   await page.getByRole("button", { name: "Create alert", exact: true }).click();
   await expect(page.getByText("Alerts (1)", { exact: true })).toBeVisible();
   await expect(page.getByText("Studio close alert", { exact: false })).toBeVisible();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("complementary", { name: "Chart settings" }).getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.getByRole("button", { name: "Enable", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { alerts?: { alerts: Array<{ name: string }> } });

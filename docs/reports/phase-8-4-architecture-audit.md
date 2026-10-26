@@ -55,5 +55,7 @@ application files. The root package has no React or Next runtime dependency,
 the Next.js example remains private, and the Studio imports public package
 entry points rather than private `src/` paths. Local Chromium regression tests
 for the multi-chart Studio and the Market Screener passed after resolving a
-unique accessible-label collision. Studio remains a reference application;
+unique accessible-label collision. The full React-browser suite also scopes
+chart and Strategy Tester assertions to their owning regions so the Screener's
+same-purpose controls cannot create false strict-mode failures. Studio remains a reference application;
 this does not claim formal accessibility or non-Chromium compatibility.
