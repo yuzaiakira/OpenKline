@@ -95,3 +95,10 @@ and canvas/resource cleanup.
 The current cloud machine has no official managed browser executables. Its
 report is intentionally blocked; use it only as reproducible diagnostics, not
 as a passing compatibility claim.
+
+On the Phase 8.5 verification run, the official pinned container
+`mcr.microsoft.com/playwright:v1.64.1-noble` was attempted once. The registry
+returned `Forbidden` while downloading the image configuration, including on an
+approved-network retry. No untrusted image or browser binary was substituted.
+The exact result and current matrix are recorded in
+[`browser-compatibility-matrix.md`](./browser-compatibility-matrix.md).
