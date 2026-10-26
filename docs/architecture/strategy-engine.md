@@ -59,6 +59,12 @@ value. Signals do not contain execution prices or imply that an order was
 filled. The order simulator will apply the documented next-bar-open policy in
 the next Phase 8 increment.
 
+The first built-in definitions are EMA crossover, RSI threshold reversal,
+Donchian breakout, and EMA trend following. They use independent instances of
+the existing EMA, RSI, and Donchian indicator definitions. Built-ins are
+ordinary `StrategyDefinition` values and do not receive special access to
+Chart or rendering state.
+
 Input timestamps must be non-negative UTC integer milliseconds in strict
 ascending order. OHLC relationships and optional volume are validated by the
 existing `CandleStore`; missing volume is preserved as missing and is never

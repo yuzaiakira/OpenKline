@@ -273,6 +273,14 @@ export type {
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
 export { StrategyRegistry } from "./strategies/index.js";
 export {
+  builtInStrategyDefinitions,
+  createDefaultStrategyRegistry,
+  donchianBreakoutDefinition,
+  emaCrossoverDefinition,
+  emaTrendDefinition,
+  rsiReversalDefinition,
+} from "./strategies/index.js";
+export {
   OPENKLINE_STRATEGY_VERSION,
   StrategyCancellationError,
   StrategyLifecycleError,
@@ -280,6 +288,10 @@ export {
 } from "./strategies/index.js";
 export type {
   StrategyBarContext,
+  DonchianBreakoutParameters,
+  EmaCrossoverParameters,
+  EmaTrendParameters,
+  RsiReversalParameters,
   StrategyDataInput,
   StrategyDefinition,
   StrategyDirection,

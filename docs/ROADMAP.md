@@ -24,6 +24,15 @@ first increment defines the trusted TypeScript strategy boundary and
 anti-lookahead signal evaluation. Order simulation, accounting, metrics,
 replay/Studio integration, and final verification remain open.
 
+- [Implemented / Verified] Phase 8.0.0 adds the framework-neutral
+  `StrategyRegistry`, versioned strategy metadata, validated trusted-TypeScript
+  definitions, completed-bar prefix contexts, deterministic signal IDs,
+  progress/cancellation handling, and independent anti-lookahead fixtures.
+- [Implemented / Verified] Phase 8.0.1 adds EMA crossover, RSI threshold
+  reversal, Donchian breakout, and EMA trend-following definitions backed by
+  the existing Indicator Engine. Signals remain separate from orders and
+  fills; execution, accounting, metrics, and Studio integration remain open.
+
 ## Completed
 
 - [Implemented] Created a strict TypeScript project with local-only scripts.

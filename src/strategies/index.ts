@@ -1,5 +1,19 @@
 export { StrategyRegistry } from "./registry.js";
 export {
+  builtInStrategyDefinitions,
+  createDefaultStrategyRegistry,
+  donchianBreakoutDefinition,
+  emaCrossoverDefinition,
+  emaTrendDefinition,
+  rsiReversalDefinition,
+} from "./builtins.js";
+export type {
+  DonchianBreakoutParameters,
+  EmaCrossoverParameters,
+  EmaTrendParameters,
+  RsiReversalParameters,
+} from "./builtins.js";
+export {
   OPENKLINE_STRATEGY_VERSION,
   StrategyCancellationError,
   StrategyLifecycleError,

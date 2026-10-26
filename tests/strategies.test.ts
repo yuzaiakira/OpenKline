@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createDefaultStrategyRegistry,
   StrategyCancellationError,
   StrategyLifecycleError,
   StrategyRegistry,
@@ -89,4 +90,29 @@ test("strategy evaluation validates candles, progress cadence, cancellation, and
   controller.abort();
   assert.throws(() => registry.create("PREFIX_PROBE", {}).evaluate(candles([1, 2]), { signal: controller.signal }), StrategyCancellationError);
   assert.throws(() => registry.create("PREFIX_PROBE", {}).evaluate([{ ...candles([1])[0]!, close: Number.NaN }]), /Invalid candle/);
+});
+
+test("built-in strategies use real indicator outputs and preserve a causal prefix", () => {
+  const registry = createDefaultStrategyRegistry();
+  assert.deepEqual(registry.listMetadata().map((metadata) => metadata.id), [
+    "EMA_CROSSOVER",
+    "RSI_REVERSAL",
+    "DONCHIAN_BREAKOUT",
+    "EMA_TREND",
+  ]);
+  assert.throws(() => registry.create("EMA_CROSSOVER", { fastPeriod: 5, slowPeriod: 3 }), StrategyValidationError);
+
+  const input = candles([10, 9, 8, 7, 8, 10, 12, 11, 9, 8, 10]);
+  const crossover = registry.create("EMA_CROSSOVER", { fastPeriod: 2, slowPeriod: 4 }).evaluate(input);
+  const prefix = registry.create("EMA_CROSSOVER", { fastPeriod: 2, slowPeriod: 4 }).evaluate(input.slice(0, 8));
+  assert.ok(crossover.signals.length > 0);
+  assert.deepEqual(crossover.signals.filter((signal) => signal.index < 8), prefix.signals);
+  assert.ok(crossover.signals.every((signal) => signal.time === input[signal.index]!.time));
+
+  const trend = registry.create("EMA_TREND", { period: 3 }).evaluate(input);
+  assert.ok(trend.signals.some((signal) => signal.action === "enter-long"));
+  const breakout = registry.create("DONCHIAN_BREAKOUT", { period: 3 }).evaluate(input);
+  assert.ok(breakout.signals.every((signal) => signal.reason.includes("previous 3-bar")));
+  const rsi = registry.create("RSI_REVERSAL", { period: 3, oversold: 35, overbought: 65 }).evaluate(input);
+  assert.ok(rsi.signals.every((signal) => signal.value !== undefined));
 });

@@ -49,6 +49,21 @@ const definition: StrategyDefinition<{ period: number }> = {
 };
 ```
 
+## Built-in strategies
+
+`createDefaultStrategyRegistry()` registers these initial strategies:
+
+| ID | Parameters | Signal policy |
+| --- | --- | --- |
+| `EMA_CROSSOVER` | `fastPeriod`, `slowPeriod` | Long entry on bullish crossover; long exit on bearish crossover |
+| `RSI_REVERSAL` | `period`, `oversold`, `overbought` | Entry after recovery above oversold; exit at overbought |
+| `DONCHIAN_BREAKOUT` | `period` | Entry above the previous channel; exit below the previous channel |
+| `EMA_TREND` | `period` | Entry/exit when a completed close crosses its EMA |
+
+These strategies use the existing Indicator Engine. Donchian breakout reads
+the channel value from the previous completed bar before updating it with the
+current bar, so the current bar cannot expand its own breakout threshold.
+
 Supported actions are `enter-long`, `exit-long`, `enter-short`, and
 `exit-short`. The signal time is the completed candle time. It is not an order,
 fill, or guarantee of execution. The backtest layer will keep signal and fill
