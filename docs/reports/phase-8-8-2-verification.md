@@ -127,6 +127,7 @@ trusted rerun.
 | Next.js production build | PASS |
 | npm run benchmark:browser | PASS — 1k 64.06 FPS, 10k 62.28 FPS, 100k 50.14 FPS; 0 canvases after destroy |
 | npm run studio:browser:verify | BLOCKED — all five managed executables absent in cloud |
+| npm run release:readiness | NOT READY — managed-browser gate blocked; owner/legal/manual gates remain open |
 | System Chromium mobile diagnostic | LIMITED — environment layout viewport; not accepted as mobile compatibility |
 
 The Studio workflow did not download browsers or substitute system binaries.
@@ -137,6 +138,9 @@ The artifact summary is at
 artifacts/studio-browser-verification/2026-10-26T18-01-53-322Z/summary.json;
 it records the cloud checkout before the final documentation commit and is
 not a trusted-browser result.
+The complete release-readiness summary is at
+artifacts/release-readiness/2026-10-26T18-05-41-263Z/summary.json; it records
+the documentation commit `2ea15d7` and reports `NOT READY`.
 
 ## Required trusted-machine follow-up
 
@@ -169,8 +173,9 @@ Verified implementation commit:
 Author and committer: Akira Yuzai <yuzai.akira@gmail.com>
 Remote origin/work was pushed and matched this commit after the milestone.
 
-The documentation commit for this report is pushed separately after the
-final local readiness checks. No force-push, GitHub Actions, tag, release,
+The evidence/validator, Studio implementation, and documentation commits are
+all pushed to `origin/work`; the final report correction follows the recorded
+release-readiness run. No force-push, GitHub Actions, tag, release,
 npm publication, license activation, or external evidence transfer was
 performed.
 
