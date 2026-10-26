@@ -112,4 +112,40 @@ Phase 8.3 therefore remains open. The implemented local milestones are
 complete, but the unverified compatibility, accessibility, physical-device,
 and external-provider gates must not be converted into a release claim.
 
+### Verification command record
+
+- `npm test`: 151 passing, 0 failing.
+- `npm run benchmark:screener`: passed with the measurements above.
+- `npm run typecheck`: passed; the Next example TypeScript check also passed.
+- `npm run package:check`: passed; packed core contained 394 files.
+- `npm run package:smoke`: passed; a clean temporary consumer imported the
+  packed ESM package successfully.
+- `npm run package:audit`: passed; the report correctly retains
+  `licenseStatus: pending-owner-approval` and does not invent license metadata.
+- `npm run build` in `examples/nextjs-app-router`: passed on Next.js 16.4.3.
+- `npm run test:react:browser -- --grep screener`: passed, 1 Chromium test.
+  This used Playwright 1.64.1 with system Chromium 154.0.8037.57 because no
+  managed Playwright browser cache is available. No Firefox, WebKit, or mobile
+  browser binary was substituted.
+
+### Git and publication verification
+
+The milestones were committed with `Akira Yuzai <yuzai.akira@gmail.com>` and
+each successful commit was pushed immediately to `origin/work`:
+
+| Milestone | Commit | Push state |
+| --- | --- | --- |
+| 8.3.0 | `82934181055ec10e2d158eec73baee4c7167d846` | Pushed and verified |
+| 8.3.1 | `b40aa629a2d58962dc5cce0040df0b93b02d4731` | Pushed and verified |
+| 8.3.2 | `23af6cfd96f93b75bc1ce670b7ab084d65eadf03` | Pushed and verified |
+| 8.3.3 | `e6c51869acbfe780a6774a7812e2a29ad2aa27cc` | Pushed and verified |
+| 8.3.4 | `6ed55327f0a4afa12b9501f657ab6c06c320d2a3` | Pushed and verified |
+| 8.3.5 | `62bb7c87285c5eea2ce772985568c0c6ef685a07` | Pushed and verified |
+| 8.3.6 benchmark/docs | `6509cfd62b6403fbaa26fc4d21068b18d055cc4b` | Pushed and verified |
+
+At the time of this report update, `work` was clean and its local `HEAD`
+matched `origin/work` at `6509cfd62b6403fbaa26fc4d21068b18d055cc4b`. No GitHub
+Actions, npm publication, release tag, or public release was created. The
+effective licensing state remains unchanged and pending owner/legal approval.
+
 
