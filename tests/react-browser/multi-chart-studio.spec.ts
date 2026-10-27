@@ -123,6 +123,35 @@ test("mobile multi-chart Studio switches the visible panel through the accessibl
   await expect(page.getByRole("button", { name: "Fit", exact: true })).toBeVisible();
 });
 
+test("Studio top actions stay within representative viewport widths", async ({ page }) => {
+  for (const width of [390, 412, 640, 800, 1280]) {
+    await test.step(`check ${width}px layout`, async () => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      await expect(page.locator("header").getByRole("button", { name: "New", exact: true })).toBeVisible();
+      await expect(page.getByLabel("Workspace name", { exact: true })).toBeVisible();
+      const layout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        topActions: (() => {
+          const header = document.querySelector("header");
+          const element = header === null ? null : Array.from(header.querySelectorAll<HTMLElement>("div")).find((candidate) => candidate.querySelector('input[aria-label="Workspace name"]')) ?? null;
+          if (element === null) return null;
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+        })(),
+      }));
+      expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+      expect(layout.topActions).not.toBeNull();
+      if (layout.topActions !== null) {
+        expect(layout.topActions.left).toBeGreaterThanOrEqual(-1);
+        expect(layout.topActions.right).toBeLessThanOrEqual(layout.clientWidth + 1);
+        expect(layout.topActions.scrollWidth).toBeLessThanOrEqual(layout.topActions.clientWidth + 1);
+      }
+    });
+  }
+});
+
 test("Studio management actions use accessible dialogs instead of browser blocking prompts", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Rename watchlist", exact: true }).click();
