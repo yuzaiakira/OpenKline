@@ -751,3 +751,13 @@ Studio compatibility gates remain open**.
   authorization gates remain open. See
   `docs/reports/phase-8-8-10-verification.md` and
   `docs/reports/phase-8-8-10-targeted-handoff.md`.
+
+- [Implemented / Verification Open] Phase 8.8.12 preserves the seven-failure
+  Studio ledger, adds bounded compatibility diagnostics, repairs the locally
+  reproduced CSS/logical resize race affecting drawing anchors, and hardens
+  paper-trading session/input and alert-input handling. Local 167/167 Node
+  tests, 26/26 Studio Chromium tests, and the focused drawing regression pass.
+  The trusted current-source Firefox, WebKit, and Mobile Safari targeted rerun
+  remains open; the prior trusted result is still 113/120 Studio. See
+  `docs/reports/phase-8-8-12-verification.md` and
+  `docs/reports/phase-8-8-12-targeted-handoff.md`.
