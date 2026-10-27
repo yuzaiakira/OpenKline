@@ -72,6 +72,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
   const [orderQuantity, setOrderQuantity] = useState("1");
   const [reason, setReason] = useState("");
   const [notice, setNotice] = useState("Advance the simulated quote to fill pending market orders.");
+  const accountStatus = session.account.getStatus();
 
   useEffect(() => {
     if (identityRef.current.panelId === panelId && identityRef.current.symbol === symbol) return;
@@ -163,7 +164,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
     }
   };
 
-  return <section className={styles.paperTradingPanel} aria-label={`Paper trading for ${symbol}`}>
+  return <section className={styles.paperTradingPanel} aria-label={`Paper trading for ${symbol}`} data-paper-account-state={accountStatus.state} data-paper-order-count={orders.length} data-paper-order-statuses={orders.map((order) => order.status).join(",")}>
     <div className={styles.paperTradingHeader}>
       <div><h2>Paper Trading</h2><p>{panelId} · {symbol} · {timeframe}</p></div>
       <div className={styles.simulatedBadge} role="status" aria-label="Simulated trading only">SIMULATED · NO REAL MONEY</div>
@@ -192,7 +193,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
       </form>
       <div className={styles.paperTradingHistory}>
         <h3>Order history</h3>
-        <div className={styles.paperTradingTableWrap}><table><caption>Simulated order audit</caption><thead><tr><th>Side</th><th>Qty</th><th>Status</th><th>Fill</th></tr></thead><tbody>{orders.length === 0 ? <tr><td colSpan={4}>No simulated orders</td></tr> : orders.slice().reverse().map((order) => <tr key={order.id}><td>{order.side}</td><td>{quantity(order.quantity)}</td><td>{order.status}</td><td>{order.fill === undefined ? "—" : money(order.fill.executionPrice)}</td></tr>)}</tbody></table></div>
+        <div className={styles.paperTradingTableWrap}><table><caption>Simulated order audit</caption><thead><tr><th>Side</th><th>Qty</th><th>Status</th><th>Fill</th></tr></thead><tbody>{orders.length === 0 ? <tr><td colSpan={4}>No simulated orders</td></tr> : orders.slice().reverse().map((order) => <tr key={order.id} data-paper-order-status={order.status}><td>{order.side}</td><td>{quantity(order.quantity)}</td><td>{order.status}</td><td>{order.fill === undefined ? "—" : money(order.fill.executionPrice)}</td></tr>)}</tbody></table></div>
         <h3>Position audit</h3>
         <p>{snapshot.position === null ? "Flat" : `${quantity(snapshot.position.quantity)} ${snapshot.symbol} @ ${money(snapshot.position.averageEntryPrice)}`}</p>
         <p className={styles.paperTradingNotice} aria-live="polite">{snapshot.lastDiagnostic ?? "All account events are simulated and isolated from replay/backtesting."}</p>

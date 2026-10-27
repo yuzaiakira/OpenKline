@@ -28,6 +28,7 @@ type StudioDiagnostics = {
   readonly activePanel: string | null;
   readonly panels: readonly Record<string, unknown>[];
   readonly targets: readonly Record<string, unknown>[];
+  readonly targeted: Record<string, unknown>;
   readonly overflowingElements: readonly Record<string, unknown>[];
   readonly pointerTrace: readonly PointerDiagnosticEntry[];
   readonly resizeObserver: ResizeDiagnostics | null;
@@ -107,6 +108,14 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
       const actionButtons = Array.from(document.querySelectorAll("button")).filter((button) => /^(Add|Run Backtest|Create alert|Run scan|Submit simulated buy|Save|Fit|Replay next bar)$/u.test((button.textContent ?? "").trim())).slice(0, 12).map(targetSummary);
       const resize = (window as unknown as Record<string, ResizeDiagnostics | undefined>)[resizeKey] ?? null;
       const activeSelect = document.querySelector<HTMLSelectElement>('select[aria-label="Active chart panel"]');
+      const canvasMetrics = Array.from(document.querySelectorAll("canvas")).slice(0, 4).map((canvas) => {
+        const rect = canvas.getBoundingClientRect();
+        return { cssWidth: numberOrNull(rect.width), cssHeight: numberOrNull(rect.height), backingWidth: canvas.width, backingHeight: canvas.height };
+      });
+      const liveTexts = Array.from(document.querySelectorAll('[aria-live="polite"]')).slice(0, 8).map((element) => (element.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 240));
+      const paperPanel = document.querySelector<HTMLElement>('[aria-label^="Paper trading for "]');
+      const alertPanel = Array.from(document.querySelectorAll<HTMLDetailsElement>("details")).find((details) => (details.querySelector("summary")?.textContent ?? "").trim().startsWith("Alerts"));
+      const alertNames = alertPanel === undefined ? [] : Array.from(alertPanel.querySelectorAll<HTMLElement>('[aria-label^="Remove "]')).map((button) => button.getAttribute("aria-label")?.replace(/^Remove /u, "") ?? "");
       const panels = Array.from(document.querySelectorAll("[data-panel-id]")).slice(0, 8).map((panel) => ({
         panelId: panel.getAttribute("data-panel-id"),
         className: panel.className,
@@ -133,6 +142,27 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
         scroll: { x: window.scrollX, y: window.scrollY },
         activePanel: activeSelect?.value ?? null,
         panels,
+        targeted: {
+          drawing: {
+            canvasMetrics,
+            summaries: Array.from(document.querySelectorAll("details summary")).map((summary) => (summary.textContent ?? "").trim()).filter((text) => text.startsWith("Drawings")),
+            liveTexts,
+          },
+          paperTrading: paperPanel === null ? null : {
+            accountState: paperPanel.dataset.paperAccountState ?? null,
+            orderCount: paperPanel.dataset.paperOrderCount ?? null,
+            orderStatuses: paperPanel.dataset.paperOrderStatuses ?? null,
+            rows: Array.from(paperPanel.querySelectorAll("tbody tr")).slice(0, 8).map((row) => (row.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 180)),
+            notice: paperPanel.querySelector('[aria-live="polite"]')?.textContent?.trim().slice(0, 240) ?? null,
+          },
+          alerts: alertPanel === undefined ? null : {
+            open: alertPanel.open,
+            inputValue: alertPanel.querySelector<HTMLInputElement>('input[aria-label="Alert name"]')?.value ?? null,
+            countText: alertPanel.querySelector("summary")?.textContent?.trim() ?? null,
+            names: alertNames,
+            removeControls: Array.from(alertPanel.querySelectorAll<HTMLButtonElement>('[aria-label^="Remove "]')).slice(0, 8).map((button) => button.getAttribute("aria-label")),
+          },
+        },
         targets: [
           ...actionButtons,
           ...summarizeSelector("canvas", 4),
