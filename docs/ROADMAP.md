@@ -761,3 +761,15 @@ Studio compatibility gates remain open**.
   remains open; the prior trusted result is still 113/120 Studio. See
   `docs/reports/phase-8-8-12-verification.md` and
   `docs/reports/phase-8-8-12-targeted-handoff.md`.
+
+- [Implemented / Verification Open] Phase 8.8.14 integrates and validates the
+  Phase 8.8.13 seven-record trusted ledger, preserving one WebKit paper
+  positive control and six unresolved failures. The drawing harness now uses
+  visible, hit-tested Canvas coordinates after scroll; alert and paper forms
+  use local DOM refs and bounded lifecycle diagnostics without changing alert
+  or risk semantics. Local 169/169 Node, 27/27 React/Studio Chromium, 6/6
+  focused regression, package, and 30/30 system-Chromium diagnostic checks
+  pass on source `8f845f6`. Official managed Firefox/WebKit/Mobile Safari
+  targeted verification remains required; no full matrix or release claim is
+  made. See `docs/reports/phase-8-8-14-verification.md` and
+  `docs/reports/phase-8-8-14-targeted-handoff.md`.

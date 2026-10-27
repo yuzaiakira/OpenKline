@@ -889,3 +889,28 @@ The full Studio gate, formal accessibility, visual approval, physical-device,
 legal, owner authorization, and release gates remain open. Phase 8.8.12 is not
 release-ready; see `docs/reports/phase-8-8-12-verification.md` and
 `docs/reports/phase-8-8-12-targeted-handoff.md`.
+
+## Phase 8.8.14 Firefox drawing and WebKit form-state remediation — verification open
+
+Phase 8.8.13's trusted evidence is integrated and validated as one positive
+WebKit paper control plus six failures: three Firefox drawing identities,
+Mobile Safari paper trading, and WebKit/Mobile Safari alert creation. Phase
+8.8.14 preserves that negative evidence and does not run or claim a full
+matrix.
+
+The drawing test harness now reacquires visible Canvas coordinates after
+scroll, verifies the hit target, records bounded geometry diagnostics, and
+uses the active mouse/touch input path. This is a local harness correction,
+not official Firefox compatibility evidence. Alert and paper forms now use
+local DOM refs with native input/change synchronization and bounded submission
+diagnostics. The existing alert and paper risk semantics remain unchanged; no
+risk limit or browser-specific result is bypassed.
+
+Local 169/169 Node tests, typecheck, package/API/distribution checks, 27/27
+React/Studio Chromium tests, 6/6 focused regressions, and a 30/30
+system-Chromium/mobile-Chrome diagnostic pass on source `8f845f6`. The trusted
+managed Firefox, WebKit, and Mobile Safari targeted rerun remains mandatory.
+The full Studio matrix, physical-device, formal accessibility, visual, legal,
+owner, and release gates remain open. See
+`docs/reports/phase-8-8-14-verification.md` and
+`docs/reports/phase-8-8-14-targeted-handoff.md`.
