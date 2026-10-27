@@ -6,13 +6,45 @@ async function placeChartPoint(page: Page, x: number, y: number): Promise<void> 
   else await page.mouse.click(x, y);
 }
 
-async function dispatchTouchPoint(page: Page, x: number, y: number, identifier: number): Promise<void> {
+/**
+ * Exercise the product's touch fallback without relying on WebKit's optional
+ * Touch/TouchEvent constructors. This is deliberately a synthetic harness
+ * event, not a claim of native browser input.
+ */
+async function dispatchTouchFallbackPoint(page: Page, x: number, y: number, identifier: number): Promise<void> {
   await page.evaluate(({ clientX, clientY, touchIdentifier }) => {
     const canvas = document.querySelector<HTMLCanvasElement>("canvas");
     if (canvas === null) throw new Error("Chart canvas is missing");
-    const touch = new Touch({ identifier: touchIdentifier, target: canvas, clientX, clientY, screenX: clientX, screenY: clientY, pageX: clientX, pageY: clientY });
-    canvas.dispatchEvent(new TouchEvent("touchstart", { bubbles: true, cancelable: true, touches: [touch], targetTouches: [touch], changedTouches: [touch] }));
-    canvas.dispatchEvent(new TouchEvent("touchend", { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [touch] }));
+    const touch = Object.freeze({
+      identifier: touchIdentifier,
+      target: canvas,
+      clientX,
+      clientY,
+      screenX: clientX,
+      screenY: clientY,
+      pageX: clientX,
+      pageY: clientY,
+    });
+    const list = (items: readonly unknown[]) => Object.freeze({
+      0: items[0],
+      length: items.length,
+      item: (index: number) => items[index] ?? null,
+      [Symbol.iterator]: function* () { yield* items; },
+    });
+    const start = new Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperties(start, {
+      touches: { configurable: true, value: list([touch]) },
+      targetTouches: { configurable: true, value: list([touch]) },
+      changedTouches: { configurable: true, value: list([touch]) },
+    });
+    canvas.dispatchEvent(start);
+    const end = new Event("touchend", { bubbles: true, cancelable: true });
+    Object.defineProperties(end, {
+      touches: { configurable: true, value: list([]) },
+      targetTouches: { configurable: true, value: list([]) },
+      changedTouches: { configurable: true, value: list([touch]) },
+    });
+    canvas.dispatchEvent(end);
   }, { clientX: x, clientY: y, touchIdentifier: identifier });
 }
 
@@ -131,9 +163,15 @@ test("Studio accepts drawing anchors from touch events without pointer compatibi
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await dispatchTouchPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08, 1);
-  await dispatchTouchPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12, 2);
+  await dispatchTouchFallbackPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08, 1);
+  await dispatchTouchFallbackPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12, 2);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const drawingPoints = await page.evaluate(() => {
+    const workspace = JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { drawings?: { drawings?: Array<{ points?: unknown[] }> } };
+    return workspace.drawings?.drawings?.[0]?.points?.length ?? 0;
+  });
+  expect(drawingPoints).toBe(2);
 });
 
 test("Studio exposes deterministic replay playback controls and restores the workspace", async ({ page }) => {
