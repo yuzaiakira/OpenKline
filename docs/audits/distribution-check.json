@@ -4,9 +4,9 @@
   "package": "openkline",
   "version": "0.1.0",
   "files": 394,
-  "packageSize": 338059,
-  "unpackedSize": 1937589,
-  "sha": "6a5d71295ea007b10960a719dc06efdec5169fb0",
+  "packageSize": 338585,
+  "unpackedSize": 1940374,
+  "sha": "09f306ba850fcccdc9181a52b8094c8c8d171901",
   "problems": [],
   "notes": [
     "This verifies local pack contents and does not publish or select a release version/channel.",
