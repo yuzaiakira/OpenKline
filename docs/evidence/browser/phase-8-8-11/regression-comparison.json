@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "compareAgainstPhase": "8.8.9",
+  "phase889Focused": {
+    "records": 6,
+    "passed": 1,
+    "failed": 5
+  },
+  "phase885FullStudioBaseline": {
+    "discovered": 110,
+    "passed": 79,
+    "failed": 31
+  },
+  "currentPrimaryFocused": {
+    "records": 9,
+    "passed": 8,
+    "failed": 1
+  },
+  "currentStudioFull": {
+    "discovered": 120,
+    "passed": 113,
+    "failed": 7,
+    "exitCode": 1
+  },
+  "currentStandaloneFull": {
+    "discovered": 70,
+    "passed": 70,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "previouslyFailingNowPassingFocusedOnly": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "focusedResult": "PASS"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "focusedResult": "PASS"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "focusedResult": "PASS"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "focusedResult": "PASS"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "focusedResult": "PASS"
+    }
+  ],
+  "previouslyFailingStillFailing": [],
+  "previouslyPassingStillPassing": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "focusedResult": "PASS"
+    }
+  ],
+  "newlySelectedWebKitAndWidth": [
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "result": "PASS"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "result": "FAIL"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio top actions stay within representative viewport widths",
+      "result": "PASS"
+    }
+  ],
+  "newlyFailingInFullStudioMatrix": [
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "rootCauseClass": "paper-pending-status-text-missing",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "rootCauseClass": "paper-pending-status-text-missing",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "rootCauseClass": "alert-close-control-text-missing",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "rootCauseClass": "alert-close-control-text-missing",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n"
+    }
+  ],
+  "diagnosticOnlyImprovements": [
+    "Phase 8.8.9 ResizeObserver-only failures are official PASS on the same Mobile Safari identities.",
+    "Touch fallback no longer Illegal constructor; synthetic harness exercises product path.",
+    "Mobile Chrome overflow/indicator timeout resolved for the critical-controls identity."
+  ]
+}

@@ -36,6 +36,7 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.5", EVIDENCE_PACK_POLICIES["8.8.5"].expectedSourceCommit, 180],
     ["8.8.7", EVIDENCE_PACK_POLICIES["8.8.7"].expectedSourceCommit, 34],
     ["8.8.9", EVIDENCE_PACK_POLICIES["8.8.9"].expectedSourceCommit, 6],
+    ["8.8.11", EVIDENCE_PACK_POLICIES["8.8.11"].expectedSourceCommit, 27],
   ]);
 });
 
@@ -143,6 +144,51 @@ test("Phase 8.8.9 rejects unsupported resolution claims", () => {
   const invalid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.9"] });
   assert.equal(invalid.status, "FAIL");
   assert.ok(invalid.failures.some((failure) => failure.includes("focused resolution count mismatch")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.11 evidence reconciles all seven full Studio failures", () => {
+  const root = copyPack("8.8.11");
+  const valid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.11"] });
+  assert.equal(valid.status, "PASS");
+  assert.deepEqual(valid.totals, {
+    primaryExpected: 8,
+    primaryUnexpected: 1,
+    extendedExpected: 14,
+    extendedUnexpected: 4,
+    standaloneExpected: 70,
+    standaloneUnexpected: 0,
+    studioExpected: 113,
+    studioUnexpected: 7,
+  });
+
+  editJson(root, "8.8.11", "targeted-failures.json", (document) => {
+    document.studioFullFailures[0].title = "fabricated failure identity";
+  });
+  const invalid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.11"] });
+  assert.equal(invalid.status, "FAIL");
+  assert.ok(invalid.failures.some((failure) => failure.includes("seven-failure identities do not reconcile")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.11 rejects fabricated focused success or archive metadata", () => {
+  const root = copyPack("8.8.11");
+  editJson(root, "8.8.11", "targeted-matrix.json", (document) => {
+    document.studioFull.passed = 120;
+  });
+  const invalidTotals = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.11"] });
+  assert.equal(invalidTotals.status, "FAIL");
+  assert.ok(invalidTotals.failures.some((failure) => failure.includes("Studio totals mismatch")));
+
+  editJson(root, "8.8.11", "targeted-matrix.json", (document) => {
+    document.studioFull.passed = 113;
+  });
+  editJson(root, "8.8.11", "manifest.json", (document) => {
+    document.archives.studioFull.sha256 = "not-a-sha";
+  });
+  const invalidArchive = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.11"] });
+  assert.equal(invalidArchive.status, "FAIL");
+  assert.ok(invalidArchive.failures.some((failure) => failure.includes("invalid Phase 8.8.11 archive SHA-256")));
   rmSync(root, { recursive: true, force: true });
 });
 

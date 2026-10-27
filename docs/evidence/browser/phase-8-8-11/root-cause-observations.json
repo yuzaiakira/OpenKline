@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "observations": [
+    {
+      "id": "touch-fallback-fixed",
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "officialResult": "PASS",
+      "class": "pass",
+      "detail": "WebKit-safe synthetic Event+touch-list harness exercises product touch fallback without Illegal constructor. Distinct from real touchscreen.tap path used by placeChartPoint."
+    },
+    {
+      "id": "resizeobserver-cleared-focused",
+      "class": "pass",
+      "detail": "No ResizeObserver pageerrors on focused Mobile Safari reload/replay/panel-identity or WebKit workspace reload. Causal deferral repair confirmed for these identities."
+    },
+    {
+      "id": "mobile-chrome-layout-fixed",
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "officialResult": "PASS",
+      "class": "pass",
+      "detail": "Add Indicator updates chart-2 to 3 indicators; top-actions width regression also PASS across 390\u20131280."
+    },
+    {
+      "id": "webkit-safari-alert-close",
+      "projects": [
+        "studio-webkit",
+        "studio-mobile-safari"
+      ],
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "officialResult": "FAIL",
+      "class": "alert-close-control-text-missing",
+      "detail": "Alerts (1) becomes visible after Create alert, but getByText('Studio close alert') times out. pageErrors empty; ResizeObserver not implicated. Chromium mobile alert PASS."
+    },
+    {
+      "id": "webkit-safari-paper-pending",
+      "projects": [
+        "studio-webkit",
+        "studio-mobile-safari"
+      ],
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "officialResult": "FAIL",
+      "class": "paper-pending-status-text-missing",
+      "detail": "getByText('pending') not found within timeout on WebKit/Safari. Mobile Chrome paper trading PASS."
+    },
+    {
+      "id": "firefox-drawing",
+      "project": "studio-firefox",
+      "titles": [
+        "Studio snaps drawing anchors...",
+        "Studio preserves chart type...",
+        "Studio exposes deterministic replay..."
+      ],
+      "officialResult": "FAIL",
+      "class": "firefox-drawing-anchor-not-registered",
+      "detail": "Full Studio matrix only: Drawings (1) never appears after placeChartPoint (mouse path). Not covered in Priority A\u2013D. Newly observed relative to Phase 8.8.9 focused pack."
+    }
+  ]
+}

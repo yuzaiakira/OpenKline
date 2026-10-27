@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "primaryAndExtendedUniqueFailures": [
+    {
+      "group": "PD",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10850,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "alert-close-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 13963,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3084
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "paper-pending-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 13996,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 6264
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "paper-pending-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 14010,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2938
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "alert-close-text-missing"
+    }
+  ],
+  "studioFullFailures": [
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "rootCauseClass": "paper-pending-status-text-missing"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "rootCauseClass": "paper-pending-status-text-missing"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "rootCauseClass": "firefox-drawing-anchor-not-registered"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "rootCauseClass": "alert-close-control-text-missing"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "rootCauseClass": "alert-close-control-text-missing"
+    }
+  ]
+}
