@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "observations": [
+    {
+      "id": "firefox-drawing-still-zero",
+      "projects": [
+        "studio-firefox"
+      ],
+      "titles": [
+        "snaps drawing",
+        "workspace reload",
+        "replay restore"
+      ],
+      "officialResult": "FAIL",
+      "class": "firefox-drawing-anchors-not-registered",
+      "detail": "Drawing tool activates (ray/trend-line live text) but summaries remain Drawings (0) after placeChartPoint. Canvas CSS/backing widths appear matched (~726). No pageErrors. Phase 8.8.12 interaction-dimension sync did not clear managed Firefox failures."
+    },
+    {
+      "id": "webkit-paper-pass",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "officialResult": "PASS",
+      "class": "pass",
+      "detail": "Previously failing WebKit paper identity now PASS in focused rerun."
+    },
+    {
+      "id": "mobile-safari-paper-notional",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "officialResult": "FAIL",
+      "class": "paper-order-rejected-max-notional-quantity-fill-suspect",
+      "detail": "Submit simulated buy yields notice 'Order exceeds the configured maximum notional'; orderCount=0; pending never appears. Test fills Paper order quantity=0.1. Suspect fill/value not applied on Mobile Safari or risk limits differ. WebKit desktop paper PASS with same test."
+    },
+    {
+      "id": "webkit-safari-alert-name",
+      "projects": [
+        "studio-webkit",
+        "studio-mobile-safari"
+      ],
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "officialResult": "FAIL",
+      "class": "alert-name-fill-not-applied-default-name-created",
+      "detail": "Test fills Alert name 'Studio close alert' then Create. Diagnostics: Alerts (1) exists, names=['Close crosses threshold'], removeControls=['Remove Close crosses threshold'], inputValue remains 'Close crosses threshold'. Live text says Alert created. Assertion for 'Studio close alert' fails because the filled name was not applied; default name was used instead."
+    }
+  ]
+}

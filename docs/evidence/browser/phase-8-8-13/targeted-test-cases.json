@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "cases": [
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12321,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/multi-chart-studio.spec.ts",
+        "column": 65,
+        "line": 188
+      },
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 9
+        }
+      ],
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12858,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 82
+      },
+      "steps": [],
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11327,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 196
+      },
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 9
+        }
+      ],
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F2",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3359,
+      "errorMessage": "",
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "F2",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12769,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 72,
+        "line": 243
+      },
+      "steps": [],
+      "rootCauseClass": "alert-name-fill-not-applied-default-name-created"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11793,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/paper-trading-studio.spec.ts",
+        "column": 60,
+        "line": 12
+      },
+      "steps": [],
+      "rootCauseClass": "paper-order-rejected-max-notional-quantity-fill-suspect"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11838,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 72,
+        "line": 243
+      },
+      "steps": [],
+      "rootCauseClass": "alert-name-fill-not-applied-default-name-created"
+    }
+  ]
+}

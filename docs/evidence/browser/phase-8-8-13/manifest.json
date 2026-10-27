@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "evidenceKind": "trusted-machine-final-seven-targeted-diagnostics",
+  "createdAtUtc": "2026-10-27T15:54:11Z",
+  "sourceCommit": "5062735097301ce22dd50f1f78f7f84cf96394e1",
+  "behavioralSourceCommit": "6e4dd92fd08dc50c23fead4f9c3c69b311aeddf5",
+  "sourceCommitNote": "Checked out 5062735. Intervening commit after 6e4dd92 is documentation-only (docs(qa): record Phase 8.8.12 final seven investigation).",
+  "baselinePhase811SourceCommit": "0e84d13ca83b81866900571ad798ca69de90911f",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "managedBrowserVersions": {
+      "chromium": "156.0.8078.4",
+      "firefox": "157.0",
+      "webkit": "27.2"
+    },
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "cloudEnvironment": false,
+    "how": "Official Playwright Docker image; isolated HOME/npm cache; npm ci root+nextjs; build; seven final-failure identities F1\u2013F3.",
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "fullMatrixExecuted": false,
+    "standaloneMatrixExecuted": false,
+    "fullMatrixDecision": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN"
+  },
+  "focusedResults": {
+    "records": 7,
+    "passed": 1,
+    "failed": 6
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-13-studio-focused-diag-20261027T155411Z.tar.gz",
+      "sha256": "5da3924bf93794cfe641dff4854c32de8b43f6a7240c99e449922f5467c5721c"
+    },
+    "priorArchivesPreserved": [
+      "openkline-phase-8-8-11-studio-full-20261027T110549Z.tar.gz",
+      "openkline-phase-8-8-11-studio-focused-diag-20261027T110549Z.tar.gz",
+      "openkline-phase-8-8-11-standalone-20261027T110549Z.tar.gz",
+      "openkline-phase-8-8-9-studio-focused-diag-20261027T092523Z.tar.gz",
+      "openkline-phase-8-8-7-studio-focused-diag-20261027T080332Z.tar.gz"
+    ],
+    "phase811StudioFullSha256Unchanged": "9a2299183575d162ca346ff6407567782452b77e4e06c6d7fb6bfbf9b08fdd20"
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal paths",
+      "archives",
+      "screenshots",
+      "traces",
+      "binaries",
+      "secrets"
+    ],
+    "included": [
+      "Sanitized targeted diagnostics",
+      "project/title identities",
+      "errors"
+    ]
+  },
+  "limitations": [
+    "Full Studio/standalone matrices not executed because targeted failures remain",
+    "Container emulation only; not native iOS Safari",
+    "Not WCAG/visual/release authorization",
+    "NOT RELEASE READY"
+  ]
+}
