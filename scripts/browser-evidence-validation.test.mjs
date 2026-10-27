@@ -37,6 +37,7 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.7", EVIDENCE_PACK_POLICIES["8.8.7"].expectedSourceCommit, 34],
     ["8.8.9", EVIDENCE_PACK_POLICIES["8.8.9"].expectedSourceCommit, 6],
     ["8.8.11", EVIDENCE_PACK_POLICIES["8.8.11"].expectedSourceCommit, 27],
+    ["8.8.13", EVIDENCE_PACK_POLICIES["8.8.13"].expectedSourceCommit, 7],
   ]);
 });
 
@@ -189,6 +190,42 @@ test("Phase 8.8.11 rejects fabricated focused success or archive metadata", () =
   const invalidArchive = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.11"] });
   assert.equal(invalidArchive.status, "FAIL");
   assert.ok(invalidArchive.failures.some((failure) => failure.includes("invalid Phase 8.8.11 archive SHA-256")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.13 evidence preserves the seven targeted identities and six failures", () => {
+  const root = copyPack("8.8.13");
+  const valid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.13"] });
+  assert.equal(valid.status, "PASS");
+  assert.deepEqual(valid.totals, { expected: 1, unexpected: 6, uniqueIdentities: 7 });
+
+  editJson(root, "8.8.13", "targeted-matrix.json", (document) => {
+    document.fullMatrixExecuted = true;
+  });
+  const invalidBoundary = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.13"] });
+  assert.equal(invalidBoundary.status, "FAIL");
+  assert.ok(invalidBoundary.failures.some((failure) => failure.includes("matrix boundary is missing")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.13 rejects fabricated resolution or unbounded diagnostics", () => {
+  const root = copyPack("8.8.13");
+  editJson(root, "8.8.13", "regression-comparison.json", (document) => {
+    document.previouslyFailingNowPassingFocusedOnly.push({ project: "studio-firefox", title: "fabricated resolution" });
+  });
+  const invalidComparison = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.13"] });
+  assert.equal(invalidComparison.status, "FAIL");
+  assert.ok(invalidComparison.failures.some((failure) => failure.includes("focused resolution comparison mismatch")));
+
+  editJson(root, "8.8.13", "regression-comparison.json", (document) => {
+    document.previouslyFailingNowPassingFocusedOnly.pop();
+  });
+  editJson(root, "8.8.13", "targeted-failures.json", (document) => {
+    document.failures[0].diagnostics.pointerTrace = Array.from({ length: 61 }, () => ({}));
+  });
+  const invalidDiagnostics = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.13"] });
+  assert.equal(invalidDiagnostics.status, "FAIL");
+  assert.ok(invalidDiagnostics.failures.some((failure) => failure.includes("diagnostics are not bounded")));
   rmSync(root, { recursive: true, force: true });
 });
 
