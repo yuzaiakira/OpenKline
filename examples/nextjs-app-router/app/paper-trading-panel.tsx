@@ -31,6 +31,15 @@ interface PaperSession {
   readonly stream: PaperMarketStreamApi;
 }
 
+interface PaperSubmitDiagnostic {
+  readonly inputValue: string;
+  readonly quantity: number | null;
+  readonly marketPrice: number | null;
+  readonly estimatedNotional: number | null;
+  readonly outcome: "accepted" | "rejected";
+  readonly rejectionCode: string | null;
+}
+
 function accountOptions(panelId: string, symbol: string): PaperTradingAccountOptions {
   return {
     id: `studio-paper-${panelId}`,
@@ -71,6 +80,8 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
   const [orders, setOrders] = useState<readonly PaperOrder[]>([]);
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderQuantity, setOrderQuantity] = useState("1");
+  const quantityInputRef = useRef<HTMLInputElement>(null);
+  const [lastSubmitDiagnostic, setLastSubmitDiagnostic] = useState<PaperSubmitDiagnostic | null>(null);
   const [reason, setReason] = useState("");
   const [notice, setNotice] = useState("Advance the simulated quote to fill pending market orders.");
   const accountStatus = session.account.getStatus();
@@ -121,14 +132,19 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
   }, [chart, orders]);
 
   const submit = (): void => {
-    const inputValue = typeof document === "undefined" ? undefined : document.querySelector<HTMLInputElement>('input[aria-label="Paper order quantity"]')?.value;
-    const parsed = Number(inputValue ?? orderQuantity);
+    const inputValue = quantityInputRef.current?.value ?? orderQuantity;
+    const parsed = Number(inputValue);
+    const marketPrice = session.account.getStatus().lastMarketEvent?.price ?? null;
+    const estimatedNotional = Number.isFinite(parsed) && marketPrice !== null ? parsed * marketPrice : null;
     try {
       const order = session.account.submitOrder({ idempotencyKey: `${panelId}-${side}-${Date.now()}`, side, type: "market", quantity: parsed, ...(reason.trim() === "" ? {} : { reason: reason.trim() }) });
+      setLastSubmitDiagnostic({ inputValue: inputValue.slice(0, 32), quantity: Number.isFinite(parsed) ? parsed : null, marketPrice, estimatedNotional, outcome: "accepted", rejectionCode: null });
       setNotice(`${order.side.toUpperCase()} order ${order.id} is pending; fill requires the next fresh simulated quote.`);
       onNotice(`${panelId}: simulated ${order.side} order submitted.`);
       setReason("");
     } catch (error) {
+      const rejectionCode = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : null;
+      setLastSubmitDiagnostic({ inputValue: inputValue.slice(0, 32), quantity: Number.isFinite(parsed) ? parsed : null, marketPrice, estimatedNotional, outcome: "rejected", rejectionCode });
       setNotice(error instanceof Error ? error.message : String(error));
     }
   };
@@ -173,7 +189,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
     }
   };
 
-  return <section className={styles.paperTradingPanel} aria-label={`Paper trading for ${symbol}`} data-paper-account-state={accountStatus.state} data-paper-order-count={orders.length} data-paper-order-statuses={orders.map((order) => order.status).join(",")}>
+  return <section className={styles.paperTradingPanel} aria-label={`Paper trading for ${symbol}`} data-paper-account-state={accountStatus.state} data-paper-session-id={`studio-paper-${panelId}`} data-paper-input-value={quantityInputRef.current?.value ?? orderQuantity} data-paper-order-count={orders.length} data-paper-order-statuses={orders.map((order) => order.status).join(",")} data-paper-submit-quantity={lastSubmitDiagnostic?.quantity ?? ""} data-paper-submit-market-price={lastSubmitDiagnostic?.marketPrice ?? ""} data-paper-submit-estimated-notional={lastSubmitDiagnostic?.estimatedNotional ?? ""} data-paper-submit-outcome={lastSubmitDiagnostic?.outcome ?? ""} data-paper-submit-rejection-code={lastSubmitDiagnostic?.rejectionCode ?? ""}>
     <div className={styles.paperTradingHeader}>
       <div><h2>Paper Trading</h2><p>{panelId} · {symbol} · {timeframe}</p></div>
       <div className={styles.simulatedBadge} role="status" aria-label="Simulated trading only">SIMULATED · NO REAL MONEY</div>
@@ -191,7 +207,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
       <form className={styles.paperTradingTicket} onSubmit={(event) => { event.preventDefault(); submit(); }} aria-label="Simulated market order ticket">
         <h3>Market order ticket</h3>
         <label>Side<select aria-label="Paper order side" value={side} onChange={(event) => setSide(event.target.value as "buy" | "sell")}><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
-        <label>Quantity<input aria-label="Paper order quantity" type="number" min="0.000001" step="any" value={orderQuantity} onChange={(event) => setOrderQuantity(event.target.value)} /></label>
+        <label>Quantity<input ref={quantityInputRef} aria-label="Paper order quantity" type="number" min="0.000001" step="any" defaultValue={orderQuantity} onInput={(event) => setOrderQuantity(event.currentTarget.value)} onChange={(event) => setOrderQuantity(event.target.value)} /></label>
         <label>Reason<input aria-label="Paper order reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Optional audit note" /></label>
         <button type="submit" disabled={snapshot.tradingHalted}>{snapshot.tradingHalted ? "Order entry halted" : `Submit simulated ${side}`}</button>
         <button type="button" onClick={advance}>Advance simulated quote</button>

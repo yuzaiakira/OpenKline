@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "./studio-test.js";
+import { expect, placeVisibleChartPoint, test, type Locator } from "./studio-test.js";
 
 async function expectHitTestTarget(locator: Locator): Promise<void> {
   await locator.scrollIntoViewIfNeeded();
@@ -8,12 +8,6 @@ async function expectHitTestTarget(locator: Locator): Promise<void> {
     return hit === element || (hit !== null && element.contains(hit));
   });
   expect(receivesPointer).toBe(true);
-}
-
-async function placeChartPoint(page: Page, x: number, y: number): Promise<void> {
-  const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
-  if (touchInput) await page.touchscreen.tap(x, y);
-  else await page.mouse.click(x, y);
 }
 
 test("multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces", async ({ page }) => {
@@ -175,15 +169,10 @@ test("Studio management actions use accessible dialogs instead of browser blocki
 test("Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Snap drawings to visible OHLC").check();
-  const canvas = page.locator("canvas");
   await page.getByRole("button", { name: "Ray", exact: true }).click();
-  await canvas.scrollIntoViewIfNeeded();
-  const box = await canvas.boundingBox();
-  expect(box).not.toBeNull();
-  if (box === null) return;
   await test.step("place drawing anchors with the active input modality", async () => {
-    await placeChartPoint(page, box.x + box.width * 0.45, box.y + box.height * 0.08);
-    await placeChartPoint(page, box.x + box.width * 0.72, box.y + box.height * 0.12);
+    await placeVisibleChartPoint(page, 0.45, 0.24);
+    await placeVisibleChartPoint(page, 0.72, 0.32);
   });
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();

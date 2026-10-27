@@ -1,10 +1,4 @@
-import { expect, test, type Page } from "./studio-test.js";
-
-async function placeChartPoint(page: Page, x: number, y: number): Promise<void> {
-  const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
-  if (touchInput) await page.touchscreen.tap(x, y);
-  else await page.mouse.click(x, y);
-}
+import { expect, placeVisibleChartPoint, test, type Page } from "./studio-test.js";
 
 /**
  * Exercise the product's touch fallback without relying on WebKit's optional
@@ -68,17 +62,12 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
 
-  const canvas = page.locator("canvas");
   // Keep pointer coordinates in the chart viewport after the sidebar select
   // has scrolled the compact Studio layout.
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByRole("button", { name: "Trend", exact: true }).click();
-  await canvas.scrollIntoViewIfNeeded();
-  const box = await canvas.boundingBox();
-  expect(box).not.toBeNull();
-  if (box === null) return;
-  await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08);
-  await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12);
+  await placeVisibleChartPoint(page, 0.35, 0.24);
+  await placeVisibleChartPoint(page, 0.65, 0.32);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   const objectTree = page.getByRole("complementary", { name: "Object tree" });
   await expect(objectTree).toBeVisible();
@@ -179,19 +168,15 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(1);
+  const canvas = page.locator("canvas");
   await page.getByLabel("Indicator").selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
-  const canvas = page.locator("canvas");
   await page.getByRole("button", { name: "Trend", exact: true }).click();
-  await canvas.scrollIntoViewIfNeeded();
-  const box = await canvas.boundingBox();
-  expect(box).not.toBeNull();
-  if (box === null) return;
   await test.step("place replay drawing anchors with the active input modality", async () => {
-    await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08);
-    await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12);
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
   });
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
@@ -249,6 +234,25 @@ test("Studio creates, pauses, persists, and removes a local alert", async ({ pag
   await page.getByRole("button", { name: "Remove Studio close alert", exact: true }).click();
   await expect(page.getByText("Alerts (0)", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("Studio preserves alert and paper quantities through unrelated React rerenders", async ({ page }) => {
+  await page.goto("/");
+  const alertName = page.getByLabel("Alert name");
+  const quantity = page.getByLabel("Paper order quantity");
+  await alertName.fill("Lifecycle alert");
+  await page.getByLabel("Alert threshold").fill("65000");
+  await expect(alertName).toHaveValue("Lifecycle alert");
+  await quantity.fill("0.1");
+  await page.getByLabel("Paper order side").selectOption("sell");
+  await page.getByLabel("Paper order side").selectOption("buy");
+  await expect(quantity).toHaveValue("0.1");
+  await page.getByRole("button", { name: "Create alert", exact: true }).click();
+  await expect(page.getByText("Lifecycle alert", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Submit simulated buy", exact: true }).click();
+  await expect(page.getByText("pending", { exact: true })).toBeVisible();
+  await expect(page.locator('[aria-label^="Paper trading for "]')).toHaveAttribute("data-paper-submit-quantity", "0.1");
+  await expect(page.locator("details").filter({ hasText: /^Alerts \(1\)/ }).first()).toHaveAttribute("data-alert-last-created-name", "Lifecycle alert");
 });
 
 test("Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status", async ({ page }) => {
