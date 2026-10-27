@@ -34,6 +34,7 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.1", EVIDENCE_PACK_POLICIES["8.8.1"].expectedSourceCommit, 70],
     ["8.8.3", EVIDENCE_PACK_POLICIES["8.8.3"].expectedSourceCommit, 175],
     ["8.8.5", EVIDENCE_PACK_POLICIES["8.8.5"].expectedSourceCommit, 180],
+    ["8.8.7", EVIDENCE_PACK_POLICIES["8.8.7"].expectedSourceCommit, 34],
   ]);
 });
 
@@ -71,6 +72,51 @@ test("Phase 8.8.5 evidence reconciles all prior failures and rejects falsified r
   const invalid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.5"] });
   assert.equal(invalid.status, "FAIL");
   assert.ok(invalid.failures.some((failure) => failure.includes("must not claim an old failure resolved")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.7 focused evidence reconciles targeted failures without claiming resolutions", () => {
+  const root = copyPacks(["8.8.5", "8.8.7"]);
+  const valid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
+  assert.equal(valid.status, "PASS");
+
+  editJson(root, "8.8.7", "focused-failures.json", (document) => {
+    document.failures[0].diagnostics.viewport.innerWidth = "fabricated diagnostic";
+  });
+  const invalidDiagnostics = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
+  assert.equal(invalidDiagnostics.status, "FAIL");
+  assert.ok(invalidDiagnostics.failures.some((failure) => failure.includes("viewport diagnostics are incomplete")));
+
+  editJson(root, "8.8.7", "focused-failures.json", (document) => {
+    document.failures[0].diagnostics.viewport.innerWidth = 390;
+  });
+  editJson(root, "8.8.7", "regression-comparison.json", (document) => {
+    document.resolvedCountClaim = 1;
+  });
+  const invalidResolution = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
+  assert.equal(invalidResolution.status, "FAIL");
+  assert.ok(invalidResolution.failures.some((failure) => failure.includes("must not claim a full-matrix result or resolution")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.7 rejects incomplete focused groups and baseline-overlap claims", () => {
+  const root = copyPacks(["8.8.5", "8.8.7"]);
+  editJson(root, "8.8.7", "focused-matrix.json", (document) => {
+    document.groups.F5.counts.total -= 1;
+  });
+  const invalidGroup = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
+  assert.equal(invalidGroup.status, "FAIL");
+  assert.ok(invalidGroup.failures.some((failure) => failure.includes("F5 totals mismatch")));
+
+  editJson(root, "8.8.7", "focused-matrix.json", (document) => {
+    document.groups.F5.counts.total += 1;
+  });
+  editJson(root, "8.8.7", "regression-comparison.json", (document) => {
+    document.baselineFailuresNotExecutedInFocused.pop();
+  });
+  const invalidOverlap = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
+  assert.equal(invalidOverlap.status, "FAIL");
+  assert.ok(invalidOverlap.failures.some((failure) => failure.includes("incomplete baseline coverage count mismatch")));
   rmSync(root, { recursive: true, force: true });
 });
 

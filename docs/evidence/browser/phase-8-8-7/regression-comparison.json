@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.7",
+  "baselinePhase": "8.8.5",
+  "baselineSourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "currentSourceCommit": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "baselineStudioTotals": {
+    "discovered": 110,
+    "passed": 79,
+    "failed": 31,
+    "skipped": 0,
+    "flaky": 0
+  },
+  "currentFullStudioTotals": null,
+  "currentFullStudioNote": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN",
+  "focusedComparisonScope": "Exact (project,title) identities overlapping F1\u2013F6 executions versus Phase 8.8.5 failure ledger",
+  "previouslyFailingNowPassingFocusedOnly": [],
+  "previouslyFailingStillFailing": [
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio creates, pauses, persists, and removes a local alert"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload"
+    }
+  ],
+  "newlyFailingInFocused": [],
+  "baselineFailuresNotExecutedInFocused": [
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "reason": "not selected in F1\u2013F6 focused set"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "reason": "not selected in F1\u2013F6 focused set"
+    }
+  ],
+  "focusedPassingNotInBaselineFailures": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio remains operable at a touch-sized viewport"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio remains operable at a touch-sized viewport"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation"
+    }
+  ],
+  "resolvedCountClaim": 0,
+  "resolvedCountNote": "No baseline failure marked resolved: focused PASS alone does not certify; full Studio matrix not rerun."
+}

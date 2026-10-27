@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.7",
+  "sourceCommit": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "confirmed": [
+    {
+      "id": "H3-drawing-not-created-despite-canvas-hit",
+      "status": "CONFIRMED_PRODUCT_OR_GESTURE_GAP",
+      "evidenceGroups": [
+        "F3",
+        "F5"
+      ],
+      "observation": "Named touch/drawing steps complete and canvas elementFromPoint returns the canvas, but Drawings (1) never appears on studio-mobile-safari. Touch harness repair alone did not produce persisted anchors."
+    },
+    {
+      "id": "H4-incomplete-narrow-layout-assertion-repair",
+      "status": "CONFIRMED_TEST_CONTRACT_GAP",
+      "evidenceGroups": [
+        "F4"
+      ],
+      "observation": "After workspace reload, the test asserts chart-2 '3 indicators' while activePanel remains chart-1 and inactive panels stay display:none. Sync-symbol section was repaired; post-reload assertion was not. Distinguish from product bug: inactive-panel hiding is intentional."
+    },
+    {
+      "id": "H5-resizeobserver-page-error",
+      "status": "CONFIRMED_OBSERVABLE",
+      "evidenceGroups": [
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "observation": "pageErrors include 'ResizeObserver loop completed with undelivered notifications.' on studio-webkit and studio-mobile-safari. Diagnostic fixture recorded bounded callback counts (commonly 3\u201323) and recent target sizes during layout transitions. Warning was not filtered. Some WebKit tests still pass while the warning remains observable on sibling failures."
+    },
+    {
+      "id": "H6-async-state-missing",
+      "status": "CONFIRMED_MISSING_STATE",
+      "evidenceGroups": [
+        "F6",
+        "F5"
+      ],
+      "observation": "Paper trading never reaches visible 'pending'; alert UI never shows 'Studio close alert'; mobile-chrome paths time out before status transitions; screener/backtest on mobile-safari often fail on ResizeObserver assertion after actions. Hidden vs missing: controls exist but expected status text is absent."
+    },
+    {
+      "id": "F1-mobile-chrome-responsive-control-timeout",
+      "status": "CONFIRMED_TIMEOUT_AFTER_LAYOUT",
+      "evidenceGroups": [
+        "F1"
+      ],
+      "observation": "Four-grid + chart-2 + Add hit-test succeeded (last completed named step). Failure during return-to-single / Run Backtest path: Run Backtest was off-viewport (top\u22483745, hitTest null) at capture; completed state not reached. Pixel 7 context reported innerWidth=833 with maxWidth720=true and dpr=2.625."
+    }
+  ],
+  "revisedHypotheses": [
+    {
+      "id": "H2-optimizer-pointer-interception",
+      "status": "PARTIALLY_REVISED",
+      "observation": "At F2 timeout capture, Run Backtest hit-tested to itself (hitTestContainsTarget=true); strategyOptimizer section was present and large. Baseline timeout-pointer-interception is not reproduced as an end-state interceptor on Run Backtest in these captures. Remaining hypothesis: earlier click timing / Start optimization path / scroll-to-target races, or wait-for-completed timeout after a successful click."
+    },
+    {
+      "id": "H1-generic-mobile-chrome-timeout",
+      "status": "STILL_OPEN",
+      "observation": "Multiple mobile-chrome flows still exceed 30s. Diagnostics show deep document scroll and off-viewport controls; root cause may combine layout height, scrolling, and stalled async completion rather than a single interceptor."
+    }
+  ],
+  "diagnosticImprovements": [
+    "studio-diagnostics.json attached on unexpected results with viewport, panels, hit-tests, resizeObserver counts/entries, page/console errors",
+    "Named steps captured for F1/F3/F4 drawing and layout flows",
+    "Managed-browser geometry available (not system Chromium)"
+  ]
+}
