@@ -35,6 +35,7 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.3", EVIDENCE_PACK_POLICIES["8.8.3"].expectedSourceCommit, 175],
     ["8.8.5", EVIDENCE_PACK_POLICIES["8.8.5"].expectedSourceCommit, 180],
     ["8.8.7", EVIDENCE_PACK_POLICIES["8.8.7"].expectedSourceCommit, 34],
+    ["8.8.9", EVIDENCE_PACK_POLICIES["8.8.9"].expectedSourceCommit, 6],
   ]);
 });
 
@@ -117,6 +118,31 @@ test("Phase 8.8.7 rejects incomplete focused groups and baseline-overlap claims"
   const invalidOverlap = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.7"] });
   assert.equal(invalidOverlap.status, "FAIL");
   assert.ok(invalidOverlap.failures.some((failure) => failure.includes("incomplete baseline coverage count mismatch")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.9 evidence preserves the six-case targeted boundary", () => {
+  const root = copyPacks(["8.8.9"]);
+  const valid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.9"] });
+  assert.equal(valid.status, "PASS");
+
+  editJson(root, "8.8.9", "targeted-matrix.json", (document) => {
+    document.totals.passed = 6;
+  });
+  const invalidTotals = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.9"] });
+  assert.equal(invalidTotals.status, "FAIL");
+  assert.ok(invalidTotals.failures.some((failure) => failure.includes("aggregate totals mismatch")));
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("Phase 8.8.9 rejects unsupported resolution claims", () => {
+  const root = copyPacks(["8.8.9"]);
+  editJson(root, "8.8.9", "regression-comparison.json", (document) => {
+    document.previouslyFailingNowPassingFocusedOnly.push({ project: "studio-webkit", title: "fabricated resolution" });
+  });
+  const invalid = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.8.9"] });
+  assert.equal(invalid.status, "FAIL");
+  assert.ok(invalid.failures.some((failure) => failure.includes("focused resolution count mismatch")));
   rmSync(root, { recursive: true, force: true });
 });
 
