@@ -737,3 +737,17 @@ Studio compatibility gates remain open**.
 - Do not treat the custom source-available proposal or the superseded
   `LICENSE-APACHE-2.0.PROPOSED` as an effective license; after owner/counsel
   approval, add only the approved final license, metadata, and verified notices.
+
+## Phase 8.8.10 status
+
+- [Implemented / Verification Open] Phase 8.8.10 integrates and validates the
+  sanitized Phase 8.8.9 evidence, replaces the WebKit-unsafe synthetic touch
+  constructor path with a generic-event fallback, bounds the responsive
+  multi-chart action controls, defers observed chart resizes outside the
+  ResizeObserver callback, and traces the mobile indicator transition. Local
+  engineering checks pass, but current trusted Playwright-managed WebKit,
+  Firefox, Mobile Chrome, and Mobile Safari execution remains unverified.
+  Physical-device, formal accessibility, visual approval, legal, and release
+  authorization gates remain open. See
+  `docs/reports/phase-8-8-10-verification.md` and
+  `docs/reports/phase-8-8-10-targeted-handoff.md`.

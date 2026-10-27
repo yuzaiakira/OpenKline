@@ -839,3 +839,31 @@ WebKit/mobile drawing, ResizeObserver, and asynchronous failures, so current
 source trusted reruns, physical-device review, accessibility/visual approval,
 legal approval, and release authorization remain open. This phase does not
 authorize npm publication, tags, GitHub releases, or license changes.
+
+## Phase 8.8.10 targeted WebKit, touch harness, and responsive layout remediation — verification open
+
+Phase 8.8.10 integrates the sanitized Phase 8.8.9 evidence and keeps its
+behavior result explicit: six focused records, one expected pass, and five
+unexpected failures. The evidence validator now validates that pack's
+provenance, record totals, failure groups, and absence of fabricated
+resolution claims.
+
+The WebKit-unsafe synthetic `Touch`/`TouchEvent` construction in the focused
+test harness was replaced with a clearly labelled generic-event fallback that
+provides touch-list-shaped properties. The native Playwright touchscreen path
+remains available for real browser input. The multi-chart top action group now
+uses bounded responsive wrapping/grid rules rather than relying on page-wide
+overflow suppression. The chart ResizeObserver path defers observed resizes to
+the next animation frame, coalesces them, and cancels pending work on destroy;
+the strict page-error assertions remain in place. A local mobile indicator
+transition trace confirms the expected state after the responsive layout fix,
+but does not independently certify the trusted Mobile Chrome result.
+
+Local engineering checks pass, including 165 Node tests, type checking, the
+focused React/Studio suite, and the local system-Chromium diagnostic. The
+current trusted Playwright-managed WebKit, Firefox, Mobile Chrome, and Mobile
+Safari runs have not been executed in this cloud environment. Therefore the
+Phase 8.8.10 compatibility, physical-device, accessibility, visual approval,
+legal, and release gates remain open and the phase is not release-ready. See
+`docs/reports/phase-8-8-10-verification.md` and
+`docs/reports/phase-8-8-10-targeted-handoff.md`.

@@ -51,3 +51,14 @@ user agent, operating system, test command, pass/fail counts, and any launch or
 artifact error. Keep blocked and not-tested results separate from failures.
 The current environment has an official CDN/Docker acquisition restriction;
 the blocked launches must remain open in Phase 2 and downstream release gates.
+
+## Phase 8.8.10 current source boundary
+
+The Phase 8.8.10 source changes include a WebKit-safe generic touch fallback in
+the test harness, bounded responsive multi-chart action controls, deferred
+ResizeObserver resize application, and a separately asserted mobile indicator
+state transition. Local system-Chromium tests cover these engineering changes;
+they are not substitutes for the managed browser projects above. The trusted
+Phase 8.8.9 focused result remains six records with one pass and five
+failures, and the current source has not yet received a trusted Playwright
+WebKit, Firefox, Mobile Chrome, or Mobile Safari rerun. Keep those gates open.
