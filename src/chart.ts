@@ -1316,7 +1316,23 @@ export class Chart {
     };
   }
 
+  /**
+   * ResizeObserver delivery is asynchronous. A browser can therefore dispatch
+   * the first pointer event after CSS layout has changed but before the
+   * coalesced observer resize has updated the chart's logical dimensions.
+   * Synchronize the interaction surface at the event boundary so coordinate
+   * conversion and pane hit-testing use the same dimensions as the canvas.
+   */
+  private syncInteractionSize(): void {
+    const bounds = this.canvas.getBoundingClientRect();
+    const width = Math.floor(bounds.width);
+    const height = Math.floor(bounds.height);
+    if (width <= 0 || height <= 0 || (width === this.width && height === this.height)) return;
+    this.resize(width, height);
+  }
+
   private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.syncInteractionSize();
     const position = this.pointerPosition(event);
     if (this.suppressNextPointerDown) {
       this.suppressNextPointerDown = false;
@@ -1355,6 +1371,7 @@ export class Chart {
   };
 
   private readonly handleTouchStart = (event: TouchEvent): void => {
+    this.syncInteractionSize();
     const touch = event.changedTouches[0];
     if (touch === undefined || !this.handlePendingDrawingPoint(this.clientPosition(touch.clientX, touch.clientY))) return;
     event.preventDefault();

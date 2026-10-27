@@ -432,6 +432,27 @@ test("renders candles and supports interaction and cleanup", async ({ page }) =>
   expect(pageErrors).toEqual([]);
 });
 
+test("keeps drawing coordinates valid when CSS layout leads logical resize delivery", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const canvas = page.locator("canvas");
+  await expect(canvas).toHaveCount(1);
+  await page.waitForFunction(() => Boolean((globalThis as { __openklineChart?: unknown }).__openklineChart));
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  if (box === null) return;
+
+  await page.evaluate(() => {
+    const chart = (globalThis as unknown as { __openklineChart: { resize(width: number, height: number): void; startDrawing(type: string): void } }).__openklineChart;
+    // Keep the CSS box unchanged to model a pointer arriving before a
+    // deferred ResizeObserver delivery updates the chart's logical size.
+    chart.resize(64, 64);
+    chart.startDrawing("vertical-line");
+  });
+  await page.mouse.click(box.x + box.width * 0.5, box.y + 40);
+  const drawingCount = await page.evaluate(() => (globalThis as unknown as { __openklineChart: { getDrawings(): unknown[] } }).__openklineChart.getDrawings().length);
+  expect(drawingCount).toBe(1);
+});
+
 test("loads the standalone vanilla plugin example", async ({ page }) => {
   await page.goto("/examples/vanilla/plugin-example.html");
   await expect(page.locator("canvas")).toHaveCount(1);
