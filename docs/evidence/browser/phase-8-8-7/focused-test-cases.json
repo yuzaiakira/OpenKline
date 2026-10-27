@@ -1,0 +1,6100 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.7",
+  "sourceCommit": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "cases": [
+    {
+      "group": "F1",
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "failed",
+      "durationMs": 30055,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [
+        {
+          "title": "switch to four-grid and add an indicator",
+          "failed": false,
+          "duration": -1
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1803,
+          "clientWidth": 390,
+          "clientHeight": 844,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 844,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1664
+        },
+        "activePanel": "chart-2",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          },
+          {
+            "panelId": "chart-2",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 187.27,
+              "width": 375.63,
+              "height": 416.63
+            },
+            "display": "grid"
+          },
+          {
+            "panelId": "chart-3",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          },
+          {
+            "panelId": "chart-4",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 8,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 958.73,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_addRow__q7Orx",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1287,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 1834.28,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3745.23,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4412,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 229.27,
+              "width": 373.63,
+              "height": 373.63
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.studio_layout-four-grid__UIJB0"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F2",
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "failed",
+      "durationMs": 30047,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1697,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 4446
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -2645.05,
+              "width": 397.63,
+              "height": 392.8
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349.8
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 357.34,
+              "top": -1897.41,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -1569.14,
+              "width": 389.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -1053.05,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 857.91,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1524.67,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "form.studio_paperTradingTicket__p8Esl",
+              "div.studio_paperTradingBody___Rhkp",
+              "section.studio_paperTradingPanel___fJYb",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -2603.05,
+              "width": 395.63,
+              "height": 349.8
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F2",
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "failed",
+      "durationMs": 30051,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1803,
+          "clientWidth": 390,
+          "clientHeight": 844,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 844,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3748
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -1896.73,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -1149.31,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -821.05,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -273.77,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 1637.19,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 2303.95,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -1854.73,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "section.studio_strategyOptimizer__Hw2Kz",
+            "text": "Strategy Optimizer chart-1 \u00b7 BTC-USD \u00b7 1h \u00b7 deterministic historical analysis Idle Grid Optimization Walk-Forward Strate",
+            "visible": true,
+            "rect": {
+              "left": 0,
+              "top": 96.84,
+              "width": 390,
+              "height": 969.05
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "div.studio_optimizerRange__UKEQX",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "div.studio_optimizerRange__UKEQX",
+              "fieldset",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyOptimizer__Hw2Kz",
+              "main.studio_studio__s_zNf"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "failed",
+      "durationMs": 13248,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "namedSteps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "failed": false,
+          "duration": 93
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1810
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 114.52,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 849.13,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1190.59,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 1780.58,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3823.45,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4499.13,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 156.52,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "failed",
+      "durationMs": 13718,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1832
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 114.66,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 849.27,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1230.88,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 1820.86,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3863.73,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4539.41,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 156.66,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "failed",
+      "durationMs": 11174,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "namedSteps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "failed": false,
+          "duration": 45
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1832
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 114.66,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 849.27,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1230.88,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 1820.86,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3863.73,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4539.41,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 156.66,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F4",
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "failed",
+      "durationMs": 13701,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator:  locator('[data-panel-id=\"chart-2\"]').getByText('3 indicators', { exact: true })\nExpected: visible\nReceived: hidden\nTimeout:  10000ms\n\nCall log:\n  - Expect \"toBeVisible\" locator('[data-panel-id=\"chart-2\"]').getByText('3 indicators', { exact: true }) with timeout 10000ms\n  - waiting for locator('[data-panel-id=\"chart-2\"]').getByText('3 indicators', { exact: true })\n    23 \u00d7 locator resolved to <span>3 indicators</span>\n       - unexpected value \"hidden\"\n",
+      "namedSteps": [
+        {
+          "title": "configure four-grid layout",
+          "failed": false,
+          "duration": 254
+        },
+        {
+          "title": "verify synchronized symbols in visible panels",
+          "failed": false,
+          "duration": 260
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 861
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 1924.52,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          },
+          {
+            "panelId": "chart-2",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          },
+          {
+            "panelId": "chart-3",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          },
+          {
+            "panelId": "chart-4",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 23,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 2659.13,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 3000.59,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 3590.58,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 5633.45,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 6309.13,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 1966.52,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "passed",
+      "durationMs": 3755,
+      "exitImplication": 1
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "passed",
+      "durationMs": 1615,
+      "exitImplication": 1
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "failed",
+      "durationMs": 3706,
+      "exitImplication": 1,
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 5334
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -3409.48,
+              "width": 375.63,
+              "height": 416.63
+            },
+            "display": "grid"
+          },
+          {
+            "panelId": "chart-2",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 8,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -2633.81,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -2292.34,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": -1702.36,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 340.52,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1494.42,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -3367.48,
+              "width": 373.63,
+              "height": 373.63
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "failed",
+      "durationMs": 1580,
+      "exitImplication": 1,
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 5334
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -3409.48,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -2657.86,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -2316.39,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": -1726.41,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 316.47,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1018.39,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -3367.48,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "failed",
+      "durationMs": 5237,
+      "exitImplication": 1,
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 800,
+          "innerHeight": 700,
+          "clientWidth": 800,
+          "clientHeight": 700,
+          "visualViewportWidth": 800,
+          "visualViewportHeight": 700,
+          "devicePixelRatio": 1,
+          "screenWidth": 800,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 881
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1060.66,
+              "width": 777.63,
+              "height": 1157.89
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 5,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1043.75
+            },
+            {
+              "target": "div.",
+              "width": 775.63,
+              "height": 1114.28
+            },
+            {
+              "target": "div.",
+              "width": 775.63,
+              "height": 1114.89
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 742.14,
+              "top": 2558.95,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 14.39,
+              "top": 2940.56,
+              "width": 771.22,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 418.13,
+              "top": 3398.55,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 4946.59,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 25.8,
+              "top": 5487.34,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 12.19,
+              "top": 1102.66,
+              "width": 775.63,
+              "height": 1114.89
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "passed",
+      "durationMs": 1305,
+      "exitImplication": 1
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "passed",
+      "durationMs": 1763,
+      "exitImplication": 1
+    },
+    {
+      "group": "F5",
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "failed",
+      "durationMs": 10998,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 260.97,
+              "top": -263.61,
+              "width": 728.06,
+              "height": 1071.09
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 1222.14,
+              "top": 0.83,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_addRow__q7Orx",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 1015.61,
+              "top": 342.3,
+              "width": 250,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 418.13,
+              "top": 939.05,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 2254.55,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 25.8,
+              "top": 2717.08,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 261.97,
+              "top": -221.61,
+              "width": 726.06,
+              "height": 1028.09
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "failed",
+      "durationMs": 13378,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1832
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 114.66,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 849.27,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1230.88,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 1820.86,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3863.73,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4539.41,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 156.66,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "passed",
+      "durationMs": 1284,
+      "exitImplication": 1
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "failed",
+      "durationMs": 11073,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "namedSteps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "failed": false,
+          "duration": 42
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1832
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": 114.66,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": 849.27,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 1230.88,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 1820.86,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3863.73,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 4539.41,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": 156.66,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F5",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "failed",
+      "durationMs": 10982,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2686
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -761.48,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -26.88,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 314.59,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 929.06,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 2971.94,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 3647.61,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -719.48,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-webkit",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "passed",
+      "durationMs": 5049,
+      "exitImplication": 1
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-chrome",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "failed",
+      "durationMs": 30064,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1697,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 4446
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -2645.05,
+              "width": 397.63,
+              "height": 392.8
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349.8
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 357.34,
+              "top": -1897.41,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -1569.14,
+              "width": 389.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -1053.05,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 857.91,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1524.67,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "form.studio_paperTradingTicket__p8Esl",
+              "div.studio_paperTradingBody___Rhkp",
+              "section.studio_paperTradingPanel___fJYb",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -2603.05,
+              "width": 395.63,
+              "height": 349.8
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-safari",
+      "file": "multi-chart-studio.spec.ts",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "failed",
+      "durationMs": 5158,
+      "exitImplication": 1,
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 5334
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -3409.48,
+              "width": 375.63,
+              "height": 416.63
+            },
+            "display": "grid"
+          },
+          {
+            "panelId": "chart-2",
+            "className": "studio_multiChartPanel__xqABz ",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "display": "none"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 8,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 373.63
+            },
+            {
+              "target": "div.",
+              "width": 0,
+              "height": 0
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -2633.81,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -2292.34,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": -1702.36,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 340.52,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1494.42,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -3367.48,
+              "width": 373.63,
+              "height": 373.63
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": false,
+            "rect": {
+              "left": 0,
+              "top": 0,
+              "width": 0,
+              "height": 0
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-webkit",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "passed",
+      "durationMs": 9327,
+      "exitImplication": 1
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-chrome",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "failed",
+      "durationMs": 30061,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1803,
+          "clientWidth": 390,
+          "clientHeight": 844,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 844,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3748
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -1896.73,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -1149.31,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -821.05,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -273.77,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 1637.19,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 2303.95,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -1854.73,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "section.studio_strategyOptimizer__Hw2Kz",
+            "text": "Strategy Optimizer chart-1 \u00b7 BTC-USD \u00b7 1h \u00b7 deterministic historical analysis Idle Grid Optimization Walk-Forward Strate",
+            "visible": true,
+            "rect": {
+              "left": 0,
+              "top": 96.84,
+              "width": 390,
+              "height": 969.05
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "div.studio_optimizerRange__UKEQX",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "div.studio_optimizerRange__UKEQX",
+              "fieldset",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyOptimizer__Hw2Kz",
+              "main.studio_studio__s_zNf"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-safari",
+      "file": "optimization-studio.spec.ts",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "passed",
+      "durationMs": 9145,
+      "exitImplication": 1
+    },
+    {
+      "group": "F6",
+      "project": "studio-webkit",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "failed",
+      "durationMs": 14367,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3084
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 260.97,
+              "top": -2482.61,
+              "width": 728.06,
+              "height": 1046.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 1222.14,
+              "top": -2218.17,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 1015.61,
+              "top": -1876.7,
+              "width": 250,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 418.13,
+              "top": -1304.44,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 11.06,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 25.8,
+              "top": 473.59,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "form.studio_paperTradingTicket__p8Esl",
+              "div.studio_paperTradingBody___Rhkp",
+              "section.studio_paperTradingPanel___fJYb",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 261.97,
+              "top": -2440.61,
+              "width": 726.06,
+              "height": 1003.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-chrome",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "failed",
+      "durationMs": 30059,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1697,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 4754
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -2953.05,
+              "width": 397.63,
+              "height": 392.8
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349.8
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 357.34,
+              "top": -2205.41,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -1877.14,
+              "width": 389.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -1361.05,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 549.91,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_strategyActions__ozoo9",
+              "div.studio_strategyControls__Nin0Q",
+              "section.studio_strategyTester__pWT7d",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 1216.67,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "form.studio_paperTradingTicket__p8Esl",
+              "div.studio_paperTradingBody___Rhkp",
+              "section.studio_paperTradingPanel___fJYb",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -2911.05,
+              "width": 395.63,
+              "height": 349.8
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-safari",
+      "file": "paper-trading-studio.spec.ts",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "failed",
+      "durationMs": 11156,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 6011
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -4086.48,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -3334.86,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -2993.39,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": -2403.41,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": -360.53,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 315.14,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "form.studio_paperTradingTicket__p8Esl",
+              "div.studio_paperTradingBody___Rhkp",
+              "section.studio_paperTradingPanel___fJYb",
+              "main.studio_studio__s_zNf"
+            ]
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -4044.48,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-webkit",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "passed",
+      "durationMs": 4868,
+      "exitImplication": 1
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-chrome",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "failed",
+      "durationMs": 30064,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1697,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2535
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -734.05,
+              "width": 397.63,
+              "height": 392.8
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349.8
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 357.34,
+              "top": 13.59,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_addRow__q7Orx",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 341.86,
+              "width": 389.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 857.95,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_screenerControls__a_Hsn",
+              "section.studio_screenerPanel__M2Jjy",
+              "main.studio_studio__s_zNf",
+              "body"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 2768.91,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 3435.67,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -692.05,
+              "width": 395.63,
+              "height": 349.8
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-safari",
+      "file": "screener.spec.ts",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "failed",
+      "durationMs": 1639,
+      "exitImplication": 1,
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3712
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -1787.48,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -1035.86,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": -694.39,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": -63.47,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 2108.73,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 2784.41,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -1745.48,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-webkit",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "failed",
+      "durationMs": 14385,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 260.97,
+              "top": -263.61,
+              "width": 728.06,
+              "height": 1071.09
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 1222.14,
+              "top": 0.83,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_addRow__q7Orx",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 1015.61,
+              "top": 342.3,
+              "width": 250,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 418.13,
+              "top": 939.05,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 2254.55,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 25.8,
+              "top": 2717.08,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 261.97,
+              "top": -221.61,
+              "width": 726.06,
+              "height": 1028.09
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "canvas",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "canvas",
+              "div",
+              "div.studio_multiChartCanvas__dAGin",
+              "article.studio_multiChartPanel__xqABz.studio_multiChartPanelActive__6S2sc",
+              "div.studio_multiChartGrid__tvZjb.undefined"
+            ]
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-chrome",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "failed",
+      "durationMs": 30072,
+      "exitImplication": 1,
+      "error": "Test timeout of 30000ms exceeded.",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 833,
+          "innerHeight": 1697,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 833
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2019
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -218.05,
+              "width": 397.63,
+              "height": 392.8
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 395.63,
+              "height": 349.8
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 357.34,
+              "top": 529.59,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_addRow__q7Orx",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 857.86,
+              "width": 389.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 16,
+              "top": 1373.95,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_screenerControls__a_Hsn",
+              "section.studio_screenerPanel__M2Jjy",
+              "main.studio_studio__s_zNf",
+              "body"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 3284.91,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 3951.67,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -176.05,
+              "width": 395.63,
+              "height": 349.8
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "clip",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    },
+    {
+      "group": "F6",
+      "project": "studio-mobile-safari",
+      "file": "studio.spec.ts",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "failed",
+      "durationMs": 11109,
+      "exitImplication": 1,
+      "error": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "namedSteps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 837
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2686
+        },
+        "activePanel": "chart-1",
+        "panels": [
+          {
+            "panelId": "chart-1",
+            "className": "studio_multiChartPanel__xqABz studio_multiChartPanelActive__6S2sc",
+            "visible": true,
+            "rect": {
+              "left": 7.19,
+              "top": -761.48,
+              "width": 375.63,
+              "height": 392.58
+            },
+            "display": "grid"
+          }
+        ],
+        "pageErrors": [
+          "ResizeObserver loop completed with undelivered notifications."
+        ],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "criticalTargets": [
+          {
+            "element": "button",
+            "text": "Add",
+            "visible": true,
+            "rect": {
+              "left": 335.34,
+              "top": -26.88,
+              "width": 43.47,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Create alert",
+            "visible": true,
+            "rect": {
+              "left": 11.19,
+              "top": 314.59,
+              "width": 367.63,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": "button",
+            "hitTestContainsTarget": true,
+            "hitTestAncestors": [
+              "button",
+              "div.studio_alertForm__FG57e",
+              "details",
+              "aside.studio_sidebar__Aq3oN",
+              "section.studio_workspace__t2o3y"
+            ]
+          },
+          {
+            "element": "button",
+            "text": "Run scan",
+            "visible": true,
+            "rect": {
+              "left": 101.78,
+              "top": 929.06,
+              "width": 77.58,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Run Backtest",
+            "visible": true,
+            "rect": {
+              "left": 10.39,
+              "top": 2971.94,
+              "width": 99.66,
+              "height": 31.19
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "button",
+            "text": "Submit simulated buy",
+            "visible": true,
+            "rect": {
+              "left": 20.19,
+              "top": 3647.61,
+              "width": 153.06,
+              "height": 33.75
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          },
+          {
+            "element": "canvas",
+            "text": "",
+            "visible": true,
+            "rect": {
+              "left": 8.19,
+              "top": -719.48,
+              "width": 373.63,
+              "height": 349.58
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "position": "static",
+              "overflow": "visible",
+              "pointerEvents": "auto",
+              "transform": "none",
+              "zIndex": "auto"
+            },
+            "hitTest": null,
+            "hitTestContainsTarget": false,
+            "hitTestAncestors": []
+          }
+        ]
+      },
+      "diagnosticAttachment": "studio-diagnostics.json"
+    }
+  ]
+}

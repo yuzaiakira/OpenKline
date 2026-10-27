@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.7",
+  "sourceCommit": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "behavioralSourceCommit": "796b930658353b22300955789efc90aa635b3327",
+  "baselineSourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "playwrightVersion": "1.64.1",
+  "config": "playwright.studio.compat.config.ts",
+  "fullMatrixExecuted": false,
+  "fullMatrixDecision": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN",
+  "groups": {
+    "F1": {
+      "exitCode": 1,
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [],
+      "failedTitles": [
+        "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes"
+      ]
+    },
+    "F2": {
+      "exitCode": 1,
+      "counts": {
+        "total": 2,
+        "passed": 0,
+        "failed": 2,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [],
+      "failedTitles": [
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "mobile Studio exposes bounded optimization controls and cancellation"
+      ]
+    },
+    "F3": {
+      "exitCode": 1,
+      "counts": {
+        "total": 3,
+        "passed": 0,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [],
+      "failedTitles": [
+        "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+        "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "Studio exposes deterministic replay playback controls and restores the workspace"
+      ]
+    },
+    "F4": {
+      "exitCode": 1,
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [],
+      "failedTitles": [
+        "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces"
+      ]
+    },
+    "F5": {
+      "exitCode": 1,
+      "counts": {
+        "total": 12,
+        "passed": 5,
+        "failed": 7,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "Studio cancels a large Worker backtest without retaining a partial result",
+        "Studio remains operable at a touch-sized viewport",
+        "Studio exposes deterministic replay playback controls and restores the workspace",
+        "Studio remains operable at a touch-sized viewport"
+      ],
+      "failedTitles": [
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "Studio cancels a large Worker backtest without retaining a partial result",
+        "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "Studio creates, pauses, persists, and removes a local alert",
+        "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+        "Studio exposes deterministic replay playback controls and restores the workspace",
+        "Studio creates, pauses, persists, and removes a local alert"
+      ]
+    },
+    "F6": {
+      "exitCode": 1,
+      "counts": {
+        "total": 15,
+        "passed": 4,
+        "failed": 11,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "passedTitles": [
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "mobile Studio exposes bounded optimization controls and cancellation",
+        "mobile Studio exposes bounded optimization controls and cancellation",
+        "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode"
+      ],
+      "failedTitles": [
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+        "mobile Studio exposes bounded optimization controls and cancellation",
+        "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+        "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+        "Studio creates, pauses, persists, and removes a local alert",
+        "Studio creates, pauses, persists, and removes a local alert",
+        "Studio creates, pauses, persists, and removes a local alert"
+      ]
+    }
+  },
+  "aggregateFocusedRecords": {
+    "records": 34,
+    "passedRecords": 9,
+    "failedRecords": 25,
+    "uniqueIdentities": 26,
+    "uniquePassed": 8,
+    "uniqueFailed": 18,
+    "note": "F5/F6 overlap some identities with F1\u2013F4; aggregate records count every focused execution, unique* dedupe by (project,title)."
+  },
+  "perGroupCounts": {
+    "F1": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "F2": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "F3": {
+      "total": 3,
+      "passed": 0,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "F4": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "F5": {
+      "total": 12,
+      "passed": 5,
+      "failed": 7,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "F6": {
+      "total": 15,
+      "passed": 4,
+      "failed": 11,
+      "flaky": 0,
+      "skipped": 0
+    }
+  }
+}
