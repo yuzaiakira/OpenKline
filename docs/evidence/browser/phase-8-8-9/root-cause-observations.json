@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.9",
+  "observations": [
+    {
+      "id": "PA-touch-fallback-harness",
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "officialResult": "FAIL",
+      "class": "harness-illegal-touch-constructor",
+      "detail": "dispatchTouchPoint uses page.evaluate(new Touch(...); new TouchEvent(...)). Managed WebKit throws TypeError: Illegal constructor before any product touch handler runs. Product touch-without-pointer fallback was NOT exercised on studio-mobile-safari by this test.",
+      "productClaimAllowed": false
+    },
+    {
+      "id": "PA-snaps-drawing-pass",
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "officialResult": "PASS",
+      "class": "pass",
+      "detail": "placeChartPoint via page.touchscreen.tap placed anchors; drawing snap/persistence assertions passed. Previously failed in Phase 8.8.7 F3.",
+      "productClaimAllowed": true,
+      "scope": "Exact project+title identity only; not full Studio acceptance."
+    },
+    {
+      "id": "PA-workspace-reload-resizeobserver",
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "officialResult": "FAIL",
+      "class": "resizeobserver-pageerror-assert",
+      "detail": "Drawing path reached Drawings(1) and completed workspace restore assertions before final expect(errors).toEqual([]). Failure is ResizeObserver loop pageerror (2 occurrences). Do NOT claim drawing fixed for this identity while official status is FAIL.",
+      "productClaimAllowed": false,
+      "behavioralNote": "Drawing assertions appeared to pass; official FAIL remains due to ResizeObserver pageerror contract."
+    },
+    {
+      "id": "PA-replay-resizeobserver",
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "officialResult": "FAIL",
+      "class": "resizeobserver-pageerror-assert",
+      "detail": "Named step place replay drawing anchors completed; final UI asserted Indicators(3) and Drawings(1) before expect(errors).toEqual([]) failed on one ResizeObserver pageerror.",
+      "productClaimAllowed": false
+    },
+    {
+      "id": "PB-panel-identity-resizeobserver",
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "officialResult": "FAIL",
+      "class": "resizeobserver-pageerror-assert",
+      "detail": "Phase 8.8.8 select-before-assert restore path completed (restore and inspect panel visibility step finished without step error). Final expect(errors).toEqual([]) failed on ResizeObserver. Post-reload hidden chart-2 + select chart-2 pattern appears to work; official FAIL remains.",
+      "productClaimAllowed": false,
+      "phase888Correction": "Observed as exercised; not greened because of ResizeObserver pageerror assert."
+    },
+    {
+      "id": "PC-overflow-timeout",
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "officialResult": "FAIL",
+      "class": "timeout-awaiting-indicator-or-control",
+      "detail": "Timed out in step switch to four-grid and add an indicator while awaiting chart-2 '3 indicators' after Add click. Diagnostics at failure: layout/visual viewport width 390, window.innerWidth 833, documentElement.clientWidth 390, scrollWidth 833 (excessive horizontal overflow ~443px). activePanel=chart-2. Add button hitTestContainsTarget=true at capture time; scrollY=1664 (deep vertical). Distinguish: horizontal overflow present on topActions/workspace controls; vertical depth normal for Studio; timeout is state-wait not proven overlay interception (elementFromPoint null on offscreen controls is geometry, not overlay).",
+      "productClaimAllowed": false,
+      "overflowClassification": {
+        "excessiveHorizontalOverflow": true,
+        "normalDeepVerticalScrolling": true,
+        "failedScrollToTarget": "possible-contributing",
+        "interceptedPointer": "not-confirmed-at-Add",
+        "clickSucceededWithoutExpectedState": "plausible-Add-click-without-3-indicators-visible"
+      }
+    }
+  ]
+}

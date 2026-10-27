@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.9",
+  "evidenceKind": "trusted-machine-targeted-studio-diagnostics-priority-a-b-c",
+  "createdAtUtc": "2026-10-27T09:25:23Z",
+  "sourceCommit": "112213abb8383e78511b63de2f891a8a49e97536",
+  "behavioralSourceCommit": "95cbf47aede8046b03fba9ce476ab5e211359989",
+  "sourceCommitNote": "Checked out 112213a in isolated worktree. Intervening commit after 95cbf47 is documentation-only (docs(qa): record Phase 8.8.8 compatibility boundary).",
+  "baselinePhase887SourceCommit": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "baselinePhase885SourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "managedBrowserVersions": {
+      "chromium": "156.0.8078.4",
+      "firefox": "157.0",
+      "webkit": "27.2"
+    },
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "how": "Official Playwright Docker image; isolated HOME/npm cache; git safe.directory; npm ci locked deps at root and examples/nextjs-app-router; npm run build; focused Priority A\u2013C via playwright.studio.compat.config.ts.",
+    "notCloudWorkspace": true,
+    "physicalDeviceTesting": false,
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "fullMatrixExecuted": false,
+    "fullMatrixDecision": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN",
+    "extendedTargetedExecuted": false,
+    "standaloneMatrixExecuted": false
+  },
+  "focusedResults": {
+    "records": 6,
+    "passed": 1,
+    "failed": 5,
+    "uniqueIdentities": 6,
+    "uniquePassed": 1,
+    "uniqueFailed": 5
+  },
+  "perGroup": {
+    "PA": {
+      "name": "Mobile Safari drawing behavior",
+      "total": 4,
+      "passed": 1,
+      "failed": 3
+    },
+    "PB": {
+      "name": "Mobile Safari restored workspace panels",
+      "total": 1,
+      "passed": 0,
+      "failed": 1
+    },
+    "PC": {
+      "name": "Mobile Chrome overflow diagnostics",
+      "total": 1,
+      "passed": 0,
+      "failed": 1
+    }
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-9-studio-focused-diag-20261027T092523Z.tar.gz",
+      "sha256": "e11a07ad1bfa080b92c9793e6246a85a3afa7a44c4759d61d9ffc16384e7f332",
+      "evidenceDirectoryBasename": "phase-8-8-9-focused-20261027T092523Z"
+    },
+    "priorArchivesPreserved": [
+      "openkline-phase-8-8-7-studio-focused-diag-20261027T080332Z.tar.gz",
+      "openkline-phase-8-8-5-standalone-20261026T191031Z.tar.gz",
+      "openkline-phase-8-8-5-studio-20261026T191031Z.tar.gz",
+      "openkline-phase-8-8-5-studio-focused-diag-20261026T191031Z.tar.gz",
+      "openkline-phase-8-8-3-standalone-20261026T181441Z.tar.gz",
+      "openkline-phase-8-8-3-studio-20261026T181441Z.tar.gz",
+      "openkline-phase-8-8-3-studio-focused-diag-20261026T181441Z.tar.gz"
+    ],
+    "phase887ArchiveSha256Unchanged": "4bc71598f8862a43a40edf243fda2d8194f0cc80ebdbfc8f3c408a9c15cae034"
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname and unnecessary machine identifiers",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, traces, binaries, node_modules, Next.js .next output",
+      "Credentials, tokens, secrets"
+    ],
+    "included": [
+      "Sanitized studio-diagnostics fields (viewport, panels, hit-tests, resizeObserver, pageErrors, overflow)",
+      "Named steps, errors, project/title identities, durations"
+    ]
+  },
+  "limitations": [
+    "Focused Priority A\u2013C diagnostics only; full standalone and Studio matrices not executed in Phase 8.8.9",
+    "Focused PASS does not certify the entire Studio matrix",
+    "Automated Playwright container emulation only",
+    "Not native iOS Safari / physical Android or iOS verification",
+    "Not WCAG conformance or visual-baseline approval",
+    "Not release readiness",
+    "New touch-fallback regression could not exercise product code on managed WebKit due to Illegal constructor in test helper"
+  ]
+}

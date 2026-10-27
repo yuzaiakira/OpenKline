@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.9",
+  "sourceCommit": "112213abb8383e78511b63de2f891a8a49e97536",
+  "behavioralSourceCommit": "95cbf47aede8046b03fba9ce476ab5e211359989",
+  "projects": [
+    "studio-mobile-safari",
+    "studio-mobile-chrome"
+  ],
+  "groups": {
+    "PA": {
+      "name": "Mobile Safari drawing behavior",
+      "total": 4,
+      "passed": 1,
+      "failed": 3
+    },
+    "PB": {
+      "name": "Mobile Safari restored workspace panels",
+      "total": 1,
+      "passed": 0,
+      "failed": 1
+    },
+    "PC": {
+      "name": "Mobile Chrome overflow diagnostics",
+      "total": 1,
+      "passed": 0,
+      "failed": 1
+    }
+  },
+  "totals": {
+    "records": 6,
+    "passed": 1,
+    "failed": 5,
+    "uniqueIdentities": 6,
+    "uniquePassed": 1,
+    "uniqueFailed": 5
+  },
+  "fullMatrixExecuted": false,
+  "standaloneMatrixExecuted": false,
+  "extendedTargetedExecuted": false,
+  "decision": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN"
+}

@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.9",
+  "cases": [
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2690,
+      "errorMessage": "",
+      "errorLocation": null,
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 81,
+          "error": null
+        }
+      ],
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 4100,
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 4\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 18,
+        "line": 99
+      },
+      "steps": [],
+      "rootCauseClass": "resizeobserver-pageerror-assert"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 937,
+      "errorMessage": "Error: page.evaluate: TypeError: Illegal constructor",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 14,
+        "line": 10
+      },
+      "steps": [],
+      "rootCauseClass": "harness-illegal-touch-constructor"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 1591,
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 18,
+        "line": 192
+      },
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 47,
+          "error": null
+        }
+      ],
+      "rootCauseClass": "resizeobserver-pageerror-assert"
+    },
+    {
+      "group": "PB",
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 2877,
+      "errorMessage": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"ResizeObserver loop completed with undelivered notifications.\",\n+ ]",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/multi-chart-studio.spec.ts",
+        "column": 18,
+        "line": 107
+      },
+      "steps": [
+        {
+          "title": "configure four-grid layout",
+          "duration": 204,
+          "error": null
+        },
+        {
+          "title": "verify synchronized symbols in visible panels",
+          "duration": 205,
+          "error": null
+        },
+        {
+          "title": "restore and inspect panel visibility",
+          "duration": 97,
+          "error": null
+        }
+      ],
+      "rootCauseClass": "resizeobserver-pageerror-assert"
+    },
+    {
+      "group": "PC",
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 30039,
+      "errorMessage": "Test timeout of 30000ms exceeded.",
+      "errorLocation": null,
+      "steps": [
+        {
+          "title": "switch to four-grid and add an indicator",
+          "duration": -1,
+          "error": null
+        }
+      ],
+      "rootCauseClass": "timeout-awaiting-indicator-or-control"
+    }
+  ]
+}

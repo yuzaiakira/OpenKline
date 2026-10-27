@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.9",
+  "compareAgainstPhase": "8.8.7",
+  "phase887Source": "d79abbabcc3e4c055310b2058f68f19dfb179d8a",
+  "phase887Focused": {
+    "executions": 34,
+    "passed": 9,
+    "failed": 25,
+    "uniqueIdentities": 26,
+    "uniqueFailing": 18
+  },
+  "phase885FullStudioBaseline": {
+    "discovered": 110,
+    "passed": 79,
+    "failed": 31
+  },
+  "currentSource": "112213abb8383e78511b63de2f891a8a49e97536",
+  "currentFocused": {
+    "records": 6,
+    "passed": 1,
+    "failed": 5,
+    "uniqueIdentities": 6,
+    "uniquePassed": 1,
+    "uniqueFailed": 5
+  },
+  "currentFullStudioTotals": null,
+  "currentFullStudioNote": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN",
+  "previouslyFailingNowPassingFocusedOnly": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "note": "Official PASS in Priority A. Exact identity only."
+    }
+  ],
+  "previouslyFailingStillFailing": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "note": "FAIL class shifted to ResizeObserver pageerror; drawing assertions progressed but official FAIL."
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "note": "FAIL class shifted to ResizeObserver pageerror; Drawings(1) asserted before final errors check."
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "note": "FAIL class shifted to ResizeObserver; Phase 8.8.8 restore select-before-assert path completed."
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "note": "Still timeout; bounded overflow diagnostics captured."
+    }
+  ],
+  "newlyFailingTests": [],
+  "newlyAddedRegressionTests": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "result": "FAIL",
+      "note": "New Phase 8.8.8 touch-fallback regression. Failed with WebKit Illegal constructor in test harness before product path."
+    }
+  ],
+  "testsNotExecuted": [
+    "All remaining studio-* matrix identities outside Priority A\u2013C (109 of 115 discovered Studio compat tests)",
+    "studio-webkit drawing/workspace/alert extended cases",
+    "studio-mobile-safari backtesting and paper trading extended cases",
+    "studio-mobile-chrome chart-scoped backtest and optimizer cancellation extended cases",
+    "Full official Studio workflow collector",
+    "Standalone portable workflow collector"
+  ],
+  "diagnosticOnlyImprovements": [
+    "Workspace reload / replay / panel-identity failures now pin to ResizeObserver pageerror rather than missing Drawings(1) / hidden panel assert (behavioral progress, not official PASS).",
+    "PC failure preserves bounded overflow records: innerWidth 833 vs clientWidth 390, scrollWidth 833, overflowing topActions controls, Add hit-testable, timeout awaiting 3 indicators.",
+    "Touch fallback test surfaces harness Touch/TouchEvent constructor incompatibility on managed WebKit."
+  ]
+}
