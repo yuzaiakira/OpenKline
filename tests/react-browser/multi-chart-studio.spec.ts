@@ -236,6 +236,8 @@ test("mobile Studio keeps critical controls visible and hit-testable after respo
     const addIndicator = page.getByRole("button", { name: "Add", exact: true });
     await expectHitTestTarget(addIndicator);
     await addIndicator.click();
+    await expect(page.getByLabel("Active chart panel")).toHaveValue("chart-2");
+    await expect(page.getByText("Added SMA to chart-2.", { exact: true })).toBeVisible();
     await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
   });
 
