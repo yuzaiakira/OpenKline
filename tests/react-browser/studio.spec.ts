@@ -6,6 +6,16 @@ async function placeChartPoint(page: Page, x: number, y: number): Promise<void> 
   else await page.mouse.click(x, y);
 }
 
+async function dispatchTouchPoint(page: Page, x: number, y: number, identifier: number): Promise<void> {
+  await page.evaluate(({ clientX, clientY, touchIdentifier }) => {
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+    if (canvas === null) throw new Error("Chart canvas is missing");
+    const touch = new Touch({ identifier: touchIdentifier, target: canvas, clientX, clientY, screenX: clientX, screenY: clientY, pageX: clientX, pageY: clientY });
+    canvas.dispatchEvent(new TouchEvent("touchstart", { bubbles: true, cancelable: true, touches: [touch], targetTouches: [touch], changedTouches: [touch] }));
+    canvas.dispatchEvent(new TouchEvent("touchend", { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [touch] }));
+  }, { clientX: x, clientY: y, touchIdentifier: identifier });
+}
+
 test("Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -35,8 +45,8 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   if (box === null) return;
-  await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.22);
-  await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.34);
+  await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08);
+  await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   const objectTree = page.getByRole("complementary", { name: "Object tree" });
   await expect(objectTree).toBeVisible();
@@ -109,6 +119,23 @@ test("Studio remains operable at a touch-sized viewport", async ({ page }) => {
   await expect(page.getByText("Replay: idle", { exact: true })).toBeVisible();
 });
 
+test("Studio accepts drawing anchors from touch events without pointer compatibility events", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.querySelector<HTMLCanvasElement>("canvas")?.height ?? 0)).toBeGreaterThan(200);
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await expect(page.getByText(/trend-line is active in chart-1/)).toBeVisible();
+  const canvas = page.locator("canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  if (box === null) return;
+  await dispatchTouchPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08, 1);
+  await dispatchTouchPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12, 2);
+  await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+});
+
 test("Studio exposes deterministic replay playback controls and restores the workspace", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -125,8 +152,8 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   expect(box).not.toBeNull();
   if (box === null) return;
   await test.step("place replay drawing anchors with the active input modality", async () => {
-    await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.22);
-    await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.34);
+    await placeChartPoint(page, box.x + box.width * 0.35, box.y + box.height * 0.08);
+    await placeChartPoint(page, box.x + box.width * 0.65, box.y + box.height * 0.12);
   });
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
