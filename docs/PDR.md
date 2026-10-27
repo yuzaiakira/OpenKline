@@ -867,3 +867,25 @@ Phase 8.8.10 compatibility, physical-device, accessibility, visual approval,
 legal, and release gates remain open and the phase is not release-ready. See
 `docs/reports/phase-8-8-10-verification.md` and
 `docs/reports/phase-8-8-10-targeted-handoff.md`.
+
+## Phase 8.8.12 final seven Studio defect investigation — verification open
+
+Phase 8.8.11 trusted evidence recorded 70/70 standalone passes and 113/120
+Studio passes, with seven remaining failures: three Firefox drawing identities,
+two WebKit/Mobile Safari paper-trading identities, and two WebKit/Mobile Safari
+alert identities. Phase 8.8.12 preserves that ledger and adds bounded
+failure-oriented diagnostics in `tests/react-browser/studio-test.ts`.
+
+The current source synchronizes chart interaction dimensions from the canvas
+DOM box at pointer/touch interaction boundaries. A local system-Chromium
+regression confirms the identified stale CSS-versus-logical resize mechanism
+for the Firefox drawing symptom. Paper-trading session ownership and current
+quantity handling, plus alert-name input handling, were hardened defensively;
+no official WebKit/Safari root cause is claimed.
+
+Local tests and package checks pass, but the current source has not yet been
+rerun in the pinned official Firefox, WebKit, and Mobile Safari environments.
+The full Studio gate, formal accessibility, visual approval, physical-device,
+legal, owner authorization, and release gates remain open. Phase 8.8.12 is not
+release-ready; see `docs/reports/phase-8-8-12-verification.md` and
+`docs/reports/phase-8-8-12-targeted-handoff.md`.

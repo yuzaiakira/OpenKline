@@ -62,3 +62,16 @@ they are not substitutes for the managed browser projects above. The trusted
 Phase 8.8.9 focused result remains six records with one pass and five
 failures, and the current source has not yet received a trusted Playwright
 WebKit, Firefox, Mobile Chrome, or Mobile Safari rerun. Keep those gates open.
+
+## Phase 8.8.12 current source boundary
+
+The current source `6e4dd92fd08dc50c23fead4f9c3c69b311aeddf5` includes the
+final-seven investigation: interaction-dimension synchronization at chart
+pointer/touch boundaries, bounded Studio diagnostics, defensive paper-trading
+session/input handling, and defensive alert-name input handling. The Phase
+8.8.11 trusted result remains 70/70 standalone and 113/120 Studio with seven
+failures. Current-source managed Firefox, WebKit, and Mobile Safari targeted
+tests have not run in this environment and must remain open. Local system
+Chromium checks are engineering evidence only; they do not certify the
+required managed projects, native devices, accessibility, visual approval, or
+release readiness.
