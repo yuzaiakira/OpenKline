@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "sourceCommit": "0e84d13ca83b81866900571ad798ca69de90911f",
+  "behavioralSourceCommit": "e03d93722d743fda0c00e860ac1b41d07187214e",
+  "primaryFocused": {
+    "groups": {
+      "PA": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      "PB": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "PC": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0
+      },
+      "PD": {
+        "total": 2,
+        "passed": 1,
+        "failed": 1
+      }
+    },
+    "totals": {
+      "records": 9,
+      "passed": 8,
+      "failed": 1
+    }
+  },
+  "extendedFocused": {
+    "groups": {
+      "PE1": {
+        "total": 9,
+        "passed": 5,
+        "failed": 4
+      },
+      "PE2": {
+        "total": 9,
+        "passed": 9,
+        "failed": 0
+      }
+    },
+    "totals": {
+      "records": 18,
+      "passed": 14,
+      "failed": 4
+    },
+    "note": "PE1 re-includes studio-webkit alert identity also counted in PD; unique extended-only failures are paper+alert on WebKit/Safari."
+  },
+  "standaloneFull": {
+    "discovered": 70,
+    "passed": 70,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "studioFull": {
+    "discovered": 120,
+    "passed": 113,
+    "failed": 7,
+    "exitCode": 1
+  },
+  "decision": "FULL MATRICES EXECUTED AFTER FOCUSED/EXTENDED IMPROVEMENT",
+  "fullMatrixNotStopped": true
+}

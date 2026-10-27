@@ -1,0 +1,755 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "primaryCases": [
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3141,
+      "errorMessage": "",
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 74,
+          "error": null
+        }
+      ],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4409,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 931,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PA",
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1563,
+      "errorMessage": "",
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 52,
+          "error": null
+        }
+      ],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PB",
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2881,
+      "errorMessage": "",
+      "steps": [
+        {
+          "title": "configure four-grid layout",
+          "duration": 213,
+          "error": null
+        },
+        {
+          "title": "verify synchronized symbols in visible panels",
+          "duration": 251,
+          "error": null
+        },
+        {
+          "title": "restore and inspect panel visibility",
+          "duration": 70,
+          "error": null
+        }
+      ],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PC",
+      "project": "studio-mobile-chrome",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3256,
+      "errorMessage": "",
+      "steps": [
+        {
+          "title": "check 390px layout",
+          "duration": 1230,
+          "error": null
+        },
+        {
+          "title": "check 412px layout",
+          "duration": 453,
+          "error": null
+        },
+        {
+          "title": "check 640px layout",
+          "duration": 517,
+          "error": null
+        },
+        {
+          "title": "check 800px layout",
+          "duration": 504,
+          "error": null
+        },
+        {
+          "title": "check 1280px layout",
+          "duration": 509,
+          "error": null
+        }
+      ],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PC",
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1015,
+      "errorMessage": "",
+      "steps": [
+        {
+          "title": "switch to four-grid and add an indicator",
+          "duration": 359,
+          "error": null
+        },
+        {
+          "title": "return to single layout and run a backtest",
+          "duration": 171,
+          "error": null
+        }
+      ],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PD",
+      "project": "studio-webkit",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3209,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PD",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10850,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "alert-close-text-missing"
+    }
+  ],
+  "extendedCases": [
+    {
+      "group": "PE1",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 13963,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 3084
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 102,
+            "clientY": 490,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "paper-pending-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-chrome",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4005,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 13996,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 6264
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "paper-pending-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-webkit",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4494,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-chrome",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3847,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-safari",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4558,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 13985,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 930.08
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "alert-close-text-missing"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-chrome",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3863,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE1",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 14010,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2938
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          }
+        ],
+        "overflowingElements": []
+      },
+      "rootCauseClass": "alert-close-text-missing"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-webkit",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3216,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-webkit",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1437,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3074,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-chrome",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1274,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-safari",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3092,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-safari",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1465,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-webkit",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6657,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3713,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    },
+    {
+      "group": "PE2",
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6744,
+      "errorMessage": "",
+      "steps": [],
+      "diagnostics": null,
+      "rootCauseClass": "pass"
+    }
+  ]
+}

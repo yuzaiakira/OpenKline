@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.11",
+  "evidenceKind": "trusted-machine-targeted-and-full-studio-diagnostics",
+  "createdAtUtc": "2026-10-27T11:05:49Z",
+  "sourceCommit": "0e84d13ca83b81866900571ad798ca69de90911f",
+  "behavioralSourceCommit": "e03d93722d743fda0c00e860ac1b41d07187214e",
+  "sourceCommitNote": "Checked out 0e84d13. Intervening commit after e03d937 is documentation-only (docs(qa): record Phase 8.8.10 verification).",
+  "baselinePhase889SourceCommit": "112213abb8383e78511b63de2f891a8a49e97536",
+  "baselinePhase885SourceCommit": "241026e3b1eb3cebd0bbb78dd17daea8028b3203",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "managedBrowserVersions": {
+      "chromium": "156.0.8078.4",
+      "firefox": "157.0",
+      "webkit": "27.2"
+    },
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "how": "Official Playwright Docker image; isolated HOME/npm cache; git safe.directory; npm ci; npm run build; Priority A\u2013D; conditional extended PE1\u2013PE2; then independent standalone + Studio collectors.",
+    "notCloudWorkspace": true,
+    "physicalDeviceTesting": false,
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "fullMatrixExecuted": true,
+    "standaloneMatrixExecuted": true,
+    "extendedTargetedExecuted": true
+  },
+  "primaryFocusedResults": {
+    "records": 9,
+    "passed": 8,
+    "failed": 1
+  },
+  "extendedFocusedResults": {
+    "records": 18,
+    "passed": 14,
+    "failed": 4
+  },
+  "standaloneResults": {
+    "discovered": 70,
+    "passed": 70,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "studioFullResults": {
+    "discovered": 120,
+    "passed": 113,
+    "failed": 7,
+    "exitCode": 1
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-11-studio-focused-diag-20261027T110549Z.tar.gz",
+      "sha256": "3d0f89692fb6a51c14d0e988c1de53af7a7d9bd9def425ce38dee601f6e088bb"
+    },
+    "standalone": {
+      "filename": "openkline-phase-8-8-11-standalone-20261027T110549Z.tar.gz",
+      "sha256": "0ce99243970cad1af38921d2fa7552904ffd6be625af86429a037c71a67432ca"
+    },
+    "studioFull": {
+      "filename": "openkline-phase-8-8-11-studio-full-20261027T110549Z.tar.gz",
+      "sha256": "9a2299183575d162ca346ff6407567782452b77e4e06c6d7fb6bfbf9b08fdd20"
+    },
+    "priorArchivesPreserved": [
+      "openkline-phase-8-8-9-studio-focused-diag-20261027T092523Z.tar.gz",
+      "openkline-phase-8-8-7-studio-focused-diag-20261027T080332Z.tar.gz",
+      "openkline-phase-8-8-5-standalone-20261026T191031Z.tar.gz",
+      "openkline-phase-8-8-5-studio-20261026T191031Z.tar.gz"
+    ],
+    "phase889ArchiveSha256Unchanged": "e11a07ad1bfa080b92c9793e6246a85a3afa7a44c4759d61d9ffc16384e7f332"
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, traces, binaries, node_modules",
+      "Credentials, tokens, secrets"
+    ],
+    "included": [
+      "Sanitized diagnostics",
+      "Named steps",
+      "project/title identities",
+      "Full-matrix failure identities"
+    ]
+  },
+  "limitations": [
+    "Not native iOS Safari / physical-device testing",
+    "Not WCAG or visual-baseline approval",
+    "Synthetic touch fallback harness is not a native-touch claim",
+    "Focused PASS does not alone certify release",
+    "Remaining WebKit/Safari alert+paper and Firefox drawing failures block release readiness"
+  ]
+}
