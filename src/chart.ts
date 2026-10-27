@@ -149,6 +149,8 @@ export class Chart {
   private readonly workerRuntimes = new Set<KlineScriptWorkerRuntime>();
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
+  private resizeFrame: number | null = null;
+  private pendingObservedResize: { readonly width: number; readonly height: number } | null = null;
   private theme: ChartTheme;
   private locale: string;
   private timeZone: string;
@@ -224,7 +226,7 @@ export class Chart {
       : new ResizeObserver((entries) => {
           const entry = entries[0];
           if (entry !== undefined) {
-            this.resize(entry.contentRect.width, entry.contentRect.height);
+            this.scheduleObservedResize(entry.contentRect.width, entry.contentRect.height);
           }
         });
     this.resizeObserver?.observe(this.container);
@@ -1253,6 +1255,12 @@ export class Chart {
     this.strategyMarkers = [];
     this.paperTradingMarkers = [];
     this.resizeObserver?.disconnect();
+    this.pendingObservedResize = null;
+    if (this.resizeFrame !== null) {
+      if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(this.resizeFrame);
+      else if (typeof window !== "undefined") window.clearTimeout(this.resizeFrame);
+      this.resizeFrame = null;
+    }
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
     this.canvas.removeEventListener("pointerup", this.handlePointerUp);
@@ -1265,6 +1273,21 @@ export class Chart {
     this.canvas.removeEventListener("keydown", this.handleKeyDown);
     this.canvas.remove();
     this.listeners.clear();
+  }
+
+  private scheduleObservedResize(width: number, height: number): void {
+    if (this.destroyed) return;
+    this.pendingObservedResize = { width, height };
+    if (this.resizeFrame !== null || typeof window === "undefined") return;
+    const applyResize = (): void => {
+      this.resizeFrame = null;
+      const next = this.pendingObservedResize;
+      this.pendingObservedResize = null;
+      if (!this.destroyed && next !== null) this.resize(next.width, next.height);
+    };
+    this.resizeFrame = typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame(applyResize)
+      : window.setTimeout(applyResize, 0);
   }
 
   private snapDrawingPoint(point: DrawingPoint, mode: DrawingSnapMode | undefined): DrawingPoint {
