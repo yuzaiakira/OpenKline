@@ -153,8 +153,8 @@ test("Studio snaps drawing anchors to visible candle timestamps and preserves ra
   expect(box).not.toBeNull();
   if (box === null) return;
   await test.step("place drawing anchors with the active input modality", async () => {
-    await placeChartPoint(page, box.x + box.width * 0.45, box.y + box.height * 0.25);
-    await placeChartPoint(page, box.x + box.width * 0.72, box.y + box.height * 0.45);
+    await placeChartPoint(page, box.x + box.width * 0.45, box.y + box.height * 0.08);
+    await placeChartPoint(page, box.x + box.width * 0.72, box.y + box.height * 0.12);
   });
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();

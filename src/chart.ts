@@ -164,6 +164,7 @@ export class Chart {
   private lastPointerX = 0;
   private selectedDrawingId: string | null = null;
   private pendingDrawing: { type: string; options: DrawingStartOptions; points: DrawingPoint[] } | null = null;
+  private suppressNextPointerDown = false;
   private activeDrawing: { id: string; pointIndex: number | null; time: number; price: number } | null = null;
   private datafeedCleanup: (() => void) | null = null;
   private datafeedRequestId = 0;
@@ -1257,6 +1258,9 @@ export class Chart {
     this.canvas.removeEventListener("pointerup", this.handlePointerUp);
     this.canvas.removeEventListener("pointercancel", this.handlePointerUp);
     this.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
+    this.canvas.removeEventListener("touchstart", this.handleTouchStart);
+    this.canvas.removeEventListener("touchend", this.handleTouchEnd);
+    this.canvas.removeEventListener("touchcancel", this.handleTouchEnd);
     this.canvas.removeEventListener("wheel", this.handleWheel);
     this.canvas.removeEventListener("keydown", this.handleKeyDown);
     this.canvas.remove();
@@ -1276,41 +1280,28 @@ export class Chart {
   }
 
   private pointerPosition(event: PointerEvent): { readonly x: number; readonly y: number } {
+    return this.clientPosition(event.clientX, event.clientY);
+  }
+
+  private clientPosition(clientX: number, clientY: number): { readonly x: number; readonly y: number } {
     const bounds = this.canvas.getBoundingClientRect();
     const scaleX = bounds.width > 0 ? this.width / bounds.width : 1;
     const scaleY = bounds.height > 0 ? this.height / bounds.height : 1;
     return {
-      x: Math.max(0, Math.min(this.width, (event.clientX - bounds.left) * scaleX)),
-      y: Math.max(0, Math.min(this.height, (event.clientY - bounds.top) * scaleY)),
+      x: Math.max(0, Math.min(this.width, (clientX - bounds.left) * scaleX)),
+      y: Math.max(0, Math.min(this.height, (clientY - bounds.top) * scaleY)),
     };
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
     const position = this.pointerPosition(event);
-    const drawingContext = this.getDrawingContext();
-    if (drawingContext !== null && this.pendingDrawing !== null && isInsideBounds(position.x, position.y, drawingContext.bounds)) {
-      const point = this.snapDrawingPoint({
-        time: Math.max(0, Math.round(drawingContext.converter.timeForX(position.x))),
-        price: drawingContext.converter.priceForY(position.y),
-      }, this.pendingDrawing.options.snap);
-      this.pendingDrawing.points.push(point);
-      const tool = this.drawingEngine.getTool(this.pendingDrawing.type);
-      if (this.pendingDrawing.points.length >= tool.minPoints) {
-        const { type, options, points } = this.pendingDrawing;
-        const drawing = this.drawingEngine.create(type, {
-          points,
-          ...(options.style === undefined ? {} : { style: { ...options.style } }),
-          ...(options.text === undefined ? {} : { text: options.text }),
-          ...(options.zIndex === undefined ? {} : { zIndex: options.zIndex }),
-        });
-        this.selectedDrawingId = drawing.id;
-        this.emit("drawingSelection", { id: drawing.id });
-        this.emit("toolActivation", { type, active: false });
-        this.pendingDrawing = null;
-      }
-      this.render();
+    if (this.suppressNextPointerDown) {
+      this.suppressNextPointerDown = false;
       return;
     }
+    if (this.handlePendingDrawingPoint(position)) return;
+
+    const drawingContext = this.getDrawingContext();
 
     if (drawingContext !== null && isInsideBounds(position.x, position.y, drawingContext.bounds)) {
       const hit = this.drawingEngine.hitTest(position.x, position.y, drawingContext.converter, drawingContext.bounds, 6, (drawing) => this.isDrawingReplayVisible(drawing));
@@ -1339,6 +1330,43 @@ export class Chart {
     this.lastPointerX = position.x;
     this.canvas.setPointerCapture(event.pointerId);
   };
+
+  private readonly handleTouchStart = (event: TouchEvent): void => {
+    const touch = event.changedTouches[0];
+    if (touch === undefined || !this.handlePendingDrawingPoint(this.clientPosition(touch.clientX, touch.clientY))) return;
+    event.preventDefault();
+    this.suppressNextPointerDown = true;
+  };
+
+  private readonly handleTouchEnd = (): void => {
+    this.suppressNextPointerDown = false;
+  };
+
+  private handlePendingDrawingPoint(position: { readonly x: number; readonly y: number }): boolean {
+    const drawingContext = this.getDrawingContext();
+    if (drawingContext === null || this.pendingDrawing === null || !isInsideBounds(position.x, position.y, drawingContext.bounds)) return false;
+    const point = this.snapDrawingPoint({
+      time: Math.max(0, Math.round(drawingContext.converter.timeForX(position.x))),
+      price: drawingContext.converter.priceForY(position.y),
+    }, this.pendingDrawing.options.snap);
+    this.pendingDrawing.points.push(point);
+    const tool = this.drawingEngine.getTool(this.pendingDrawing.type);
+    if (this.pendingDrawing.points.length >= tool.minPoints) {
+      const { type, options, points } = this.pendingDrawing;
+      const drawing = this.drawingEngine.create(type, {
+        points,
+        ...(options.style === undefined ? {} : { style: { ...options.style } }),
+        ...(options.text === undefined ? {} : { text: options.text }),
+        ...(options.zIndex === undefined ? {} : { zIndex: options.zIndex }),
+      });
+      this.selectedDrawingId = drawing.id;
+      this.emit("drawingSelection", { id: drawing.id });
+      this.emit("toolActivation", { type, active: false });
+      this.pendingDrawing = null;
+    }
+    this.render();
+    return true;
+  }
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
     const position = this.pointerPosition(event);
@@ -1415,6 +1443,9 @@ export class Chart {
     this.canvas.addEventListener("pointerup", this.handlePointerUp);
     this.canvas.addEventListener("pointercancel", this.handlePointerUp);
     this.canvas.addEventListener("pointerleave", this.handlePointerLeave);
+    this.canvas.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+    this.canvas.addEventListener("touchend", this.handleTouchEnd);
+    this.canvas.addEventListener("touchcancel", this.handleTouchEnd);
     this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
     this.canvas.addEventListener("keydown", this.handleKeyDown);
   }

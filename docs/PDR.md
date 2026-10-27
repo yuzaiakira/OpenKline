@@ -821,3 +821,21 @@ absent. Trusted focused and full five-project reruns against the current source
 remain mandatory. Physical devices, formal accessibility, visual approval,
 legal review, owner authorization, and release readiness remain open; Phase
 8.8.6 is not closed and is not release-ready.
+
+## Phase 8.8.8 evidence-driven Studio compatibility repair — verification open
+
+Phase 8.8.8 preserves the trusted Phase 8.8.7 focused result as evidence-
+integrity data and adds bounded failure-only pointer, overflow, and resize
+diagnostics. The chart now accepts drawing anchors from `touchstart` when a
+browser does not deliver the corresponding pointer compatibility event, while
+deduplicating a subsequent pointerdown and cleaning up all listeners on
+destroy. Mobile drawing and replay tests target the visible primary price pane;
+they no longer use coordinates that can land in intentionally separate
+indicator or volume panes on a narrow layout.
+
+Local type, Node, evidence-validator, Studio, and system-Chromium checks are
+engineering evidence only. The 8.8.7 trusted records still contain unresolved
+WebKit/mobile drawing, ResizeObserver, and asynchronous failures, so current
+source trusted reruns, physical-device review, accessibility/visual approval,
+legal approval, and release authorization remain open. This phase does not
+authorize npm publication, tags, GitHub releases, or license changes.
