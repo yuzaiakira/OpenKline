@@ -112,6 +112,7 @@ official managed environment.
 | Full local React/Studio Chromium suite | PASS — 27/27 |
 | Focused drawing/paper/alert regressions | PASS — 6/6 |
 | Current local diagnostic | PASS — 30/30, commit `8f845f6`, system Chromium only |
+| Release-readiness workflow | NOT READY — managed-browser compatibility blocked; manual/legal/release gates remain open |
 | Trusted managed Firefox/WebKit/Mobile Safari targeted rerun | NOT RUN in this cloud environment |
 | Full five-project Studio matrix | NOT RUN; targeted gate remains open |
 | Physical-device compatibility | NOT TESTED |
@@ -122,6 +123,14 @@ The current local diagnostic used system Chromium `154.0.8037.57` through the
 explicit system executable and Playwright `1.64.1`, plus Mobile Chrome
 emulation. It is engineering evidence only. The local Canvas2D benchmark also
 passed with these host observations:
+
+The final local release-readiness run completed with all executable local
+engineering gates passing, but reported `NOT READY` because the cloud cannot
+provide the official managed-browser executables and because formal
+accessibility, visual, physical-device, legal, third-party-notice, owner, and
+release-authorization gates remain open. Its untracked local summary was
+written under `artifacts/release-readiness/2026-10-27T17-21-11-259Z/`; it was
+not added to the repository.
 
 | Dataset | Load | RAF FPS | Frame median / p95 | Update-frame |
 | ---: | ---: | ---: | ---: | ---: |
