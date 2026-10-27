@@ -64,6 +64,7 @@ function quantity(value: number): string { return value.toLocaleString(undefined
 
 export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice }: PaperTradingPanelProps): ReactElement {
   const [session, setSession] = useState<PaperSession>(() => createSession(panelId, symbol));
+  const currentSessionRef = useRef<PaperSession>(session);
   const identityRef = useRef({ panelId, symbol });
   const disposeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [snapshot, setSnapshot] = useState<PaperAccountSnapshot>(() => session.account.getSnapshot());
@@ -81,6 +82,12 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
   }, [panelId, symbol]);
 
   useEffect(() => {
+    const previousSession = currentSessionRef.current;
+    if (previousSession !== session) {
+      previousSession.stream.dispose();
+      previousSession.account.dispose();
+      currentSessionRef.current = session;
+    }
     if (disposeTimerRef.current !== null) {
       clearTimeout(disposeTimerRef.current);
       disposeTimerRef.current = null;
@@ -99,6 +106,7 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
       // React Strict Mode performs an effect cleanup/setup probe. Delay final
       // disposal so that probe does not dispose the session reused by setup.
       disposeTimerRef.current = setTimeout(() => {
+        if (currentSessionRef.current !== session) return;
         session.stream.dispose();
         session.account.dispose();
         disposeTimerRef.current = null;
@@ -113,7 +121,8 @@ export function PaperTradingPanel({ panelId, symbol, timeframe, chart, onNotice 
   }, [chart, orders]);
 
   const submit = (): void => {
-    const parsed = Number(orderQuantity);
+    const inputValue = typeof document === "undefined" ? undefined : document.querySelector<HTMLInputElement>('input[aria-label="Paper order quantity"]')?.value;
+    const parsed = Number(inputValue ?? orderQuantity);
     try {
       const order = session.account.submitOrder({ idempotencyKey: `${panelId}-${side}-${Date.now()}`, side, type: "market", quantity: parsed, ...(reason.trim() === "" ? {} : { reason: reason.trim() }) });
       setNotice(`${order.side.toUpperCase()} order ${order.id} is pending; fill requires the next fresh simulated quote.`);
