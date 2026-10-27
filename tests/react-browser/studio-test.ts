@@ -82,27 +82,27 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
           hitTestAncestors: ancestors,
         };
       };
-      const overflowingElements = Array.from(document.querySelectorAll("*"))
-        .filter((element): element is HTMLElement => element instanceof HTMLElement)
-        .map((element) => {
-          const rect = element.getBoundingClientRect();
-          const style = getComputedStyle(element);
-          const overflowingContent = element.scrollWidth > element.clientWidth + 1;
-          const overflowingViewport = rect.right > document.documentElement.clientWidth + 1 || rect.left < -1;
-          if (rect.width <= 0 || rect.height <= 0 || (!overflowingContent && !overflowingViewport)) return null;
-          const parent = element.parentElement;
-          const parentStyle = parent === null ? null : getComputedStyle(parent);
-          return {
-            element: describe(element),
-            parent: describe(parent),
-            rect: { left: numberOrNull(rect.left), top: numberOrNull(rect.top), width: numberOrNull(rect.width), height: numberOrNull(rect.height), right: numberOrNull(rect.right) },
-            scroll: { scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowingContent, overflowingViewport },
-            style: { display: style.display, position: style.position, width: style.width, minWidth: style.minWidth, boxSizing: style.boxSizing, overflowX: style.overflowX, gridTemplateColumns: style.gridTemplateColumns, flex: style.flex },
-            parentStyle: parentStyle === null ? null : { display: parentStyle.display, position: parentStyle.position, width: parentStyle.width, minWidth: parentStyle.minWidth, overflowX: parentStyle.overflowX, gridTemplateColumns: parentStyle.gridTemplateColumns, flex: parentStyle.flex },
-          };
-        })
-        .filter((entry): entry is Record<string, unknown> => entry !== null)
-        .slice(0, 24);
+      const overflowingElements: Record<string, unknown>[] = [];
+      for (const candidate of Array.from(document.querySelectorAll("*"))) {
+        if (!(candidate instanceof HTMLElement)) continue;
+        const element = candidate;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const overflowingContent = element.scrollWidth > element.clientWidth + 1;
+        const overflowingViewport = rect.right > document.documentElement.clientWidth + 1 || rect.left < -1;
+        if (rect.width <= 0 || rect.height <= 0 || (!overflowingContent && !overflowingViewport)) continue;
+        const parent = element.parentElement;
+        const parentStyle = parent === null ? null : getComputedStyle(parent);
+        overflowingElements.push({
+          element: describe(element),
+          parent: describe(parent),
+          rect: { left: numberOrNull(rect.left), top: numberOrNull(rect.top), width: numberOrNull(rect.width), height: numberOrNull(rect.height), right: numberOrNull(rect.right) },
+          scroll: { scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowingContent, overflowingViewport },
+          style: { display: style.display, position: style.position, width: style.width, minWidth: style.minWidth, boxSizing: style.boxSizing, overflowX: style.overflowX, gridTemplateColumns: style.gridTemplateColumns, flex: style.flex },
+          parentStyle: parentStyle === null ? null : { display: parentStyle.display, position: parentStyle.position, width: parentStyle.width, minWidth: parentStyle.minWidth, overflowX: parentStyle.overflowX, gridTemplateColumns: parentStyle.gridTemplateColumns, flex: parentStyle.flex },
+        });
+        if (overflowingElements.length >= 24) break;
+      }
       const summarizeSelector = (selector: string, limit = 8): readonly Record<string, unknown>[] => Array.from(document.querySelectorAll(selector)).slice(0, limit).map(targetSummary);
       const actionButtons = Array.from(document.querySelectorAll("button")).filter((button) => /^(Add|Run Backtest|Create alert|Run scan|Submit simulated buy|Save|Fit|Replay next bar)$/u.test((button.textContent ?? "").trim())).slice(0, 12).map(targetSummary);
       const resize = (window as unknown as Record<string, ResizeDiagnostics | undefined>)[resizeKey] ?? null;
