@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "sourceCommit": "5062735097301ce22dd50f1f78f7f84cf96394e1",
+  "behavioralSourceCommit": "6e4dd92fd08dc50c23fead4f9c3c69b311aeddf5",
+  "groups": {
+    "F1": {
+      "name": "Firefox drawing trio",
+      "total": 3,
+      "passed": 0,
+      "failed": 3
+    },
+    "F2": {
+      "name": "WebKit paper+alert",
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
+    "F3": {
+      "name": "Mobile Safari paper+alert",
+      "total": 2,
+      "passed": 0,
+      "failed": 2
+    }
+  },
+  "totals": {
+    "records": 7,
+    "passed": 1,
+    "failed": 6
+  },
+  "fullMatrixExecuted": false,
+  "standaloneMatrixExecuted": false,
+  "decision": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN"
+}

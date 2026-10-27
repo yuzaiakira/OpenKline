@@ -1,0 +1,882 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "failures": [
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12321,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/multi-chart-studio.spec.ts",
+        "column": 65,
+        "line": 188
+      },
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 9
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1366,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 748.7166748046875
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 926
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 999.75
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 999.78
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 11,
+            "clientY": 288,
+            "target": "input"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 11,
+            "clientY": 288,
+            "target": "input"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 11,
+            "clientY": 288,
+            "target": "input"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 100,
+            "clientY": 177,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 100,
+            "clientY": 177,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 100,
+            "clientY": 177,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 726,
+                "cssHeight": 999.78,
+                "backingWidth": 726,
+                "backingHeight": 999
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceray is active in chart-1 with visible OHLC snapping.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        }
+      },
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12858,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 82
+      },
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1366,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 768.7999877929688
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 5,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 926
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 999.75
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 999.78
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 1039.95
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 122,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 122,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 122,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 272,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 272,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 272,
+            "clientY": 134,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 43,
+            "clientY": 177,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 726,
+                "cssHeight": 1039.95,
+                "backingWidth": 726,
+                "backingHeight": 1039
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and pricetrend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        }
+      },
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F1",
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11327,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 196
+      },
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 9
+        }
+      ],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1366,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 768.7999877929688
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 4,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 926
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 999.75
+            },
+            {
+              "target": "div.",
+              "width": 726,
+              "height": 1039.95
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 1243,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 43,
+            "clientY": 177,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 43,
+            "clientY": 177,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 0,
+            "clientX": 43,
+            "clientY": 177,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 726,
+                "cssHeight": 1039.95,
+                "backingWidth": 726,
+                "backingHeight": 1039
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and pricetrend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        }
+      },
+      "rootCauseClass": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "group": "F2",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 12769,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 72,
+        "line": 243
+      },
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 720,
+          "clientWidth": 1280,
+          "clientHeight": 720,
+          "visualViewportWidth": 1280,
+          "visualViewportHeight": 720,
+          "devicePixelRatio": 1,
+          "screenWidth": 1280,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": false,
+          "scrollWidth": 1280
+        },
+        "scroll": {
+          "x": 0,
+          "y": 865
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1003.58
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 726.06,
+              "height": 1028.09
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 1140,
+            "clientY": 359,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 726.06,
+                "cssHeight": 1028.09,
+                "backingWidth": 726,
+                "backingHeight": 1028
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceAlert created in chart-1; events remain local.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (1)",
+            "names": [
+              "Close crosses threshold"
+            ],
+            "removeControls": [
+              "Remove Close crosses threshold"
+            ]
+          }
+        }
+      },
+      "rootCauseClass": "alert-name-fill-not-applied-default-name-created"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11793,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('pending', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('pending', { exact: true }) with timeout 10000ms\n  - waiting for getByText('pending', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/paper-trading-studio.spec.ts",
+        "column": 60,
+        "line": 12
+      },
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 6264
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 96,
+            "clientY": 331,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceReady. Multi-chart Studio uses deterministic demo data; no vendor credentials are required.",
+              "idle",
+              "Order exceeds the configured maximum notional",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Order exceeds the configured maximum notional"
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        }
+      },
+      "rootCauseClass": "paper-order-rejected-max-notional-quantity-fill-suspect"
+    },
+    {
+      "group": "F3",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11838,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Studio close alert')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Studio close alert') with timeout 10000ms\n  - waiting for getByText('Studio close alert')\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 72,
+        "line": 243
+      },
+      "steps": [],
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2938
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "resizeObserver": {
+          "count": 3,
+          "lastEntries": [
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349
+            },
+            {
+              "target": "div.",
+              "width": 36,
+              "height": 32
+            },
+            {
+              "target": "div.",
+              "width": 373.63,
+              "height": 349.58
+            }
+          ]
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 195,
+            "clientY": 332,
+            "target": "button"
+          }
+        ],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceAlert created in chart-1; events remain local.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "countText": "Alerts (1)",
+            "names": [
+              "Close crosses threshold"
+            ],
+            "removeControls": [
+              "Remove Close crosses threshold"
+            ]
+          }
+        }
+      },
+      "rootCauseClass": "alert-name-fill-not-applied-default-name-created"
+    }
+  ]
+}

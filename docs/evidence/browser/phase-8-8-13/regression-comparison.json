@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.13",
+  "compareAgainstPhase": "8.8.11",
+  "phase811StudioFull": {
+    "discovered": 120,
+    "passed": 113,
+    "failed": 7
+  },
+  "currentFocused": {
+    "records": 7,
+    "passed": 1,
+    "failed": 6
+  },
+  "currentFullStudioTotals": null,
+  "currentFullStudioNote": "FULL MATRIX NOT EXECUTED \u2014 TARGETED FAILURES REMAIN",
+  "previouslyFailingNowPassingFocusedOnly": [
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"
+    }
+  ],
+  "previouslyFailingStillFailing": [
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert"
+    }
+  ],
+  "diagnosticOnlyImprovements": [
+    "Mobile Safari paper failure now shows explicit max-notional rejection notice rather than an unexplained missing pending string.",
+    "Alert failures show default name creation despite fill('Studio close alert'), pointing at controlled-input/apply path on WebKit/Safari."
+  ]
+}
