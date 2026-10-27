@@ -29,6 +29,8 @@ type StudioDiagnostics = {
   readonly panels: readonly Record<string, unknown>[];
   readonly targets: readonly Record<string, unknown>[];
   readonly targeted: Record<string, unknown>;
+  readonly drawingInteraction: Record<string, unknown> | null;
+  readonly inputTrace: readonly Record<string, unknown>[];
   readonly overflowingElements: readonly Record<string, unknown>[];
   readonly pointerTrace: readonly PointerDiagnosticEntry[];
   readonly resizeObserver: ResizeDiagnostics | null;
@@ -38,6 +40,55 @@ type StudioDiagnostics = {
 
 const RESIZE_DIAGNOSTICS_KEY = "__openklineResizeDiagnostics";
 const POINTER_DIAGNOSTICS_KEY = "__openklinePointerDiagnostics";
+const DRAWING_DIAGNOSTICS_KEY = "__openklineDrawingDiagnostics";
+const INPUT_DIAGNOSTICS_KEY = "__openklineInputDiagnostics";
+
+export async function placeVisibleChartPoint(page: Page, xFraction: number, yFraction: number, canvasSelector = "canvas"): Promise<void> {
+  const point = await page.evaluate(({ x, y, selector, diagnosticsKey }) => {
+    const canvas = document.querySelector<HTMLCanvasElement>(selector);
+    if (canvas === null) throw new Error(`Chart canvas is missing for selector ${selector}`);
+    const finite = (value: number): number => Number.isFinite(value) ? Number(value.toFixed(2)) : value;
+    const clamp = (value: number, minimum: number, maximum: number): number => Math.min(maximum, Math.max(minimum, value));
+    const initial = canvas.getBoundingClientRect();
+    const intendedPageY = initial.top + window.scrollY + initial.height * y;
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    window.scrollTo(window.scrollX, clamp(intendedPageY - window.innerHeight * 0.32, 0, maxScroll));
+    const rect = canvas.getBoundingClientRect();
+    const visibleMinimum = Math.max(0, (8 - rect.top) / Math.max(rect.height, 1));
+    const visibleMaximum = Math.min(1, (window.innerHeight - 8 - rect.top) / Math.max(rect.height, 1));
+    if (visibleMaximum < visibleMinimum) throw new Error("Chart canvas has no visible vertical interaction range");
+    const safeY = clamp(y, visibleMinimum + 0.02, Math.max(visibleMinimum + 0.02, visibleMaximum - 0.02));
+    const clientX = rect.left + rect.width * clamp(x, 0.02, 0.98);
+    const clientY = rect.top + rect.height * safeY;
+    const hit = document.elementFromPoint(clientX, clientY);
+    const targetIsCanvas = hit === canvas || (hit !== null && canvas.contains(hit));
+    const record = {
+      cssRect: { left: finite(rect.left), top: finite(rect.top), width: finite(rect.width), height: finite(rect.height) },
+      backingSize: { width: canvas.width, height: canvas.height },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      scroll: { x: finite(window.scrollX), y: finite(window.scrollY) },
+      requestedFraction: { x, y },
+      canvasLogicalPoint: { x: finite(clientX - rect.left), y: finite(clientY - rect.top) },
+      backingPoint: { x: finite((clientX - rect.left) * canvas.width / Math.max(rect.width, 1)), y: finite((clientY - rect.top) * canvas.height / Math.max(rect.height, 1)) },
+      clientPoint: { x: finite(clientX), y: finite(clientY) },
+      insideVisualViewport: clientX >= 0 && clientX <= window.innerWidth && clientY >= 0 && clientY <= window.innerHeight,
+      insidePrimaryPaneCandidate: safeY <= 0.72,
+      hitTarget: hit === null ? null : `${hit.tagName.toLowerCase()}${(hit as HTMLElement).className ? `.${String((hit as HTMLElement).className).trim().split(/\s+/u).slice(0, 2).join(".")}` : ""}`,
+      targetIsCanvas,
+    };
+    const win = window as unknown as Record<string, unknown>;
+    const previous = Array.isArray(win[diagnosticsKey]) ? win[diagnosticsKey] as unknown[] : [];
+    previous.push(record);
+    win[diagnosticsKey] = previous.slice(-8);
+    if (!record.insideVisualViewport || !record.targetIsCanvas || !record.insidePrimaryPaneCandidate) {
+      throw new Error(`Drawing point is not a visible primary-pane Canvas target: ${JSON.stringify(record)}`);
+    }
+    return { x: clientX, y: clientY };
+  }, { x: xFraction, y: yFraction, selector: canvasSelector, diagnosticsKey: DRAWING_DIAGNOSTICS_KEY });
+  const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  if (touchInput) await page.touchscreen.tap(point.x, point.y);
+  else await page.mouse.click(point.x, point.y);
+}
 
 async function captureDiagnostics(page: Page, title: string, pageErrors: readonly string[], consoleErrors: readonly string[]): Promise<StudioDiagnostics | null> {
   try {
@@ -107,6 +158,8 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
       const summarizeSelector = (selector: string, limit = 8): readonly Record<string, unknown>[] => Array.from(document.querySelectorAll(selector)).slice(0, limit).map(targetSummary);
       const actionButtons = Array.from(document.querySelectorAll("button")).filter((button) => /^(Add|Run Backtest|Create alert|Run scan|Submit simulated buy|Save|Fit|Replay next bar)$/u.test((button.textContent ?? "").trim())).slice(0, 12).map(targetSummary);
       const resize = (window as unknown as Record<string, ResizeDiagnostics | undefined>)[resizeKey] ?? null;
+      const drawingInteraction = (window as unknown as Record<string, Record<string, unknown>[] | undefined>)["__openklineDrawingDiagnostics"]?.slice(-8) ?? null;
+      const inputTrace = (window as unknown as Record<string, Record<string, unknown>[] | undefined>)["__openklineInputDiagnostics"]?.slice(-40) ?? [];
       const activeSelect = document.querySelector<HTMLSelectElement>('select[aria-label="Active chart panel"]');
       const canvasMetrics = Array.from(document.querySelectorAll("canvas")).slice(0, 4).map((canvas) => {
         const rect = canvas.getBoundingClientRect();
@@ -150,6 +203,13 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
           },
           paperTrading: paperPanel === null ? null : {
             accountState: paperPanel.dataset.paperAccountState ?? null,
+            sessionId: paperPanel.dataset.paperSessionId ?? null,
+            inputValue: paperPanel.dataset.paperInputValue ?? null,
+            submitQuantity: paperPanel.dataset.paperSubmitQuantity ?? null,
+            submitMarketPrice: paperPanel.dataset.paperSubmitMarketPrice ?? null,
+            submitEstimatedNotional: paperPanel.dataset.paperSubmitEstimatedNotional ?? null,
+            submitOutcome: paperPanel.dataset.paperSubmitOutcome ?? null,
+            submitRejectionCode: paperPanel.dataset.paperSubmitRejectionCode ?? null,
             orderCount: paperPanel.dataset.paperOrderCount ?? null,
             orderStatuses: paperPanel.dataset.paperOrderStatuses ?? null,
             rows: Array.from(paperPanel.querySelectorAll("tbody tr")).slice(0, 8).map((row) => (row.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 180)),
@@ -158,11 +218,16 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
           alerts: alertPanel === undefined ? null : {
             open: alertPanel.open,
             inputValue: alertPanel.querySelector<HTMLInputElement>('input[aria-label="Alert name"]')?.value ?? null,
+            diagnosticInputValue: alertPanel.dataset.alertInputValue ?? null,
+            lastCreatedName: alertPanel.dataset.alertLastCreatedName ?? null,
+            lastOutcome: alertPanel.dataset.alertLastOutcome ?? null,
             countText: alertPanel.querySelector("summary")?.textContent?.trim() ?? null,
             names: alertNames,
             removeControls: Array.from(alertPanel.querySelectorAll<HTMLButtonElement>('[aria-label^="Remove "]')).slice(0, 8).map((button) => button.getAttribute("aria-label")),
           },
         },
+        drawingInteraction: drawingInteraction === null ? null : { placements: drawingInteraction },
+        inputTrace,
         targets: [
           ...actionButtons,
           ...summarizeSelector("canvas", 4),
@@ -189,7 +254,7 @@ export const test = base.extend({
         consoleErrors.push(`${message.type()}: ${message.text().slice(0, 500)}`);
       }
     });
-    await page.addInitScript(({ resizeKey, pointerKey }) => {
+    await page.addInitScript(({ resizeKey, pointerKey, inputKey }) => {
       const win = window as unknown as Record<string, unknown>;
       if (win[pointerKey] !== undefined) return;
       if (win[resizeKey] === undefined && typeof window.ResizeObserver !== "undefined") {
@@ -241,7 +306,20 @@ export const test = base.extend({
         document.addEventListener(eventType, recordPointer, { capture: true, passive: true });
       }
       win[pointerKey] = pointerTrace;
-    }, { resizeKey: RESIZE_DIAGNOSTICS_KEY, pointerKey: POINTER_DIAGNOSTICS_KEY });
+      const inputTrace: Record<string, unknown>[] = [];
+      const inputNodes = new WeakMap<Element, number>();
+      let nextInputNode = 1;
+      const recordInput = (event: Event): void => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || !["Alert name", "Paper order quantity"].includes(target.getAttribute("aria-label") ?? "")) return;
+        let nodeId = inputNodes.get(target);
+        if (nodeId === undefined) { nodeId = nextInputNode++; inputNodes.set(target, nodeId); }
+        inputTrace.push({ type: event.type, label: target.getAttribute("aria-label"), value: target.value.slice(0, 120), nodeId, focused: document.activeElement === target });
+        inputTrace.splice(0, Math.max(0, inputTrace.length - 40));
+      };
+      for (const eventType of ["focus", "input", "change", "blur"] as const) document.addEventListener(eventType, recordInput, { capture: true });
+      win[inputKey] = inputTrace;
+    }, { resizeKey: RESIZE_DIAGNOSTICS_KEY, pointerKey: POINTER_DIAGNOSTICS_KEY, inputKey: INPUT_DIAGNOSTICS_KEY });
     await use(page);
     if (testInfo.status !== testInfo.expectedStatus) {
       const diagnostics = await captureDiagnostics(page, testInfo.title, pageErrors, consoleErrors);
