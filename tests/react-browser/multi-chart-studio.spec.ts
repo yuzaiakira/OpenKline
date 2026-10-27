@@ -81,8 +81,23 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   await page.getByRole("button", { name: "New", exact: true }).first().click();
   await expect(page.locator("[data-panel-id]")).toHaveCount(1);
   await page.getByLabel("Workspace", { exact: true }).selectOption(savedWorkspaceId);
-  await expect(page.locator("[data-panel-id]")).toHaveCount(4);
-  await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
+  await test.step("restore and inspect panel visibility", async () => {
+    await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+    const chartTwoIndicators = page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true });
+    if (await page.evaluate(() => window.matchMedia("(max-width: 720px)").matches)) {
+      // Workspace restoration intentionally selects chart-1. Verify chart-2's
+      // persisted state after selecting its visible panel instead of treating
+      // the mobile-hidden panel as a failed restoration.
+      await expect(chartTwoIndicators).toBeHidden();
+      await page.getByLabel("Active chart panel").selectOption("chart-2");
+      await expect(chartTwoIndicators).toBeVisible();
+      await page.getByLabel("Active chart panel").selectOption("chart-1");
+      await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+      await page.getByLabel("Active chart panel").selectOption("chart-2");
+    } else {
+      await expect(chartTwoIndicators).toBeVisible();
+    }
+  });
 
   await page.getByLabel("Active chart panel").selectOption("chart-4");
   await page.getByRole("button", { name: "Remove chart", exact: true }).click();

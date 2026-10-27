@@ -11,6 +11,15 @@ type ResizeDiagnostics = {
   readonly lastEntries: readonly ResizeDiagnosticEntry[];
 };
 
+type PointerDiagnosticEntry = {
+  readonly type: string;
+  readonly pointerType: string | null;
+  readonly pointerId: number | null;
+  readonly clientX: number | null;
+  readonly clientY: number | null;
+  readonly target: string | null;
+};
+
 type StudioDiagnostics = {
   readonly capturedAt: string;
   readonly testTitle: string;
@@ -19,16 +28,19 @@ type StudioDiagnostics = {
   readonly activePanel: string | null;
   readonly panels: readonly Record<string, unknown>[];
   readonly targets: readonly Record<string, unknown>[];
+  readonly overflowingElements: readonly Record<string, unknown>[];
+  readonly pointerTrace: readonly PointerDiagnosticEntry[];
   readonly resizeObserver: ResizeDiagnostics | null;
   readonly pageErrors: readonly string[];
   readonly consoleErrors: readonly string[];
 };
 
 const RESIZE_DIAGNOSTICS_KEY = "__openklineResizeDiagnostics";
+const POINTER_DIAGNOSTICS_KEY = "__openklinePointerDiagnostics";
 
 async function captureDiagnostics(page: Page, title: string, pageErrors: readonly string[], consoleErrors: readonly string[]): Promise<StudioDiagnostics | null> {
   try {
-    return await page.evaluate(({ title: testTitle, resizeKey }) => {
+    return await page.evaluate(({ title: testTitle, resizeKey, pointerKey }) => {
       const numberOrNull = (value: number): number | null => Number.isFinite(value) ? Number(value.toFixed(2)) : null;
       const describe = (element: Element | null): string | null => {
         if (element === null) return null;
@@ -70,6 +82,27 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
           hitTestAncestors: ancestors,
         };
       };
+      const overflowingElements = Array.from(document.querySelectorAll("*"))
+        .filter((element): element is HTMLElement => element instanceof HTMLElement)
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const overflowingContent = element.scrollWidth > element.clientWidth + 1;
+          const overflowingViewport = rect.right > document.documentElement.clientWidth + 1 || rect.left < -1;
+          if (rect.width <= 0 || rect.height <= 0 || (!overflowingContent && !overflowingViewport)) return null;
+          const parent = element.parentElement;
+          const parentStyle = parent === null ? null : getComputedStyle(parent);
+          return {
+            element: describe(element),
+            parent: describe(parent),
+            rect: { left: numberOrNull(rect.left), top: numberOrNull(rect.top), width: numberOrNull(rect.width), height: numberOrNull(rect.height), right: numberOrNull(rect.right) },
+            scroll: { scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowingContent, overflowingViewport },
+            style: { display: style.display, position: style.position, width: style.width, minWidth: style.minWidth, boxSizing: style.boxSizing, overflowX: style.overflowX, gridTemplateColumns: style.gridTemplateColumns, flex: style.flex },
+            parentStyle: parentStyle === null ? null : { display: parentStyle.display, position: parentStyle.position, width: parentStyle.width, minWidth: parentStyle.minWidth, overflowX: parentStyle.overflowX, gridTemplateColumns: parentStyle.gridTemplateColumns, flex: parentStyle.flex },
+          };
+        })
+        .filter((entry): entry is Record<string, unknown> => entry !== null)
+        .slice(0, 24);
       const summarizeSelector = (selector: string, limit = 8): readonly Record<string, unknown>[] => Array.from(document.querySelectorAll(selector)).slice(0, limit).map(targetSummary);
       const actionButtons = Array.from(document.querySelectorAll("button")).filter((button) => /^(Add|Run Backtest|Create alert|Run scan|Submit simulated buy|Save|Fit|Replay next bar)$/u.test((button.textContent ?? "").trim())).slice(0, 12).map(targetSummary);
       const resize = (window as unknown as Record<string, ResizeDiagnostics | undefined>)[resizeKey] ?? null;
@@ -106,9 +139,11 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
           ...summarizeSelector('[data-testid="strategy-optimizer"]', 4),
           ...summarizeSelector('[role="alert"]', 4),
         ],
+        overflowingElements,
+        pointerTrace: ((window as unknown as Record<string, PointerDiagnosticEntry[] | undefined>)[pointerKey] ?? []).slice(-60),
         resizeObserver: resize,
       };
-    }, { title, resizeKey: RESIZE_DIAGNOSTICS_KEY }).then((diagnostics) => ({ ...diagnostics, pageErrors, consoleErrors }));
+    }, { title, resizeKey: RESIZE_DIAGNOSTICS_KEY, pointerKey: POINTER_DIAGNOSTICS_KEY }).then((diagnostics) => ({ ...diagnostics, pageErrors, consoleErrors }));
   } catch {
     return null;
   }
@@ -124,30 +159,59 @@ export const test = base.extend({
         consoleErrors.push(`${message.type()}: ${message.text().slice(0, 500)}`);
       }
     });
-    await page.addInitScript((resizeKey) => {
+    await page.addInitScript(({ resizeKey, pointerKey }) => {
       const win = window as unknown as Record<string, unknown>;
-      if (win[resizeKey] !== undefined || typeof window.ResizeObserver === "undefined") return;
-      const diagnostics: { count: number; lastEntries: ResizeDiagnosticEntry[] } = { count: 0, lastEntries: [] };
-      win[resizeKey] = diagnostics;
-      const OriginalResizeObserver = window.ResizeObserver;
-      class DiagnosticResizeObserver {
-        private readonly observer: ResizeObserver;
-        public constructor(callback: ResizeObserverCallback) {
-          this.observer = new OriginalResizeObserver((entries, observer) => {
-            diagnostics.count += 1;
-            for (const entry of entries.slice(0, 8)) {
-              diagnostics.lastEntries.push({ target: `${entry.target.tagName.toLowerCase()}.${(entry.target as HTMLElement).className ?? ""}`.slice(0, 160), width: Number(entry.contentRect.width.toFixed(2)), height: Number(entry.contentRect.height.toFixed(2)) });
-            }
-            diagnostics.lastEntries.splice(0, Math.max(0, diagnostics.lastEntries.length - 30));
-            callback(entries, observer);
-          });
+      if (win[pointerKey] !== undefined) return;
+      if (win[resizeKey] === undefined && typeof window.ResizeObserver !== "undefined") {
+        const diagnostics: { count: number; lastEntries: ResizeDiagnosticEntry[] } = { count: 0, lastEntries: [] };
+        win[resizeKey] = diagnostics;
+        const OriginalResizeObserver = window.ResizeObserver;
+        class DiagnosticResizeObserver {
+          private readonly observer: ResizeObserver;
+          public constructor(callback: ResizeObserverCallback) {
+            this.observer = new OriginalResizeObserver((entries, observer) => {
+              diagnostics.count += 1;
+              for (const entry of entries.slice(0, 8)) {
+                diagnostics.lastEntries.push({ target: `${entry.target.tagName.toLowerCase()}.${(entry.target as HTMLElement).className ?? ""}`.slice(0, 160), width: Number(entry.contentRect.width.toFixed(2)), height: Number(entry.contentRect.height.toFixed(2)) });
+              }
+              diagnostics.lastEntries.splice(0, Math.max(0, diagnostics.lastEntries.length - 30));
+              callback(entries, observer);
+            });
+          }
+          public observe(target: Element, options?: ResizeObserverOptions): void { this.observer.observe(target, options); }
+          public unobserve(target: Element): void { this.observer.unobserve(target); }
+          public disconnect(): void { this.observer.disconnect(); }
         }
-        public observe(target: Element, options?: ResizeObserverOptions): void { this.observer.observe(target, options); }
-        public unobserve(target: Element): void { this.observer.unobserve(target); }
-        public disconnect(): void { this.observer.disconnect(); }
+        Object.defineProperty(window, "ResizeObserver", { configurable: true, writable: true, value: DiagnosticResizeObserver });
       }
-      Object.defineProperty(window, "ResizeObserver", { configurable: true, writable: true, value: DiagnosticResizeObserver });
-    }, RESIZE_DIAGNOSTICS_KEY);
+      const pointerTrace: PointerDiagnosticEntry[] = [];
+      const describeTarget = (target: EventTarget | null): string | null => {
+        if (!(target instanceof Element)) return null;
+        const html = target as HTMLElement;
+        const id = html.id ? `#${html.id}` : "";
+        const classes = typeof html.className === "string" && html.className.length > 0
+          ? `.${html.className.trim().split(/\s+/).slice(0, 2).join(".")}`
+          : "";
+        return `${target.tagName.toLowerCase()}${id}${classes}`;
+      };
+      const recordPointer = (event: Event): void => {
+        const pointer = event as PointerEvent;
+        const touch = "touches" in event ? (event as TouchEvent).touches[0] : undefined;
+        pointerTrace.push({
+          type: event.type,
+          pointerType: typeof pointer.pointerType === "string" ? pointer.pointerType : null,
+          pointerId: Number.isFinite(pointer.pointerId) ? pointer.pointerId : null,
+          clientX: Number.isFinite(pointer.clientX) ? Number(pointer.clientX.toFixed(2)) : touch === undefined ? null : Number(touch.clientX.toFixed(2)),
+          clientY: Number.isFinite(pointer.clientY) ? Number(pointer.clientY.toFixed(2)) : touch === undefined ? null : Number(touch.clientY.toFixed(2)),
+          target: describeTarget(event.target),
+        });
+        pointerTrace.splice(0, Math.max(0, pointerTrace.length - 60));
+      };
+      for (const eventType of ["pointerdown", "pointermove", "pointerup", "pointercancel", "touchstart", "touchend"] as const) {
+        document.addEventListener(eventType, recordPointer, { capture: true, passive: true });
+      }
+      win[pointerKey] = pointerTrace;
+    }, { resizeKey: RESIZE_DIAGNOSTICS_KEY, pointerKey: POINTER_DIAGNOSTICS_KEY });
     await use(page);
     if (testInfo.status !== testInfo.expectedStatus) {
       const diagnostics = await captureDiagnostics(page, testInfo.title, pageErrors, consoleErrors);
