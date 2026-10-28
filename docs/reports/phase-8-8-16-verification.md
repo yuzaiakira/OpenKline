@@ -112,9 +112,9 @@ waits for dialog visibility first without weakening the focus contract.
 
 ## Local verification
 
-Exact remediation source SHA is recorded on `work` after the Phase 8.8.16
-commits (see `git log` / handoff). Local system Chromium and package gates are
-engineering feedback only.
+Exact product remediation SHA: `4c0861f6dc6b6a16f005ef36688b6bf853139dd1`
+(evidence `4b228d9`, docs follow on `work`). Local system Chromium and package
+gates are engineering feedback only.
 
 | Gate | Result |
 | --- | --- |
