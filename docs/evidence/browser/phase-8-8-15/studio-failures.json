@@ -1,0 +1,1437 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "sourceCommit": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "playwrightVersion": "1.64.1",
+  "derivedFrom": "playwright-results.json failure records from initial full Studio suite",
+  "failureCount": 7,
+  "currentTotals": {
+    "studio-chromium": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-firefox": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-webkit": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-mobile-chrome": {
+      "passed": 22,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-mobile-safari": {
+      "passed": 21,
+      "failed": 4,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    }
+  },
+  "failures": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11403,
+      "errorMessage": "Error: expect(locator).toBeFocused() failed\n\nLocator: getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value')\nExpected: focused\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value') with timeout 10000ms\n  - waiting for getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value')\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/accessibility.spec.ts",
+        "column": 23,
+        "line": 67
+      },
+      "steps": [],
+      "rootCauseClass": "assertion-focus-not-applied",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1146
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceReady. Multi-chart Studio uses deterministic demo data; no vendor credentials are required.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 44,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 44,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 44,
+            "clientY": 331,
+            "target": "ul"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11120,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/multi-chart-studio.spec.ts",
+        "column": 65,
+        "line": 177
+      },
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 206
+        }
+      ],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 412,
+          "innerHeight": 839,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 412
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1921
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 395.63,
+                "cssHeight": 349.8,
+                "backingWidth": 1036,
+                "backingHeight": 916
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and priceray is active in chart-1 with visible OHLC snapping.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 0,
+            "clientY": 0,
+            "target": "header.studio_topbar__QPKEV"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 10.5,
+            "clientY": 727.84,
+            "target": "input"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 10.5,
+            "clientY": 727.84,
+            "target": "input"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 10.5,
+            "clientY": 727.84,
+            "target": "input"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95.15,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95.15,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95.15,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 186.22,
+            "clientY": 268.5,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 186.22,
+            "clientY": 268.5,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 186.22,
+            "clientY": 268.5,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 293.04,
+            "clientY": 268.48,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 293.04,
+            "clientY": 268.48,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 293.04,
+            "clientY": 268.48,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10888,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/multi-chart-studio.spec.ts",
+        "column": 65,
+        "line": 177
+      },
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 48
+        }
+      ],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2118
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "12/31/2025, 9:46:20 AM \u00b7 1148.54ray is active in chart-1 with visible OHLC snapping.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 8,
+            "clientY": 331,
+            "target": "input"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 8,
+            "clientY": 331,
+            "target": "input"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 8,
+            "clientY": 331,
+            "target": "input"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95,
+            "clientY": 127,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95,
+            "clientY": 127,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 95,
+            "clientY": 127,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 176,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 176,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 176,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 277,
+            "clientY": 212,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 277,
+            "clientY": 212,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 277,
+            "clientY": 212,
+            "target": "canvas"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11563,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 71
+      },
+      "steps": [],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 412,
+          "innerHeight": 839,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 412
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1943
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 395.63,
+                "cssHeight": 349.8,
+                "backingWidth": 1036,
+                "backingHeight": 916
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and pricetrend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 0,
+            "clientY": 0,
+            "target": "header.studio_topbar__QPKEV"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116.53,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116.53,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116.53,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266.61,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266.61,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266.61,
+            "clientY": 447.09,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.04,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.04,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.04,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10931,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 181
+      },
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 131
+        }
+      ],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 412,
+          "innerHeight": 839,
+          "clientWidth": 412,
+          "clientHeight": 839,
+          "visualViewportWidth": 412,
+          "visualViewportHeight": 839,
+          "devicePixelRatio": 2.625,
+          "screenWidth": 412,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 412
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1943
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 395.63,
+                "cssHeight": 349.8,
+                "backingWidth": 1036,
+                "backingHeight": 916
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "Move across a chart for timestamp and pricetrend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 0,
+            "clientY": 0,
+            "target": "header.studio_topbar__QPKEV"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.06,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.06,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 379.07,
+            "clientY": 419.06,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37.71,
+            "clientY": 532.18,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 2,
+            "clientX": 146.66,
+            "clientY": 268.64,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "touchstart",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "touch",
+            "pointerId": 3,
+            "clientX": 265.34,
+            "clientY": 268.62,
+            "target": "canvas"
+          },
+          {
+            "type": "touchend",
+            "pointerType": null,
+            "pointerId": null,
+            "clientX": null,
+            "clientY": null,
+            "target": "canvas"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11737,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 71
+      },
+      "steps": [],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2140
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "12/31/2025, 5:47:09 AM \u00b7 1133.44trend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 116,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 266,
+            "clientY": 483,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          }
+        ]
+      }
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10876,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n",
+      "errorLocation": {
+        "file": "/work/tests/react-browser/studio.spec.ts",
+        "column": 65,
+        "line": 181
+      },
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 49
+        }
+      ],
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "diagnostics": {
+        "viewport": {
+          "innerWidth": 390,
+          "innerHeight": 664,
+          "clientWidth": 390,
+          "clientHeight": 664,
+          "visualViewportWidth": 390,
+          "visualViewportHeight": 664,
+          "devicePixelRatio": 3,
+          "screenWidth": 390,
+          "viewportMeta": "width=device-width, initial-scale=1",
+          "maxWidth720": true,
+          "scrollWidth": 390
+        },
+        "scroll": {
+          "x": 0,
+          "y": 2140
+        },
+        "activePanel": "chart-1",
+        "pageErrors": [],
+        "consoleErrors": [],
+        "targeted": {
+          "drawing": {
+            "canvasMetrics": [
+              {
+                "cssWidth": 373.63,
+                "cssHeight": 349.58,
+                "backingWidth": 1119,
+                "backingHeight": 1047
+              }
+            ],
+            "summaries": [
+              "Drawings (0)"
+            ],
+            "liveTexts": [
+              "12/31/2025, 5:47:09 AM \u00b7 1133.44trend-line is active in chart-1.",
+              "idle",
+              "Advance the simulated quote to fill pending market orders.",
+              "All account events are simulated and isolated from replay/backtesting."
+            ]
+          },
+          "paperTrading": {
+            "accountState": "active",
+            "sessionId": "studio-paper-chart-1",
+            "inputValue": "1",
+            "submitQuantity": "",
+            "submitMarketPrice": "",
+            "submitEstimatedNotional": "",
+            "submitOutcome": "",
+            "submitRejectionCode": "",
+            "orderCount": "0",
+            "orderStatuses": "",
+            "rows": [
+              "No simulated orders"
+            ],
+            "notice": "Advance the simulated quote to fill pending market orders."
+          },
+          "alerts": {
+            "open": true,
+            "inputValue": "Close crosses threshold",
+            "diagnosticInputValue": "Close crosses threshold",
+            "lastCreatedName": "",
+            "lastOutcome": "",
+            "countText": "Alerts (0)",
+            "names": [],
+            "removeControls": []
+          }
+        },
+        "pointerTrace": [
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 357,
+            "clientY": 331,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 37,
+            "clientY": 568,
+            "target": "button"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 138,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointermove",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerdown",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          },
+          {
+            "type": "pointerup",
+            "pointerType": "mouse",
+            "pointerId": 1,
+            "clientX": 251,
+            "clientY": 213,
+            "target": "canvas"
+          }
+        ]
+      }
+    }
+  ]
+}

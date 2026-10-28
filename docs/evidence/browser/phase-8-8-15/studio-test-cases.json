@@ -1,0 +1,1135 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "sourceCommit": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "total": 125,
+  "passed": 118,
+  "failed": 7,
+  "cases": [
+    {
+      "project": "studio-chromium",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4109,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1528,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1322,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1106,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3173,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1859,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1481,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1044,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2898,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1479,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2076,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1181,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1855,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1257,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1164,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 889,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1657,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1643,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "file": "accessibility.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11403,
+      "errorMessage": "Error: expect(locator).toBeFocused() failed\n\nLocator: getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value')\nExpected: focused\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value') with timeout 10000ms\n  - waiting for getByRole('dialog', { name: 'Rename watchlist' }).getByLabel('Dialog value')\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 636,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "file": "contrast-audit.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3836,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "file": "contrast-audit.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3589,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "file": "contrast-audit.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1404,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "file": "contrast-audit.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1140,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "file": "contrast-audit.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1185,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "file": "lifecycle.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4231,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "file": "lifecycle.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3850,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "file": "lifecycle.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1588,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "file": "lifecycle.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1597,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "file": "lifecycle.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1902,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5959,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1386,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio top actions stay within representative viewport widths",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5429,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1681,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1547,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1778,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1922,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2022,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5729,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1466,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio top actions stay within representative viewport widths",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6026,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1864,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1967,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2460,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2051,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1606,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3725,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1583,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio top actions stay within representative viewport widths",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4795,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2305,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2146,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1769,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1288,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1439,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3216,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1174,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio top actions stay within representative viewport widths",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4935,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1412,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11120,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1099,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1033,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 968,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4091,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1339,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio top actions stay within representative viewport widths",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3329,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1046,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10888,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1106,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1069,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "file": "multi-chart-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1250,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4545,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3066,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3739,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3305,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2573,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 7008,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1716,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2477,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2425,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "file": "optimization-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6021,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "file": "paper-trading-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4635,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "file": "paper-trading-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2413,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "file": "paper-trading-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2664,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "file": "paper-trading-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1897,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "file": "paper-trading-studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2311,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "file": "screener.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4428,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "file": "screener.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3036,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "file": "screener.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2659,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "file": "screener.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1475,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "file": "screener.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2366,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6515,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1683,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1503,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2363,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1700,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1362,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1664,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4388,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2489,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1734,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2845,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2005,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1781,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2304,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4769,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1857,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1448,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2770,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2139,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1209,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1645,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11563,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1101,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 799,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10931,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1083,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 796,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 995,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 11737,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1094,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 924,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "file": "studio.spec.ts",
+      "status": "unexpected",
+      "ok": false,
+      "durationMs": 10876,
+      "errorMessage": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByText('Drawings (1)', { exact: true })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByText('Drawings (1)', { exact: true }) with timeout 10000ms\n  - waiting for getByText('Drawings (1)', { exact: true })\n"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 941,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 802,
+      "errorMessage": null
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "file": "studio.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1282,
+      "errorMessage": null
+    }
+  ]
+}

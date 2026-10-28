@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "observations": [
+    {
+      "id": "firefox-drawing-resolved",
+      "projects": [
+        "studio-firefox"
+      ],
+      "titles": [
+        "snaps drawing",
+        "workspace reload",
+        "replay restore"
+      ],
+      "officialResult": "PASS",
+      "class": "resolved-prior-failure",
+      "detail": "All three previously failing Firefox drawing identities passed. Drawings (1) registered under managed Firefox with native mouse interaction."
+    },
+    {
+      "id": "webkit-alert-resolved",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "officialResult": "PASS",
+      "class": "resolved-prior-failure",
+      "detail": "Alert name Studio close alert persisted; pause/enable/remove path succeeded."
+    },
+    {
+      "id": "mobile-safari-alert-resolved",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "officialResult": "PASS",
+      "class": "resolved-prior-failure",
+      "detail": "Same alert lifecycle passed on Mobile Safari managed WebKit."
+    },
+    {
+      "id": "mobile-safari-paper-resolved",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "officialResult": "PASS",
+      "class": "resolved-prior-failure",
+      "detail": "Quantity 0.1 accepted; pending/fill/chart-scope assertions passed. No max-notional rejection."
+    },
+    {
+      "id": "webkit-paper-control-pass",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "officialResult": "PASS",
+      "class": "positive-control",
+      "detail": "Positive control remained PASS on current source; no regression from input-lifecycle changes."
+    },
+    {
+      "id": "standalone-full-pass",
+      "officialResult": "PASS",
+      "class": "full-matrix",
+      "detail": "Standalone five-browser matrix: 75 expected, 0 unexpected."
+    },
+    {
+      "id": "studio-full-new-mobile-drawing-failures",
+      "projects": [
+        "studio-mobile-chrome",
+        "studio-mobile-safari"
+      ],
+      "officialResult": "FAIL",
+      "class": "mobile-drawing-anchors-not-registered",
+      "detail": "Full Studio matrix still fails six mobile drawing identities (Drawings (0) after placement) plus one Mobile Safari dialog focus assertion. These were outside the Phase 8.8.13 targeted-seven set. Desktop Firefox drawing now passes."
+    },
+    {
+      "id": "studio-full-mobile-safari-dialog-focus",
+      "project": "studio-mobile-safari",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "officialResult": "FAIL",
+      "class": "assertion-focus-not-applied",
+      "detail": "Rename watchlist dialog value input was not focused within timeout on Mobile Safari."
+    }
+  ]
+}

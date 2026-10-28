@@ -38,7 +38,16 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.9", EVIDENCE_PACK_POLICIES["8.8.9"].expectedSourceCommit, 6],
     ["8.8.11", EVIDENCE_PACK_POLICIES["8.8.11"].expectedSourceCommit, 27],
     ["8.8.13", EVIDENCE_PACK_POLICIES["8.8.13"].expectedSourceCommit, 7],
+    ["8.8.15", EVIDENCE_PACK_POLICIES["8.8.15"].expectedSourceCommit, 207],
   ]);
+});
+
+test("Phase 8.8.15 evidence preserves the seven Studio failures and seven targeted passes", () => {
+  const result = validateEvidencePack({ evidenceRoot: repositoryEvidenceRoot, policy: EVIDENCE_PACK_POLICIES["8.8.15"] });
+  assert.equal(result.status, "PASS");
+  assert.equal(result.totals.focusedExpected, 7);
+  assert.equal(result.totals.standaloneExpected, 75);
+  assert.equal(result.totals.studioUnexpected, 7);
 });
 
 test("duplicate or malformed records are rejected", () => {

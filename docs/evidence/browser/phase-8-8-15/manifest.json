@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "evidenceKind": "trusted-machine-final-seven-plus-full-matrices",
+  "createdAtUtc": "2026-10-27T17:31:46Z",
+  "sourceCommit": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "behavioralSourceCommit": "8f845f6c0370d43744294f4c22301666d8257766",
+  "sourceCommitNote": "Checked out 3e7a889. Intervening commits after 8f845f6 are documentation-only (phase-8.8.14 verification/handoff/readiness docs).",
+  "previousTrustedSource": "5062735097301ce22dd50f1f78f7f84cf96394e1",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "standaloneConfig": "playwright.portable.config.ts",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "managedBrowserVersions": {
+      "chromium": "156.0.8078.4",
+      "firefox": "157.0",
+      "webkit": "27.2"
+    },
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "cloudEnvironment": false,
+    "how": "Official Playwright Docker image; dual-mount for detached worktree gitdir; isolated HOME/npm cache; npm ci root+nextjs; build; seven targeted identities A1-A5; then npm run browser:verify and npm run studio:browser:verify independently.",
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "originWorkAtVerificationTime": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+    "fullMatrixExecuted": true,
+    "standaloneMatrixExecuted": true,
+    "fullMatrixDecision": "TARGETED SEVEN PASS \u2014 FULL MATRICES EXECUTED; STUDIO FULL MATRIX STILL HAS FAILURES"
+  },
+  "focusedResults": {
+    "records": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "standaloneResults": {
+    "status": "verified",
+    "exitCode": 0,
+    "stats": {
+      "startTime": "2026-10-27T17:45:25.299Z",
+      "duration": 6604.4490000000005,
+      "expected": 75,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "perProject": {
+      "chromium": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "firefox": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "webkit": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "mobile-chrome": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "mobile-safari": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      }
+    },
+    "testRecordCount": 75
+  },
+  "studioResults": {
+    "status": "FAIL",
+    "exitCode": 1,
+    "stats": {
+      "startTime": "2026-10-27T17:45:37.115Z",
+      "duration": 53859.475,
+      "expected": 118,
+      "skipped": 0,
+      "unexpected": 7,
+      "flaky": 0
+    },
+    "perProject": {
+      "studio-chromium": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-firefox": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-webkit": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-mobile-chrome": {
+        "passed": 22,
+        "failed": 3,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-mobile-safari": {
+        "passed": 21,
+        "failed": 4,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      }
+    },
+    "testRecordCount": 125,
+    "failureCount": 7
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-15-studio-focused-diag-20261027T173146Z.tar.gz",
+      "sha256": "40af795e71d35bbfe368fd994b86366c57a7323f9ce2be807e1283d222ca31b5",
+      "bytes": 24878
+    },
+    "standalone": {
+      "filename": "openkline-phase-8-8-15-standalone-20261027T173146Z.tar.gz",
+      "sha256": "b2b035c4bd31a3d0c49467a5faeb1827c0570347f800309cf9395778096853d5",
+      "bytes": 7066
+    },
+    "studio": {
+      "filename": "openkline-phase-8-8-15-studio-full-20261027T173146Z.tar.gz",
+      "sha256": "9db477035dd0e2371b16d5cb848c60ab13db09e028cbb27ebe058d9e585f6466",
+      "bytes": 76954
+    },
+    "priorArchivesPreserved": [
+      "openkline-phase-8-8-13-studio-focused-diag-20261027T155411Z.tar.gz",
+      "openkline-phase-8-8-11-studio-full-20261027T110549Z.tar.gz",
+      "openkline-phase-8-8-11-studio-focused-diag-20261027T110549Z.tar.gz",
+      "openkline-phase-8-8-11-standalone-20261027T110549Z.tar.gz"
+    ],
+    "phase8813FocusedSha256Unchanged": "5da3924bf93794cfe641dff4854c32de8b43f6a7240c99e449922f5467c5721c"
+  },
+  "sourceArtifactHashes": {
+    "standalone": {
+      "environment.json": {
+        "sha256": "05fcf3576aca69b8d4a0e999a8473ae4e5017e2844d48229245fa974ee1af048",
+        "bytes": 3605
+      },
+      "playwright-results.json": {
+        "sha256": "e1a5fc5504ab3ec1421ddfca7395124015a7671955605ede8131fde9af20efbe",
+        "bytes": 90717
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "75cdf13f10f3926affa248cf824bc67e5acb7d6c524e3182b26e01f9cdc89dbf",
+        "bytes": 4665
+      }
+    },
+    "studio": {
+      "environment.json": {
+        "sha256": "a85227930d2e28bfac7c15447d54b2202c55bb3fb5fa0164b10fe60228a36b59",
+        "bytes": 3398
+      },
+      "playwright-results.json": {
+        "sha256": "8e48d1298412fc3bafda46eb84940c2c1e9049e7d461608b9628648b7cd202a3",
+        "bytes": 301529
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "e1954dbf9dc5c7a637e204fff2c0bcbf5a37c28f7708d13abbf32e2a4842732c",
+        "bytes": 6079
+      }
+    }
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, traces, binaries, node_modules, build output",
+      "Credentials and secrets"
+    ],
+    "included": [
+      "Sanitized targeted and full-matrix diagnostics",
+      "project/title identities",
+      "errors and root-cause classes",
+      "counts validated against Playwright JSON results"
+    ]
+  },
+  "limitations": [
+    "Studio five-browser full matrix still FAIL (7 unexpected on mobile drawing + Mobile Safari dialog focus)",
+    "Container emulation only; not native iOS Safari",
+    "Not physical Android device testing",
+    "Not accessibility/keyboard/screen-reader formal review",
+    "Not owner-approved visual baseline",
+    "Not legal/license/third-party notice closure",
+    "Not owner release authorization",
+    "NOT RELEASE READY"
+  ]
+}

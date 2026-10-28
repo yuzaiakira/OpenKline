@@ -58,6 +58,20 @@ export const REQUIRED_PHASE_8813_EVIDENCE_FILES = [
   "targeted-matrix.json",
   "targeted-test-cases.json",
 ];
+export const REQUIRED_PHASE_8815_EVIDENCE_FILES = [
+  "README.md",
+  "manifest.json",
+  "regression-comparison.json",
+  "root-cause-observations.json",
+  "standalone-matrix.json",
+  "standalone-test-cases.json",
+  "studio-failures.json",
+  "studio-matrix.json",
+  "studio-test-cases.json",
+  "targeted-failures.json",
+  "targeted-matrix.json",
+  "targeted-test-cases.json",
+];
 export const STUDIO_PROJECTS = ["studio-chromium", "studio-firefox", "studio-webkit", "studio-mobile-chrome", "studio-mobile-safari"];
 
 const OFFICIAL_PLAYWRIGHT = {
@@ -126,6 +140,18 @@ export const EVIDENCE_PACK_POLICIES = Object.freeze({
     expectedBaselineSourceCommit: "0e84d13ca83b81866900571ad798ca69de90911f",
     expectedArchiveSha256: "5da3924bf93794cfe641dff4854c32de8b43f6a7240c99e449922f5467c5721c",
     requiredFiles: REQUIRED_PHASE_8813_EVIDENCE_FILES,
+  }),
+  "8.8.15": Object.freeze({
+    directory: "phase-8-8-15",
+    phase: "8.8.15",
+    expectedSourceCommit: "3e7a889a94c40255bbcce210a672856cfc98b32b",
+    expectedBehavioralSourceCommit: "8f845f6c0370d43744294f4c22301666d8257766",
+    expectedPreviousSourceCommit: "5062735097301ce22dd50f1f78f7f84cf96394e1",
+    expectedFocusedArchiveSha256: "40af795e71d35bbfe368fd994b86366c57a7323f9ce2be807e1283d222ca31b5",
+    expectedStandaloneArchiveSha256: "b2b035c4bd31a3d0c49467a5faeb1827c0570347f800309cf9395778096853d5",
+    expectedStudioArchiveSha256: "9db477035dd0e2371b16d5cb848c60ab13db09e028cbb27ebe058d9e585f6466",
+    expectedPhase8813ArchiveSha256Unchanged: "5da3924bf93794cfe641dff4854c32de8b43f6a7240c99e449922f5467c5721c",
+    requiredFiles: REQUIRED_PHASE_8815_EVIDENCE_FILES,
   }),
 });
 
@@ -249,6 +275,7 @@ export function validateEvidencePack({ evidenceRoot, policy }) {
   if (policy.phase === "8.8.9") return validatePhase889Pack({ evidenceRoot, policy });
   if (policy.phase === "8.8.11") return validatePhase8811Pack({ evidenceRoot, policy });
   if (policy.phase === "8.8.13") return validatePhase8813Pack({ evidenceRoot, policy });
+  if (policy.phase === "8.8.15") return validatePhase8815Pack({ evidenceRoot, policy });
   const failures = [];
   const evidenceDirectory = join(evidenceRoot, policy.directory);
   let actualFiles = [];
@@ -613,6 +640,167 @@ function validatePhase8813Pack({ evidenceRoot, policy }) {
     testRecords: 7,
     perProject: { "studio-firefox": 3, "studio-webkit": 2, "studio-mobile-safari": 2 },
     totals: { expected: 1, unexpected: 6, uniqueIdentities: 7 },
+    archiveHashes,
+    sanitization: failures.some((failure) => failure.includes("sanitization")) ? "FAIL" : "PASS",
+    failures,
+  };
+}
+
+function validatePhase8815Pack({ evidenceRoot, policy }) {
+  const failures = [];
+  const evidenceDirectory = join(evidenceRoot, policy.directory);
+  const requiredFiles = policy.requiredFiles ?? REQUIRED_PHASE_8815_EVIDENCE_FILES;
+  let actualFiles = [];
+  try {
+    actualFiles = readdirSync(evidenceDirectory).sort();
+  } catch (error) {
+    failures.push(`evidence directory: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  assert(JSON.stringify(actualFiles) === JSON.stringify([...requiredFiles].sort()), failures, `unexpected Phase 8.8.15 evidence files: ${actualFiles.join(", ")}`);
+
+  const read = (name) => readJson(join(evidenceDirectory, name), failures, name);
+  const manifest = read("manifest.json");
+  const targetedMatrix = read("targeted-matrix.json");
+  const targetedCases = read("targeted-test-cases.json");
+  const targetedFailures = read("targeted-failures.json");
+  const observations = read("root-cause-observations.json");
+  const comparison = read("regression-comparison.json");
+  const standaloneMatrix = read("standalone-matrix.json");
+  const standaloneCases = read("standalone-test-cases.json");
+  const studioMatrix = read("studio-matrix.json");
+  const studioCases = read("studio-test-cases.json");
+  const studioFailures = read("studio-failures.json");
+  const textFiles = requiredFiles.map((name) => {
+    try { return readFileSync(join(evidenceDirectory, name), "utf8"); } catch { return ""; }
+  });
+
+  for (const [name, document] of [
+    ["manifest.json", manifest],
+    ["targeted-matrix.json", targetedMatrix],
+    ["targeted-test-cases.json", targetedCases],
+    ["targeted-failures.json", targetedFailures],
+    ["root-cause-observations.json", observations],
+    ["regression-comparison.json", comparison],
+    ["standalone-matrix.json", standaloneMatrix],
+    ["standalone-test-cases.json", standaloneCases],
+    ["studio-matrix.json", studioMatrix],
+    ["studio-test-cases.json", studioCases],
+    ["studio-failures.json", studioFailures],
+  ]) {
+    assert(isRecord(document), failures, `Phase 8.8.15 ${name} must contain an object`);
+    assert(document?.schemaVersion === 1, failures, `Phase 8.8.15 ${name} must use schemaVersion 1`);
+    if (typeof document?.phase === "string") assert(document.phase === policy.phase, failures, `Phase 8.8.15 ${name} phase mismatch`);
+  }
+
+  assert(manifest?.phase === policy.phase, failures, "Phase 8.8.15 manifest phase mismatch");
+  assert(manifest?.sourceCommit === policy.expectedSourceCommit, failures, "Phase 8.8.15 manifest source SHA mismatch");
+  assert(manifest?.evidenceKind === "trusted-machine-final-seven-plus-full-matrices", failures, "Phase 8.8.15 evidence kind mismatch");
+  assert(manifest?.behavioralSourceCommit === policy.expectedBehavioralSourceCommit, failures, "Phase 8.8.15 behavioral source boundary is missing");
+  assert(manifest?.previousTrustedSource === policy.expectedPreviousSourceCommit, failures, "Phase 8.8.15 previous trusted source boundary is missing");
+  assert(manifest?.playwright?.testPackageVersion === OFFICIAL_PLAYWRIGHT.testPackageVersion, failures, "Phase 8.8.15 Playwright test package version mismatch");
+  assert(manifest?.playwright?.cliVersion === OFFICIAL_PLAYWRIGHT.cliVersion, failures, "Phase 8.8.15 Playwright CLI version mismatch");
+  assert(manifest?.playwright?.browsersPath === "/ms-playwright", failures, "Phase 8.8.15 Playwright browser path mismatch");
+  assert(manifest?.container?.image === OFFICIAL_PLAYWRIGHT.image, failures, "Phase 8.8.15 official container image mismatch");
+  assert(manifest?.container?.digest === OFFICIAL_PLAYWRIGHT.digest, failures, "Phase 8.8.15 container digest mismatch");
+  assert(manifest?.container?.digestVerifiedOnHost === true, failures, "Phase 8.8.15 container digest was not host-verified");
+  assert(typeof manifest?.execution?.where === "string" && /trusted/i.test(manifest.execution.where), failures, "Phase 8.8.15 trusted-host provenance is missing");
+  assert(manifest?.execution?.cloudEnvironment === false, failures, "Phase 8.8.15 evidence must not claim cloud execution");
+  assert(manifest?.execution?.productFixesImplementedOnManjaro === false, failures, "Phase 8.8.15 trusted host must not claim product fixes");
+  assert(manifest?.execution?.originWorkModified === false, failures, "Phase 8.8.15 trusted host must not claim origin/work modifications");
+  assert(manifest?.execution?.fullMatrixExecuted === true && manifest?.execution?.standaloneMatrixExecuted === true, failures, "Phase 8.8.15 must record that full matrices executed");
+  assert(manifest?.focusedResults?.records === 7 && manifest?.focusedResults?.passed === 7 && manifest?.focusedResults?.failed === 0, failures, "Phase 8.8.15 focused totals mismatch");
+  assert(manifest?.standaloneResults?.status === "verified" && manifest?.standaloneResults?.exitCode === 0 && manifest?.standaloneResults?.stats?.expected === 75 && manifest?.standaloneResults?.stats?.unexpected === 0, failures, "Phase 8.8.15 standalone totals mismatch");
+  assert(manifest?.studioResults?.status === "FAIL" && manifest?.studioResults?.exitCode === 1 && manifest?.studioResults?.stats?.expected === 118 && manifest?.studioResults?.stats?.unexpected === 7 && manifest?.studioResults?.failureCount === 7, failures, "Phase 8.8.15 Studio totals mismatch");
+  assert(manifest?.archives?.remainOnTrustedMachineOnly === true && manifest?.archives?.publishedToGitHub === false, failures, "Phase 8.8.15 archive handling policy is missing");
+  assert(manifest?.archives?.phase8813FocusedSha256Unchanged === policy.expectedPhase8813ArchiveSha256Unchanged, failures, "Phase 8.8.15 must preserve the Phase 8.8.13 archive checksum");
+
+  const archiveHashes = [];
+  for (const [name, archive] of Object.entries(manifest?.archives ?? {})) {
+    if (!isRecord(archive) || !("sha256" in archive)) continue;
+    assert(validSha(archive.sha256), failures, `invalid Phase 8.8.15 archive SHA-256: ${name}`);
+    archiveHashes.push(archive.sha256);
+  }
+  assert(archiveHashes.includes(policy.expectedFocusedArchiveSha256), failures, "Phase 8.8.15 focused archive SHA-256 is missing");
+  assert(archiveHashes.includes(policy.expectedStandaloneArchiveSha256), failures, "Phase 8.8.15 standalone archive SHA-256 is missing");
+  assert(archiveHashes.includes(policy.expectedStudioArchiveSha256), failures, "Phase 8.8.15 Studio archive SHA-256 is missing");
+
+  const expectedTargeted = [
+    ["A1", "studio-firefox", "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes"],
+    ["A1", "studio-firefox", "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload"],
+    ["A1", "studio-firefox", "Studio exposes deterministic replay playback controls and restores the workspace"],
+    ["A2", "studio-webkit", "Studio creates, pauses, persists, and removes a local alert"],
+    ["A3", "studio-mobile-safari", "Studio creates, pauses, persists, and removes a local alert"],
+    ["A4", "studio-mobile-safari", "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"],
+    ["A5", "studio-webkit", "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped"],
+  ];
+  const identity = (record) => `${record?.project}\0${record?.title}`;
+  const cases = targetedCases?.cases ?? [];
+  assert(cases.length === 7, failures, "Phase 8.8.15 targeted case count mismatch");
+  const caseKeys = new Set();
+  for (const record of cases) {
+    const key = identity(record);
+    assert(!caseKeys.has(key), failures, `duplicate Phase 8.8.15 targeted identity: ${key}`);
+    caseKeys.add(key);
+    const expected = expectedTargeted.find((item) => item[1] === record?.project && item[2] === record?.title);
+    assert(expected !== undefined, failures, `unexpected Phase 8.8.15 targeted identity: ${key}`);
+    assert(record?.group === expected?.[0] && record?.status === "expected" && record?.ok === true && record?.rootCauseClass === "pass", failures, `Phase 8.8.15 targeted pass metadata invalid: ${key}`);
+    assert(finiteNonNegative(record?.durationMs), failures, `Phase 8.8.15 targeted duration invalid: ${key}`);
+  }
+  assert(caseKeys.size === 7, failures, "Phase 8.8.15 targeted identities do not reconcile");
+  assert(Array.isArray(targetedFailures?.failures) && targetedFailures.failures.length === 0, failures, "Phase 8.8.15 targeted failures must be empty");
+  assert(targetedMatrix?.totals?.records === 7 && targetedMatrix?.totals?.passed === 7 && targetedMatrix?.totals?.failed === 0, failures, "Phase 8.8.15 targeted matrix totals mismatch");
+  assert(targetedMatrix?.fullMatrixExecuted === true && targetedMatrix?.standaloneMatrixExecuted === true, failures, "Phase 8.8.15 targeted matrix must record full-matrix execution");
+
+  assert(standaloneMatrix?.status === "verified" && standaloneMatrix?.exitCode === 0 && standaloneMatrix?.stats?.expected === 75 && standaloneMatrix?.stats?.unexpected === 0, failures, "Phase 8.8.15 standalone matrix mismatch");
+  assert(standaloneCases?.total === 75 && standaloneCases?.passed === 75 && standaloneCases?.failed === 0 && Array.isArray(standaloneCases?.cases) && standaloneCases.cases.length === 75, failures, "Phase 8.8.15 standalone case ledger mismatch");
+  assert(studioMatrix?.status === "FAIL" && studioMatrix?.exitCode === 1 && studioMatrix?.stats?.expected === 118 && studioMatrix?.stats?.unexpected === 7 && studioMatrix?.failureCount === 7, failures, "Phase 8.8.15 Studio matrix mismatch");
+  assert(studioCases?.total === 125 && studioCases?.passed === 118 && studioCases?.failed === 7 && Array.isArray(studioCases?.cases) && studioCases.cases.length === 125, failures, "Phase 8.8.15 Studio case ledger mismatch");
+  assert(studioFailures?.failureCount === 7 && Array.isArray(studioFailures?.failures) && studioFailures.failures.length === 7, failures, "Phase 8.8.15 Studio failure ledger mismatch");
+
+  const expectedStudioFailures = new Set([
+    "studio-mobile-safari\0Studio dialogs keep keyboard focus inside the modal",
+    "studio-mobile-chrome\0Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+    "studio-mobile-safari\0Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+    "studio-mobile-chrome\0Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+    "studio-mobile-chrome\0Studio exposes deterministic replay playback controls and restores the workspace",
+    "studio-mobile-safari\0Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+    "studio-mobile-safari\0Studio exposes deterministic replay playback controls and restores the workspace",
+  ]);
+  const studioFailureKeys = new Set();
+  for (const failure of studioFailures?.failures ?? []) {
+    const key = identity(failure);
+    assert(!studioFailureKeys.has(key), failures, `duplicate Phase 8.8.15 Studio failure: ${key}`);
+    studioFailureKeys.add(key);
+    assert(expectedStudioFailures.has(key), failures, `unexpected Phase 8.8.15 Studio failure: ${key}`);
+    assert(failure?.ok === false && failure?.status === "unexpected" && typeof failure?.errorMessage === "string" && failure.errorMessage.length > 0, failures, `Phase 8.8.15 Studio failure metadata incomplete: ${key}`);
+    assert(typeof failure?.rootCauseClass === "string" && failure.rootCauseClass.length > 0, failures, `Phase 8.8.15 Studio failure class missing: ${key}`);
+  }
+  assert(studioFailureKeys.size === 7 && [...expectedStudioFailures].every((key) => studioFailureKeys.has(key)), failures, "Phase 8.8.15 Studio failure identities do not reconcile");
+
+  assert(Array.isArray(observations?.observations) && observations.observations.length >= 7, failures, "Phase 8.8.15 root-cause observations are incomplete");
+  assert(comparison?.compareAgainstPhase === "8.8.13", failures, "Phase 8.8.15 comparison baseline mismatch");
+  assert(comparison?.currentFocused?.records === 7 && comparison?.currentFocused?.passed === 7 && comparison?.currentFocused?.failed === 0, failures, "Phase 8.8.15 current focused comparison mismatch");
+  assert(comparison?.currentFullStandaloneTotals?.passed === 75 && comparison?.currentFullStandaloneTotals?.failed === 0, failures, "Phase 8.8.15 standalone comparison mismatch");
+  assert(comparison?.currentFullStudioTotals?.passed === 118 && comparison?.currentFullStudioTotals?.failed === 7, failures, "Phase 8.8.15 Studio comparison mismatch");
+  assert(Array.isArray(comparison?.previouslyFailingNowPassing) && comparison.previouslyFailingNowPassing.length === 6, failures, "Phase 8.8.15 must record six resolved prior failures");
+  assert(Array.isArray(comparison?.previouslyFailingStillFailing) && comparison.previouslyFailingStillFailing.length === 0, failures, "Phase 8.8.15 must not leave prior targeted failures unresolved");
+  assert(comparison?.positiveControl?.currentResult === "PASS" && comparison?.positiveControl?.regressed === false, failures, "Phase 8.8.15 positive control regression marker is invalid");
+  assert(Array.isArray(comparison?.newFailingIdentitiesInFullStudioMatrix) && comparison.newFailingIdentitiesInFullStudioMatrix.length === 7, failures, "Phase 8.8.15 new Studio failure comparison mismatch");
+
+  for (const [index, text] of textFiles.entries()) for (const pattern of forbiddenPatterns) assert(!pattern.test(text), failures, `sanitization pattern ${pattern} found in ${requiredFiles[index]}`);
+  return {
+    phase: policy.phase,
+    directory: policy.directory,
+    sourceCommit: policy.expectedSourceCommit,
+    status: failures.length === 0 ? "PASS" : "FAIL",
+    files: actualFiles,
+    testRecords: 7 + 75 + 125,
+    perProject: {
+      targeted: 7,
+      standalone: 75,
+      studio: 125,
+    },
+    totals: { focusedExpected: 7, standaloneExpected: 75, studioExpected: 118, studioUnexpected: 7 },
     archiveHashes,
     sanitization: failures.some((failure) => failure.includes("sanitization")) ? "FAIL" : "PASS",
     failures,
