@@ -647,7 +647,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "73377275f315aad8d301f42e72418dfcf11e9a06545f65219470f34f0941ce25"
+      "signatureHash": "3bc2ff383acdcf266a3cddd810dd5f14f44ee4273fa4b703f98047097ca86a75"
     },
     {
       "package": "openkline",
@@ -4555,7 +4555,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "73377275f315aad8d301f42e72418dfcf11e9a06545f65219470f34f0941ce25"
+      "signatureHash": "3bc2ff383acdcf266a3cddd810dd5f14f44ee4273fa4b703f98047097ca86a75"
     },
     {
       "package": "openkline",
@@ -8737,5 +8737,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "531a30a7785eaf1b4a21988f4a3ec4dba84a79d8"
+  "generatedFrom": "3e7a889a94c40255bbcce210a672856cfc98b32b"
 }

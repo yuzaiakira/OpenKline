@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { FinancialChart } from "@openkline/react";
 import type { FinancialChartHandle } from "@openkline/react";
 import {
@@ -171,9 +171,30 @@ function emptySnapshot(): PanelSnapshot {
   return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84 };
 }
 
+function syncMainPaneDiagnostics(target: Chart, root: HTMLElement | null): void {
+  // ResizeObserver and publish microtasks can run after Chart.destroy(); never throw into page errors.
+  try {
+    const canvas = root?.querySelector("canvas");
+    const bounds = target.getPrimaryDrawingPaneBounds();
+    if (!(canvas instanceof HTMLCanvasElement) || bounds === null || bounds.chartWidth <= 0 || bounds.chartHeight <= 0) return;
+    canvas.dataset.openklineMainPane = JSON.stringify({
+      topFraction: Number((bounds.top / bounds.chartHeight).toFixed(4)),
+      bottomFraction: Number((bounds.bottom / bounds.chartHeight).toFixed(4)),
+      leftFraction: Number((bounds.left / bounds.chartWidth).toFixed(4)),
+      rightFraction: Number((bounds.right / bounds.chartWidth).toFixed(4)),
+      chartWidth: bounds.chartWidth,
+      chartHeight: bounds.chartHeight,
+      paneCount: target.getPaneIds().length,
+    });
+  } catch {
+    return;
+  }
+}
+
 const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice }, ref) {
   const chartHandle = useRef<FinancialChartHandle>(null);
   const chartRef = useRef<Chart | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
   const replayRef = useRef<ReplayApi | null>(null);
   const replayUnsubscribeRef = useRef<(() => void) | null>(null);
   const symbolWorkspacesRef = useRef(new Map<string, WorkspaceDocument>());
@@ -191,6 +212,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     };
     setSnapshot(next);
     onSnapshot(panel.panelId, next);
+    queueMicrotask(() => syncMainPaneDiagnostics(target, rootRef.current));
   }, [onSnapshot, panel.panelId, snapshot.replaySourceLength, snapshot.replayStartIndex, snapshot.replayStatus]);
 
   const seedChart = useCallback((target: Chart, symbol: string, timeframe: Timeframe): void => {
@@ -220,12 +242,30 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     initializedRef.current = true;
     onReady(panel.panelId, target);
     target.subscribe("crosshairMove", (event) => onCrosshair(panel.panelId, event));
-    target.subscribe("viewportChange", (range) => onViewport(panel.panelId, range));
+    target.subscribe("viewportChange", (range) => {
+      onViewport(panel.panelId, range);
+      syncMainPaneDiagnostics(target, rootRef.current);
+    });
     target.subscribe("drawingSelection", () => publish());
     target.subscribe("indicatorChange", () => publish());
     target.subscribe("alertTriggered", (event) => { publish(); onNotice(`${event.simulated ? "Simulated" : "Live"} alert on ${panel.symbol}: ${event.alertName}`); });
     target.subscribe("alertError", (diagnostic) => onNotice(`Alert ${diagnostic.alertId} failed: ${diagnostic.message}`));
+    syncMainPaneDiagnostics(target, rootRef.current);
   }, [initialWorkspace, onCrosshair, onNotice, onReady, onViewport, panel.panelId, panel.symbol, panel.timeframe, publish, seedChart]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root === null || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(() => {
+      const target = chartRef.current;
+      if (target === null || chartRef.current !== target) return;
+      syncMainPaneDiagnostics(target, root);
+    });
+    observer.observe(root);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const replaceMarketData = useCallback((symbol: string, timeframe: Timeframe): void => {
     const target = chartRef.current;
@@ -296,7 +336,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
 
   useEffect(() => () => { replayUnsubscribeRef.current?.(); replayRef.current?.dispose(); replayRef.current = null; }, []);
 
-  return <article className={`${styles.multiChartPanel} ${active ? styles.multiChartPanelActive : ""}`} onPointerDown={() => onActivate(panel.panelId)} data-panel-id={panel.panelId}>
+  return <article ref={rootRef} className={`${styles.multiChartPanel} ${active ? styles.multiChartPanelActive : ""}`} onPointerDown={() => onActivate(panel.panelId)} data-panel-id={panel.panelId}>
     <header className={styles.multiPanelHeader}><button type="button" className={styles.panelSelect} aria-label={`Activate ${panel.panelId}`} aria-pressed={active} onClick={() => onActivate(panel.panelId)}>{panel.panelId} · {panel.symbol} · {panel.timeframe}</button><span>{snapshot.indicators.length} indicators</span><span>{snapshot.drawings.length} drawings</span></header>
     <div className={styles.multiChartCanvas}><FinancialChart ref={chartHandle} autoSize theme="dark" locale="en-US" timeZone="UTC" pricePrecision={2} onChartReady={attachChart} onCrosshairMove={(event) => onCrosshair(panel.panelId, event)} style={{ height: "100%" }} /></div>
   </article>;
@@ -377,14 +417,14 @@ export default function MultiChartStudioClient() {
   const dialogRef = useRef<HTMLElement | null>(null);
   const dialogWasOpenRef = useRef(false);
 
-  const showConfirm = (title: string, message: string, onConfirm: () => void): void => {
-    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const showConfirm = (title: string, message: string, onConfirm: () => void, trigger?: HTMLElement | null): void => {
+    dialogTriggerRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     dialogWasOpenRef.current = true;
     setDialogValue("");
     setDialog({ kind: "confirm", title, message, onSubmit: () => { setDialog(null); onConfirm(); } });
   };
-  const showPrompt = (title: string, message: string, initialValue: string, onSubmit: (value: string) => void): void => {
-    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const showPrompt = (title: string, message: string, initialValue: string, onSubmit: (value: string) => void, trigger?: HTMLElement | null): void => {
+    dialogTriggerRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     dialogWasOpenRef.current = true;
     setDialogValue(initialValue);
     setDialog({ kind: "prompt", title, message, initialValue, onSubmit: (value) => { setDialog(null); onSubmit(value); } });
@@ -400,13 +440,18 @@ export default function MultiChartStudioClient() {
     return undefined;
   }, [dialog]);
 
-  useEffect(() => {
+  // useLayoutEffect so initial focus lands before Playwright's focus assertion on WebKit/Safari.
+  useLayoutEffect(() => {
     if (dialog === null) return undefined;
     const dialogElement = dialogRef.current;
     if (dialogElement === null) return undefined;
     const focusableSelector = "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex=\"-1\"])";
     const getFocusable = (): HTMLElement[] => Array.from(dialogElement.querySelectorAll<HTMLElement>(focusableSelector));
-    if (!dialogElement.contains(document.activeElement)) getFocusable()[0]?.focus();
+    const preferred = dialog.kind === "prompt"
+      ? dialogElement.querySelector<HTMLElement>('input[aria-label="Dialog value"]')
+      : getFocusable()[0];
+    preferred?.focus();
+    if (preferred !== null && preferred !== undefined && document.activeElement !== preferred) getFocusable()[0]?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -577,7 +622,7 @@ export default function MultiChartStudioClient() {
     <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer"><div className={styles.panelHeading}><h2>Indicator Explorer</h2><span>{filteredIndicatorCatalog.length} definitions</span></div><div className={styles.indicatorExplorerFilters}><label>Search<input aria-label="Library search" placeholder="Search indicators" value={indicatorSearch} onChange={(event) => setIndicatorSearch(event.target.value)} /></label><label>Category<select aria-label="Category filter" value={indicatorCategory} onChange={(event) => setIndicatorCategory(event.target.value)}>{indicatorCategories.map((category) => <option key={category} value={category}>{category === "all" ? "All categories" : category}</option>)}</select></label><label className={styles.check}><input aria-label="Favorites only" type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} />Favorites only</label></div><div className={styles.indicatorExplorerItems}>{filteredIndicatorCatalog.map((item) => <button type="button" key={item.id} aria-pressed={indicatorToAdd === item.id} onClick={() => setIndicatorToAdd(item.id)}>{favoriteIndicatorIds.includes(item.id) ? "★" : "☆"} {item.label}<small>{item.category}</small></button>)}</div><div className={styles.indicatorParameters}><strong>{indicatorToAdd} parameters</strong>{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "period") ? <label>Period<input aria-label="Period override" type="number" min="1" value={indicatorPeriodOverride} placeholder="definition default" disabled={replayActive} onChange={(event) => setIndicatorPeriodOverride(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "constant") ? <label>CCI constant<input aria-label="CCI constant" type="number" min="0" step="0.001" value={indicatorConstant} disabled={replayActive} onChange={(event) => setIndicatorConstant(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "multiplier") ? <label>Channel multiplier<input aria-label="Channel multiplier" type="number" min="0" step="0.1" value={indicatorMultiplier} disabled={replayActive} onChange={(event) => setIndicatorMultiplier(event.target.value)} /></label> : null}<button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button></div></section>
     <section className={styles.workspace}>
       <aside className={styles.objectTree} aria-label="Object tree"><h2>Objects</h2><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id}><button type="button" className={styles.objectName} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { activeHandle?.getChart()?.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { activeHandle?.getChart()?.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details></aside>
-      <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={() => showPrompt("Rename watchlist", "Choose a name for this watchlist.", selectedList.name, (name) => { try { watchlistModel.rename(selectedList.id, name); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } })}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={() => showConfirm(`Delete watchlist “${selectedList.name}”?`, "The list and its symbols will be removed from this browser.", () => watchlistModel.delete(selectedList.id))}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
+      <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={(event) => showPrompt("Rename watchlist", "Choose a name for this watchlist.", selectedList.name, (name) => { try { watchlistModel.rename(selectedList.id, name); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }, event.currentTarget)}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={(event) => showConfirm(`Delete watchlist “${selectedList.name}”?`, "The list and its symbols will be removed from this browser.", () => watchlistModel.delete(selectedList.id), event.currentTarget)}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
       <aside className={`${styles.sidebar} ${styles.watchlistSidebar}`} aria-label="Watchlists"><div className={styles.panelHeading}><h2>Watchlists</h2><button type="button" onClick={createWatchlist}>New</button></div><label>List<select aria-label="Watchlist" value={watchlists.selectedWatchlistId ?? ""} onChange={(event) => watchlistModel.select(event.target.value)}>{watchlists.lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label><input aria-label="Search watchlist" placeholder="Search symbols" value={watchlistSearch} onChange={(event) => setWatchlistSearch(event.target.value)} /><button type="button" onClick={addWatchlistSymbol}>Add sample symbol</button><ul className={styles.watchlistRows}>{filteredSymbols.map((symbol) => { const quote = quotes[symbol.id]; return <li key={symbol.id} className={symbol.displaySymbol === activePanel.symbol ? styles.watchlistActive : ""}><button type="button" onClick={() => selectedSymbol(symbol.id)}>{symbol.favorite ? "★" : "☆"} {symbol.displaySymbol}<small>{symbol.name}</small></button><span className={quote?.status === "ready" ? "" : styles.quoteStale}>{quote?.last?.toFixed(2) ?? "—"}<small>{quote === undefined ? "Loading" : quote.demo ? "Demo" : quote.status}</small></span><button type="button" aria-label={`Remove ${symbol.displaySymbol}`} onClick={() => watchlistModel.removeSymbol(selectedList!.id, symbol.id)}>×</button></li>; })}</ul><small>Quotes are deterministic demo data, not exchange prices.</small></aside>
       <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={() => undefined} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} />)}</div><div className={styles.status} aria-live="polite"><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
       <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => setSync((current) => ({ ...current, crosshair: event.target.checked }))} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => setSync((current) => ({ ...current, visibleRange: event.target.checked }))} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => setSync((current) => ({ ...current, symbol: event.target.checked }))} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => setSync((current) => ({ ...current, timeframe: event.target.checked }))} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { activeHandle?.getChart()?.removeIndicator(indicator.id); activeHandle?.refresh(); }}>×</button></li>)}</ul></details><details open data-alert-input-value={alertNameInputRef.current?.value ?? alertName} data-alert-last-created-name={lastAlertDiagnostic?.createdName ?? ""} data-alert-last-outcome={lastAlertDiagnostic?.outcome ?? ""}><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input ref={alertNameInputRef} aria-label="Alert name" defaultValue={alertName} disabled={replayActive} onInput={(event) => setAlertName(event.currentTarget.value)} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
@@ -586,7 +631,7 @@ export default function MultiChartStudioClient() {
     <StrategyOptimizer key={`optimizer-${strategyScopeKey}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onApplyParameters={applyStrategyParameters} onNotice={setNotice} />
     <StrategyTester key={strategyScopeKey} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} initialResult={strategyResultsRef.current.get(strategyScopeKey) ?? null} appliedParameters={appliedStrategyParametersRef.current.get(strategyScopeKey) ?? null} onResult={(nextResult) => { if (nextResult === null) strategyResultsRef.current.delete(strategyScopeKey); else strategyResultsRef.current.set(strategyScopeKey, nextResult); }} onNotice={setNotice} />
     <PaperTradingPanel key={`paper-${activePanel.panelId}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onNotice={setNotice} />
-    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation"><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby="studio-dialog-message"><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
+    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation" data-studio-dialog-open="true" data-studio-dialog-kind={dialog.kind}><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby="studio-dialog-message" data-studio-dialog-title={dialog.title}><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
   </main>;
 }
 

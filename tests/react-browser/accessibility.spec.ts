@@ -58,12 +58,17 @@ test("Canvas charts expose a text summary and dialogs restore focus on Escape", 
 
 test("Studio dialogs keep keyboard focus inside the modal", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Rename watchlist", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "Rename watchlist", exact: true });
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Rename watchlist" });
+  await expect(dialog).toBeVisible();
+  await expect(page.locator('[data-studio-dialog-open="true"][data-studio-dialog-kind="prompt"]')).toBeVisible();
   const value = dialog.getByLabel("Dialog value");
   const cancel = dialog.getByRole("button", { name: "Cancel", exact: true });
   const apply = dialog.getByRole("button", { name: "Apply", exact: true });
 
+  await expect(value).toBeVisible();
   await expect(value).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(cancel).toBeFocused();

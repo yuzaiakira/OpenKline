@@ -185,3 +185,22 @@ test("ChartModel keeps a live right edge anchored and exposes fit/reset navigati
   model.resetView();
   assert.deepEqual(model.getViewportState(), { rangeStart: 7, visibleCount: 4 });
 });
+
+test("mobile-height multi-pane layouts keep the primary drawing pane above volume/RSI", async () => {
+  const { getPaneBounds } = await import("../src/renderer/canvas-renderer.js");
+  const panes = [
+    { id: "main", preferredHeight: null, minHeight: 120, series: [] },
+    { id: "volume", preferredHeight: 120, minHeight: 60, series: [] },
+    { id: "rsi", preferredHeight: 160, minHeight: 60, series: [] },
+  ];
+  const bounds = getPaneBounds(400, 350, panes);
+  const main = bounds.find((pane) => pane.id === "main");
+  assert.ok(main !== undefined);
+  const topFraction = main.top / 350;
+  const bottomFraction = main.bottom / 350;
+  assert.ok(bottomFraction - topFraction > 0.05, "main pane must remain hittable");
+  assert.ok(bottomFraction < 0.35, `main pane must stay in the upper canvas slice, got bottomFraction=${bottomFraction}`);
+  // Phase 8.8.14 used full-canvas y=0.32 for the second anchor; that misses the mobile main pane.
+  assert.ok(0.32 >= bottomFraction || 0.32 < topFraction, "legacy full-canvas y=0.32 is outside the mobile main pane");
+  assert.ok(0.08 >= topFraction && 0.08 <= bottomFraction, "legacy y=0.08 remains inside the mobile main pane");
+});
