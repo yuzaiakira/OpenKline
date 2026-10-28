@@ -773,3 +773,12 @@ Studio compatibility gates remain open**.
   targeted verification remains required; no full matrix or release claim is
   made. See `docs/reports/phase-8-8-14-verification.md` and
   `docs/reports/phase-8-8-14-targeted-handoff.md`.
+
+- [Implemented / Verification Open] Phase 8.8.16 integrates Phase 8.8.15
+  evidence (targeted 7/7, standalone 75/75, Studio 118/125). The six mobile
+  drawing failures are remediated by placing anchors inside the real primary
+  pane bounds and selecting Playwright `hasTouch` modality; the Mobile Safari
+  dialog failure is remediated with click-target trigger capture and
+  layout-time prompt focus. Trusted Mobile Chrome / Mobile Safari confirmation
+  is Phase 8.8.17. See `docs/reports/phase-8-8-16-verification.md` and
+  `docs/reports/phase-8-8-16-targeted-handoff.md`.
