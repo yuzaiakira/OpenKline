@@ -7,7 +7,7 @@ browser result. Use only the official Playwright-managed browsers.
 
 - Remediation source (product): `4c0861f6dc6b6a16f005ef36688b6bf853139dd1`
 - Evidence integration: `4b228d9013843dd1b939de18ea69ca4ad6686d50`
-- Docs tip on `origin/work` after Phase 8.8.16: record after push; must contain the product SHA above
+- Docs tip on `origin/work` after Phase 8.8.16: `07a78866b714f647b1e67babae2462d598635dd5` (must contain the product SHA above)
 - Previous trusted source: `3e7a889a94c40255bbcce210a672856cfc98b32b`
 - Playwright: `1.64.1`
 - Image: `mcr.microsoft.com/playwright:v1.64.1-noble`
