@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "kind": "studio-full-matrix",
+  "sourceCommit": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "exitCode": 0,
+  "status": "PASS",
+  "stats": {
+    "startTime": "2026-10-28T07:41:52.080Z",
+    "duration": 37162.763,
+    "expected": 125,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "testRecordCount": 125,
+  "perProject": {
+    "studio-chromium": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-firefox": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-mobile-chrome": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-mobile-safari": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    },
+    "studio-webkit": {
+      "passed": 25,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 25
+    }
+  },
+  "failureCount": 0
+}

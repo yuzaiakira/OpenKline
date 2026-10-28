@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "evidenceKind": "trusted-machine-seven-historical-seven-controls-plus-full-matrices",
+  "createdAtUtc": "2026-10-28T07:43:49Z",
+  "sourceCommit": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "implementationCommit": "4c0861f6dc6b6a16f005ef36688b6bf853139dd1",
+  "sourceCommitNote": "Checked out bb3f1ca. Product remediation is 4c0861f; intervening commits after 4c0861f are documentation-only Phase 8.8.16 verification/handoff pins.",
+  "previousTrustedSource": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "playwright": {
+    "testPackageVersion": "1.64.1",
+    "cliVersion": "1.64.1",
+    "standaloneConfig": "playwright.portable.config.ts",
+    "studioConfig": "playwright.studio.compat.config.ts",
+    "browsersPath": "/ms-playwright",
+    "managedBrowserVersions": {
+      "chromium": "156.0.8078.4",
+      "firefox": "157.0",
+      "webkit": "27.2"
+    },
+    "browserBinaryPolicy": "Playwright-managed binaries only; no system-browser override."
+  },
+  "container": {
+    "image": "mcr.microsoft.com/playwright:v1.64.1-noble",
+    "digest": "sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea",
+    "digestVerifiedOnHost": true
+  },
+  "execution": {
+    "where": "trusted-personal-Manjaro-Linux-host",
+    "cloudEnvironment": false,
+    "how": "Official Playwright Docker image; dual-mount for detached worktree gitdir; isolated HOME/npm cache; npm ci root+nextjs; build; seven historical mobile failures A1-A3; seven positive controls B1-B5; then npm run browser:verify and npm run studio:browser:verify independently.",
+    "productFixesImplementedOnManjaro": false,
+    "originWorkModified": false,
+    "originWorkAtVerificationTime": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+    "fullMatrixExecuted": true,
+    "standaloneMatrixExecuted": true,
+    "fullMatrixDecision": "TARGETED FOURTEEN PASS \u2014 FULL MATRICES EXECUTED AND PASSED"
+  },
+  "focusedResults": {
+    "records": 14,
+    "primaryHistorical": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    "positiveControls": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    "passed": 14,
+    "failed": 0
+  },
+  "standaloneResults": {
+    "status": "verified",
+    "exitCode": 0,
+    "stats": {
+      "startTime": "2026-10-28T07:41:40.562Z",
+      "duration": 6730.232,
+      "expected": 75,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "perProject": {
+      "chromium": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "firefox": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "mobile-chrome": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "mobile-safari": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "webkit": {
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 15
+      }
+    },
+    "testRecordCount": 75
+  },
+  "studioResults": {
+    "status": "PASS",
+    "exitCode": 0,
+    "stats": {
+      "startTime": "2026-10-28T07:41:52.080Z",
+      "duration": 37162.763,
+      "expected": 125,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "perProject": {
+      "studio-chromium": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-firefox": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-mobile-chrome": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-mobile-safari": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      },
+      "studio-webkit": {
+        "passed": 25,
+        "failed": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "total": 25
+      }
+    },
+    "testRecordCount": 125,
+    "failureCount": 0
+  },
+  "archives": {
+    "remainOnTrustedMachineOnly": true,
+    "publishedToGitHub": false,
+    "studioFocusedDiagnostic": {
+      "filename": "openkline-phase-8-8-17-studio-focused-diag-20261028T073705Z.tar.gz",
+      "sha256": "8735ec1bb6c5c9fa3284e025289740cde00c0ba5fd3520052e0ae27d9f673677",
+      "bytes": 17885
+    },
+    "standalone": {
+      "filename": "openkline-phase-8-8-17-standalone-20261028T073705Z.tar.gz",
+      "sha256": "f3207b96294ef35921aab43f25760d3617285c7069266306c5eee8154b18ff10",
+      "bytes": 7512
+    },
+    "studio": {
+      "filename": "openkline-phase-8-8-17-studio-full-20261028T073705Z.tar.gz",
+      "sha256": "a6ce985bc526cf90af794a590c109dfd8dae087b33a51ed90b0bc462336000e6",
+      "bytes": 10797
+    },
+    "priorArchivesPreserved": [
+      "openkline-phase-8-8-15-studio-focused-diag-20261027T173146Z.tar.gz",
+      "openkline-phase-8-8-15-standalone-20261027T173146Z.tar.gz",
+      "openkline-phase-8-8-15-studio-full-20261027T173146Z.tar.gz"
+    ]
+  },
+  "sourceArtifactHashes": {
+    "standalone": {
+      "environment.json": {
+        "sha256": "2eb9110611a4117c8e57e1abc48ce50caa19755db4df2872c6e771b0427e8142",
+        "bytes": 3605
+      },
+      "playwright-results.json": {
+        "sha256": "3cfba03a28b04dc0209472c7169391cedbd2f625ad0c2aead574791efca8410e",
+        "bytes": 90704
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "ca28552e0d79d1e0ad6cc0d86cbdaece3c815506fa4e802c0390a700224e16ef",
+        "bytes": 4655
+      }
+    },
+    "studio": {
+      "environment.json": {
+        "sha256": "ece6739f4a92c81320e5faaf389d7141df88791934fd90155896e4713a315952",
+        "bytes": 3398
+      },
+      "playwright-results.json": {
+        "sha256": "af33c492d1c4bc0a8f0a1327847a4380c112cbe00d2b91c793419edece93988b",
+        "bytes": 164793
+      },
+      "playwright-stderr.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "summary.json": {
+        "sha256": "0370caefb4d12731ee92e7cfc1dc20d5e0dda396e294de6b1ef022d4058978a5",
+        "bytes": 4447
+      }
+    }
+  },
+  "sanitization": {
+    "excludedFromPublish": [
+      "Personal filesystem absolute paths",
+      "Host hostname",
+      "Compressed archives and raw Playwright artifact directories",
+      "Screenshots, traces, binaries, node_modules, build output",
+      "Credentials and secrets"
+    ],
+    "included": [
+      "Sanitized targeted and full-matrix diagnostics",
+      "project/title identities",
+      "errors and root-cause classes",
+      "counts validated against Playwright JSON results"
+    ]
+  },
+  "limitations": [
+    "Automated managed-browser verification PASS for exact tested source bb3f1ca only",
+    "Container emulation only; not native iOS Safari",
+    "Not physical Android device testing",
+    "Not accessibility/keyboard/screen-reader formal review",
+    "Not owner-approved visual baseline",
+    "Not legal/license/third-party notice closure",
+    "Not owner release authorization",
+    "NOT RELEASE READY"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "kind": "targeted",
+  "sourceCommit": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "implementationCommit": "4c0861f6dc6b6a16f005ef36688b6bf853139dd1",
+  "previousTrustedSource": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "records": 14,
+  "primaryHistoricalFailures": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "positiveControls": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "passed": 14,
+  "failed": 0,
+  "groups": {
+    "A1": {
+      "total": 3,
+      "passed": 3
+    },
+    "A2": {
+      "total": 3,
+      "passed": 3
+    },
+    "A3": {
+      "total": 1,
+      "passed": 1
+    },
+    "B1": {
+      "total": 3,
+      "passed": 3
+    },
+    "B2": {
+      "total": 1,
+      "passed": 1
+    },
+    "B3": {
+      "total": 1,
+      "passed": 1
+    },
+    "B4": {
+      "total": 1,
+      "passed": 1
+    },
+    "B5": {
+      "total": 1,
+      "passed": 1
+    }
+  }
+}

@@ -1,0 +1,1256 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "cases": [
+    {
+      "project": "studio-chromium",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3600,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1292,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1516,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1199,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2745,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1909,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2050,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1377,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3105,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1593,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1972,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1334,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1344,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1629,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1525,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 843,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio interactive controls expose names, keyboard focus, status, and dialog semantics",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1842,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Canvas charts expose a text summary and dialogs restore focus on Escape",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1766,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1880,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Reduced-motion mode has no decorative Studio animation path",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1163,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3302,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2845,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1382,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1139,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio rendered text, placeholders, controls, and focus indicators meet the preliminary contrast audit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1134,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3796,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3651,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2153,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1813,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "FinancialChart reconciles stable React identities through Strict Mode, workspace restore, and remount",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2037,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5148,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1299,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5258,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1557,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1595,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1852,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2280,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2299,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5259,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1857,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6312,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1757,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1713,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2513,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2377,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1870,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3961,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1344,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5178,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2435,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1859,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1781,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1590,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1593,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3303,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1465,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5359,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1502,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1435,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1397,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1427,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1262,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "multi-chart Studio preserves panel identity, isolated state, sync settings, watchlists, and named workspaces",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4543,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile multi-chart Studio switches the visible panel through the accessible selector",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1164,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio top actions stay within representative viewport widths",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3884,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio management actions use accessible dialogs instead of browser blocking prompts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1277,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1063,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs a real chart-scoped backtest, exposes generated results, markers, exports, and isolation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1268,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio keeps critical controls visible and hit-testable after responsive layout changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1237,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio cancels a large Worker backtest without retaining a partial result",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1193,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4027,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3251,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2503,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3513,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2780,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 7619,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1922,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2657,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio runs real optimization, applies a selection to the tester, and preserves paper state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2958,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "mobile Studio exposes bounded optimization controls and cancellation",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 6765,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4114,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3331,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2725,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2101,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2610,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3886,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2904,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2555,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1750,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio screener runs a real watchlist scan, filters results, and starts deterministic watch mode",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2231,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 5774,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2066,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1825,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2232,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1477,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1314,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-chromium",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1899,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4499,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2051,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1788,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2605,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1923,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2233,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2733,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4832,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1972,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1554,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3540,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2171,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1385,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1749,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 4192,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2121,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1402,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1868,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1446,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1226,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1326,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3292,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio remains operable at a touch-sized viewport",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1541,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio accepts drawing anchors from touch events without pointer compatibility events",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1203,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1588,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 985,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves alert and paper quantities through unrelated React rerenders",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 864,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio provides KlineScript templates, diagnostics, autocomplete, local save, and Worker runtime status",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1383,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "studio-full"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "kind": "standalone-full-matrix",
+  "sourceCommit": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "exitCode": 0,
+  "status": "PASS",
+  "stats": {
+    "startTime": "2026-10-28T07:41:40.562Z",
+    "duration": 6730.232,
+    "expected": 75,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "testRecordCount": 75,
+  "perProject": {
+    "chromium": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 15
+    },
+    "firefox": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 15
+    },
+    "mobile-chrome": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 15
+    },
+    "mobile-safari": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 15
+    },
+    "webkit": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "total": 15
+    }
+  },
+  "failureCount": 0
+}

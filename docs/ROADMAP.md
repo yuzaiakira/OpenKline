@@ -782,3 +782,10 @@ Studio compatibility gates remain open**.
   layout-time prompt focus. Trusted Mobile Chrome / Mobile Safari confirmation
   is Phase 8.8.17. See `docs/reports/phase-8-8-16-verification.md` and
   `docs/reports/phase-8-8-16-targeted-handoff.md`.
+
+- [Audited / Not Release Ready] Phase 8.8.18 integrates Phase 8.8.17 evidence
+  and records **AUTOMATED MANAGED-BROWSER COMPATIBILITY: PASS** for
+  `bb3f1ca` (200/200). Accessibility smoke and visual candidates are
+  documented; screen-reader, physical Android, native iOS Safari, license
+  activation, visual baseline approval, and owner release authorization remain
+  open. See `docs/reports/phase-8-8-18-release-audit.md`.

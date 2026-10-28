@@ -932,3 +932,16 @@ Trusted managed Mobile Chrome / Mobile Safari confirmation is Phase 8.8.17.
 Physical-device, formal accessibility certification, visual, legal, owner, and
 release gates remain open. See `docs/reports/phase-8-8-16-verification.md` and
 `docs/reports/phase-8-8-16-targeted-handoff.md`.
+
+## Phase 8.8.18 release-readiness audit — NOT RELEASE READY
+
+Phase 8.8.17 trusted evidence is integrated: automated managed-browser
+compatibility is **PASS** for exact source `bb3f1ca` (standalone 75/75, Studio
+125/125, targeted fourteen 14/14). Phase 8.8.18 audited remaining release
+gates without changing product behavior. Physical Android and native iOS
+Safari are blocked (no devices). Screen-reader review is not tested. Visual
+baselines require owner approval. The custom source-available license remains
+a proposal without effective LICENSE/NOTICE activation. See
+`docs/reports/phase-8-8-18-release-audit.md`,
+`docs/reports/phase-8-8-18-acceptance-matrix.md`, and
+`docs/reports/phase-8-8-18-next-actions.md`.

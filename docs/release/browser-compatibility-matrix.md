@@ -199,3 +199,26 @@ indicators, panes, Bollinger fills, pan/zoom (desktop wheel + Mobile Safari API
 zoom), crosshair, drawings, pointer/touch interactions, themes, resize, replay,
 alerts, Datafeed cleanup, Workers, Screener fixtures, and chart destruction.
 Accessibility, visual regression, and physical-device gates remain separate.
+
+## Phase 8.8.17 / 8.8.18 — automated managed-browser PASS
+
+Exact verified source: `bb3f1cad028b126920fa26a75f7ec158ebc56e3c`  
+Evidence branch: `qa/phase-8-8-17-browser-evidence` @
+`3431206335cda46bf1a365bd48879664767ba034`  
+Integrated pack: [`docs/evidence/browser/phase-8-8-17/`](../evidence/browser/phase-8-8-17/)
+
+| Matrix | Result |
+| --- | --- |
+| Targeted historical seven + positive controls | **14/14 PASS** |
+| Standalone five-browser | **75/75 PASS** |
+| Studio five-browser | **125/125 PASS** |
+| Unexpected / flaky / skipped | **0 / 0 / 0** |
+
+**AUTOMATED MANAGED-BROWSER COMPATIBILITY: PASS** for the exact tested source
+above (Playwright 1.64.1 official container digest
+`sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea`).
+
+Mobile Chrome (Pixel 7) and Mobile Safari (iPhone 13) remain **Playwright
+emulation**. Physical Android and native iOS Safari are independent gates and
+were **BLOCKED / NOT TESTED** in Phase 8.8.18. Historical Phase 8.8.15 failure
+ledgers are preserved and must not be rewritten.

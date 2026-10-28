@@ -26,3 +26,24 @@ be proposed with Firefox/WebKit/Mobile Safari disclosed as unverified, but it
 must not be presented as full cross-browser support. A stable 1.0 release
 remains blocked until the mandatory browser policy is met or the owner records
 a revised policy.
+
+
+## Phase 8.8.18 gate refresh
+
+Automated managed-browser compatibility for source `bb3f1ca` is **PASS** via
+Phase 8.8.17 evidence (75+125). The following remain open and independently
+block release:
+
+| Gate | Status |
+| --- | --- |
+| Project license and copyright authority | REQUIRES OWNER APPROVAL |
+| Third-party attribution and notices | BLOCKED |
+| Formal accessibility / screen reader | NOT TESTED |
+| Approved visual baselines | REQUIRES OWNER APPROVAL |
+| Physical Android | BLOCKED — DEVICE UNAVAILABLE |
+| Native iOS Safari | BLOCKED |
+| Stable / preview publication | REQUIRES OWNER APPROVAL |
+
+Firefox/WebKit/Mobile Safari managed executables are no longer “blocked by
+environment” for the verified `bb3f1ca` revision; physical-device and legal
+gates still are.

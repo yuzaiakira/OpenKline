@@ -97,3 +97,18 @@ without copying it into the repository:
 OPENKLINE_VISUAL_BASELINE_DIR=/trusted/review/baselines \
   npm run test:react:browser -- --grep "review artifact"
 ```
+
+## Phase 8.8.18 candidates
+
+Local Chromium candidates were regenerated for source `bb3f1ca` and stored only
+on the trusted host (not committed):
+
+| Candidate | SHA-256 |
+| --- | --- |
+| `studio-dark.png` | `0e7d12acdddf4b0aa95fad0932f694c2c6d349b9b69d4437a8926be93488267c` |
+| `studio-light.png` | `6bdeebb0a45793993c15dff416f3a0221230a885b6d9f0a9633a11cf2c021eed` |
+| `studio-mobile.png` | `1ff2c2178afd25d31c39968af6f2414a9895f78a0a9057bd49b400fec24a0b98` |
+
+Status remains **SCREENSHOT GENERATED** /
+**VISUAL BASELINE — REQUIRES OWNER APPROVAL**. Managed Firefox/WebKit visual
+candidates were not generated in Phase 8.8.18.
