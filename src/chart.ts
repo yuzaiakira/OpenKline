@@ -382,6 +382,33 @@ export class Chart {
     return this.model.getPaneIds();
   }
 
+  /**
+   * Returns the primary drawing pane bounds in chart logical pixels.
+   * Drawing tools only accept anchors inside this rectangle.
+   */
+  public getPrimaryDrawingPaneBounds(): {
+    readonly id: string;
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+    readonly chartWidth: number;
+    readonly chartHeight: number;
+  } | null {
+    this.assertAlive();
+    const context = this.getPrimaryScaleContext();
+    if (context === null) return null;
+    return {
+      id: "main",
+      left: context.bounds.left,
+      right: context.bounds.right,
+      top: context.bounds.top,
+      bottom: context.bounds.bottom,
+      chartWidth: this.width,
+      chartHeight: this.height,
+    };
+  }
+
   public registerIndicator(definition: IndicatorDefinition): void {
     this.assertAlive();
     this.indicatorRegistry.register(definition);

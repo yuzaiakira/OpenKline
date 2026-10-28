@@ -43,36 +43,73 @@ const POINTER_DIAGNOSTICS_KEY = "__openklinePointerDiagnostics";
 const DRAWING_DIAGNOSTICS_KEY = "__openklineDrawingDiagnostics";
 const INPUT_DIAGNOSTICS_KEY = "__openklineInputDiagnostics";
 
+type MainPaneFractions = {
+  readonly topFraction: number;
+  readonly bottomFraction: number;
+  readonly leftFraction: number;
+  readonly rightFraction: number;
+  readonly chartWidth: number;
+  readonly chartHeight: number;
+  readonly paneCount: number;
+};
+
+/**
+ * Place a drawing anchor inside the actual primary price pane.
+ * `xFraction`/`yFraction` are relative to that pane (not the full multi-pane canvas).
+ * Mobile Studio charts keep volume/RSI panes below the main pane, so full-canvas
+ * fractions such as 0.24 can land outside the drawable region after Phase 8.8.14.
+ */
 export async function placeVisibleChartPoint(page: Page, xFraction: number, yFraction: number, canvasSelector = "canvas"): Promise<void> {
   const point = await page.evaluate(({ x, y, selector, diagnosticsKey }) => {
     const canvas = document.querySelector<HTMLCanvasElement>(selector);
     if (canvas === null) throw new Error(`Chart canvas is missing for selector ${selector}`);
     const finite = (value: number): number => Number.isFinite(value) ? Number(value.toFixed(2)) : value;
     const clamp = (value: number, minimum: number, maximum: number): number => Math.min(maximum, Math.max(minimum, value));
+    const parsePane = (): MainPaneFractions => {
+      const raw = canvas.dataset.openklineMainPane;
+      if (raw === undefined || raw.length === 0) throw new Error("Main drawing pane diagnostics are missing on the chart canvas");
+      const pane = JSON.parse(raw) as MainPaneFractions;
+      if (!(pane.bottomFraction > pane.topFraction) || !(pane.rightFraction > pane.leftFraction)) {
+        throw new Error(`Invalid main pane fractions: ${raw}`);
+      }
+      return pane;
+    };
+    const pane = parsePane();
+    const paneXFraction = pane.leftFraction + (pane.rightFraction - pane.leftFraction) * clamp(x, 0.08, 0.92);
+    const paneYFraction = pane.topFraction + (pane.bottomFraction - pane.topFraction) * clamp(y, 0.12, 0.88);
     const initial = canvas.getBoundingClientRect();
-    const intendedPageY = initial.top + window.scrollY + initial.height * y;
+    const intendedPageY = initial.top + window.scrollY + initial.height * paneYFraction;
     const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    window.scrollTo(window.scrollX, clamp(intendedPageY - window.innerHeight * 0.32, 0, maxScroll));
+    window.scrollTo(window.scrollX, clamp(intendedPageY - window.innerHeight * 0.35, 0, maxScroll));
     const rect = canvas.getBoundingClientRect();
-    const visibleMinimum = Math.max(0, (8 - rect.top) / Math.max(rect.height, 1));
-    const visibleMaximum = Math.min(1, (window.innerHeight - 8 - rect.top) / Math.max(rect.height, 1));
-    if (visibleMaximum < visibleMinimum) throw new Error("Chart canvas has no visible vertical interaction range");
-    const safeY = clamp(y, visibleMinimum + 0.02, Math.max(visibleMinimum + 0.02, visibleMaximum - 0.02));
-    const clientX = rect.left + rect.width * clamp(x, 0.02, 0.98);
-    const clientY = rect.top + rect.height * safeY;
-    const hit = document.elementFromPoint(clientX, clientY);
+    const provisionalY = rect.top + rect.height * paneYFraction;
+    if (provisionalY < 8 || provisionalY > window.innerHeight - 8) {
+      window.scrollTo(window.scrollX, clamp(window.scrollY + (provisionalY - window.innerHeight * 0.35), 0, maxScroll));
+    }
+    const settled = canvas.getBoundingClientRect();
+    const settledX = settled.left + settled.width * paneXFraction;
+    const settledY = settled.top + settled.height * paneYFraction;
+    const hit = document.elementFromPoint(settledX, settledY);
     const targetIsCanvas = hit === canvas || (hit !== null && canvas.contains(hit));
+    const insidePrimaryPane = paneXFraction >= pane.leftFraction && paneXFraction <= pane.rightFraction
+      && paneYFraction >= pane.topFraction && paneYFraction <= pane.bottomFraction;
+    const insideVisualViewport = settledX >= 0 && settledX <= window.innerWidth && settledY >= 0 && settledY <= window.innerHeight;
     const record = {
-      cssRect: { left: finite(rect.left), top: finite(rect.top), width: finite(rect.width), height: finite(rect.height) },
+      cssRect: { left: finite(settled.left), top: finite(settled.top), width: finite(settled.width), height: finite(settled.height) },
       backingSize: { width: canvas.width, height: canvas.height },
       viewport: { width: window.innerWidth, height: window.innerHeight },
       scroll: { x: finite(window.scrollX), y: finite(window.scrollY) },
-      requestedFraction: { x, y },
-      canvasLogicalPoint: { x: finite(clientX - rect.left), y: finite(clientY - rect.top) },
-      backingPoint: { x: finite((clientX - rect.left) * canvas.width / Math.max(rect.width, 1)), y: finite((clientY - rect.top) * canvas.height / Math.max(rect.height, 1)) },
-      clientPoint: { x: finite(clientX), y: finite(clientY) },
-      insideVisualViewport: clientX >= 0 && clientX <= window.innerWidth && clientY >= 0 && clientY <= window.innerHeight,
-      insidePrimaryPaneCandidate: safeY <= 0.72,
+      requestedPaneFraction: { x, y },
+      resolvedCanvasFraction: { x: finite(paneXFraction), y: finite(paneYFraction) },
+      mainPane: pane,
+      canvasLogicalPoint: { x: finite(settledX - settled.left), y: finite(settledY - settled.top) },
+      backingPoint: {
+        x: finite((settledX - settled.left) * canvas.width / Math.max(settled.width, 1)),
+        y: finite((settledY - settled.top) * canvas.height / Math.max(settled.height, 1)),
+      },
+      clientPoint: { x: finite(settledX), y: finite(settledY) },
+      insideVisualViewport,
+      insidePrimaryPane,
       hitTarget: hit === null ? null : `${hit.tagName.toLowerCase()}${(hit as HTMLElement).className ? `.${String((hit as HTMLElement).className).trim().split(/\s+/u).slice(0, 2).join(".")}` : ""}`,
       targetIsCanvas,
     };
@@ -80,13 +117,15 @@ export async function placeVisibleChartPoint(page: Page, xFraction: number, yFra
     const previous = Array.isArray(win[diagnosticsKey]) ? win[diagnosticsKey] as unknown[] : [];
     previous.push(record);
     win[diagnosticsKey] = previous.slice(-8);
-    if (!record.insideVisualViewport || !record.targetIsCanvas || !record.insidePrimaryPaneCandidate) {
+    if (!record.insideVisualViewport || !record.targetIsCanvas || !record.insidePrimaryPane) {
       throw new Error(`Drawing point is not a visible primary-pane Canvas target: ${JSON.stringify(record)}`);
     }
-    return { x: clientX, y: clientY };
+    return { x: settledX, y: settledY };
   }, { x: xFraction, y: yFraction, selector: canvasSelector, diagnosticsKey: DRAWING_DIAGNOSTICS_KEY });
-  const touchInput = await page.evaluate(() => navigator.maxTouchPoints > 0);
-  if (touchInput) await page.touchscreen.tap(point.x, point.y);
+  // Prefer the Playwright project touch capability over navigator.maxTouchPoints.
+  // Managed Mobile Safari can report maxTouchPoints === 0 even when hasTouch is true.
+  const useTouch = base.info().project.use.hasTouch === true;
+  if (useTouch) await page.touchscreen.tap(point.x, point.y);
   else await page.mouse.click(point.x, point.y);
 }
 
@@ -176,6 +215,14 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
         rect: (() => { const rect = panel.getBoundingClientRect(); return { left: numberOrNull(rect.left), top: numberOrNull(rect.top), width: numberOrNull(rect.width), height: numberOrNull(rect.height) }; })(),
         display: getComputedStyle(panel).display,
       }));
+      const dialogRoot = document.querySelector<HTMLElement>("[data-studio-dialog-open='true']");
+      const dialogSection = dialogRoot?.querySelector<HTMLElement>('[role="dialog"]') ?? null;
+      const dialogInput = dialogSection?.querySelector<HTMLInputElement>('input[aria-label="Dialog value"]') ?? null;
+      const focusableInDialog = dialogSection === null
+        ? []
+        : Array.from(dialogSection.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex=\"-1\"])"))
+          .slice(0, 8)
+          .map((element) => describe(element));
       return {
         capturedAt: new Date().toISOString(),
         testTitle,
@@ -224,6 +271,16 @@ async function captureDiagnostics(page: Page, title: string, pageErrors: readonl
             countText: alertPanel.querySelector("summary")?.textContent?.trim() ?? null,
             names: alertNames,
             removeControls: Array.from(alertPanel.querySelectorAll<HTMLButtonElement>('[aria-label^="Remove "]')).slice(0, 8).map((button) => button.getAttribute("aria-label")),
+          },
+          dialog: {
+            open: dialogRoot !== null,
+            kind: dialogRoot?.dataset.studioDialogKind ?? null,
+            title: dialogSection?.dataset.studioDialogTitle ?? dialogSection?.querySelector("h2")?.textContent?.trim() ?? null,
+            inputPresent: dialogInput !== null,
+            inputValue: dialogInput?.value?.slice(0, 120) ?? null,
+            activeElement: describe(document.activeElement),
+            focusableOrder: focusableInDialog,
+            mainPaneDiagnostics: Array.from(document.querySelectorAll("canvas")).slice(0, 2).map((canvas) => canvas.dataset.openklineMainPane ?? null),
           },
         },
         drawingInteraction: drawingInteraction === null ? null : { placements: drawingInteraction },
