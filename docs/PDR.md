@@ -914,3 +914,21 @@ The full Studio matrix, physical-device, formal accessibility, visual, legal,
 owner, and release gates remain open. See
 `docs/reports/phase-8-8-14-verification.md` and
 `docs/reports/phase-8-8-14-targeted-handoff.md`.
+
+## Phase 8.8.16 mobile drawing geometry and Safari dialog remediation — verification open
+
+Phase 8.8.15 trusted evidence is integrated and validated: targeted seven
+passed, standalone 75/75 passed, and Studio remained 118/125 with seven
+mobile failures. Phase 8.8.16 preserves that ledger and treats the six mobile
+drawing failures as a harness geometry regression: Phase 8.8.14 full-canvas
+Y fractions land outside the primary pane once Volume and RSI consume most of
+a ~350px mobile canvas. The helper now places points inside
+`getPrimaryDrawingPaneBounds()` fractions published on the canvas and selects
+touch from Playwright `hasTouch`. Mobile Safari dialog focus now captures the
+Rename trigger from the click target and focuses the prompt input in
+`useLayoutEffect`.
+
+Trusted managed Mobile Chrome / Mobile Safari confirmation is Phase 8.8.17.
+Physical-device, formal accessibility certification, visual, legal, owner, and
+release gates remain open. See `docs/reports/phase-8-8-16-verification.md` and
+`docs/reports/phase-8-8-16-targeted-handoff.md`.
