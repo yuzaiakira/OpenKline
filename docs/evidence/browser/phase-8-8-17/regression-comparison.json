@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "comparedTo": "8.8.15",
+  "previousSource": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "currentSource": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "standalone": {
+    "previous": "75/75 PASS",
+    "current": "75/75 PASS",
+    "delta": "unchanged pass"
+  },
+  "studio": {
+    "previous": "118/125 PASS (7 unexpected)",
+    "current": "125/125 PASS (0 unexpected)",
+    "delta": "seven prior unexpected now pass"
+  },
+  "targetedHistoricalSeven": {
+    "previous": "7 FAIL in full matrix",
+    "current": "7/7 PASS",
+    "delta": "resolved"
+  },
+  "positiveControls": {
+    "previous": "PASS in 8.8.15 targeted",
+    "current": "7/7 PASS",
+    "delta": "preserved"
+  },
+  "newFailures": []
+}

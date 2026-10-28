@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "sourceCommit": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "observations": [
+    {
+      "identityClass": "six-mobile-drawing-failures",
+      "phase8815Status": "FAIL",
+      "phase8817Status": "PASS",
+      "confirmedMechanism": "Phase 8.8.16 main-pane-aware placeVisibleChartPoint + hasTouch modality resolved Drawings (0) on mobile Chrome and Safari",
+      "remainingIssues": []
+    },
+    {
+      "identityClass": "mobile-safari-dialog-focus",
+      "phase8815Status": "FAIL",
+      "phase8817Status": "PASS",
+      "confirmedMechanism": "Phase 8.8.16 dialog trigger capture + useLayoutEffect prompt focus resolved Dialog value focus assertion",
+      "remainingIssues": []
+    },
+    {
+      "identityClass": "positive-controls",
+      "phase8815Status": "PASS",
+      "phase8817Status": "PASS",
+      "confirmedMechanism": "Firefox drawing and WebKit/Mobile Safari alert+paper controls did not regress",
+      "remainingIssues": []
+    }
+  ]
+}

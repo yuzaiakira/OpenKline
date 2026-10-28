@@ -1,0 +1,756 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.17",
+  "cases": [
+    {
+      "project": "chromium",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 228,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 871,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 229,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 223,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 324,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 333,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 901,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 488,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 249,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 433,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "renders candles and supports interaction and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 666,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 129,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "loads the standalone vanilla plugin example",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 108,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 130,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "renders candles and supports interaction and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1791,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 477,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "loads the standalone vanilla plugin example",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 417,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 405,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "renders candles and supports interaction and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1441,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 462,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "loads the standalone vanilla plugin example",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 345,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 431,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "renders candles and supports interaction and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 910,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 221,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "loads the standalone vanilla plugin example",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 178,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 208,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "renders candles and supports interaction and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1079,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 273,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "loads the standalone vanilla plugin example",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 198,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 232,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "custom exchange owns history and stream without external network",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 312,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "custom exchange owns history and stream without external network",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 974,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "custom exchange owns history and stream without external network",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 410,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "custom exchange owns history and stream without external network",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 249,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "custom exchange owns history and stream without external network",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 408,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 318,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1358,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 379,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 306,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 429,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 503,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 205,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1639,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 541,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 893,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 445,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 524,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 285,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 555,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 249,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "offline JSON and generic REST examples use local sources",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 401,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 234,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "offline JSON and generic REST examples use local sources",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1552,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 567,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "offline JSON and generic REST examples use local sources",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 518,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 418,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "offline JSON and generic REST examples use local sources",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 516,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 271,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "offline JSON and generic REST examples use local sources",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 506,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 262,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 303,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1131,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 337,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 199,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 293,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 418,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "chromium",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 163,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1448,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "firefox",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 453,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 631,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "webkit",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 432,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 343,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 242,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 509,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    },
+    {
+      "project": "mobile-safari",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 317,
+      "errorMessage": null,
+      "rootCauseClass": "pass",
+      "role": "standalone-full"
+    }
+  ]
+}

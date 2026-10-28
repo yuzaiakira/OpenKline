@@ -159,3 +159,20 @@ coordinates for touch and CSS scaling. Local system-Chromium Studio coverage
 passes 24/24. Managed WebKit/mobile execution, manual keyboard and
 screen-reader review, physical touch-target review, and any owner-approved
 conformance decision remain open.
+
+## Phase 8.8.18 release audit
+
+Automated Chromium accessibility/contrast/dialog/reduced-motion checks remain
+**PASS** for the measured Studio samples on source `bb3f1ca`. An assisted
+keyboard smoke (Tab path, Rename dialog focus trap/Escape, canvas summary)
+also passed as smoke-only evidence.
+
+| Area | Phase 8.8.18 status |
+| --- | --- |
+| axe-core / external scanner | **NOT TESTED** (not a dependency) |
+| Full human keyboard workflow audit | **NOT TESTED** (smoke only) |
+| Screen reader (Orca/NVDA/JAWS/VoiceOver) | **NOT TESTED** |
+| Physical touch targets | **BLOCKED** (no device) |
+| Formal WCAG claim | **NOT TESTED** / requires owner target |
+
+See `docs/reports/phase-8-8-18-release-audit.md`.

@@ -39,7 +39,17 @@ test("all versioned trusted evidence packs validate independently", () => {
     ["8.8.11", EVIDENCE_PACK_POLICIES["8.8.11"].expectedSourceCommit, 27],
     ["8.8.13", EVIDENCE_PACK_POLICIES["8.8.13"].expectedSourceCommit, 7],
     ["8.8.15", EVIDENCE_PACK_POLICIES["8.8.15"].expectedSourceCommit, 207],
+    ["8.8.17", EVIDENCE_PACK_POLICIES["8.8.17"].expectedSourceCommit, 214],
   ]);
+});
+
+test("Phase 8.8.17 evidence records 200/200 managed-browser PASS and fourteen targeted identities", () => {
+  const result = validateEvidencePack({ evidenceRoot: repositoryEvidenceRoot, policy: EVIDENCE_PACK_POLICIES["8.8.17"] });
+  assert.equal(result.status, "PASS");
+  assert.equal(result.totals.focusedExpected, 14);
+  assert.equal(result.totals.standaloneExpected, 75);
+  assert.equal(result.totals.studioExpected, 125);
+  assert.equal(result.totals.studioUnexpected, 0);
 });
 
 test("Phase 8.8.15 evidence preserves the seven Studio failures and seven targeted passes", () => {
