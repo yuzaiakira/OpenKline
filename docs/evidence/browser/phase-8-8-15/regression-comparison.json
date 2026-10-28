@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "compareAgainstPhase": "8.8.13",
+  "phase8813FocusedBaseline": {
+    "records": 7,
+    "passed": 1,
+    "failed": 6
+  },
+  "currentFocused": {
+    "records": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "currentFullStandaloneTotals": {
+    "discovered": 75,
+    "passed": 75,
+    "failed": 0,
+    "exitCode": 0,
+    "status": "verified"
+  },
+  "currentFullStudioTotals": {
+    "discovered": 125,
+    "passed": 118,
+    "failed": 7,
+    "exitCode": 1,
+    "status": "FAIL"
+  },
+  "identities": [
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2583,
+      "exitGroup": "A1",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3796,
+      "exitGroup": "A1",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1695,
+      "exitGroup": "A1",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A2",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "alert-name-fill-not-applied-default-name-created",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2987,
+      "exitGroup": "A2",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A3",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "alert-name-fill-not-applied-default-name-created",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1938,
+      "exitGroup": "A3",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A4",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "previousResult": "FAIL",
+      "currentResult": "PASS",
+      "oldFailureMechanism": "paper-order-rejected-max-notional-quantity-fill-suspect",
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": true,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1852,
+      "exitGroup": "A4",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A5",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "previousResult": "PASS",
+      "currentResult": "PASS",
+      "oldFailureMechanism": null,
+      "currentObservations": "Passed on managed Playwright binary for this identity; no failure attachment.",
+      "confirmedImprovement": false,
+      "remainingFailure": null,
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2134,
+      "exitGroup": "A5",
+      "role": "positive-control"
+    }
+  ],
+  "previouslyFailingNowPassing": [
+    {
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "oldFailureMechanism": "firefox-drawing-anchors-not-registered"
+    },
+    {
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "oldFailureMechanism": "alert-name-fill-not-applied-default-name-created"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "oldFailureMechanism": "alert-name-fill-not-applied-default-name-created"
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "oldFailureMechanism": "paper-order-rejected-max-notional-quantity-fill-suspect"
+    }
+  ],
+  "previouslyFailingStillFailing": [],
+  "positiveControl": {
+    "project": "studio-webkit",
+    "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+    "previousResult": "PASS",
+    "currentResult": "PASS",
+    "regressed": false
+  },
+  "newFailingIdentitiesInFullStudioMatrix": [
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio dialogs keep keyboard focus inside the modal",
+      "rootCauseClass": "assertion-focus-not-applied",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-chrome",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    },
+    {
+      "project": "studio-mobile-safari",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "rootCauseClass": "mobile-drawing-anchors-not-registered",
+      "note": "Observed in initial full Studio matrix; not part of the Phase 8.8.13 targeted-seven set."
+    }
+  ],
+  "diagnosticOnlyImprovements": [
+    "Firefox drawing trio now registers Drawings (1) under managed Firefox after Phase 8.8.14 viewport-aware hit-tested placement helper.",
+    "WebKit and Mobile Safari alert names accept Studio close alert through local input-ref lifecycle.",
+    "Mobile Safari paper quantity 0.1 now creates a pending order instead of max-notional rejection.",
+    "Desktop WebKit paper positive control remains PASS (no input-lifecycle regression)."
+  ]
+}

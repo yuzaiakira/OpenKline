@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "sourceCommit": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "behavioralSourceCommit": "8f845f6c0370d43744294f4c22301666d8257766",
+  "previousTrustedSource": "5062735097301ce22dd50f1f78f7f84cf96394e1",
+  "groups": {
+    "A1": {
+      "name": "Firefox drawing trio",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "A2": {
+      "name": "WebKit alert",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "A3": {
+      "name": "Mobile Safari alert",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "A4": {
+      "name": "Mobile Safari paper",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "A5": {
+      "name": "WebKit paper positive control",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "exitCode": 0
+    }
+  },
+  "totals": {
+    "records": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "fullMatrixExecuted": true,
+  "standaloneMatrixExecuted": true,
+  "standaloneExitCode": 0,
+  "studioFullExitCode": 1,
+  "decision": "TARGETED SEVEN PASS \u2014 FULL MATRICES EXECUTED; STUDIO FULL MATRIX STILL HAS FAILURES"
+}

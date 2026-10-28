@@ -1,0 +1,685 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "sourceCommit": "3e7a889a94c40255bbcce210a672856cfc98b32b",
+  "total": 75,
+  "passed": 75,
+  "failed": 0,
+  "cases": [
+    {
+      "project": "chromium",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 295,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 839,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 222,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 209,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "empty Canvas charts expose an explicit accessible state",
+      "file": "accessibility.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 331,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "file": "alerts.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 340,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "file": "alerts.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 900,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "file": "alerts.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 479,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "file": "alerts.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 230,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "public alerts evaluate live and replay data with deterministic simulated history",
+      "file": "alerts.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 371,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "renders candles and supports interaction and cleanup",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 668,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 140,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "loads the standalone vanilla plugin example",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 105,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 127,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "renders candles and supports interaction and cleanup",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1730,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 483,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "loads the standalone vanilla plugin example",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 404,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 437,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "renders candles and supports interaction and cleanup",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1521,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 460,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "loads the standalone vanilla plugin example",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 327,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 441,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "renders candles and supports interaction and cleanup",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 864,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 224,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "loads the standalone vanilla plugin example",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 175,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 154,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "renders candles and supports interaction and cleanup",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 892,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "keeps drawing coordinates valid when CSS layout leads logical resize delivery",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 291,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "loads the standalone vanilla plugin example",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 225,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing raw candles",
+      "file": "chart.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 229,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "custom exchange owns history and stream without external network",
+      "file": "custom-datafeed.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 279,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "custom exchange owns history and stream without external network",
+      "file": "custom-datafeed.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1207,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "custom exchange owns history and stream without external network",
+      "file": "custom-datafeed.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 457,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "custom exchange owns history and stream without external network",
+      "file": "custom-datafeed.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 268,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "custom exchange owns history and stream without external network",
+      "file": "custom-datafeed.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 326,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "file": "data-ownership.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 346,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "file": "data-ownership.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1381,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "file": "data-ownership.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 356,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "file": "data-ownership.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 395,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "direct data works offline with corrections, analysis, drawings, and cleanup",
+      "file": "data-ownership.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 359,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 509,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 205,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1685,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 465,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 790,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 420,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 425,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 240,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "KlineScript playground compiles, reports diagnostics, updates inputs, and cleans up",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 511,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "Worker-backed KlineScript shares chart, alert, replay, and cleanup lifecycles",
+      "file": "klinescript.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 269,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "offline JSON and generic REST examples use local sources",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 399,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 217,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "offline JSON and generic REST examples use local sources",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1519,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 522,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "offline JSON and generic REST examples use local sources",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 577,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 403,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "offline JSON and generic REST examples use local sources",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 479,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 255,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "offline JSON and generic REST examples use local sources",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 420,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "generic WebSocket and optional Binance adapters normalize injected fixtures",
+      "file": "provider-examples.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 257,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "file": "release-hardening.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 304,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "file": "release-hardening.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1164,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "file": "release-hardening.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 292,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "file": "release-hardening.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 228,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "repeated chart creation, update, subscription, and destruction leaves no canvases",
+      "file": "release-hardening.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 258,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 439,
+      "errorMessage": null
+    },
+    {
+      "project": "chromium",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 170,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1587,
+      "errorMessage": null
+    },
+    {
+      "project": "firefox",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 496,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 680,
+      "errorMessage": null
+    },
+    {
+      "project": "webkit",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 463,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 316,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-chrome",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 183,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "isolates chart state at an inclusive replay cursor and restores it on exit",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 439,
+      "errorMessage": null
+    },
+    {
+      "project": "mobile-safari",
+      "title": "suspends a datafeed during replay and resubscribes after restoration",
+      "file": "replay.spec.ts",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 258,
+      "errorMessage": null
+    }
+  ]
+}

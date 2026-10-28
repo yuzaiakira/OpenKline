@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.15",
+  "cases": [
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio snaps drawing anchors to visible candle timestamps and preserves raw anchors across scale changes",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2583,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [
+        {
+          "title": "place drawing anchors with the active input modality",
+          "duration": 81
+        }
+      ],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 3796,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A1",
+      "project": "studio-firefox",
+      "title": "Studio exposes deterministic replay playback controls and restores the workspace",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1695,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [
+        {
+          "title": "place replay drawing anchors with the active input modality",
+          "duration": 80
+        }
+      ],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A2",
+      "project": "studio-webkit",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2987,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A3",
+      "project": "studio-mobile-safari",
+      "title": "Studio creates, pauses, persists, and removes a local alert",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1938,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A4",
+      "project": "studio-mobile-safari",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 1852,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass",
+      "role": "prior-failure-identity"
+    },
+    {
+      "group": "A5",
+      "project": "studio-webkit",
+      "title": "Studio paper trading is visibly simulated, fills causally, and stays chart-scoped",
+      "status": "expected",
+      "ok": true,
+      "durationMs": 2134,
+      "errorMessage": null,
+      "errorLocation": null,
+      "steps": [],
+      "rootCauseClass": "pass",
+      "role": "positive-control"
+    }
+  ]
+}
