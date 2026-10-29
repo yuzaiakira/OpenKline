@@ -1007,6 +1007,36 @@ to a vendor, backend, framework, or transport implementation.
   required. Firefox, WebKit, mobile Safari, physical devices, and provider
   credentials remain open unless independently executable and evidenced.
 
+## Phase 8.14 final engineering verification
+
+The provider-neutral comparison foundation, historical completeness semantics,
+bounded recovery, optional provider example, and Datafeed-backed Studio flow
+are implemented and verified for the available local environment. The final
+verification report records 207/207 Node tests, 25/25 vanilla Chromium tests,
+30/30 React/Studio Chromium tests, API compatibility, package/distribution
+checks, and controller/comparison benchmarks.
+
+- [Implemented / Verified locally] Baseline freshness lookback, visible-range
+  separation, optional calendar-aware coverage, targeted bounded backfill,
+  reconnect lifecycle recovery, race protection, replay masking, and cleanup.
+- [Implemented / Fixture-verified] The isolated Binance REST/WebSocket example
+  validates pagination and normalization offline. Live Binance connectivity,
+  credentials, provider availability, and provider licensing remain outside
+  the local evidence.
+- [Implemented / Chromium-verified] Studio source selection, per-asset
+  coverage/realtime/recovery state, deterministic correction and gap-recovery
+  controls, replay-safe status output, and serializable workspace persistence.
+- [Open / Environment] The available browser configurations used the project
+  Chromium executable at `/usr/bin/chromium`; Playwright-managed Chromium,
+  Firefox, and WebKit binaries are absent in this cloud environment. Firefox,
+  WebKit, mobile Safari, physical-device, and universal provider compatibility
+  gates therefore remain open and are not release claims.
+
+See `docs/reports/phase-8-14-final-verification.md` for the evidence and
+acceptance matrix. Phase 8.14 engineering is ready for review for the tested
+scope; the explicitly open external and browser gates must not be silently
+converted into universal compatibility certification.
+
 ## Phase 8.13.1 comparison workspace persistence hardening
 
 Phase 8.13.1 fixes a Studio persistence defect in which saving while comparison
