@@ -54,11 +54,12 @@ Record a written decision here or in an owner-controlled record:
 | Required decision | Owner/legal record | Date | Reference |
 | --- | --- | --- | --- |
 | Authority and contributor/provenance review complete | Pending | — | — |
-| Approved project license and distribution scope | Pending | — | — |
+| Approved package distribution scope | **APPROVED: CORE_AND_REACT_ONLY** (scope only; not a license grant or publish auth) | 2026-10-29 | Owner ChatGPT instruction; `docs/reports/phase-8-8-21-distribution-scope-decision.md` |
+| Approved project license (effective grant) | Pending | — | Proposal remains inactive |
 | Counsel-approved source-available terms and patent/trademark position | Pending | — | — |
 | OSI-license compatibility and consumer disclosure approach | Pending | — | — |
-| Third-party texts/notices reviewed | Pending | — | — |
-| Verified notices and metadata approved | Pending | — | — |
+| Third-party texts/notices reviewed for **approved package scope** | Pending review — example CC-BY/LGPL rows are out of approved package artifact scope if packs stay as verified | — | `docs/reports/phase-8-8-21-package-attribution-scope.md` |
+| Verified notices and metadata approved | Pending | — | Do not activate NOTICE/license metadata yet |
 
 Only after all applicable rows are approved may a maintainer replace
 the pending state with counsel-approved final license text, add counsel-approved

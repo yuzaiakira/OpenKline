@@ -6,6 +6,11 @@ Packages: `openkline@0.1.0`, `@openkline/react@0.1.0` (candidates only)
 Effective license: **not activated**  
 Publication: **not authorized**
 
+**Historical note (do not treat as rewrite of Phase 8.8.19 outcomes):** On
+2026-10-29 the owner later recorded `APPROVED: CORE_AND_REACT_ONLY`. Current
+gate statuses live in `docs/reports/phase-8-8-21-release-gate-matrix.md`. The
+body below remains the Phase 8.8.19 snapshot when scope was still unset.
+
 Agreement that the software is technically strong ≠ permission to publish.
 
 ## Non-executable owner form

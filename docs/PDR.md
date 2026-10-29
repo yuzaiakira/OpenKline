@@ -953,3 +953,16 @@ and release-scope decisions for product baseline `bb3f1ca` without activating a
 license or publishing. Physical Android remains device-unavailable; native iOS
 Safari remains blocked. See `docs/reports/phase-8-8-19-owner-decision-packet.md`
 and companion Phase 8.8.19 reports.
+
+## Phase 8.8.20–8.8.21 distribution scope — NOT RELEASE READY
+
+Phase 8.8.20 left redistribution authorization pending an explicit owner scope
+choice. On 2026-10-29 the owner recorded `APPROVED: CORE_AND_REACT_ONLY`. Phase
+8.8.21 verifies npm pack contents for `openkline` and `@openkline/react`,
+confirms the private Next.js Studio example is absent from both archives, and
+treats example-only `caniuse-lite` / `sharp` / libvips notice obligations as out
+of approved package distribution scope for those artifacts. This does not
+activate the custom source-available license, NOTICE, npm license metadata, or
+publication. See `docs/reports/phase-8-8-21-distribution-scope-decision.md`,
+`docs/reports/phase-8-8-21-package-attribution-scope.md`, and
+`docs/reports/phase-8-8-21-release-gate-matrix.md`.

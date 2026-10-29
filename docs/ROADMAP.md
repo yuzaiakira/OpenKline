@@ -794,3 +794,15 @@ Studio compatibility gates remain open**.
   attribution review, accessibility review plan, Android/iOS preparation, and
   release decision matrix on baseline `bb3f1ca`. No publication or license
   activation. See `docs/reports/phase-8-8-19-owner-decision-packet.md`.
+
+- [Decision packet / Not Release Ready] Phase 8.8.20 records pending owner
+  decisions (distribution scope, visual, a11y, devices) without inventing
+  approvals. See `docs/reports/phase-8-8-20-decision-status.md`.
+
+- [Scope approved / Not Release Ready] Phase 8.8.21 records
+  `APPROVED: CORE_AND_REACT_ONLY` (2026-10-29), verifies `openkline` and
+  `@openkline/react` pack boundaries exclude the Next.js Studio example, and
+  reclassifies example-only CC-BY/LGPL obligations as out of approved package
+  scope. License activation and publication remain unauthorized. See
+  `docs/reports/phase-8-8-21-distribution-scope-decision.md` and
+  `docs/reports/phase-8-8-21-release-gate-matrix.md`.

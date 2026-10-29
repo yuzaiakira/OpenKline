@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "phase": "8.8.21",
+  "productSource": "bb3f1cad028b126920fa26a75f7ec158ebc56e3c",
+  "ownerDistributionScope": "APPROVED: CORE_AND_REACT_ONLY",
+  "decisionDate": "2026-10-29",
+  "checks": {
+    "package:audit": {
+      "status": "pass",
+      "licenseStatus": "pending-owner-approval",
+      "packages": [
+        {
+          "name": "openkline",
+          "version": "0.1.0",
+          "files": 394,
+          "size": 339631,
+          "unpackedSize": 1945873,
+          "runtimeDependencies": {},
+          "peerDependencies": {},
+          "license": null
+        },
+        {
+          "name": "@openkline/react",
+          "version": "0.1.0",
+          "files": 5,
+          "size": 6524,
+          "unpackedSize": 29359,
+          "runtimeDependencies": {},
+          "peerDependencies": {
+            "openkline": "^0.1.0",
+            "react": ">=18"
+          },
+          "license": null
+        }
+      ]
+    },
+    "package:portability": { "status": "pass" },
+    "package:smoke": { "status": "pass", "package": "openkline", "consumer": "ESM" },
+    "distribution:check": { "status": "PASS", "files": 394, "sha": "3938e66dc06b9cefe6815f1c75c0cc36ac8a4965" },
+    "api:check": { "status": "PASS", "removed": [], "changed": [] },
+    "evidence:browser:check": { "status": "PASS", "failures": [] },
+    "validate-license-inventory": {
+      "status": "pass",
+      "entries": 68,
+      "rootDevelopmentEntries": 12,
+      "nextExampleEntries": 54,
+      "localWorkspaceEntries": 2,
+      "pendingProjectLicense": ["@openkline/react", "openkline"]
+    },
+    "studio:check": { "status": "pass", "studioPrivate": true }
+  },
+  "notes": [
+    "Full browser matrices were not re-run; product source unchanged vs bb3f1ca for packaging verification.",
+    "Scope approval does not authorize LICENSE/NOTICE activation or publication."
+  ]
+}
