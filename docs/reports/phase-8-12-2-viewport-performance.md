@@ -175,6 +175,11 @@ URL targeting `main` is:
 
 <https://github.com/yuzaiakira/OpenKline/pull/new/phase-8.12.2-viewport-performance>
 
+An automated `gh pr create` attempt was made after the push but was rejected
+by GitHub with `Forbidden` because the configured `GH_TOKEN` is invalid. No
+Pull Request was claimed or created by this environment; the URL above is the
+owner-facing PR creation URL.
+
 No merge, GitHub Actions workflow, npm publication, release, license change,
 or tag was performed. The branch is ready for owner review; Phase 8.12.2 is
 not a cross-browser or physical-device release gate closure.
