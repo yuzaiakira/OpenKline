@@ -893,3 +893,34 @@ Phase 8.12 public API.
 - [Open / Scope] No merge, npm publication, release, license change, or
   GitHub Actions workflow was performed. See
   `docs/reports/phase-8-12-1-sync-hardening-verification.md`.
+
+## Phase 8.12.2 smooth multi-chart viewport navigation
+
+Phase 8.12.2 is **implemented on `phase-8.12.2-viewport-performance`; local
+engineering verification is complete, while managed cross-browser and physical
+device gates remain open**. The work preserves the Phase 8.12.1 synchronization
+cache and transient crosshair architecture and focuses on coalescing high-
+frequency viewport rendering and measuring the actual visual path.
+
+- [Implemented / Verified] Viewport changes retain synchronous model state and
+  synchronization events while coalescing full Canvas2D renders into one
+  requestAnimationFrame per chart. Pending frames are cancelled during chart
+  destruction and obsolete frames cannot render after disposal.
+- [Implemented / Measured] Candle, OHLC, and hollow-candle renderers reuse
+  computed x coordinates for body-width and drawing work. The multi-chart
+  benchmark now separates state-update cost from next-frame visual latency and
+  covers range, pan, zoom, alternating navigation, and realtime navigation.
+- [Verified locally] Node tests pass 192/192; standalone Chromium passes
+  24/24; React/Studio Chromium passes 28/28; typecheck, API, package smoke,
+  distribution, Studio separation, stress, browser benchmark, multi-chart
+  benchmark, and multi-chart profiler pass. The current Chromium observation
+  is approximately 18 ms median for dual 10k visual navigation and 153–155 ms
+  median for dual 100k; the latter remains Canvas2D render-bound. All measured
+  runs report zero owned canvases after cleanup.
+- [Open / Environment] Official managed Firefox, WebKit, Mobile Chrome, and
+  Mobile Safari execution is not available in this cloud environment because
+  supported browser artifacts are blocked by the registry policy. Physical
+  device, accessibility, and visual approval gates are not changed or claimed.
+- [Open / Scope] No merge, npm publication, release, licensing change, or
+  GitHub Actions workflow was performed. See
+  `docs/reports/phase-8-12-2-viewport-performance.md`.

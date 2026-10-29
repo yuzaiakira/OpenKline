@@ -61,18 +61,25 @@ performance.
 `benchmark:multi-chart` uses two real core Chart instances and the public
 `ChartSynchronizationController`. It measures a single 100,000-candle setup,
 two 10,000-candle charts, and two 100,000-candle charts when the environment
-has sufficient resources. It reports UTC crosshair and visible-range
-forwarding latency, ten repeated two-chart mount/unmount rounds, heap
-observations, and owned canvas cleanup. Dual-chart latency includes target
-range application and Canvas2D rendering; it is not an FPS guarantee and must
-not be compared directly with the single-chart append benchmark.
+has sufficient resources. It reports synchronous state-update cost separately
+from a requestAnimationFrame event-to-next-frame proxy for visible-range
+changes. The dual-chart visual scenarios cover direct range changes, continuous
+pan, wheel-like zoom, rapid alternating navigation, and realtime updates during
+navigation. It also reports ten repeated two-chart mount/unmount rounds, heap
+observations, and owned canvas cleanup. Dual-chart visual latency includes
+target range application and Canvas2D rendering; it is not an FPS guarantee and
+must not be compared directly with the single-chart append benchmark.
 
 `profile:multi-chart` runs the same two-chart 100,000-candle workload with
 separate source-only, target-only, controller-only, linked, and rapid
-alternating measurements for crosshair and visible-range operations. It also
-records a Playwright trace archive (by default under `/tmp`) and verifies
-owned-canvas cleanup. The profile is diagnostic evidence: it does not establish
-a universal latency target or a cross-browser result.
+alternating measurements for crosshair and visible-range operations. Linked
+visual samples additionally report inclusive component timings for viewport
+state, visible-data construction, Canvas2D full rendering, series/pane drawing,
+axis/grid and labels, transient crosshair overlays, and base-frame capture or
+restore. It records a Playwright trace archive (by default
+`/tmp/openkline-phase-8-12-2-viewport-trace.zip`) and verifies owned-canvas
+cleanup. The profile is diagnostic evidence: it does not establish a universal
+latency target or a cross-browser result.
 
 `benchmark:plugins` is a deterministic Node microbenchmark for registry
 activation/command/disposal, a 100,000-candle indicator initialization path,
