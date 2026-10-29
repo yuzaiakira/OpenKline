@@ -953,3 +953,30 @@ public-API rendering test.
   performance claim is made from Chromium-only runs.
 - [Open / Scope] No npm publication, release, licensing change, GitHub Actions
   workflow, or public Studio hosting is authorized by this increment.
+
+## Phase 8.13.1 comparison workspace persistence hardening
+
+Phase 8.13.1 fixes a Studio persistence defect in which saving while comparison
+mode was active could serialize temporary normalized comparison series and the
+temporarily linear price scale instead of the user's ordinary chart state.
+
+- [Implemented / Verified locally] Studio panels keep a canonical workspace
+  snapshot while comparison mode is active. Save, layout archival, symbol or
+  timeframe replacement, and workspace restore use that snapshot and remove
+  temporary `comparison-*` series from persisted documents.
+- [Implemented / Verified locally] Restoring a workspace while comparison mode
+  is selected reapplies comparison as a presentation layer after ordinary
+  series, indicators, drawings, raw OHLC data, and price-scale settings have
+  been restored. Replay exit no longer resets a restored scale during initial
+  mount.
+- [Verified locally] The focused React/Studio regression saves in percentage
+  comparison mode, reloads, exits comparison, checks line presentation and
+  logarithmic scale restoration, validates raw OHLC data and indicators, and
+  asserts no page errors. The full Chromium suites pass 25/25 and 30/30.
+- [Open / Environment] Official Firefox, WebKit, Mobile Safari, physical
+  device, accessibility, and visual-approval gates remain open as documented
+  in the Phase 8.13 report. This increment makes no cross-browser claim.
+- [Open / Compatibility] The repository's API checker still reports its
+  historical `WorkspaceRestoreResult` baseline mismatch; this increment has no
+  public API declaration changes and does not alter that pre-existing gate.
+  See `docs/reports/phase-8-13-1-comparison-persistence.md`.

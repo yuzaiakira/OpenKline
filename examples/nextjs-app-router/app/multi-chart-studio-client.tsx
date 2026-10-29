@@ -29,6 +29,7 @@ import {
   type StudioLayout,
   type StudioComparisonDocument,
   type StudioWorkspaceDocument,
+  type WorkspaceMetadata,
   type WatchlistDocument,
   type WatchlistQuote,
   type WorkspaceDocument,
@@ -72,6 +73,7 @@ interface StudioDialog {
 
 interface ChartPanelHandle {
   getChart(): Chart | null;
+  serializeWorkspace(metadata?: WorkspaceMetadata): WorkspaceDocument;
   refresh(): void;
   getSnapshot(): PanelSnapshot;
   replaceMarketData(symbol: string, timeframe: Timeframe): void;
@@ -191,6 +193,16 @@ function emptySnapshot(): PanelSnapshot {
   return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84 };
 }
 
+function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
+  const series = workspace.series.filter((item) => !item.id.startsWith("comparison-"));
+  return series.length === workspace.series.length ? workspace : { ...workspace, series };
+}
+
+function withWorkspaceMetadata(workspace: WorkspaceDocument, metadata?: WorkspaceMetadata): WorkspaceDocument {
+  if (metadata === undefined) return workspace;
+  return { ...workspace, metadata: { ...workspace.metadata, ...metadata } };
+}
+
 function syncMainPaneDiagnostics(target: Chart, root: HTMLElement | null): void {
   // ResizeObserver and publish microtasks can run after Chart.destroy(); never throw into page errors.
   try {
@@ -224,13 +236,18 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   const comparisonNormalStylesRef = useRef(new Map<string, SeriesStyle>());
   const comparisonNormalScaleRef = useRef<PriceScaleConfiguration | null>(null);
   const comparisonActiveRef = useRef(false);
+  const canonicalWorkspaceRef = useRef<WorkspaceDocument | null>(null);
+  const comparisonStateRef = useRef<ComparisonPanelState | null>(comparison);
+  const applyComparisonRef = useRef<(next: ComparisonPanelState | null) => void>(() => undefined);
+  comparisonStateRef.current = comparison;
   const [snapshot, setSnapshot] = useState<PanelSnapshot>(emptySnapshot);
   const [crosshairTime, setCrosshairTime] = useState<number | null>(null);
   const [visibleTimeRange, setVisibleTimeRange] = useState<{ readonly from: number | null; readonly to: number | null } | null>(null);
 
   const publish = useCallback((target = chartRef.current, replayStatus = snapshot.replayStatus, replaySourceLength = snapshot.replaySourceLength, replayStartIndex = snapshot.replayStartIndex): void => {
     if (target === null) return;
-    const workspace = target.serializeWorkspace();
+    const workspace = withoutComparisonSeries(target.serializeWorkspace());
+    if (!comparisonActiveRef.current) canonicalWorkspaceRef.current = workspace;
     const next: PanelSnapshot = {
       series: target.getSeriesInfo(),
       indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
@@ -262,7 +279,12 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     chartRef.current = target;
     if (initialWorkspace === undefined) seedChart(target, panel.symbol, panel.timeframe);
     else {
-      try { target.restoreWorkspace(initialWorkspace); publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35)); }
+      try {
+        const canonical = withoutComparisonSeries(initialWorkspace);
+        target.restoreWorkspace(canonical);
+        canonicalWorkspaceRef.current = canonical;
+        publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
+      }
       catch { seedChart(target, panel.symbol, panel.timeframe); onNotice(`Panel ${panel.panelId} had an invalid saved chart; deterministic data was restored.`); }
     }
     initializedRef.current = true;
@@ -295,11 +317,20 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     };
   }, []);
 
+  const serializeCanonicalWorkspace = useCallback((metadata?: WorkspaceMetadata): WorkspaceDocument => {
+    const target = chartRef.current;
+    if (target === null) return emptyWorkspace(metadata?.symbol ?? panel.symbol, metadata?.timeframe ?? panel.timeframe);
+    if (comparisonActiveRef.current && canonicalWorkspaceRef.current !== null) return withWorkspaceMetadata(canonicalWorkspaceRef.current, metadata);
+    const workspace = withoutComparisonSeries(target.serializeWorkspace(metadata));
+    canonicalWorkspaceRef.current = workspace;
+    return workspace;
+  }, [panel.symbol, panel.timeframe]);
+
   const replaceMarketData = useCallback((symbol: string, timeframe: Timeframe): void => {
     const target = chartRef.current;
     if (target === null || !initializedRef.current) return;
     const oldKey = marketKeyRef.current;
-    const current = target.serializeWorkspace({ symbol, timeframe });
+    const current = serializeCanonicalWorkspace({ symbol, timeframe });
     symbolWorkspacesRef.current.set(oldKey, current);
     const saved = symbolWorkspacesRef.current.get(`${symbol}|${timeframe}`);
     const candles = buildCandles(symbol, timeframe);
@@ -311,14 +342,35 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       drawings: saved?.drawings ?? { version: 1, drawings: [] },
       series: base.series.map((series) => ({ ...series, data: series.type === "volume" || series.type === "histogram" ? volumePoints(candles) : (series.type === "line" || series.type === "area" || series.type === "baseline" ? pricePoints(candles) : candles) })),
     };
-    try { target.restoreWorkspace(nextWorkspace); marketKeyRef.current = `${symbol}|${timeframe}`; publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35)); onNotice(`${panel.panelId}: loaded ${symbol} at ${timeframe}; symbol-scoped drawings were restored only when previously saved.`); }
+    try {
+      target.restoreWorkspace(nextWorkspace);
+      canonicalWorkspaceRef.current = nextWorkspace;
+      comparisonActiveRef.current = false;
+      comparisonSeriesIdsRef.current = new Set();
+      comparisonNormalStylesRef.current.clear();
+      comparisonNormalScaleRef.current = null;
+      marketKeyRef.current = `${symbol}|${timeframe}`;
+      publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35));
+      if (comparisonStateRef.current?.active === true) queueMicrotask(() => applyComparisonRef.current(comparisonStateRef.current));
+      onNotice(`${panel.panelId}: loaded ${symbol} at ${timeframe}; symbol-scoped drawings were restored only when previously saved.`);
+    }
     catch (error) { onNotice(`Could not change ${panel.panelId}: ${error instanceof Error ? error.message : String(error)}`); }
-  }, [onNotice, panel.panelId, publish]);
+  }, [onNotice, panel.panelId, publish, serializeCanonicalWorkspace]);
 
   const restoreWorkspace = useCallback((document: WorkspaceDocument): void => {
     const target = chartRef.current;
     if (target === null) return;
-    try { target.restoreWorkspace(document); publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35)); }
+    try {
+      const canonical = withoutComparisonSeries(document);
+      target.restoreWorkspace(canonical);
+      canonicalWorkspaceRef.current = canonical;
+      comparisonActiveRef.current = false;
+      comparisonSeriesIdsRef.current = new Set();
+      comparisonNormalStylesRef.current.clear();
+      comparisonNormalScaleRef.current = null;
+      publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
+      if (comparisonStateRef.current?.active === true) queueMicrotask(() => applyComparisonRef.current(comparisonStateRef.current));
+    }
     catch (error) { onNotice(`Could not restore ${panel.panelId}: ${error instanceof Error ? error.message : String(error)}`); }
   }, [onNotice, panel.panelId, publish]);
 
@@ -327,6 +379,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     if (target === null || !initializedRef.current || replayRef.current !== null) return;
     if (next?.active === true) {
       if (!comparisonActiveRef.current) {
+        canonicalWorkspaceRef.current = withoutComparisonSeries(target.serializeWorkspace());
         comparisonNormalStylesRef.current.clear();
         const existingComparisonIds = new Set(target.getSeriesIds().filter((id) => id.startsWith("comparison-")));
         comparisonSeriesIdsRef.current = existingComparisonIds;
@@ -378,7 +431,10 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     comparisonNormalStylesRef.current.clear();
     comparisonNormalScaleRef.current = null;
     comparisonActiveRef.current = false;
+    canonicalWorkspaceRef.current = withoutComparisonSeries(target.serializeWorkspace());
   }, []);
+
+  applyComparisonRef.current = applyComparison;
 
   useEffect(() => {
     applyComparison(comparison);
@@ -409,6 +465,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
 
   useImperativeHandle(ref, () => ({
     getChart: () => chartRef.current,
+    serializeWorkspace: serializeCanonicalWorkspace,
     refresh: () => publish(),
     getSnapshot: () => snapshot,
     replaceMarketData,
@@ -417,7 +474,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     replayCommand: (command) => { if (replayRef.current !== null) command(replayRef.current); },
     exitReplay,
     setReplayStartIndex: (index) => setSnapshot((current) => ({ ...current, replayStartIndex: index })),
-  }), [enterReplay, exitReplay, publish, replaceMarketData, restoreWorkspace, snapshot]);
+  }), [enterReplay, exitReplay, publish, replaceMarketData, restoreWorkspace, serializeCanonicalWorkspace, snapshot]);
 
   useEffect(() => {
     const nextKey = panelKey(panel);
@@ -503,6 +560,7 @@ export default function MultiChartStudioClient() {
   const [marginBottom, setMarginBottom] = useState(0.08);
   const timeZone = "UTC";
   const [interaction, setInteraction] = useState({ wheelZoom: true, pointerPan: true, crosshair: true, keyboardShortcuts: true });
+  const replayWasActiveRef = useRef(false);
   const [snapEnabled, setSnapEnabled] = useState(false);
   const [alertName, setAlertName] = useState("Close crosses threshold");
   const alertNameInputRef = useRef<HTMLInputElement>(null);
@@ -680,7 +738,7 @@ export default function MultiChartStudioClient() {
     setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
   };
 
-  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.getChart()?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings }), [comparisonSettings, layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
+  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings }), [comparisonSettings, layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
 
   const persist = useCallback((document: StudioWorkspaceDocument, all: readonly StudioWorkspaceDocument[]): void => {
     try { window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: document.id, workspaces: all })); const activeChart = document.charts[0]?.workspace; if (activeChart !== undefined) window.localStorage.setItem(LEGACY_WORKSPACE_KEY, JSON.stringify(activeChart)); setNotice(`Workspace “${document.name}” saved locally.`); }
@@ -701,7 +759,7 @@ export default function MultiChartStudioClient() {
   const changeLayout = (nextLayout: StudioLayout): void => {
     const desired = chartCount(nextLayout);
     const next = [...panels];
-    while (next.length > desired) { const removed = next.pop(); if (removed !== undefined) archivedPanelsRef.current.set(removed.panelId, { panel: removed, workspace: panelRefs.current.get(removed.panelId)?.getChart()?.serializeWorkspace({ symbol: removed.symbol, timeframe: removed.timeframe }) }); }
+    while (next.length > desired) { const removed = next.pop(); if (removed !== undefined) archivedPanelsRef.current.set(removed.panelId, { panel: removed, workspace: panelRefs.current.get(removed.panelId)?.serializeWorkspace({ symbol: removed.symbol, timeframe: removed.timeframe }) }); }
     while (next.length < desired) { const archived = [...archivedPanelsRef.current.values()][0]; if (archived !== undefined) { next.push(archived.panel); archivedPanelsRef.current.delete(archived.panel.panelId); } else { const panelId = `chart-${serialRef.current++}`; next.push({ panelId, symbol: next[0]?.symbol ?? "BTC-USD", timeframe: next[0]?.timeframe ?? "1h" }); } }
     setPanels(next);
     setLayout(nextLayout);
@@ -717,7 +775,17 @@ export default function MultiChartStudioClient() {
 
   useEffect(() => { if (scaleMode !== "linear") setNotice(`${scaleModes.find(([mode]) => mode === scaleMode)?.[1] ?? scaleMode} price scale applied without changing financial data.`); }, [scaleMode]);
   useEffect(() => { if (theme !== "dark") setNotice("Light theme applied without recreating the chart."); }, [theme]);
-  useEffect(() => { if (!replayActive) { setPresentation("candles"); setScaleMode("linear"); activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" }); } }, [replayActive]);
+  useEffect(() => {
+    if (replayActive) {
+      replayWasActiveRef.current = true;
+      return;
+    }
+    if (!replayWasActiveRef.current) return;
+    replayWasActiveRef.current = false;
+    setPresentation("candles");
+    setScaleMode("linear");
+    activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" });
+  }, [activeHandle, replayActive]);
   const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
   const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { const period = indicatorPeriodOverride.trim() === "" ? undefined : Number(indicatorPeriodOverride); const constant = indicatorConstant.trim() === "" ? undefined : Number(indicatorConstant); const multiplier = indicatorMultiplier.trim() === "" ? undefined : Number(indicatorMultiplier); target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd, { period, constant, multiplier }) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };

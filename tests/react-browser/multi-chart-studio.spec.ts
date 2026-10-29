@@ -174,6 +174,60 @@ test("Studio comparison mode preserves presentation state, normalizes assets, an
   expect(errors).toEqual([]);
 });
 
+test("Studio reload restores canonical presentation after saving while comparison is active", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+  await expect(page.locator('[data-panel-id="chart-1"] canvas')).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Line", exact: true }).click();
+  await page.getByLabel("Price scale").selectOption("logarithmic");
+  await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Price scale")).toHaveValue("logarithmic");
+
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await page.getByLabel("Comparison normalization").selectOption("percentage");
+  await page.getByLabel("Compare AAPL").check();
+  await page.getByLabel("Workspace name").fill("Comparison Reload Verification");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+
+  const savedWhileActive = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+    workspaces: Array<{ name: string; charts: Array<{ workspace: { chart: { priceScale?: { mode?: string }; }; series: Array<{ id: string; style: { visible?: boolean }; data: Array<Record<string, unknown>> }>; indicators: unknown[]; } }>; comparison?: { active: boolean; mode: string; assetIds: string[] } }>;
+  });
+  const activeDocument = savedWhileActive.workspaces.find((workspace) => workspace.name === "Comparison Reload Verification");
+  expect(activeDocument).toMatchObject({ comparison: { active: true, mode: "percentage", assetIds: ["BTC-USD", "ETH-USD", "AAPL"] } });
+  expect(activeDocument?.charts[0]?.workspace.series.some((series) => series.id.startsWith("comparison-"))).toBe(false);
+  expect(activeDocument?.charts[0]?.workspace.series.find((series) => series.id === "studio-line")).toMatchObject({ style: { visible: true } });
+  expect(activeDocument?.charts[0]?.workspace.chart.priceScale?.mode).toBe("logarithmic");
+  expect(activeDocument?.charts[0]?.workspace.series).toHaveLength(8);
+  expect(activeDocument?.charts[0]?.workspace.series.find((series) => series.id === "studio-price")?.data).toHaveLength(240);
+  expect(activeDocument?.charts[0]?.workspace.series.find((series) => series.id === "studio-price")?.data[0]).toMatchObject({ open: expect.any(Number), high: expect.any(Number), low: expect.any(Number), close: expect.any(Number) });
+  expect(activeDocument?.charts[0]?.workspace.indicators).toHaveLength(2);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Comparison mode", exact: true })).toHaveText("Exit comparison");
+  await expect(page.getByLabel("Comparison normalization")).toHaveValue("percentage");
+  await expect(page.getByLabel("Compare AAPL")).toBeChecked();
+  await expect(page.getByLabel("Price scale")).toHaveValue("logarithmic");
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Price scale")).toHaveValue("logarithmic");
+  await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const savedAfterExit = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+    workspaces: Array<{ name: string; charts: Array<{ workspace: { series: Array<{ id: string; style: { visible?: boolean } }>; chart: { priceScale?: { mode?: string } } } }> }>;
+  });
+  const restoredDocument = savedAfterExit.workspaces.find((workspace) => workspace.name === "Comparison Reload Verification");
+  expect(restoredDocument?.charts[0]?.workspace.series.some((series) => series.id.startsWith("comparison-"))).toBe(false);
+  expect(restoredDocument?.charts[0]?.workspace.series.find((series) => series.id === "studio-line")).toMatchObject({ style: { visible: true } });
+  expect(restoredDocument?.charts[0]?.workspace.chart.priceScale?.mode).toBe("logarithmic");
+  expect(errors).toEqual([]);
+});
+
 test("mobile multi-chart Studio switches the visible panel through the accessible selector", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
