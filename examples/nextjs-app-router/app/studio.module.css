@@ -14,6 +14,8 @@
 .comparisonControls select { min-width: 12rem; }
 .comparisonAssets { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; margin: 0; border: 1px solid var(--border); border-radius: .35rem; padding: .45rem .6rem; }
 .comparisonAssets legend { padding-inline: .25rem; color: var(--muted); font-size: .72rem; }
+.comparisonStatus { display: grid; gap: .2rem; color: var(--muted); font-size: .74rem; }
+.comparisonStatus > div { display: flex; gap: .45rem; flex-wrap: wrap; }
 .comparisonLegend { display: flex; gap: .75rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: .76rem; }
 .comparisonLegend li { display: inline-flex; align-items: center; gap: .3rem; }
 .comparisonLegend li > span { width: .65rem; height: .65rem; border-radius: 50%; }

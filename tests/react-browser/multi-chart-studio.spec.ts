@@ -165,6 +165,30 @@ test("Studio comparison mode preserves presentation state, normalizes assets, an
   await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("AAPL");
   await expect(page.getByText(/No future bar is used/)).toBeVisible();
 
+  const comparisonStatus = page.locator('[data-comparison-feed-status="ready"]');
+  await page.getByRole("button", { name: "Simulate realtime correction", exact: true }).click();
+  await expect(page.getByText(/Simulated a deterministic realtime correction/)).toBeVisible();
+  await page.getByRole("button", { name: "Simulate missing history", exact: true }).click();
+  await expect(page.getByText(/Simulated a missing BTC-USD observation/)).toBeVisible();
+  await expect(comparisonStatus).toContainText("coverage incomplete");
+  await page.getByRole("button", { name: "Recover missing history", exact: true }).click();
+  await expect(page.getByText("Comparison history recovery completed.", { exact: true })).toBeVisible();
+  await expect(comparisonStatus).toContainText("coverage complete");
+
+  await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Exit replay", exact: true })).toBeEnabled();
+  const replayCutoff = Number(await comparisonStatus.getAttribute("data-comparison-replay-cutoff"));
+  const replayLatest = Number(await comparisonStatus.getAttribute("data-comparison-visible-latest"));
+  expect(Number.isFinite(replayCutoff)).toBe(true);
+  expect(Number.isFinite(replayLatest)).toBe(true);
+  expect(replayLatest).toBeLessThanOrEqual(replayCutoff);
+  await page.getByRole("button", { name: "Replay previous bar", exact: true }).click();
+  await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
+  await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Enter replay", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Line", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
+
   await page.getByLabel("Workspace name").fill("Comparison Verification");
   await page.getByRole("button", { name: "Save As", exact: true }).click();
   const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as { workspaces: Array<{ name: string; comparison?: { active: boolean; mode: string; assetIds: string[] } }> });

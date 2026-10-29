@@ -43,7 +43,7 @@ test("generic WebSocket and optional Binance adapters normalize injected fixture
   await page.goto("/examples/vanilla/binance-datafeed.html?fixture=1");
   await page.waitForFunction(() => Boolean((globalThis as { __openklineBinanceFixture?: unknown }).__openklineBinanceFixture));
   const binance = await page.evaluate(async () => {
-    const state = (globalThis as unknown as { __openklineBinanceFixture: { datafeed: { resolveSymbol(symbol: string): Promise<{ exchange?: string }>; getBars(query: object): Promise<Array<{ time: number; close: number }>>; subscribeBars(args: object): () => void }; socket: { open(): void; message(data: string): void }; bars: Array<Array<string | number>> } }).__openklineBinanceFixture;
+    const state = (globalThis as unknown as { __openklineBinanceFixture: { datafeed: { resolveSymbol(symbol: string): Promise<{ exchange?: string }>; getBars(query: object): Promise<Array<{ time: number; close: number }>>; subscribeBars(args: object): () => void }; socket: { open(): void; message(data: string): void }; bars: Array<Array<string | number>>; requests: number[] } }).__openklineBinanceFixture;
     const symbol = await state.datafeed.resolveSymbol("BTCUSDT");
     const bars = await state.datafeed.getBars({ symbol: "BTCUSDT", timeframe: "1m", from: 0, to: 2_000 });
     const received: number[] = [];
@@ -51,9 +51,12 @@ test("generic WebSocket and optional Binance adapters normalize injected fixture
     state.socket.open();
     state.socket.message(JSON.stringify({ s: "BTCUSDT", k: { t: 1_000, o: "101", h: "103", l: "100", c: "102", v: "44", i: "1m" } }));
     unsubscribe();
-    return { exchange: symbol.exchange, bars: bars.map((bar) => [bar.time, bar.close]), received };
+    return { exchange: symbol.exchange, count: bars.length, first: [bars[0]?.time, bars[0]?.close], last: [bars.at(-1)?.time, bars.at(-1)?.close], requests: state.requests, received };
   });
   expect(binance.exchange).toBe("BINANCE");
-  expect(binance.bars).toEqual([[0, 101], [1_000, 102]]);
+  expect(binance.count).toBe(1_001);
+  expect(binance.first).toEqual([0, 101]);
+  expect(binance.last).toEqual([1_000, 1_101]);
+  expect(binance.requests).toEqual([0, 1_000]);
   expect(binance.received).toEqual([102]);
 });

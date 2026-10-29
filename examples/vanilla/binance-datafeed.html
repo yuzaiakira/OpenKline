@@ -47,16 +47,22 @@
           message(data) { this.onmessage?.({ data }); }
         }
         let socket;
-        const fixtureBars = [[0, "100", "102", "99", "101", "40"], [1000, "101", "103", "100", "102", "44"]];
+        const fixtureBars = Array.from({ length: 1001 }, (_, index) => [index, String(100 + index), String(102 + index), String(99 + index), String(101 + index), String(40 + index)]);
+        const requests = [];
         const datafeed = createBinanceDatafeed({
           symbol: "BTCUSDT",
           interval: "1m",
           restBaseUrl: "https://binance.example.invalid",
           wsBaseUrl: "wss://binance.example.invalid/ws",
-          fetcher: async () => new Response(JSON.stringify(fixtureBars), { status: 200 }),
+          fetcher: async (input) => {
+            const startTime = Number(new URL(input).searchParams.get("startTime") ?? 0);
+            requests.push(startTime);
+            const page = startTime === 0 ? fixtureBars.slice(0, 1000) : fixtureBars.slice(1000);
+            return new Response(JSON.stringify(page), { status: 200 });
+          },
           createSocket: () => { socket = new FixtureSocket(); return socket; },
         });
-        globalThis.__openklineBinanceFixture = { datafeed, get socket() { return socket; }, bars: fixtureBars };
+        globalThis.__openklineBinanceFixture = { datafeed, get socket() { return socket; }, bars: fixtureBars, requests };
       }
     </script>
   </body>

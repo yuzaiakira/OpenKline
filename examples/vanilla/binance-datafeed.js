@@ -3,6 +3,7 @@ import { WebSocketDatafeed } from "../../dist/src/index.js";
 
 const DEFAULT_REST_BASE = "https://api.binance.com";
 const DEFAULT_WS_BASE = "wss://stream.binance.com:9443/ws";
+const BINANCE_INTERVALS = new Set(["1s", "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]);
 
 /** Normalize one Binance REST kline array without exposing Binance to the core package. */
 export function normalizeBinanceKline(value) {
@@ -17,6 +18,7 @@ export function normalizeBinanceKline(value) {
 /** Create an opt-in public Binance adapter for the standalone example only. */
 export function createBinanceDatafeed({ symbol = "BTCUSDT", interval = "1m", restBaseUrl = DEFAULT_REST_BASE, wsBaseUrl = DEFAULT_WS_BASE, fetcher = fetch, createSocket } = {}) {
   const normalizedSymbol = symbol.toUpperCase();
+  if (!BINANCE_INTERVALS.has(interval)) throw new Error(`Unsupported Binance interval: ${interval}`);
   const info = { symbol: normalizedSymbol, exchange: "BINANCE", currency: normalizedSymbol.endsWith("USDT") ? "USDT" : undefined, timezone: "UTC", pricePrecision: 8 };
   const symbols = { [normalizedSymbol]: info };
   const historical = {
@@ -26,18 +28,30 @@ export function createBinanceDatafeed({ symbol = "BTCUSDT", interval = "1m", res
       return { ...info };
     },
     async getBars(query) {
-      const url = new URL("/api/v3/klines", restBaseUrl);
-      url.searchParams.set("symbol", normalizedSymbol);
-      url.searchParams.set("interval", interval);
-      url.searchParams.set("startTime", String(query.from));
-      url.searchParams.set("endTime", String(query.to));
-      url.searchParams.set("limit", "1000");
-      const response = await fetcher(url.href, query.signal === undefined ? {} : { signal: query.signal });
-      if (!response.ok) throw new Error(`Binance REST request failed: ${response.status}`);
-      const payload = await response.json();
-      if (!Array.isArray(payload)) throw new Error("Binance REST response must be an array");
+      if (query.timeframe !== interval) throw new Error(`Binance adapter is configured for ${interval}, received ${query.timeframe}`);
+      if (!Number.isFinite(query.from) || !Number.isFinite(query.to) || query.to < query.from) throw new Error("Binance bar query requires a finite ascending time range");
+      const byTime = new Map();
+      let startTime = query.from;
+      for (let page = 0; page < 100 && startTime < query.to; page += 1) {
+        if (query.signal?.aborted) throw abortError();
+        const url = new URL("/api/v3/klines", restBaseUrl);
+        url.searchParams.set("symbol", normalizedSymbol);
+        url.searchParams.set("interval", interval);
+        url.searchParams.set("startTime", String(startTime));
+        url.searchParams.set("endTime", String(query.to));
+        url.searchParams.set("limit", "1000");
+        const response = await fetcher(url.href, query.signal === undefined ? {} : { signal: query.signal });
+        if (!response.ok) throw new Error(`Binance REST request failed: ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload)) throw new Error("Binance REST response must be an array");
+        const pageBars = payload.map(normalizeBinanceKline);
+        for (const bar of pageBars) byTime.set(bar.time, bar);
+        const last = pageBars.at(-1);
+        if (last === undefined || pageBars.length < 1000 || last.time < startTime || last.time >= query.to) break;
+        startTime = last.time + 1;
+      }
       const store = new CandleStore();
-      store.setData(payload.map(normalizeBinanceKline));
+      store.setData([...byTime.values()].sort((left, right) => left.time - right.time));
       return store.getAll().filter((candle) => candle.time >= query.from && candle.time < query.to);
     },
   };
@@ -54,4 +68,10 @@ export function createBinanceDatafeed({ symbol = "BTCUSDT", interval = "1m", res
       return { symbol: normalizedSymbol, timeframe: interval, candle: { time: Number(kline.t), open: Number(kline.o), high: Number(kline.h), low: Number(kline.l), close: Number(kline.c), volume: Number(kline.v) } };
     },
   });
+}
+
+function abortError() {
+  const error = new Error("The operation was aborted");
+  error.name = "AbortError";
+  return error;
 }

@@ -62,6 +62,18 @@ test("Studio comparison state is optional, validated, and round-trips without ch
     baselineMaxAgeMs: 3_600_000,
     assetIds: ["BTC-USD", "ETH-USD"],
   });
+  const providerComparison = parseStudioWorkspace({
+    ...legacy,
+    comparison: {
+      active: true,
+      mode: "percentage",
+      baselineTime: null,
+      baselineMaxAgeMs: 0,
+      assetIds: ["BTC-USD"],
+      dataSource: "binance",
+    },
+  });
+  assert.equal(providerComparison.comparison?.dataSource, "binance");
   assert.throws(() => parseStudioWorkspace({ ...legacy, comparison: { active: true, mode: "indexed", baselineTime: null, baselineMaxAgeMs: 0, assetIds: ["BTC-USD", "BTC-USD"] } }), /duplicate/);
 });
 
