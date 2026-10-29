@@ -5,6 +5,7 @@ Run the deterministic model and browser measurements with:
 ```bash
 npm run benchmark
 npm run benchmark:browser
+npm run benchmark:multi-chart
 npm run benchmark:replay
 npm run benchmark:alerts
 npm run profile:browser
@@ -55,6 +56,15 @@ explicit GC opportunity, not a leak proof or a memory limit. The result is a
 DOM/lifecycle smoke benchmark, not an FPS target or a cross-browser claim; run
 it separately from `benchmark:browser` when comparing chart-engine frame
 performance.
+
+`benchmark:multi-chart` uses two real core Chart instances and the public
+`ChartSynchronizationController`. It measures a single 100,000-candle setup,
+two 10,000-candle charts, and two 100,000-candle charts when the environment
+has sufficient resources. It reports UTC crosshair and visible-range
+forwarding latency, ten repeated two-chart mount/unmount rounds, heap
+observations, and owned canvas cleanup. Dual-chart latency includes target
+range application and Canvas2D rendering; it is not an FPS guarantee and must
+not be compared directly with the single-chart append benchmark.
 
 `benchmark:plugins` is a deterministic Node microbenchmark for registry
 activation/command/disposal, a 100,000-candle indicator initialization path,

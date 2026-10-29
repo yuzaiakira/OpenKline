@@ -832,3 +832,36 @@ product behavior.
 - [Open / Scope] No licensing, publication, release, GitHub Actions, or merge
   action is authorized by this increment. See
   `docs/reports/phase-8-11-verification.md`.
+
+## Phase 8.12 multi-chart workspace and synchronization
+
+Phase 8.12 is **implemented on `phase-8.12-multi-chart`; local verification is
+complete, while managed cross-browser and device gates remain open**. The
+increment adds an opt-in public `ChartSynchronizationController` that matches
+crosshairs and visible UTC ranges across independently configured Chart
+instances, including different intervals and missing timestamps. It includes
+reentrancy guards, target deduplication, data/replay invalidation, lifecycle
+cleanup, deterministic browser coverage, and a dual-chart benchmark.
+
+- [Implemented / Verified locally] Public synchronization API, UTC crosshair
+  matching, visible-range propagation, chart add/remove/destroy handling, and
+  independent channel options pass Node and Chromium regression tests.
+- [Implemented / Verified locally] The private Next.js Studio reference
+  consumer supports independent chart panels, desktop/mobile layouts, panel
+  removal, crosshair/range synchronization, and workspace state without
+  moving Studio dependencies into the core package.
+- [Verified locally] Node tests pass 190/190; standalone Chromium passes
+  21/21; React/Studio Chromium passes 28/28; API, package, distribution,
+  separation, stress, and benchmark checks pass. Single-chart 100k measured
+  62.77 FPS with zero canvases after destruction in this environment.
+- [Measured / No universal claim] Dual 10k and dual 100k synchronization
+  benchmarks pass and report latency observations. The larger dual timings
+  include Canvas2D target rendering and are not a new release threshold.
+- [Open / Environment] Official managed Firefox, WebKit, Mobile Chrome, and
+  Mobile Safari artifacts remain unavailable because the supported registry
+  path returned `Forbidden`. No cross-browser compatibility or physical-device
+  claim is made. See
+  `docs/reports/phase-8-12-multi-chart-verification.md`.
+- [Open / Scope] No merge, npm publication, release, licensing change, or
+  GitHub Actions workflow was performed. Phase 8.12 remains open until the
+  unresolved verification gates are independently evidenced.

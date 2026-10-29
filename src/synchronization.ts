@@ -1,0 +1,218 @@
+export interface ChartSynchronizationRange {
+  readonly from: number;
+  readonly to: number;
+}
+
+export interface ChartSynchronizationCrosshairEvent {
+  readonly time: number | null;
+}
+
+export interface ChartSynchronizationTarget {
+  subscribe(name: "crosshairMove", handler: (event: ChartSynchronizationCrosshairEvent) => void): () => void;
+  subscribe(name: "viewportChange", handler: (range: ChartSynchronizationRange) => void): () => void;
+  subscribe(name: "chartDestroy", handler: (event: { readonly timestamp: number }) => void): () => void;
+  subscribe(name: "dataUpdated", handler: (event: unknown) => void): () => void;
+  subscribe(name: "replayChange", handler: (event: unknown) => void): () => void;
+  setCrosshairAtTime(time: number | null): number | null;
+  setVisibleTimeRange(range: ChartSynchronizationRange): void;
+  getVisibleTimeRange(): { readonly from: number | null; readonly to: number | null };
+}
+
+export interface ChartSynchronizationOptions {
+  readonly enabled?: boolean;
+  readonly crosshair?: boolean;
+  readonly visibleRange?: boolean;
+}
+
+export interface ChartSynchronizationResolvedOptions {
+  readonly enabled: boolean;
+  readonly crosshair: boolean;
+  readonly visibleRange: boolean;
+}
+
+interface ChartRegistration {
+  readonly target: ChartSynchronizationTarget;
+  readonly unsubscribe: () => void;
+}
+
+const DEFAULT_OPTIONS: ChartSynchronizationResolvedOptions = {
+  enabled: true,
+  crosshair: false,
+  visibleRange: false,
+};
+
+/**
+ * Opt-in synchronization for independent Chart instances.
+ *
+ * The controller forwards UTC coordinates through the public Chart contract.
+ * Target charts remain responsible for nearest-bar matching, replay limits,
+ * range clamping, price scales, and rendering. No OHLCV data is shared.
+ */
+export class ChartSynchronizationController {
+  private readonly charts = new Map<string, ChartRegistration>();
+  private readonly lastCrosshair = new Map<string, number | null>();
+  private readonly lastVisibleRange = new Map<string, ChartSynchronizationRange>();
+  private options: ChartSynchronizationResolvedOptions;
+  private crosshairPropagation = false;
+  private visibleRangePropagation = false;
+  private destroyed = false;
+
+  public constructor(options: ChartSynchronizationOptions = {}) {
+    this.options = resolveOptions(options);
+  }
+
+  /** Register a chart and return an idempotent unregister function. */
+  public addChart(id: string, target: ChartSynchronizationTarget): () => void {
+    this.assertUsable();
+    const normalizedId = validateId(id);
+    if (this.charts.has(normalizedId)) throw new Error(`A synchronization chart is already registered: ${normalizedId}`);
+
+    const remove = (): void => {
+      this.removeChart(normalizedId);
+    };
+    const unsubscribeCrosshair = target.subscribe("crosshairMove", (event) => {
+      this.syncCrosshair(normalizedId, event.time);
+    });
+    const unsubscribeVisibleRange = target.subscribe("viewportChange", () => {
+      const range = target.getVisibleTimeRange();
+      if (range.from !== null && range.to !== null) this.syncVisibleRange(normalizedId, { from: range.from, to: range.to });
+    });
+    const unsubscribeDestroy = target.subscribe("chartDestroy", remove);
+    const unsubscribeData = target.subscribe("dataUpdated", () => this.clearTargetCache(normalizedId));
+    const unsubscribeReplay = target.subscribe("replayChange", () => this.clearTargetCache(normalizedId));
+    const registration: ChartRegistration = {
+      target,
+      unsubscribe: () => {
+        unsubscribeCrosshair();
+        unsubscribeVisibleRange();
+        unsubscribeDestroy();
+        unsubscribeData();
+        unsubscribeReplay();
+      },
+    };
+    this.charts.set(normalizedId, registration);
+    return remove;
+  }
+
+  /** Remove one chart and all listeners owned by the controller. */
+  public removeChart(id: string): boolean {
+    const normalizedId = validateId(id);
+    const registration = this.charts.get(normalizedId);
+    if (registration === undefined) return false;
+    this.charts.delete(normalizedId);
+    registration.unsubscribe();
+    this.clearTargetCache(normalizedId);
+    return true;
+  }
+
+  public hasChart(id: string): boolean {
+    return this.charts.has(validateId(id));
+  }
+
+  public getChartIds(): string[] {
+    return [...this.charts.keys()];
+  }
+
+  public getOptions(): ChartSynchronizationResolvedOptions {
+    return { ...this.options };
+  }
+
+  public setOptions(options: ChartSynchronizationOptions): void {
+    this.assertUsable();
+    this.options = resolveOptions({ ...this.options, ...options });
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.setOptions({ enabled: validateBoolean(enabled, "enabled") });
+  }
+
+  public setCrosshairEnabled(enabled: boolean): void {
+    this.setOptions({ crosshair: validateBoolean(enabled, "crosshair") });
+  }
+
+  public setVisibleRangeEnabled(enabled: boolean): void {
+    this.setOptions({ visibleRange: validateBoolean(enabled, "visibleRange") });
+  }
+
+  /** Explicitly forward a UTC crosshair time from a registered source chart. */
+  public syncCrosshair(sourceChartId: string, time: number | null): void {
+    this.assertUsable();
+    const sourceId = validateId(sourceChartId);
+    if (!this.options.enabled || !this.options.crosshair || this.crosshairPropagation || !this.charts.has(sourceId)) return;
+    if (time !== null && !Number.isFinite(time)) throw new Error("Synchronization crosshair time must be finite or null");
+    this.crosshairPropagation = true;
+    try {
+      for (const [targetId, registration] of this.charts) {
+        if (targetId === sourceId || this.lastCrosshair.get(targetId) === time) continue;
+        this.lastCrosshair.set(targetId, time);
+        registration.target.setCrosshairAtTime(time);
+      }
+    } finally {
+      this.crosshairPropagation = false;
+    }
+  }
+
+  /** Explicitly forward UTC visible boundaries from a registered source chart. */
+  public syncVisibleRange(sourceChartId: string, range: ChartSynchronizationRange): void {
+    this.assertUsable();
+    const sourceId = validateId(sourceChartId);
+    validateRange(range);
+    if (!this.options.enabled || !this.options.visibleRange || this.visibleRangePropagation || !this.charts.has(sourceId)) return;
+    this.visibleRangePropagation = true;
+    try {
+      for (const [targetId, registration] of this.charts) {
+        if (targetId === sourceId || rangesEqual(this.lastVisibleRange.get(targetId), range)) continue;
+        this.lastVisibleRange.set(targetId, { from: range.from, to: range.to });
+        registration.target.setVisibleTimeRange(range);
+      }
+    } finally {
+      this.visibleRangePropagation = false;
+    }
+  }
+
+  /** Dispose all registrations. Reuse requires constructing a new controller. */
+  public destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    for (const id of [...this.charts.keys()]) this.removeChart(id);
+    this.lastCrosshair.clear();
+    this.lastVisibleRange.clear();
+  }
+
+  private clearTargetCache(id: string): void {
+    this.lastCrosshair.delete(id);
+    this.lastVisibleRange.delete(id);
+  }
+
+  private assertUsable(): void {
+    if (this.destroyed) throw new Error("Chart synchronization controller has been destroyed");
+  }
+}
+
+function resolveOptions(options: ChartSynchronizationOptions): ChartSynchronizationResolvedOptions {
+  return {
+    enabled: options.enabled === undefined ? DEFAULT_OPTIONS.enabled : validateBoolean(options.enabled, "enabled"),
+    crosshair: options.crosshair === undefined ? DEFAULT_OPTIONS.crosshair : validateBoolean(options.crosshair, "crosshair"),
+    visibleRange: options.visibleRange === undefined ? DEFAULT_OPTIONS.visibleRange : validateBoolean(options.visibleRange, "visibleRange"),
+  };
+}
+
+function validateId(id: string): string {
+  if (typeof id !== "string" || id.trim().length === 0) throw new Error("Synchronization chart id must be a non-empty string");
+  return id;
+}
+
+function validateBoolean(value: boolean, label: string): boolean {
+  if (typeof value !== "boolean") throw new Error(`Synchronization ${label} must be boolean`);
+  return value;
+}
+
+function validateRange(range: ChartSynchronizationRange): void {
+  if (!Number.isFinite(range.from) || !Number.isFinite(range.to) || range.from > range.to) {
+    throw new Error("Synchronization visible range must contain finite ascending boundaries");
+  }
+}
+
+function rangesEqual(left: ChartSynchronizationRange | undefined, right: ChartSynchronizationRange): boolean {
+  return left?.from === right.from && left.to === right.to;
+}
