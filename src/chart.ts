@@ -1496,7 +1496,12 @@ export class Chart {
     if (!this.interaction.wheelZoom) return;
     event.preventDefault();
     const factor = event.deltaY < 0 ? 0.8 : 1.25;
-    this.model.zoom(factor, event.offsetX / Math.max(this.width, 1));
+    const primary = this.getPrimaryScaleContext();
+    const plotLeft = primary?.bounds.left ?? 0;
+    const plotWidth = primary === null || primary === undefined ? this.width : primary.bounds.right - primary.bounds.left;
+    const visualAnchor = (event.offsetX - plotLeft) / Math.max(plotWidth, 1);
+    const logicalAnchor = this.direction === "rtl" ? 1 - visualAnchor : visualAnchor;
+    this.model.zoom(factor, logicalAnchor);
     this.emitViewportChange();
     this.render();
   };

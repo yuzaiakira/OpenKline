@@ -28,8 +28,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 1_200, height: 720 } });
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  // Isolated blank document — avoid the vanilla example's pre-mounted chart canvas.
-  await page.goto("http://127.0.0.1:4173/examples/vanilla/offline-data.html");
+  // Start with an isolated blank document on the local origin. Commit the
+  // navigation before replacing the document so dynamic imports retain a
+  // valid same-origin base URL without running the example's module script.
+  await page.goto("http://127.0.0.1:4173/examples/vanilla/index.html", { waitUntil: "commit" });
   await page.setContent(`<!doctype html><html><body></body></html>`, { waitUntil: "domcontentloaded" });
 
   const report = await page.evaluate(async ({ profile }) => {

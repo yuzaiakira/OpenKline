@@ -806,3 +806,29 @@ Studio compatibility gates remain open**.
   scope. License activation and publication remain unauthorized. See
   `docs/reports/phase-8-8-21-distribution-scope-decision.md` and
   `docs/reports/phase-8-8-21-release-gate-matrix.md`.
+
+## Phase 8.11 chart UX and interaction quality
+
+Phase 8.11 is **implemented on a reviewable feature branch; cross-browser and
+device gates remain open**. The consolidated `main` baseline was verified at
+`4325884b9b3364201cb28ab9adbf652bcbeffbf4`. A core RTL wheel-zoom anchor bug
+was reproduced, fixed in `Chart`, and covered by a focused browser regression.
+The Phase 8.10 browser stress harness race was also corrected without changing
+product behavior.
+
+- [Implemented / Verified locally] RTL wheel zoom derives its anchor from the
+  primary plot bounds and maps visual coordinates to logical RTL time. The
+  focused regression and full system-Chromium standalone suite pass.
+- [Implemented / Verified locally] The cloud environment passes TypeScript,
+  Node, API, package, distribution, Next.js/Studio separation, React/Studio,
+  stress, and benchmark checks. The measured cloud Chromium result is about
+  62.47 FPS at 100,000 candles with zero canvases after destruction; it is not
+  treated as equivalent to the prior Manjaro benchmark.
+- [Open / Environment] Official managed Firefox, WebKit, Mobile Safari,
+  physical-device, and formal assistive-technology verification remain open.
+  The pinned Playwright Docker image could not be pulled because the cloud
+  registry returned `Forbidden`; no browser compatibility claim is made for
+  those surfaces.
+- [Open / Scope] No licensing, publication, release, GitHub Actions, or merge
+  action is authorized by this increment. See
+  `docs/reports/phase-8-11-verification.md`.
