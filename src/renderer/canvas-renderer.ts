@@ -77,6 +77,16 @@ export function getPlotBounds(width: number, height: number, hasVolume = false):
 }
 
 export class CanvasRenderer {
+  private overlayState: {
+    data: VisibleChartData;
+    size: RenderSize;
+    theme: ChartTheme;
+    options: RenderOptions;
+    panes: PaneBounds[];
+    timeScale: TimeScale;
+    scales: Map<string, PriceScale>;
+  } | null = null;
+
   public constructor(private readonly canvas: HTMLCanvasElement) {}
 
   public render(
@@ -96,7 +106,10 @@ export class CanvasRenderer {
     context.clearRect(0, 0, width, height);
     context.fillStyle = theme.background;
     context.fillRect(0, 0, width, height);
-    if (data.times.length === 0 || width <= 0 || height <= 0) return;
+    if (data.times.length === 0 || width <= 0 || height <= 0) {
+      this.overlayState = null;
+      return;
+    }
 
     const panes = getPaneBounds(width, height, data.panes);
     const timeScale = new TimeScale(data.times, { start: panes[0]?.left ?? 68, end: panes[0]?.right ?? width - 12 }, options.direction);
@@ -153,10 +166,19 @@ export class CanvasRenderer {
     }
     const lastPane = panes[panes.length - 1];
     if (lastPane !== undefined) this.drawTimeLabels(context, data.times, timeScale, lastPane.bottom, theme, options);
-    if (crosshair !== null) {
-      this.drawCrosshair(context, crosshair, panes, theme);
-      this.drawTooltip(context, data, timeScale, crosshair, panes, scales, theme, options);
-    }
+    this.overlayState = { data, size, theme, options, panes, timeScale, scales };
+    if (crosshair !== null) this.renderCrosshair(crosshair);
+  }
+
+  /** Draw only the transient crosshair layer over an already rendered frame. */
+  public renderCrosshair(crosshair: { x: number; y: number } | null): void {
+    if (crosshair === null || this.overlayState === null) return;
+    const { data, size, theme, options, panes, timeScale, scales } = this.overlayState;
+    const context = this.canvas.getContext("2d");
+    if (context === null) throw new Error("CanvasRenderingContext2D is unavailable");
+    context.setTransform(size.devicePixelRatio, 0, 0, size.devicePixelRatio, 0, 0);
+    this.drawCrosshair(context, crosshair, panes, theme);
+    this.drawTooltip(context, data, timeScale, crosshair, panes, scales, theme, options);
   }
 
   private drawGrid(context: CanvasRenderingContext2D, pane: PaneBounds, scale: PriceScale, theme: ChartTheme, options: RenderOptions): void {
