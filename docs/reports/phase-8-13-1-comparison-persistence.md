@@ -109,8 +109,10 @@ their original workspace series.
 
 ## Final delivery
 
-The final commit and `origin/main` synchronization are recorded after the
-verification commit is created. The required Git identity is
-`Akira Yuzai <yuzai.akira@gmail.com>`. Phase 8.13.1 is functionally verified
-for the available environment, while the explicitly listed browser and API
-baseline gates remain open.
+The implementation and verification commit is
+`40d0cd32406c666d6e4f01144c6fa1f7f892eebd`, authored and committed as
+`Akira Yuzai <yuzai.akira@gmail.com>`. It was pushed to `origin/main`, and
+local `main` matched `origin/main` at that revision. This report correction is
+also pushed immediately after its documentation commit. Phase 8.13.1 is
+functionally verified for the available environment, while the explicitly
+listed browser and API baseline gates remain open.
