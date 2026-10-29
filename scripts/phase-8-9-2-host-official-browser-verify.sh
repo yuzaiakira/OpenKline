@@ -87,21 +87,23 @@ run_in_container() {
 }
 
 echo "=== Container setup: npm ci + build + browser versions ==="
-run_in_container setup "$(cat <<'EOS'
+run_in_container setup "$(cat <<EOS
 set -euo pipefail
-mkdir -p "$HOME" "$npm_config_cache"
+mkdir -p "\$HOME" "\$npm_config_cache"
 git config --global --add safe.directory /work
 git config --global --add safe.directory /home/akira/Projects/git-contribute/OpenKline || true
-echo "HEAD=$(git rev-parse HEAD)"
+echo "HEAD=\$(git rev-parse HEAD)"
 node -v; npm -v; npx playwright --version
 npm ci --ignore-scripts --no-audit --no-fund
 (cd examples/nextjs-app-router && npm ci --ignore-scripts --no-audit --no-fund)
 npm run build
+OUT=artifacts/phase-8-9-2/official-$STAMP/host
+mkdir -p "\$OUT"
 node -e 'const {chromium,firefox,webkit}=require("playwright");(async()=>{
   for (const [n,b] of [["chromium",chromium],["firefox",firefox],["webkit",webkit]]) {
     const browser=await b.launch(); console.log(n, browser.version(), b.executablePath()); await browser.close();
   }
-})()' | tee artifacts/phase-8-9-2/official-'"$STAMP"'/host/managed-browser-versions.txt
+})()' | tee "\$OUT/managed-browser-versions.txt"
 ls /ms-playwright | head
 EOS
 )" | tee "$ART/host/setup.log"
@@ -114,13 +116,16 @@ mkdir -p "\$HOME" "\$npm_config_cache"
 git config --global --add safe.directory /work
 OUT=artifacts/phase-8-9-2/official-$STAMP/lifecycle
 mkdir -p "\$OUT"
+set +e
 npx playwright test --config playwright.portable.config.ts \
   tests/browser/datafeed-lifecycle.spec.ts \
-  --reporter=line,json \
+  --reporter=line \
   --output="\$OUT/test-results" \
   2>&1 | tee "\$OUT/playwright-stdout.log"
-echo \$? | tee "\$OUT/exit-code.txt"
-# Copy JSON reporter if configured via env; also keep line log.
+RC=\${PIPESTATUS[0]}
+set -e
+echo "\$RC" | tee "\$OUT/exit-code.txt"
+exit "\$RC"
 EOS
 )"
 LIFECYCLE_RC=$?
@@ -136,6 +141,7 @@ mkdir -p "\$HOME" "\$npm_config_cache"
 git config --global --add safe.directory /work
 OUT=artifacts/phase-8-9-2/official-$STAMP/lifecycle/positives
 mkdir -p "\$OUT"
+set +e
 npx playwright test --config playwright.portable.config.ts \
   tests/browser/chart.spec.ts \
   tests/browser/custom-datafeed.spec.ts \
@@ -144,6 +150,10 @@ npx playwright test --config playwright.portable.config.ts \
   --reporter=line \
   --output="\$OUT/test-results" \
   2>&1 | tee "\$OUT/playwright-stdout.log"
+RC=\${PIPESTATUS[0]}
+set -e
+echo "\$RC" | tee "\$OUT/exit-code.txt"
+exit "\$RC"
 EOS
 )"
 POS_RC=$?
@@ -200,18 +210,34 @@ set -euo pipefail
 mkdir -p "\$HOME" "\$npm_config_cache"
 git config --global --add safe.directory /work
 OUT=artifacts/phase-8-9-2/official-$STAMP
-npm test 2>&1 | tee "\$OUT/node/npm-test.log"
-echo \$? | tee "\$OUT/node/npm-test-exit.txt"
-npm run typecheck 2>&1 | tee "\$OUT/node/typecheck.log"
-echo \$? | tee "\$OUT/node/typecheck-exit.txt"
-npm run api:check 2>&1 | tee "\$OUT/node/api-check.log"
-echo \$? | tee "\$OUT/node/api-check-exit.txt"
-npm run package:smoke 2>&1 | tee "\$OUT/node/package-smoke.log"
-echo \$? | tee "\$OUT/node/package-smoke-exit.txt"
+mkdir -p "\$OUT/node" "\$OUT/performance"
+run_step() {
+  local name="\$1"; shift
+  set +e
+  "\$@" 2>&1 | tee "\$OUT/node/\${name}.log"
+  local rc=\${PIPESTATUS[0]}
+  set -e
+  echo "\$rc" | tee "\$OUT/node/\${name}-exit.txt"
+  return "\$rc"
+}
+FAIL=0
+run_step npm-test npm test || FAIL=1
+run_step typecheck npm run typecheck || FAIL=1
+run_step api-check npm run api:check || FAIL=1
+run_step package-smoke npm run package:smoke || FAIL=1
+set +e
 node scripts/phase-8-9-1-packed-datafeed-lifecycle.mjs 2>&1 | tee "\$OUT/node/packed-lifecycle.log"
-echo \$? | tee "\$OUT/node/packed-lifecycle-exit.txt"
+RC=\${PIPESTATUS[0]}
+set -e
+echo "\$RC" | tee "\$OUT/node/packed-lifecycle-exit.txt"
+[[ "\$RC" -eq 0 ]] || FAIL=1
+set +e
 npm run benchmark:browser 2>&1 | tee "\$OUT/performance/browser-benchmark.log"
-echo \$? | tee "\$OUT/performance/benchmark-exit.txt"
+RC=\${PIPESTATUS[0]}
+set -e
+echo "\$RC" | tee "\$OUT/performance/benchmark-exit.txt"
+[[ "\$RC" -eq 0 ]] || FAIL=1
+exit "\$FAIL"
 EOS
 )"
 NODE_RC=$?
@@ -225,14 +251,19 @@ standalone = os.path.join("$ROOT", "$STANDALONE_OUT", "summary.json")
 studio = os.path.join("$ROOT", "$STUDIO_OUT", "summary.json")
 def load(p):
   return json.load(open(p)) if os.path.exists(p) else {"missing": True, "path": p}
+def exit_or(path, default=None):
+  return int(open(path).read()) if os.path.exists(path) else default
 summary = {
   "testedSha": open(os.path.join(art, "tested-sha.txt")).read().strip(),
   "productFix": "$PRODUCT_FIX",
   "imageDigest": open(os.path.join(art, "host", "image-digest.txt")).read().strip(),
-  "lifecycleHostExit": int(open(os.path.join(art, "lifecycle", "host-wrapper-exit.txt")).read()),
-  "positivesExit": int(open(os.path.join(art, "lifecycle", "positives-exit.txt")).read()),
-  "standaloneExit": int(open(os.path.join(art, "matrices", "standalone-exit.txt")).read()),
-  "studioExit": int(open(os.path.join(art, "matrices", "studio-exit.txt")).read()),
+  "lifecycleHostExit": exit_or(os.path.join(art, "lifecycle", "host-wrapper-exit.txt")),
+  "positivesExit": exit_or(os.path.join(art, "lifecycle", "positives-exit.txt")),
+  "standaloneExit": exit_or(os.path.join(art, "matrices", "standalone-exit.txt")),
+  "studioExit": exit_or(os.path.join(art, "matrices", "studio-exit.txt")),
+  "nodeWrapperExit": exit_or(os.path.join(art, "node", "wrapper-exit.txt")),
+  "packedLifecycleExit": exit_or(os.path.join(art, "node", "packed-lifecycle-exit.txt")),
+  "benchmarkExit": exit_or(os.path.join(art, "performance", "benchmark-exit.txt")),
   "standaloneSummary": load(standalone),
   "studioSummary": load(studio),
 }
@@ -246,10 +277,21 @@ PY
 
 echo
 echo "DONE artifacts=$ART"
-echo "standalone_rc=$STANDALONE_RC studio_rc=$STUDIO_RC lifecycle_rc=$LIFECYCLE_RC"
+echo "standalone_rc=$STANDALONE_RC studio_rc=$STUDIO_RC lifecycle_rc=$LIFECYCLE_RC node_rc=$NODE_RC"
+BROWSER_OK=0
 if [[ "$LIFECYCLE_RC" -eq 0 && "$POS_RC" -eq 0 && "$STANDALONE_RC" -eq 0 && "$STUDIO_RC" -eq 0 ]]; then
+  BROWSER_OK=1
+  echo "HOST_BROWSER_VERDICT=FUNCTIONALLY_VERIFIED_FULL_FIVE_BROWSER_PASS"
+else
+  echo "HOST_BROWSER_VERDICT=INVESTIGATE_FAILURES"
+fi
+if [[ "$BROWSER_OK" -eq 1 && "$NODE_RC" -eq 0 ]]; then
   echo "HOST_VERDICT_CANDIDATE=FUNCTIONALLY_VERIFIED_FULL_FIVE_BROWSER_PASS"
   exit 0
+fi
+if [[ "$BROWSER_OK" -eq 1 ]]; then
+  echo "HOST_VERDICT_CANDIDATE=FIVE_BROWSER_PASS_NODE_OR_PACKED_INCOMPLETE"
+  exit 1
 fi
 echo "HOST_VERDICT_CANDIDATE=INVESTIGATE_FAILURES"
 exit 1
