@@ -211,7 +211,10 @@ export interface SubscribeBarsArgs {
   timeframe: string;
   onBar: (bar: Candle) => void;
   onError?: (error: Error) => void;
-  /** Optional transport lifecycle signal; providers that cannot observe it may omit it. */
+}
+
+/** Optional lifecycle extension for transports that can observe connection state. */
+export interface DatafeedRealtimeSubscriptionArgs extends SubscribeBarsArgs {
   onStatus?: (status: DatafeedRealtimeStatus) => void;
 }
 

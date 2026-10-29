@@ -145,12 +145,12 @@ the existing candle; out-of-order updates are inserted chronologically. An
 identical duplicate is ignored. Invalid events and provider errors affect only
 the corresponding asset and cannot corrupt its stored candles.
 
-`SubscribeBarsArgs.onStatus` is optional. Providers such as
-`WebSocketDatafeed` report `connecting`, `connected`, `reconnected`,
-`disconnected`, `error`, and `stopped`. When a reconnect is observable, the
-controller performs bounded recovery for the affected historical interval. A
-provider that cannot expose lifecycle events remains safe; the application can
-call `backfill()` explicitly.
+The additive `DatafeedRealtimeSubscriptionArgs.onStatus` callback is optional.
+Providers such as `WebSocketDatafeed` report `connecting`, `connected`,
+`reconnected`, `disconnected`, `error`, and `stopped`. When a reconnect is
+observable, the controller performs bounded recovery for the affected
+historical interval. A provider that cannot expose lifecycle events remains
+safe; the application can call `backfill()` explicitly.
 
 ```ts
 const abort = new AbortController();

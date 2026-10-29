@@ -17,7 +17,8 @@ response cannot overwrite a live correction. Raw OHLCV and normalized
 comparison data remain separate, and recovery never creates candles for market
 closures.
 
-`SubscribeBarsArgs.onStatus` is an additive lifecycle signal. The generic
+`DatafeedRealtimeSubscriptionArgs.onStatus` is an additive lifecycle signal;
+the pre-existing `SubscribeBarsArgs` declaration is unchanged. The generic
 `WebSocketDatafeed` emits connection, reconnection, disconnection, error, and
 stop transitions. When a reconnect is observable, the comparison coordinator
 requests a bounded recovery interval. Providers without lifecycle visibility

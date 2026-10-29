@@ -318,3 +318,15 @@ Package portability is verified separately by `npm run package:portability`.
 It reports selected artifact sizes and validates package boundaries; it does
 not claim a universal bundle-size budget or prove every downstream bundler's
 tree-shaking behavior.
+
+## Phase 8.14 datafeed comparison observations
+
+`npm run benchmark:comparison-datafeed` measures the provider-neutral
+`ComparisonDatafeedController` with three deterministic assets at 10,000 and
+100,000 candles per asset. It reports historical load, normalized-output
+access, explicit one-range backfill, realtime correction delivery, and
+disposal timings. The fixture deliberately omits one known continuous slot
+until backfill so the recovery path is measured rather than inferred. These
+are Node reference measurements; they do not represent provider latency,
+Canvas2D rendering, browser FPS, network capacity, or a universal memory
+budget.

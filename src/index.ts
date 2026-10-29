@@ -126,6 +126,7 @@ export type {
   IndicatorAddOptions,
   Datafeed,
   DatafeedRealtimeStatus,
+  DatafeedRealtimeSubscriptionArgs,
   GetBarsQuery,
   AreaPoint,
   LinePoint,

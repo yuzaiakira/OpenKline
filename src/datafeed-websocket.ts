@@ -1,5 +1,5 @@
 import { CandleStore } from "./core/candle-store.js";
-import type { Candle, Datafeed, DatafeedRealtimeStatus, SubscribeBarsArgs, SymbolInfo } from "./types.js";
+import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, SubscribeBarsArgs, SymbolInfo } from "./types.js";
 
 export interface WebSocketLike {
   readonly readyState: number;
@@ -78,7 +78,7 @@ class ManagedSubscription {
     private readonly initialBackoffMs: number,
     private readonly maxBackoffMs: number,
     private readonly maxReconnectAttempts: number,
-    private readonly args: SubscribeBarsArgs,
+    private readonly args: DatafeedRealtimeSubscriptionArgs,
   ) {}
 
   public start(): void {

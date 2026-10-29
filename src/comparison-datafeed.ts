@@ -6,7 +6,7 @@ import type {
   ComparisonNormalizationMode,
   ComparisonPricePoint,
 } from "./comparison.js";
-import type { Candle, Datafeed, DatafeedRealtimeStatus, SymbolInfo } from "./types.js";
+import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, SymbolInfo } from "./types.js";
 
 export interface ComparisonDatafeedWindow {
   /** Inclusive lower UTC millisecond bound for requested historical bars. */
@@ -688,13 +688,14 @@ export class ComparisonDatafeedController {
     }
     const token = record.token;
     try {
-      const unsubscribe = subscribeBars.call(record.config.datafeed, {
+      const subscriptionArgs: DatafeedRealtimeSubscriptionArgs = {
         symbol: record.config.symbol,
         timeframe: record.config.timeframe,
         onBar: (bar) => this.handleRealtime(record.config.id, token, bar),
         onError: (error) => this.handleRealtimeError(record.config.id, token, error),
         onStatus: (status) => this.handleRealtimeStatus(record.config.id, token, status),
-      });
+      };
+      const unsubscribe = subscribeBars.call(record.config.datafeed, subscriptionArgs);
       if (typeof unsubscribe !== "function") throw new Error("Datafeed subscribeBars must return an unsubscribe function");
       if (!this.isCurrentRecord(record, token)) {
         try { unsubscribe(); } catch { /* A stale provider owns any cleanup failure. */ }
@@ -725,7 +726,9 @@ export class ComparisonDatafeedController {
       record.lastRealtimeTime = normalized.time;
       record.state = "ready";
       record.error = null;
-      record.coverage = calculateCoverage(record, this.window, record.coverage.backfillAttempted);
+      record.coverage = previous === undefined
+        ? calculateCoverage(record, this.window, record.coverage.backfillAttempted)
+        : updateCoverageRecovery(record.coverage, record.coverage.backfillAttempted, record.coverage.recovery, record.coverage.recoveryError);
       if (record.realtime === "recovering" || record.realtime === "disconnected") record.realtime = "subscribed";
       this.emit({ kind: "realtime-updated", assetId: id });
       this.emit({ kind: "coverage-updated", assetId: id });

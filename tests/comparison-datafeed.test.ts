@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ComparisonDatafeedController } from "../src/index.js";
-import type { Candle, Datafeed, DatafeedRealtimeStatus, GetBarsQuery, SubscribeBarsArgs, SymbolInfo } from "../src/types.js";
+import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, GetBarsQuery, SubscribeBarsArgs, SymbolInfo } from "../src/types.js";
 
 const info = (symbol: string): SymbolInfo => ({ symbol, timezone: "UTC", pricePrecision: 2 });
 
@@ -15,9 +15,9 @@ function rounded(value: number): number {
 
 class CapturingFeed implements Datafeed {
   public readonly queries: GetBarsQuery[] = [];
-  public readonly subscriptions: SubscribeBarsArgs[] = [];
+  public readonly subscriptions: DatafeedRealtimeSubscriptionArgs[] = [];
   public unsubscribeCount = 0;
-  private readonly active = new Set<SubscribeBarsArgs>();
+  private readonly active = new Set<DatafeedRealtimeSubscriptionArgs>();
 
   public constructor(
     private readonly symbolInfo: SymbolInfo,
@@ -43,10 +43,11 @@ class CapturingFeed implements Datafeed {
   }
 
   public subscribeBars(args: SubscribeBarsArgs): () => void {
-    this.subscriptions.push(args);
-    this.active.add(args);
+    const lifecycleArgs = args as DatafeedRealtimeSubscriptionArgs;
+    this.subscriptions.push(lifecycleArgs);
+    this.active.add(lifecycleArgs);
     return () => {
-      if (this.active.delete(args)) this.unsubscribeCount += 1;
+      if (this.active.delete(lifecycleArgs)) this.unsubscribeCount += 1;
     };
   }
 

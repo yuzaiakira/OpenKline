@@ -9,11 +9,14 @@ interface Datafeed {
   subscribeBars?(args: SubscribeBarsArgs): () => void;
 }
 
-`SubscribeBarsArgs` may include an optional `onStatus` callback. It reports
-provider-observable `connecting`, `connected`, `reconnected`, `disconnected`,
-`error`, and `stopped` transitions. Existing providers that cannot observe
-transport lifecycle events may omit it; consumers should expose explicit
-`ComparisonDatafeedController.backfill()` recovery in that case.
+`SubscribeBarsArgs` remains unchanged for compatibility. Consumers that need
+transport lifecycle information may pass the additive
+`DatafeedRealtimeSubscriptionArgs` shape, which adds an optional `onStatus`
+callback. It reports provider-observable `connecting`, `connected`,
+`reconnected`, `disconnected`, `error`, and `stopped` transitions. Existing
+providers that cannot observe transport lifecycle events may omit it; consumers
+should expose explicit `ComparisonDatafeedController.backfill()` recovery in
+that case.
 ```
 
 All timestamps exposed by the core are non-negative integer UTC milliseconds.

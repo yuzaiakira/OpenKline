@@ -3,6 +3,7 @@ import test from "node:test";
 import { InMemoryDatafeed } from "../src/datafeed.js";
 import { RestDatafeed } from "../src/datafeed-rest.js";
 import { WebSocketDatafeed, type WebSocketLike } from "../src/datafeed-websocket.js";
+import type { DatafeedRealtimeSubscriptionArgs } from "../src/types.js";
 
 test("RestDatafeed paginates, normalizes timestamps, deduplicates, and sorts", async () => {
   const requests: string[] = [];
@@ -179,12 +180,13 @@ test("WebSocketDatafeed reconnects with a bounded schedule and unsubscribes", as
     maxReconnectAttempts: 2,
   });
 
-  const unsubscribe = datafeed.subscribeBars({
+  const subscription: DatafeedRealtimeSubscriptionArgs = {
     symbol: "TEST",
     timeframe: "1m",
     onBar: (bar) => received.push(bar.close),
     onStatus: (status) => statuses.push(status),
-  });
+  };
+  const unsubscribe = datafeed.subscribeBars(subscription);
   sockets[0]!.open();
   sockets[0]!.message(JSON.stringify({ symbol: "TEST", timeframe: "1m", candle: { time: 1, open: 1, high: 2, low: 0, close: 1.5 } }));
   sockets[0]!.message(JSON.stringify({ symbol: "TEST", timeframe: "1m", candle: { time: 1, open: 1, high: 2, low: 0, close: 1.5 } }));

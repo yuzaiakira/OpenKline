@@ -28,6 +28,7 @@
     "benchmark:browser": "npm run build && node scripts/browser-benchmark.mjs",
     "benchmark:multi-chart": "npm run build && node scripts/multi-chart-benchmark.mjs",
     "benchmark:comparison": "npm run build && node scripts/comparison-benchmark.mjs",
+    "benchmark:comparison-datafeed": "npm run build && node scripts/comparison-datafeed-benchmark.mjs",
     "profile:multi-chart": "npm run build && node scripts/multi-chart-profile.mjs",
     "benchmark:replay": "npm run build && node scripts/replay-benchmark.mjs",
     "benchmark:alerts": "npm run build && node scripts/alert-benchmark.mjs",
