@@ -13,7 +13,7 @@ services required).
 | --- | --- |
 | Verified behavioral baseline (start) | `bb3f1cad028b126920fa26a75f7ec158ebc56e3c` |
 | Product fix + functional regression tests | `02e92874fa60e176099acb3eb96953858e31e87e` |
-| Final verification / report tip | *(this commit; see git log on `qa/phase-8-9-0-functional-verification`)* |
+| Final verification / report tip | `ef9f7275672e6808dc8e751c4ff7da67949b086b` |
 
 Branch: `qa/phase-8-9-0-functional-verification`  
 Author identity used for commits: `Akira Yuzai <yuzai.akira@gmail.com>`
