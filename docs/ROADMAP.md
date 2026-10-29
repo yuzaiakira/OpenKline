@@ -789,3 +789,8 @@ Studio compatibility gates remain open**.
   documented; screen-reader, physical Android, native iOS Safari, license
   activation, visual baseline approval, and owner release authorization remain
   open. See `docs/reports/phase-8-8-18-release-audit.md`.
+
+- [Prepared / Not Release Ready] Phase 8.8.19 delivers the owner decision packet,
+  attribution review, accessibility review plan, Android/iOS preparation, and
+  release decision matrix on baseline `bb3f1ca`. No publication or license
+  activation. See `docs/reports/phase-8-8-19-owner-decision-packet.md`.
