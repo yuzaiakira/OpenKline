@@ -12,6 +12,20 @@ export { isCandleSeriesType, toHeikinAshi } from "./core/candle-series.js";
 export { ChartModel } from "./core/chart-model.js";
 export { PriceScale, TimeScale, formatTimeTick, getCandlePriceRange } from "./core/scales.js";
 export type { TimeAxisTick, TimeAxisTickOptions } from "./core/scales.js";
+export { ComparisonEngine } from "./comparison.js";
+export type {
+  ComparisonAssetInput,
+  ComparisonAssetOutput,
+  ComparisonAssetSnapshot,
+  ComparisonAssetStatus,
+  ComparisonBaseline,
+  ComparisonChange,
+  ComparisonChangeListener,
+  ComparisonEngineOptions,
+  ComparisonNormalizedPoint,
+  ComparisonNormalizationMode,
+  ComparisonPricePoint,
+} from "./comparison.js";
 export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";
