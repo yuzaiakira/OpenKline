@@ -32,6 +32,12 @@ test("public chart synchronization follows UTC timestamps and cleans up registra
       firstData: first.getData().map((item) => item.time),
       secondData: second.getData().map((item) => item.time),
     };
+    const replay = second.createReplay({ source: second.getData(), startAt: 3_000 });
+    replay.start();
+    first.setCrosshairAtTime(4_000);
+    const replayLinkedCrosshair = linkedCrosshairs.at(-1) ?? null;
+    replay.exit();
+    replay.dispose();
     controller.removeChart("second");
     first.setCrosshairAtTime(1_000);
     const afterRemovalEvents = linkedCrosshairs.length;
@@ -39,7 +45,7 @@ test("public chart synchronization follows UTC timestamps and cleans up registra
     controller.destroy();
     first.destroy();
     second.destroy();
-    return { synchronized, afterRemovalEvents, remainingCanvases: document.querySelectorAll("canvas").length, remainingOwnedCanvases: firstRoot.querySelectorAll("canvas").length + secondRoot.querySelectorAll("canvas").length };
+    return { synchronized, replayLinkedCrosshair, afterRemovalEvents, remainingCanvases: document.querySelectorAll("canvas").length, remainingOwnedCanvases: firstRoot.querySelectorAll("canvas").length + secondRoot.querySelectorAll("canvas").length };
   });
 
   expect(result.synchronized).toMatchObject({
@@ -48,6 +54,7 @@ test("public chart synchronization follows UTC timestamps and cleans up registra
     firstData: [1_000, 2_000, 3_000, 4_000],
     secondData: [1_000, 3_000, 5_000],
   });
-  expect(result.afterRemovalEvents).toBe(1);
+  expect(result.replayLinkedCrosshair).toBe(3_000);
+  expect(result.afterRemovalEvents).toBe(2);
   expect(result.remainingOwnedCanvases).toBe(0);
 });
