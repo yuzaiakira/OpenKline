@@ -158,6 +158,7 @@ export class Chart {
   private readonly listeners = new Map<ChartEventName, Set<ChartEventHandler<ChartEventName>>>();
   private readonly resizeObserver: ResizeObserver | null;
   private resizeFrame: number | null = null;
+  private viewportRenderFrame: number | null = null;
   private pendingObservedResize: { readonly width: number; readonly height: number } | null = null;
   private theme: ChartTheme;
   private locale: string;
@@ -1168,7 +1169,7 @@ export class Chart {
     this.assertAlive();
     this.model.setVisibleTimeRange(range.from, range.to);
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Move the crosshair to the nearest visible bar time, or clear it. */
@@ -1199,7 +1200,7 @@ export class Chart {
     this.assertAlive();
     this.model.pan(deltaBars);
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Zoom the shared viewport around an anchor ratio and redraw. */
@@ -1207,7 +1208,7 @@ export class Chart {
     this.assertAlive();
     this.model.zoom(scale, anchorRatio);
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Show the complete shared time range without recreating chart resources. */
@@ -1215,7 +1216,7 @@ export class Chart {
     this.assertAlive();
     this.model.fitContent();
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Restore default bar density and follow the newest available data. */
@@ -1223,7 +1224,7 @@ export class Chart {
     this.assertAlive();
     this.model.resetView();
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Return a defensive copy of the currently stored candles. */
@@ -1312,6 +1313,7 @@ export class Chart {
       else if (typeof window !== "undefined") window.clearTimeout(this.resizeFrame);
       this.resizeFrame = null;
     }
+    this.cancelViewportRender();
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
     this.canvas.removeEventListener("pointerup", this.handlePointerUp);
@@ -1478,7 +1480,7 @@ export class Chart {
       this.crosshair = { x: position.x, y: position.y };
       this.emitCrosshair(position.x, position.y);
     }
-    if (viewportChanged) this.render();
+    if (viewportChanged) this.scheduleViewportRender();
     else this.renderCrosshairFrame();
   };
 
@@ -1509,7 +1511,7 @@ export class Chart {
     const logicalAnchor = this.direction === "rtl" ? 1 - visualAnchor : visualAnchor;
     this.model.zoom(factor, logicalAnchor);
     this.emitViewportChange();
-    this.render();
+    this.scheduleViewportRender();
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
@@ -1583,6 +1585,7 @@ export class Chart {
   }
 
   private render(): void {
+    this.cancelViewportRender();
     const visibleData = this.model.getVisibleData();
     this.updateCanvasAccessibility(visibleData);
     const drawingContext = this.getDrawingContext();
@@ -1612,6 +1615,10 @@ export class Chart {
   }
 
   private renderCrosshairFrame(): void {
+    // A pending viewport frame owns the next full render. It reads the latest
+    // crosshair value, so flushing here would turn rapid pan/zoom plus pointer
+    // movement back into redundant synchronous full renders.
+    if (this.viewportRenderFrame !== null) return;
     if (this.crosshair === null && this.baseFrame === null) return;
     if (this.baseFrame === null) this.captureBaseFrame();
     if (this.baseFrame !== null && this.baseFrameWidth === this.canvas.width && this.baseFrameHeight === this.canvas.height) {
@@ -1643,6 +1650,29 @@ export class Chart {
       this.baseFrameWidth = 0;
       this.baseFrameHeight = 0;
     }
+  }
+
+  /** Coalesce high-frequency viewport changes while keeping model state synchronous. */
+  private scheduleViewportRender(): void {
+    if (this.destroyed || this.viewportRenderFrame !== null) return;
+    if (typeof window === "undefined") {
+      this.render();
+      return;
+    }
+    const renderFrame = (): void => {
+      this.viewportRenderFrame = null;
+      if (!this.destroyed) this.render();
+    };
+    this.viewportRenderFrame = typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame(renderFrame)
+      : window.setTimeout(renderFrame, 0);
+  }
+
+  private cancelViewportRender(): void {
+    if (this.viewportRenderFrame === null) return;
+    if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(this.viewportRenderFrame);
+    else if (typeof window !== "undefined") window.clearTimeout(this.viewportRenderFrame);
+    this.viewportRenderFrame = null;
   }
 
   /** Keep the Canvas2D chart discoverable to assistive technology without exposing internal stores. */
