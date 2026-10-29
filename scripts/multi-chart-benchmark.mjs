@@ -51,8 +51,31 @@ try {
         const sorted = [...values].sort((left, right) => left - right);
         return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * ratio) - 1))] ?? 0;
       };
+      const statistics = (values) => ({
+        medianMs: Number(percentile(values, 0.5).toFixed(3)),
+        p95Ms: Number(percentile(values, 0.95).toFixed(3)),
+      });
+      // The chart schedules its render before this probe schedules its callback,
+      // so one rAF measures the next visual frame without adding an artificial
+      // extra frame of latency.
+      const nextVisualFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+      const measureVisual = async (action, count = 30) => {
+        for (let index = 0; index < 3; index += 1) {
+          action(index, true);
+          await nextVisualFrame();
+        }
+        const values = [];
+        for (let index = 0; index < count; index += 1) {
+          const started = performance.now();
+          action(index, false);
+          await nextVisualFrame();
+          values.push(performance.now() - started);
+        }
+        return statistics(values);
+      };
       const crosshairSamples = [];
       const rangeSamples = [];
+      const visualScenarios = {};
       const first = charts[0];
       const second = charts[1];
       if (first !== undefined && second !== undefined) {
@@ -66,6 +89,23 @@ try {
           first.setVisibleTimeRange({ from: sourceTimes[Math.max(0, index)].time, to: sourceTimes[Math.min(sourceTimes.length - 1, index + Math.floor(sourceTimes.length / 2))].time });
           rangeSamples.push(performance.now() - rangeStarted);
         }
+        await nextVisualFrame();
+        visualScenarios.visibleRange = await measureVisual((index) => {
+          first.setVisibleTimeRange({
+            from: sourceTimes[Math.min(sourceTimes.length - 1, index * 100)]?.time ?? sourceTimes[0].time,
+            to: sourceTimes[Math.min(sourceTimes.length - 1, index * 100 + Math.floor(sourceTimes.length / 2))]?.time ?? sourceTimes.at(-1).time,
+          });
+        });
+        visualScenarios.pan = await measureVisual(() => first.pan(1));
+        visualScenarios.zoom = await measureVisual((index) => first.zoom(index % 2 === 0 ? 1.015 : 0.985, 0.5));
+        visualScenarios.rapidAlternating = await measureVisual((index) => charts[index % 2].pan(index % 2 === 0 ? 1 : -1));
+        visualScenarios.realtimeDuringNavigation = await measureVisual((index) => {
+          first.pan(1);
+          const previous = data[0].at(-1);
+          if (previous !== undefined) {
+            first.update({ ...previous, time: previous.time + (index + 1) * 60_000, close: previous.close + index / 100 });
+          }
+        });
       }
       const mountSamples = [];
       for (let round = 0; round < 10; round += 1) {
@@ -96,10 +136,9 @@ try {
         browser: navigator.userAgent,
         candles: counts,
         loadMs: Number(loadMs.toFixed(3)),
-        crosshairMedianMs: Number(percentile(crosshairSamples, 0.5).toFixed(3)),
-        crosshairP95Ms: Number(percentile(crosshairSamples, 0.95).toFixed(3)),
-        visibleRangeMedianMs: Number(percentile(rangeSamples, 0.5).toFixed(3)),
-        visibleRangeP95Ms: Number(percentile(rangeSamples, 0.95).toFixed(3)),
+        crosshair: statistics(crosshairSamples),
+        visibleRangeState: statistics(rangeSamples),
+        visualScenarios,
         mountMedianMs: Number(percentile(mountSamples, 0.5).toFixed(3)),
         mountP95Ms: Number(percentile(mountSamples, 0.95).toFixed(3)),
         heapBeforeDestroy: memoryBeforeDestroy,
