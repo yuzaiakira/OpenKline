@@ -24,7 +24,8 @@ supporting diagnostics only.
 | Product behavior under test | **identical to `02e9287`** (tip commits after the fix are documentation / regression harness only until this phase’s commits) |
 
 Branch at phase start: `qa/phase-8-9-0-functional-verification` @ `4ce7301`  
-Work branch: `qa/phase-8-9-1-cross-browser-regression` (tip `ff1ceedef23b9d66dc633ee21f881ef03828514c`)
+Work branch: `qa/phase-8-9-1-cross-browser-regression`  
+Report tip: resolve with `git rev-parse qa/phase-8-9-1-cross-browser-regression` (docs-only tip commits after the harness do not change product behavior).
 
 Ancestry checks:
 
