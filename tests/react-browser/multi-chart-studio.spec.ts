@@ -101,6 +101,50 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   expect(errors).toEqual([]);
 });
 
+test("Studio synchronizes crosshair and visible UTC ranges across different timeframes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Chart layout").selectOption("two-horizontal");
+  await page.getByLabel("Active chart panel").selectOption("chart-2");
+  await page.getByLabel("Active timeframe").selectOption("4h");
+  await page.getByLabel("Active chart panel").selectOption("chart-1");
+  await page.getByLabel("Sync crosshair").check();
+  await page.getByLabel("Sync visible range").check();
+
+  const firstCanvas = page.locator('[data-panel-id="chart-1"] canvas');
+  const secondPanel = page.locator('[data-panel-id="chart-2"]');
+  await firstCanvas.scrollIntoViewIfNeeded();
+  const firstBox = await firstCanvas.boundingBox();
+  expect(firstBox).not.toBeNull();
+  if (firstBox === null) return;
+
+  const initialRange = await secondPanel.getAttribute("data-visible-time-range");
+  await page.mouse.move(firstBox.x + firstBox.width * 0.72, firstBox.y + firstBox.height * 0.3);
+  await expect.poll(() => page.locator('[data-panel-id="chart-1"]').getAttribute("data-crosshair-time")).not.toBe("");
+  await expect.poll(() => secondPanel.getAttribute("data-crosshair-time")).not.toBe("");
+  const linkedCrosshair = await secondPanel.getAttribute("data-crosshair-time");
+  expect(Number(linkedCrosshair)).toBeGreaterThan(0);
+
+  await page.mouse.wheel(0, -400);
+  await expect.poll(() => secondPanel.getAttribute("data-visible-time-range")).not.toBe(initialRange);
+  const linkedRange = await secondPanel.getAttribute("data-visible-time-range");
+  expect(linkedRange).not.toBe("empty");
+
+  await page.getByLabel("Sync crosshair").uncheck();
+  await page.getByLabel("Sync visible range").uncheck();
+  const independentCrosshair = await secondPanel.getAttribute("data-crosshair-time");
+  const independentRange = await secondPanel.getAttribute("data-visible-time-range");
+  await page.mouse.move(firstBox.x + firstBox.width * 0.28, firstBox.y + firstBox.height * 0.3);
+  await page.mouse.wheel(0, -400);
+  await page.waitForTimeout(50);
+  expect(await secondPanel.getAttribute("data-crosshair-time")).toBe(independentCrosshair);
+  expect(await secondPanel.getAttribute("data-visible-time-range")).toBe(independentRange);
+
+  await page.getByRole("button", { name: "Remove chart", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+  await expect(page.locator("canvas")).toHaveCount(1);
+});
+
 test("mobile multi-chart Studio switches the visible panel through the accessible selector", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

@@ -11,6 +11,8 @@ The framework-neutral Studio contracts are exported from `openkline`:
 - `WatchlistModel`, `parseWatchlistDocument`, and `WatchlistDocument` provide
   ordered lists, stable symbol IDs, favorites, and validated persistence.
 - `QuoteProvider` is the vendor-neutral quote subscription boundary.
+- `ChartSynchronizationController` is the framework-independent public
+  controller for linking Chart instances by UTC crosshair and visible range.
 
 `StudioWorkspaceDocument.charts` contains one nested existing chart workspace
 per stable `panelId`. The `layout` determines the required panel count. A host
