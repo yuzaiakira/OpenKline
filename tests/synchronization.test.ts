@@ -116,6 +116,52 @@ test("deduplicates repeated forwarding and invalidates caches after data or repl
   assert.equal(second.ranges.length, 2);
 });
 
+test("re-synchronizes after either chart independently changes crosshair or range", () => {
+  const first = new FakeChart([1_000, 2_000, 3_000], true);
+  const second = new FakeChart([1_000, 2_000, 3_000], true);
+  const controller = new ChartSynchronizationController({ crosshair: true, visibleRange: true });
+  controller.addChart("first", first);
+  controller.addChart("second", second);
+
+  first.emit("crosshairMove", { time: 1_000 });
+  second.setCrosshairAtTime(3_000);
+  first.emit("crosshairMove", { time: 1_000 });
+  assert.deepEqual(second.crosshair, [1_000, 3_000, 1_000]);
+
+  first.emit("viewportChange", { from: 1_000, to: 2_000 });
+  second.setVisibleTimeRange({ from: 2_000, to: 3_000 });
+  first.emit("viewportChange", { from: 1_000, to: 2_000 });
+  assert.deepEqual(second.ranges, [
+    { from: 1_000, to: 2_000 },
+    { from: 2_000, to: 3_000 },
+    { from: 1_000, to: 2_000 },
+  ]);
+});
+
+test("independent changes while disabled are forwarded after re-enable", () => {
+  const first = new FakeChart([1_000, 2_000, 3_000], true);
+  const second = new FakeChart([1_000, 2_000, 3_000], true);
+  const controller = new ChartSynchronizationController({ crosshair: true, visibleRange: true });
+  controller.addChart("first", first);
+  controller.addChart("second", second);
+
+  first.emit("crosshairMove", { time: 1_000 });
+  first.emit("viewportChange", { from: 1_000, to: 2_000 });
+  controller.setEnabled(false);
+  second.setCrosshairAtTime(3_000);
+  second.setVisibleTimeRange({ from: 2_000, to: 3_000 });
+  controller.setEnabled(true);
+  first.emit("crosshairMove", { time: 1_000 });
+  first.emit("viewportChange", { from: 1_000, to: 2_000 });
+
+  assert.deepEqual(second.crosshair, [1_000, 3_000, 1_000]);
+  assert.deepEqual(second.ranges, [
+    { from: 1_000, to: 2_000 },
+    { from: 2_000, to: 3_000 },
+    { from: 1_000, to: 2_000 },
+  ]);
+});
+
 test("removal, chart destruction, invalid input, and repeated disposal are safe", () => {
   const first = new FakeChart([1_000]);
   const second = new FakeChart([1_000]);
