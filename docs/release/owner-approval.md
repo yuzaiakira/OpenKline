@@ -86,9 +86,10 @@ security, licensing, or attribution gates. Record the decision:
 
 | Required decision | Owner record | Date | Reference |
 | --- | --- | --- | --- |
+| Studio visual baselines required for library-only developer preview | **APPROVE POLICY: STUDIO_VISUAL_NOT_REQUIRED_FOR_LIBRARY_PREVIEW** — V1–V3 remain NOT REVIEWED; Stable 1.0 visual/device/a11y gates preserved | 2026-10-29 | `docs/reports/phase-8-8-22-owner-acceptance.md` |
 | Alpha browser/support limitations accepted | Pending | — | — |
 | Security and API-stability limitations accepted | Pending | — | — |
-| Stable-release gates remain unchanged | Pending | — | — |
+| Stable-release gates remain unchanged | **Affirmed preserved** for Stable 1.0 (physical-device, visual, accessibility) | 2026-10-29 | Same Phase 8.8.22 owner instruction |
 
 ## C. Publication authorization
 
