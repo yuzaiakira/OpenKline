@@ -16,11 +16,13 @@ is preserved for the unchanged product SHA.
 | P0 behavioral fix | `02e92874fa60e176099acb3eb96953858e31e87e` |
 | Official five-browser product tip (Phase 8.9.2) | `a73334616543243245f0e63f2f845d1c31dd9e0c` |
 | Phase 8.9.2 harness/docs tip (branch base) | `c33ab83740cd208821b6df3c5cdae0aa75d820a8` |
+| Phase 8.10 stress harness + report tip | `760a7ef32321cc26f0e9ce167c58efcba8a1b8b1` |
 | Phase 8.10 branch | `qa/phase-8-10-long-running-stability` |
 
 Product sources under stress are those of `a733346` / `c33ab83` (docs+harness
-only after `a733346`). Phase 8.10 commits add stress harness, tests, and this
-report — **no chart/engine behavioral changes**.
+only after `a733346`). Commit `760a7ef` adds stress harness, tests, and this
+report — **no chart/engine behavioral changes**. Stress runs executed the
+harness contents landed in `760a7ef` against that unchanged product tree.
 
 Phase 8.9.2 close-out: already committed on
 `qa/phase-8-9-2-official-browser-verification` at `c33ab83` with stamp
