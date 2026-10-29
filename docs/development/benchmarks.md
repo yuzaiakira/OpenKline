@@ -6,6 +6,7 @@ Run the deterministic model and browser measurements with:
 npm run benchmark
 npm run benchmark:browser
 npm run benchmark:multi-chart
+npm run profile:multi-chart
 npm run benchmark:replay
 npm run benchmark:alerts
 npm run profile:browser
@@ -65,6 +66,13 @@ forwarding latency, ten repeated two-chart mount/unmount rounds, heap
 observations, and owned canvas cleanup. Dual-chart latency includes target
 range application and Canvas2D rendering; it is not an FPS guarantee and must
 not be compared directly with the single-chart append benchmark.
+
+`profile:multi-chart` runs the same two-chart 100,000-candle workload with
+separate source-only, target-only, controller-only, linked, and rapid
+alternating measurements for crosshair and visible-range operations. It also
+records a Playwright trace archive (by default under `/tmp`) and verifies
+owned-canvas cleanup. The profile is diagnostic evidence: it does not establish
+a universal latency target or a cross-browser result.
 
 `benchmark:plugins` is a deterministic Node microbenchmark for registry
 activation/command/disposal, a 100,000-candle indicator initialization path,

@@ -170,6 +170,9 @@ export class Chart {
   private height: number;
   private devicePixelRatio = 1;
   private crosshair: { x: number; y: number } | null = null;
+  private baseFrame: ImageData | null = null;
+  private baseFrameWidth = 0;
+  private baseFrameHeight = 0;
   private dragging = false;
   private lastPointerX = 0;
   private selectedDrawingId: string | null = null;
@@ -1174,7 +1177,7 @@ export class Chart {
     if (time === null) {
       this.crosshair = null;
       if (this.interaction.crosshair) this.emitCrosshair(null, null);
-      this.render();
+      this.renderCrosshairFrame();
       return null;
     }
     if (!Number.isFinite(time)) throw new Error("Crosshair time must be finite or null");
@@ -1187,7 +1190,7 @@ export class Chart {
     const y = (context.bounds.top + context.bounds.bottom) / 2;
     this.crosshair = { x, y };
     if (this.interaction.crosshair) this.emitCrosshair(x, y);
-    this.render();
+    this.renderCrosshairFrame();
     return nearest;
   }
 
@@ -1296,6 +1299,7 @@ export class Chart {
     this.workerRuntimes.clear();
     this.indicators.clear();
     this.model.destroy();
+    this.baseFrame = null;
     this.replayCursorIndex = null;
     this.drawingEngine.dispose();
     this.overlays.clear();
@@ -1462,6 +1466,7 @@ export class Chart {
       return;
     }
 
+    const viewportChanged = this.dragging;
     if (this.dragging) {
       const delta = position.x - this.lastPointerX;
       this.model.pan(-delta / Math.max(this.model.barSpacing, 1));
@@ -1473,7 +1478,8 @@ export class Chart {
       this.crosshair = { x: position.x, y: position.y };
       this.emitCrosshair(position.x, position.y);
     }
-    this.render();
+    if (viewportChanged) this.render();
+    else this.renderCrosshairFrame();
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
@@ -1488,7 +1494,7 @@ export class Chart {
     if (!this.dragging) {
       this.crosshair = null;
       if (this.interaction.crosshair) this.emitCrosshair(null, null);
-      this.render();
+      this.renderCrosshairFrame();
     }
   };
 
@@ -1591,11 +1597,52 @@ export class Chart {
         direction: this.direction,
         priceScale: this.getResolvedPriceScaleConfiguration(),
       },
-      this.crosshair,
+      null,
         drawingContext === null ? [] : this.drawingEngine.getRenderItems(drawingContext.converter, drawingContext.bounds, (drawing) => this.isDrawingReplayVisible(drawing)),
       this.selectedDrawingId,
       this.getPluginOverlayItems(),
     );
+    this.baseFrame = null;
+    this.baseFrameWidth = 0;
+    this.baseFrameHeight = 0;
+    if (this.crosshair !== null) {
+      this.captureBaseFrame();
+      this.renderer.renderCrosshair(this.crosshair);
+    }
+  }
+
+  private renderCrosshairFrame(): void {
+    if (this.crosshair === null && this.baseFrame === null) return;
+    if (this.baseFrame === null) this.captureBaseFrame();
+    if (this.baseFrame !== null && this.baseFrameWidth === this.canvas.width && this.baseFrameHeight === this.canvas.height) {
+      const context = this.canvas.getContext("2d");
+      if (context !== null) {
+        context.putImageData(this.baseFrame, 0, 0);
+        this.renderer.renderCrosshair(this.crosshair);
+        return;
+      }
+    }
+    this.render();
+  }
+
+  private captureBaseFrame(): void {
+    const context = this.canvas.getContext("2d");
+    if (context === null || this.canvas.width <= 0 || this.canvas.height <= 0) {
+      this.baseFrame = null;
+      this.baseFrameWidth = 0;
+      this.baseFrameHeight = 0;
+      return;
+    }
+    try {
+      this.baseFrame = context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      this.baseFrameWidth = this.canvas.width;
+      this.baseFrameHeight = this.canvas.height;
+    } catch {
+      // A non-readable rendering surface falls back to the normal full render.
+      this.baseFrame = null;
+      this.baseFrameWidth = 0;
+      this.baseFrameHeight = 0;
+    }
   }
 
   /** Keep the Canvas2D chart discoverable to assistive technology without exposing internal stores. */
