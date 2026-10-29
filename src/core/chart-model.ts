@@ -27,6 +27,8 @@ export class ChartModel {
   private rangeStart = 0;
   private primaryCandleId: string | null = null;
   private replayCutoffTime: number | null = null;
+  private timeAxisCache: number[] | null = null;
+  private visibleDataCache: VisibleChartData | null = null;
 
   public addSeries(type: SeriesType, options: SeriesOptions = {}): string {
     const paneId = this.resolvePane(type, options.pane);
@@ -35,6 +37,7 @@ export class ChartModel {
       this.primaryCandleId = id;
     }
     this.rangeStart = this.clampStart(this.rangeStart);
+    this.invalidateTimeAxis();
     return id;
   }
 
@@ -48,10 +51,13 @@ export class ChartModel {
     if (paneId !== "main" && !this.collection.getIds().some((seriesId) => this.collection.getPaneId(seriesId) === paneId)) {
       this.paneLayout.remove(paneId);
     }
+    this.invalidateTimeAxis();
   }
 
   public addPane(options: PaneOptions = {}): string {
-    return this.paneLayout.add(options);
+    const id = this.paneLayout.add(options);
+    this.invalidateVisibleData();
+    return id;
   }
 
   public removePane(id: string): void {
@@ -60,10 +66,12 @@ export class ChartModel {
       if (this.collection.getPaneId(seriesId) === id) this.collection.setPane(seriesId, "main");
     }
     this.paneLayout.remove(id);
+    this.invalidateVisibleData();
   }
 
   public setPaneHeight(id: string, height: number): void {
     this.paneLayout.setHeight(id, height);
+    this.invalidateVisibleData();
   }
 
   public getPaneHeight(id: string): number | null {
@@ -77,6 +85,7 @@ export class ChartModel {
   public setSeriesPane(id: string, paneId: string): void {
     if (!this.paneLayout.has(paneId)) throw new Error(`Unknown pane id: ${paneId}`);
     this.collection.setPane(id, paneId);
+    this.invalidateVisibleData();
   }
 
   public destroy(): void {
@@ -86,6 +95,7 @@ export class ChartModel {
     this.rangeStart = 0;
     this.visibleCount = 1;
     this.replayCutoffTime = null;
+    this.invalidateTimeAxis();
   }
 
   /** Replace every candle-based series with one protected replay source. */
@@ -97,6 +107,7 @@ export class ChartModel {
       }
     }
     this.resetToLatest();
+    this.invalidateTimeAxis();
   }
 
   /** Restrict every series and the shared time axis to bars through this time. */
@@ -107,6 +118,7 @@ export class ChartModel {
     this.replayCutoffTime = time;
     this.visibleCount = Math.min(Math.max(1, this.visibleCount), Math.max(1, this.collection.getTimePointCount(time)));
     this.rangeStart = this.clampStart(this.rangeStart);
+    this.invalidateVisibleData();
   }
 
   public getReplayCutoff(): number | null {
@@ -119,6 +131,7 @@ export class ChartModel {
     this.collection.setData(id, data);
     if (!hadTimePoints) this.resetToLatest();
     else this.preserveViewportAfterDataChange(wasAtLatest);
+    this.invalidateTimeAxis();
   }
 
   public updateSeries(id: string, point: SeriesPoint): void {
@@ -127,10 +140,12 @@ export class ChartModel {
     this.collection.update(id, point);
     if (!hadTimePoints) this.resetToLatest();
     else this.preserveViewportAfterDataChange(wasAtLatest);
+    this.invalidateTimeAxis();
   }
 
   public setSeriesStyle(id: string, style: SeriesOptions["style"]): void {
     this.collection.setStyle(id, style ?? {});
+    this.invalidateVisibleData();
   }
 
   public getSeries(id: string): SeriesSnapshot {
@@ -158,10 +173,11 @@ export class ChartModel {
     if (!Number.isFinite(fromTime) || !Number.isFinite(toTime) || fromTime > toTime) {
       throw new Error("Visible time range must contain finite ascending boundaries");
     }
-    const times = this.collection.getTimePoints();
+    const times = this.getTimeAxis();
     if (times.length === 0) {
       this.visibleCount = 1;
       this.rangeStart = 0;
+      this.invalidateVisibleData();
       return;
     }
     const from = lowerBound(times, fromTime);
@@ -169,6 +185,7 @@ export class ChartModel {
     this.rangeStart = this.clampStart(from);
     this.visibleCount = Math.min(Math.max(1, to - from), times.length);
     this.rangeStart = this.clampStart(this.rangeStart);
+    this.invalidateVisibleData();
   }
 
   public setViewportState(state: { rangeStart: number; visibleCount: number }): void {
@@ -177,6 +194,7 @@ export class ChartModel {
     }
     this.visibleCount = Math.min(Math.max(1, state.visibleCount), Math.max(1, this.collection.getTimePointCount(this.replayCutoffTime)));
     this.rangeStart = this.clampStart(state.rangeStart);
+    this.invalidateVisibleData();
   }
 
   /** Legacy convenience API: create/reuse the primary candlestick series. */
@@ -184,6 +202,7 @@ export class ChartModel {
     const id = this.ensurePrimaryCandles();
     this.collection.setData(id, candles);
     this.resetToLatest();
+    this.invalidateTimeAxis();
   }
 
   /** Legacy convenience API for the primary candlestick series. */
@@ -211,6 +230,7 @@ export class ChartModel {
         this.rangeStart = this.clampStart(this.rangeStart);
       }
     }
+    this.invalidateVisibleData();
   }
 
   /** Show every timestamp in the shared time axis. */
@@ -218,12 +238,14 @@ export class ChartModel {
     const length = this.collection.getTimePointCount(this.replayCutoffTime);
     this.visibleCount = Math.max(1, length);
     this.rangeStart = 0;
+    this.invalidateVisibleData();
   }
 
   /** Restore the default density and follow the newest data. */
   public resetView(): void {
     this.visibleCount = this.calculateVisibleCount();
     this.rangeStart = Math.max(0, this.collection.getTimePointCount(this.replayCutoffTime) - this.visibleCount);
+    this.invalidateVisibleData();
   }
 
   private preserveViewportAfterDataChange(followLatest: boolean): void {
@@ -246,6 +268,7 @@ export class ChartModel {
       return;
     }
     this.rangeStart = this.clampStart(this.rangeStart + Math.round(deltaBars));
+    this.invalidateVisibleData();
   }
 
   public zoom(scale: number, anchorRatio = 0.5): void {
@@ -259,9 +282,11 @@ export class ChartModel {
     const nextCount = Math.max(1, Math.min(length, Math.round(this.visibleCount * scale)));
     this.visibleCount = nextCount;
     this.rangeStart = this.clampStart(anchorIndex - Math.round((nextCount - 1) * safeAnchor));
+    this.invalidateVisibleData();
   }
 
   public getVisibleData(): VisibleChartData {
+    if (this.visibleDataCache !== null) return this.visibleDataCache;
     const from = this.clampStart(this.rangeStart);
     const to = Math.min(this.collection.getTimePointCount(this.replayCutoffTime), from + this.visibleCount);
     const visibleTimes = this.collection.getTimePointsRange(from, to, this.replayCutoffTime);
@@ -277,7 +302,7 @@ export class ChartModel {
       minHeight: pane.minHeight,
       series: series.filter((item) => item.paneId === pane.id),
     }));
-    return {
+    this.visibleDataCache = {
       series,
       panes,
       times: visibleTimes,
@@ -285,6 +310,7 @@ export class ChartModel {
       from,
       to,
     };
+    return this.visibleDataCache;
   }
 
   public get allCandles(): Candle[] {
@@ -344,6 +370,20 @@ export class ChartModel {
     const length = this.collection.getTimePointCount(this.replayCutoffTime);
     return Math.max(0, Math.min(Math.max(0, length - this.visibleCount), Math.round(start)));
   }
+
+  private getTimeAxis(): readonly number[] {
+    if (this.timeAxisCache === null) this.timeAxisCache = this.collection.getTimePoints();
+    return this.timeAxisCache;
+  }
+
+  private invalidateTimeAxis(): void {
+    this.timeAxisCache = null;
+    this.visibleDataCache = null;
+  }
+
+  private invalidateVisibleData(): void {
+    this.visibleDataCache = null;
+  }
 }
 
 function isCandle(value: SeriesPoint): value is Candle {
@@ -371,4 +411,3 @@ function upperBound(values: readonly number[], target: number): number {
   }
   return low;
 }
-
