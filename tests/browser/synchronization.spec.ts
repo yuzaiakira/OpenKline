@@ -161,7 +161,8 @@ test("coalesces rapid synchronized viewport changes into one frame per chart", a
 test("cancels a pending viewport frame when a chart is destroyed", async ({ page }) => {
   await page.goto("/examples/vanilla/index.html");
   const result = await page.evaluate(async () => {
-    const module = await import("/dist/src/index.js");
+    const moduleUrl: string = "/dist/src/index.js";
+    const module = await import(moduleUrl);
     const root = document.createElement("div");
     root.style.cssText = "width: 400px; height: 240px";
     document.body.append(root);

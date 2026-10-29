@@ -201,9 +201,11 @@ export class CanvasRenderer {
   }
 
   private drawCandles(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
-    const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
-    for (const candle of candles) {
-      const x = timeScale.xForTime(candle.time);
+    const xs = candles.map((candle) => timeScale.xForTime(candle.time));
+    const bodyWidth = getBodyWidth(xs);
+    for (let index = 0; index < candles.length; index += 1) {
+      const candle = candles[index]!;
+      const x = xs[index]!;
       const openY = scale.yForPrice(candle.open);
       const closeY = scale.yForPrice(candle.close);
       const color = candle.close >= candle.open ? style.upColor ?? theme.upCandle : style.downColor ?? theme.downCandle;
@@ -219,11 +221,13 @@ export class CanvasRenderer {
   }
 
   private drawOhlc(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
-    const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
+    const xs = candles.map((candle) => timeScale.xForTime(candle.time));
+    const bodyWidth = getBodyWidth(xs);
     const tickWidth = Math.max(1, bodyWidth / 2);
     context.lineWidth = normalizeLineWidth(style.lineWidth ?? 1);
-    for (const candle of candles) {
-      const x = Math.round(timeScale.xForTime(candle.time)) + 0.5;
+    for (let index = 0; index < candles.length; index += 1) {
+      const candle = candles[index]!;
+      const x = Math.round(xs[index]!) + 0.5;
       const color = candle.close >= candle.open ? style.upColor ?? style.color ?? theme.upCandle : style.downColor ?? style.color ?? theme.downCandle;
       context.strokeStyle = color;
       context.beginPath();
@@ -238,10 +242,12 @@ export class CanvasRenderer {
   }
 
   private drawHollowCandles(context: CanvasRenderingContext2D, candles: readonly Candle[], timeScale: TimeScale, scale: PriceScale, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
-    const bodyWidth = getBodyWidth(candles.map((candle) => timeScale.xForTime(candle.time)));
+    const xs = candles.map((candle) => timeScale.xForTime(candle.time));
+    const bodyWidth = getBodyWidth(xs);
     context.lineWidth = normalizeLineWidth(style.lineWidth ?? 1);
-    for (const candle of candles) {
-      const x = timeScale.xForTime(candle.time);
+    for (let index = 0; index < candles.length; index += 1) {
+      const candle = candles[index]!;
+      const x = xs[index]!;
       const openY = scale.yForPrice(candle.open);
       const closeY = scale.yForPrice(candle.close);
       const up = candle.close >= candle.open;
