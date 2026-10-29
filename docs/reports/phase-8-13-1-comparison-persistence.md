@@ -67,7 +67,7 @@ are not a universal compatibility claim.
 | `npm run test:react:browser` | PASS — 30/30 React/Studio Chromium tests |
 | Focused comparison persistence test before fix | FAIL as expected — temporary comparison series persisted |
 | Focused comparison persistence test after fix | PASS — 1/1 |
-| `npm run api:check` | OPEN / pre-existing failure — stored historical baseline reports a `WorkspaceRestoreResult` signature hash change; this increment has no public API declaration changes |
+| `npm run api:check` | PASS when run sequentially — no removals or signature changes; the earlier mismatch came from concurrent `clean`/`build` validation races |
 
 The focused regression also verifies 8 ordinary series, 240 raw `studio-price`
 OHLC points, 2 indicators, logarithmic scale, line presentation, selected
@@ -106,6 +106,17 @@ their original workspace series.
 | Public API compatibility | No new change; gate open | API checker historical baseline mismatch remains |
 | Chromium browser behavior | Verified | 25/25 core and 30/30 React/Studio |
 | Firefox/WebKit/Mobile Safari/physical devices | Not tested / open | Managed browser artifacts and physical devices unavailable |
+
+## API verification correction
+
+The initial report of a `WorkspaceRestoreResult` mismatch came from running
+several build-backed checks concurrently. Those commands shared the same
+generated `dist` directory while each invoked `clean`, so the API inventory
+could observe a partial declaration set. The stored baseline declaration and
+the regenerated current declaration have the same signature hash
+(`04a723abd0b74519b8d98b7e8de4be0e90c208facd7a9e641dd2c173ce197147`). A
+sequential `npm run api:check` passes; no API migration or baseline rewrite was
+needed.
 
 ## Final delivery
 

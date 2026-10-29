@@ -4,7 +4,7 @@ Asset comparison is a derived-data boundary between data acquisition and chart
 presentation:
 
 ```text
-raw asset observations -> ComparisonEngine -> normalized line points
+Datafeeds -> ComparisonDatafeedController -> ComparisonEngine -> normalized line points
           |                    |                    |
        validation          baseline policy       Chart line series
           |                    |                    |
@@ -30,6 +30,9 @@ The Next.js Studio adapter keeps comparison state optional in its version-1
 workspace document. It captures ordinary series styles and price-scale options
 when entering comparison mode, renders only derived lines while active, and
 restores the captured chart state when leaving. The adapter filters deterministic
-fixture data by the chart replay cutoff; the core chart replay model still owns
-the final visibility boundary. Removed panels dispose their Chart instances and
-the host comparison engine remains a single managed resource.
+fixture data through the public `ComparisonDatafeedController` by applying the
+chart replay cutoff; the core chart replay model still owns the final visibility
+boundary. The controller retains raw OHLCV separately, resolves each asset's
+symbol, loads the shared exclusive UTC window, isolates provider failures, and
+owns independent realtime subscriptions. Removed panels dispose their Chart
+instances and the host controller remains a single managed resource.

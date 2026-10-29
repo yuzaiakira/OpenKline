@@ -9,7 +9,7 @@ const candles = [
 
 test("root public API exposes the documented framework-independent contracts", async () => {
   for (const name of [
-    "Chart", "createChart", "InMemoryDatafeed", "IndicatorRegistry", "DrawingEngine",
+    "Chart", "createChart", "InMemoryDatafeed", "ComparisonDatafeedController", "IndicatorRegistry", "DrawingEngine",
     "PluginRegistry", "compileKlineScript", "ReplayEngine", "createBacktest",
     "createOptimizationWorker", "createScreenerWorker", "createPaperTradingAccount",
   ]) assert.equal(typeof api[name as keyof typeof api], "function", `${name} must remain a runtime export`);

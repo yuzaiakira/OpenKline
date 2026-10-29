@@ -156,6 +156,7 @@ test("Studio comparison mode preserves presentation state, normalizes assets, an
   await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
   await expect(page.getByText("Normalized display values; raw market prices remain unchanged.")).toBeVisible();
+  await expect(page.locator('[data-comparison-feed-status="ready"]')).toBeVisible();
   await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("BTC-USD");
   await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("ETH-USD");
 
@@ -191,6 +192,7 @@ test("Studio reload restores canonical presentation after saving while compariso
   await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
   await page.getByLabel("Comparison normalization").selectOption("percentage");
   await page.getByLabel("Compare AAPL").check();
+  await expect(page.locator('[data-comparison-feed-status="ready"]')).toBeVisible();
   await page.getByLabel("Workspace name").fill("Comparison Reload Verification");
   await page.getByRole("button", { name: "Save As", exact: true }).click();
 

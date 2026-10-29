@@ -6,8 +6,10 @@ import type { FinancialChartHandle } from "@openkline/react";
 import {
   WatchlistModel,
   ChartSynchronizationController,
-  ComparisonEngine,
+  ComparisonDatafeedController,
+  InMemoryDatafeed,
   type ComparisonAssetOutput,
+  type ComparisonDatafeedState,
   type ComparisonNormalizationMode,
   createDeterministicDemoQuoteProvider,
   createDefaultIndicatorRegistry,
@@ -160,6 +162,10 @@ function buildCandles(symbol: string, timeframe: Timeframe): Candle[] {
     const spread = baseline * (0.004 + ((index + seed) % 7) * 0.00045);
     return { time: start + index * interval, open, high: Math.max(open, close) + spread, low: Math.min(open, close) - spread, close, volume: 120 + ((index * 17 + seed) % 180) * 8 };
   });
+}
+
+function createStudioComparisonDatafeed(symbol: string, timeframe: Timeframe): InMemoryDatafeed {
+  return new InMemoryDatafeed({ symbol, timezone: "UTC", pricePrecision: 2 }, buildCandles(symbol, timeframe));
 }
 
 function pricePoints(candles: readonly Candle[]) { return candles.map((candle) => ({ time: candle.time, value: candle.close })); }
@@ -551,8 +557,9 @@ export default function MultiChartStudioClient() {
     assetIds: ["BTC-USD", "ETH-USD"],
   }));
   const [comparisonLines, setComparisonLines] = useState<ComparisonAssetOutput[]>([]);
-  const comparisonEngineRef = useRef<ComparisonEngine | null>(null);
-  if (comparisonEngineRef.current === null) comparisonEngineRef.current = new ComparisonEngine({ mode: "indexed" });
+  const comparisonDatafeedRef = useRef<ComparisonDatafeedController | null>(null);
+  const comparisonFeedsRef = useRef(new Map<string, InMemoryDatafeed>());
+  const [comparisonFeedState, setComparisonFeedState] = useState<ComparisonDatafeedState | null>(null);
   const [scaleMode, setScaleMode] = useState<PriceScaleMode>("linear");
   const [autoScale, setAutoScale] = useState(true);
   const [axisVisible, setAxisVisible] = useState(true);
@@ -646,29 +653,63 @@ export default function MultiChartStudioClient() {
   const comparisonPanel = useMemo<ComparisonPanelState | null>(() => comparisonSettings.active
     ? { active: true, mode: comparisonSettings.mode, lines: comparisonLines }
     : null, [comparisonLines, comparisonSettings.active, comparisonSettings.mode]);
+  const comparisonAssetKey = comparisonSettings.assetIds.join("\u0000");
   useEffect(() => {
-    const engine = comparisonEngineRef.current;
-    if (engine === null) return;
-    if (!comparisonSettings.active) {
-      setComparisonLines([]);
-      return;
-    }
-    engine.clear();
-    const cutoff = replayActive ? activeSnapshot.replayStatus.currentTimestamp : null;
-    for (const [index, id] of comparisonSettings.assetIds.entries()) {
-      const candles = buildCandles(id, activePanel.timeframe).filter((candle) => cutoff === null || (candle.time <= cutoff));
-      engine.addAsset({
-        id,
-        label: id,
-        color: comparisonColors[index % comparisonColors.length],
-        data: candles.map((candle) => ({ time: candle.time, price: candle.close })),
-      });
-    }
-    engine.setMode(comparisonSettings.mode);
-    const fallbackBaseline = buildCandles(activePanel.symbol, activePanel.timeframe)[0]?.time ?? null;
-    engine.setBaseline(comparisonSettings.baselineTime ?? fallbackBaseline, { maxAgeMs: comparisonSettings.baselineMaxAgeMs });
-    setComparisonLines(engine.getNormalizedData());
-  }, [activePanel.symbol, activePanel.timeframe, activeSnapshot.replayStatus.currentTimestamp, comparisonSettings, replayActive]);
+    comparisonDatafeedRef.current?.dispose();
+    comparisonDatafeedRef.current = null;
+    setComparisonLines([]);
+    setComparisonFeedState(null);
+    if (!comparisonSettings.active) return undefined;
+
+    const primaryCandles = buildCandles(activePanel.symbol, activePanel.timeframe);
+    const firstCandle = primaryCandles[0];
+    const lastCandle = primaryCandles.at(-1);
+    if (firstCandle === undefined || lastCandle === undefined) return undefined;
+    const controller = new ComparisonDatafeedController({
+      window: { from: firstCandle.time, to: lastCandle.time + intervalFor(activePanel.timeframe) },
+      mode: comparisonSettings.mode,
+      baseline: comparisonSettings.baselineTime === null ? null : { time: comparisonSettings.baselineTime, maxAgeMs: comparisonSettings.baselineMaxAgeMs },
+    });
+    comparisonSettings.assetIds.forEach((id, index) => {
+      const key = `${id}|${activePanel.timeframe}`;
+      let datafeed = comparisonFeedsRef.current.get(key);
+      if (datafeed === undefined) {
+        datafeed = createStudioComparisonDatafeed(id, activePanel.timeframe);
+        comparisonFeedsRef.current.set(key, datafeed);
+      }
+      controller.registerAsset({ id, symbol: id, timeframe: activePanel.timeframe, datafeed, label: id, color: comparisonColors[index % comparisonColors.length] });
+    });
+    const publishComparisonState = (): void => {
+      setComparisonLines(controller.getNormalizedData());
+      setComparisonFeedState(controller.getState());
+    };
+    const unsubscribe = controller.subscribe(publishComparisonState);
+    comparisonDatafeedRef.current = controller;
+    publishComparisonState();
+    void controller.load().then(() => {
+      if (comparisonDatafeedRef.current === controller) publishComparisonState();
+    });
+    return () => {
+      unsubscribe();
+      controller.dispose();
+      if (comparisonDatafeedRef.current === controller) comparisonDatafeedRef.current = null;
+    };
+  }, [activePanel.symbol, activePanel.timeframe, comparisonAssetKey, comparisonSettings.active]);
+  useEffect(() => {
+    const controller = comparisonDatafeedRef.current;
+    if (controller === null || !comparisonSettings.active) return;
+    controller.setMode(comparisonSettings.mode);
+    controller.setBaseline(comparisonSettings.baselineTime === null ? null : { time: comparisonSettings.baselineTime, maxAgeMs: comparisonSettings.baselineMaxAgeMs });
+    setComparisonLines(controller.getNormalizedData());
+    setComparisonFeedState(controller.getState());
+  }, [comparisonSettings.baselineMaxAgeMs, comparisonSettings.baselineTime, comparisonSettings.mode, comparisonSettings.active]);
+  useEffect(() => {
+    const controller = comparisonDatafeedRef.current;
+    if (controller === null || !comparisonSettings.active) return;
+    controller.setReplayCutoff(replayActive ? activeSnapshot.replayStatus.currentTimestamp : null);
+    setComparisonLines(controller.getNormalizedData());
+    setComparisonFeedState(controller.getState());
+  }, [activeSnapshot.replayStatus.currentTimestamp, comparisonSettings.active, replayActive]);
   const selectedList = watchlists.lists.find((list) => list.id === watchlists.selectedWatchlistId) ?? watchlists.lists[0];
   const filteredSymbols = selectedList?.symbols.filter((symbol) => `${symbol.displaySymbol} ${symbol.name}`.toLowerCase().includes(watchlistSearch.toLowerCase())) ?? [];
   const filteredIndicatorCatalog = indicatorCatalog.filter((item) => (indicatorCategory === "all" || item.category === indicatorCategory) && (!favoritesOnly || favoriteIndicatorIds.includes(item.id)) && item.label.toLowerCase().includes(indicatorSearch.toLowerCase()));
@@ -844,7 +885,7 @@ export default function MultiChartStudioClient() {
       <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={deleteWorkspace}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceId} onChange={(event) => loadWorkspace(event.target.value)}>{workspaceIds.map((id) => <option key={id} value={id}>{id === workspaceId ? workspaceName : id}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" onClick={() => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const file = new Blob([JSON.stringify(collectDocument(), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `openkline-${workspaceName.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); }}>Export</button><button type="button" onClick={() => importInputRef.current?.click()}>Import</button><input ref={importInputRef} type="file" accept="application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file); event.currentTarget.value = ""; }} /></div>
     </header>
     <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
-    <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{comparisonBaselineOptions.map((candle) => <option key={candle.time} value={candle.time}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL on one shared timeline using deterministic local fixtures.</p>}</section>
+    <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{comparisonBaselineOptions.map((candle) => <option key={candle.time} value={candle.time}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><small data-comparison-feed-status={comparisonFeedState?.status ?? "idle"}>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small>{comparisonFeedState?.assets.filter((asset) => asset.error !== null).map((asset) => <small key={asset.id}> {asset.id}: {asset.error}</small>)}<ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL on one shared timeline using deterministic local fixtures.</p>}</section>
     <div className={styles.replayBar}><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label><label className={styles.check}><input aria-label="Snap drawings to visible OHLC" type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} />Snap drawings to visible OHLC</label></div>
     {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
     <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer"><div className={styles.panelHeading}><h2>Indicator Explorer</h2><span>{filteredIndicatorCatalog.length} definitions</span></div><div className={styles.indicatorExplorerFilters}><label>Search<input aria-label="Library search" placeholder="Search indicators" value={indicatorSearch} onChange={(event) => setIndicatorSearch(event.target.value)} /></label><label>Category<select aria-label="Category filter" value={indicatorCategory} onChange={(event) => setIndicatorCategory(event.target.value)}>{indicatorCategories.map((category) => <option key={category} value={category}>{category === "all" ? "All categories" : category}</option>)}</select></label><label className={styles.check}><input aria-label="Favorites only" type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} />Favorites only</label></div><div className={styles.indicatorExplorerItems}>{filteredIndicatorCatalog.map((item) => <button type="button" key={item.id} aria-pressed={indicatorToAdd === item.id} onClick={() => setIndicatorToAdd(item.id)}>{favoriteIndicatorIds.includes(item.id) ? "★" : "☆"} {item.label}<small>{item.category}</small></button>)}</div><div className={styles.indicatorParameters}><strong>{indicatorToAdd} parameters</strong>{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "period") ? <label>Period<input aria-label="Period override" type="number" min="1" value={indicatorPeriodOverride} placeholder="definition default" disabled={replayActive} onChange={(event) => setIndicatorPeriodOverride(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "constant") ? <label>CCI constant<input aria-label="CCI constant" type="number" min="0" step="0.001" value={indicatorConstant} disabled={replayActive} onChange={(event) => setIndicatorConstant(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "multiplier") ? <label>Channel multiplier<input aria-label="Channel multiplier" type="number" min="0" step="0.1" value={indicatorMultiplier} disabled={replayActive} onChange={(event) => setIndicatorMultiplier(event.target.value)} /></label> : null}<button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button></div></section>

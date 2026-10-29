@@ -954,6 +954,32 @@ public-API rendering test.
 - [Open / Scope] No npm publication, release, licensing change, GitHub Actions
   workflow, or public Studio hosting is authorized by this increment.
 
+## Phase 8.14.0 provider-neutral multi-asset datafeed integration
+
+Phase 8.14.0 adds a public `ComparisonDatafeedController` that composes the
+existing `Datafeed` and `ComparisonEngine` contracts without coupling the core
+to a vendor, backend, framework, or transport implementation.
+
+- [Implemented / Verified locally] Multiple assets can be registered with the
+  same or separate Datafeeds, resolved independently, loaded through one
+  exclusive UTC window, and configured with explicit per-asset timeframes.
+  Historical candles are validated, ordered, deduplicated last-write-wins,
+  and retained separately from normalized comparison values.
+- [Implemented / Verified locally] Partial provider failures, empty histories,
+  AbortSignal cancellation, stale load protection, asset replacement/removal,
+  realtime corrections, out-of-order events, invalid event rejection, missing
+  subscriptions, and deterministic disposal are covered by focused Node tests.
+- [Implemented / Verified locally] Replay cutoffs mask future normalized points
+  without mutating acquired data. The private Next.js Studio now exercises the
+  public coordinator with deterministic offline `InMemoryDatafeed` fixtures and
+  exposes historical loading/error state without claiming live exchange data.
+- [Verified locally] The coordinator delegates baseline selection and
+  percentage/indexed formulas to `ComparisonEngine`; no comparison math or
+  synchronization/rendering subsystem was duplicated.
+- [Open / Environment] Firefox, WebKit, Mobile Safari, physical-device, and
+  broader visual/accessibility gates remain open in the cloud environment. No
+  universal browser or external-provider compatibility claim is made.
+
 ## Phase 8.13.1 comparison workspace persistence hardening
 
 Phase 8.13.1 fixes a Studio persistence defect in which saving while comparison
@@ -976,7 +1002,7 @@ temporarily linear price scale instead of the user's ordinary chart state.
 - [Open / Environment] Official Firefox, WebKit, Mobile Safari, physical
   device, accessibility, and visual-approval gates remain open as documented
   in the Phase 8.13 report. This increment makes no cross-browser claim.
-- [Open / Compatibility] The repository's API checker still reports its
-  historical `WorkspaceRestoreResult` baseline mismatch; this increment has no
-  public API declaration changes and does not alter that pre-existing gate.
-  See `docs/reports/phase-8-13-1-comparison-persistence.md`.
+- [Verified / Compatibility] A sequential API check passes with no removals or
+  signature changes. The earlier `WorkspaceRestoreResult` mismatch was caused
+  by concurrent validation commands racing through `clean`/`build`, not by an
+  API declaration change. See `docs/reports/phase-8-13-1-comparison-persistence.md`.

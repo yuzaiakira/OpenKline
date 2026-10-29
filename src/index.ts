@@ -26,6 +26,22 @@ export type {
   ComparisonNormalizationMode,
   ComparisonPricePoint,
 } from "./comparison.js";
+export { ComparisonDatafeedController } from "./comparison-datafeed.js";
+export type {
+  ComparisonDatafeedAsset,
+  ComparisonDatafeedAssetStatus,
+  ComparisonDatafeedAssetState,
+  ComparisonDatafeedChange,
+  ComparisonDatafeedChangeKind,
+  ComparisonDatafeedChangeListener,
+  ComparisonDatafeedControllerOptions,
+  ComparisonDatafeedLoadOptions,
+  ComparisonDatafeedLoadResult,
+  ComparisonDatafeedOverallState,
+  ComparisonDatafeedRealtimeState,
+  ComparisonDatafeedState,
+  ComparisonDatafeedWindow,
+} from "./comparison-datafeed.js";
 export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";

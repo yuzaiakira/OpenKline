@@ -56,3 +56,10 @@ legend and tooltip presentation, chart synchronization, and removal of derived
 series. Do not replace a chart's raw candlestick series with normalized values.
 For the private Next.js reference consumer, see
 `docs/guides/studio-comparison.md`.
+
+For provider-backed comparison across several symbols, use the additive
+`ComparisonDatafeedController` described in
+[`comparison-datafeed.md`](comparison-datafeed.md). It owns symbol resolution,
+exclusive historical ranges, independent subscriptions, cancellation, raw
+OHLCV retention, partial provider failures, and replay masking while delegating
+all normalization to `ComparisonEngine`.
