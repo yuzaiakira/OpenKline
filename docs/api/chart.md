@@ -127,6 +127,10 @@ chart.destroy();
   selects the nearest visible bar and returns the timestamp selected; passing
   `null` clears the crosshair. These are additive synchronization primitives;
   charts are never coupled automatically.
+- `ChartSynchronizationController` provides the opt-in multi-chart layer over
+  those primitives. See [Chart synchronization API](synchronization.md) for
+  registration, independent channel options, UTC matching, replay limits, and
+  cleanup.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, and stored series data. Other methods throw after
   destruction.

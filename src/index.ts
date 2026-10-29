@@ -1,4 +1,12 @@
 export { Chart, createChart } from "./chart.js";
+export { ChartSynchronizationController } from "./synchronization.js";
+export type {
+  ChartSynchronizationCrosshairEvent,
+  ChartSynchronizationOptions,
+  ChartSynchronizationRange,
+  ChartSynchronizationResolvedOptions,
+  ChartSynchronizationTarget,
+} from "./synchronization.js";
 export { CandleStore, CandleValidationError } from "./core/candle-store.js";
 export { isCandleSeriesType, toHeikinAshi } from "./core/candle-series.js";
 export { ChartModel } from "./core/chart-model.js";

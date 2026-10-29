@@ -1,27 +1,29 @@
-# Chart synchronization
+# Chart synchronization architecture
 
-Synchronization is opt-in and belongs to the host composition layer. The core
-Chart exposes only timestamp-based primitives:
+`ChartSynchronizationController` is a core, browser-framework-neutral adapter
+around existing Chart APIs:
 
-- `getVisibleTimeRange()` returns visible UTC boundaries;
-- `setVisibleTimeRange({ from, to })` maps boundaries through each chart's
-  available timestamps rather than assuming equal bar indexes;
-- `setCrosshairAtTime(time)` selects the nearest visible bar and returns the
-  timestamp actually selected, or clears the crosshair with `null`.
+```text
+Chart A events ──UTC time/range──> synchronization controller
+                                      │
+                                      ├──> Chart B public setters
+                                      └──> Chart C public setters
+```
 
-The Studio controller tags every propagated operation with its source panel ID
-and ignores events originated by its own propagation. A target chart resolves
-crosshair timestamps to its nearest available visible bar. Missing timestamps
-never receive invented values. Range synchronization uses UTC boundaries and
-lets the target clamp to its available history.
+The controller never reads or mutates a `CandleStore`, does not copy series,
+and does not assume matching bar indexes. `Chart.setCrosshairAtTime()` performs
+nearest-visible-bar selection. `Chart.getVisibleTimeRange()` converts the
+source's current viewport to UTC boundaries, while each target's
+`setVisibleTimeRange()` applies its own clamping and replay cutoff.
 
-Symbol and timeframe synchronization are separate switches. Enabling symbol
-sync updates participating panel metadata and deterministic fixture data;
-timeframe sync is independent and does not overwrite a panel's symbol unless
-both switches are enabled. Replay is never synchronized implicitly. A replay
-chart keeps its source and future-data boundary private, and crosshair/range
-propagation carries only timestamps and viewport intent.
+Each registration owns five event unsubscriptions. A per-channel reentrancy
+guard prevents target setters from echoing back into the source, and per-target
+last-value caches avoid repeated rendering. Data updates and replay transitions
+invalidate those caches because the same UTC request may resolve differently
+after a correction, symbol switch, or replay boundary. `chartDestroy` removes
+the registration automatically. `destroy()` removes all remaining listeners.
 
-The core remains framework-independent and does not retain a synchronization
-registry or import React. Hosts own subscriptions and must dispose them with
-the chart panels.
+The private Next.js Studio uses this controller for crosshair and viewport
+events. Its symbol/timeframe switches and nested workspace persistence remain
+host concerns, so the core API stays usable without React, Next.js, or a
+backend.
