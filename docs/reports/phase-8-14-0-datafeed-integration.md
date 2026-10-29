@@ -139,8 +139,10 @@ request was used.
 
 ## Final delivery
 
-The implementation commit and final remote synchronization are recorded after
-this report is committed. Required identity: `Akira Yuzai
-<yuzai.akira@gmail.com>`. Phase 8.14.0 is implemented and locally verified for
-the available environment; non-Chromium/device/provider-credential gates are
-not claimed as complete.
+The implementation commit is `0c4bb784708a2a107c3a4c1708f5244e40f07ddf`.
+It was pushed to `origin/main`, and a subsequent fetch verified that local
+`HEAD` and `origin/main` resolve to the same revision. Required identity:
+`Akira Yuzai <yuzai.akira@gmail.com>`. Phase 8.14.0 is implemented and locally
+verified for the available environment; non-Chromium/device/provider-
+credential gates are not claimed as complete. This delivery note is finalized
+in the follow-up documentation commit that records the verified push.
