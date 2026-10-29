@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
 const server = spawn(process.execPath, ["scripts/serve-example.mjs"], { stdio: "ignore" });
@@ -6,9 +7,15 @@ let browser;
 
 try {
   await waitForServer("http://127.0.0.1:4173/examples/vanilla/index.html");
+  // Prefer explicit override, then Playwright-managed browsers (official
+  // container sets PLAYWRIGHT_BROWSERS_PATH=/ms-playwright), then host Chromium.
+  const executablePath =
+    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
+    (process.env.PLAYWRIGHT_BROWSERS_PATH ? chromium.executablePath() : undefined) ??
+    (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : chromium.executablePath());
   browser = await chromium.launch({
     headless: true,
-    executablePath: "/usr/bin/chromium",
+    executablePath,
     args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--js-flags=--expose-gc"],
   });
   const page = await browser.newPage({ viewport: { width: 1_200, height: 520 } });

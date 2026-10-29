@@ -90,11 +90,15 @@ globalThis.__packResult = { before, after, readd, canvases: document.querySelect
   });
   await new Promise((resolve) => server.listen(4189, "127.0.0.1", resolve));
 
+  // Prefer explicit override, then Playwright-managed browsers (official
+  // container sets PLAYWRIGHT_BROWSERS_PATH=/ms-playwright), then host Chromium.
+  const executablePath =
+    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
+    (process.env.PLAYWRIGHT_BROWSERS_PATH ? chromium.executablePath() : undefined) ??
+    (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : chromium.executablePath());
   browser = await chromium.launch({
     headless: true,
-    // Host Chromium is used for this packed-consumer smoke only; official
-    // five-browser acceptance remains Docker-managed Playwright binaries.
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ?? "/usr/bin/chromium",
+    executablePath,
     args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
   });
   const page = await browser.newPage();
