@@ -42,6 +42,29 @@ test("legacy single-chart workspaces migrate without overwriting source data", (
   assert.deepEqual(legacy, legacyWorkspace());
 });
 
+test("Studio comparison state is optional, validated, and round-trips without changing legacy documents", () => {
+  const legacy = createStudioWorkspace({ panelId: "chart-1", symbol: "BTC-USD", timeframe: "1h", workspace: legacyWorkspace() });
+  assert.equal("comparison" in legacy, false);
+  const comparison = parseStudioWorkspace({
+    ...legacy,
+    comparison: {
+      active: true,
+      mode: "indexed",
+      baselineTime: 1_000,
+      baselineMaxAgeMs: 3_600_000,
+      assetIds: ["BTC-USD", "ETH-USD"],
+    },
+  });
+  assert.deepEqual(comparison.comparison, {
+    active: true,
+    mode: "indexed",
+    baselineTime: 1_000,
+    baselineMaxAgeMs: 3_600_000,
+    assetIds: ["BTC-USD", "ETH-USD"],
+  });
+  assert.throws(() => parseStudioWorkspace({ ...legacy, comparison: { active: true, mode: "indexed", baselineTime: null, baselineMaxAgeMs: 0, assetIds: ["BTC-USD", "BTC-USD"] } }), /duplicate/);
+});
+
 test("WatchlistModel supports stable CRUD, ordering, favorites, and round trips", () => {
   let next = 0;
   const model = new WatchlistModel(undefined, (prefix) => `${prefix}-${++next}`);

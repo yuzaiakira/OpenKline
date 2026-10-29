@@ -131,6 +131,11 @@ chart.destroy();
   those primitives. See [Chart synchronization API](synchronization.md) for
   registration, independent channel options, UTC matching, replay limits, and
   cleanup.
+- `ComparisonEngine` provides framework-independent percentage and indexed
+  performance lines for multiple assets. It chooses an at-or-before baseline
+  with an explicit freshness limit and preserves raw observations. See
+  [Asset comparison API](comparison.md); hosts must render its derived points as
+  separate series rather than replacing raw price data.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, and stored series data. Other methods throw after
   destruction.

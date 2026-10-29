@@ -22,6 +22,9 @@ Chart pointer events -> DrawingEngine -> versioned snapshots / pure geometry
 
 Chart -> PluginRegistry -> typed indicators/drawings/events/commands/state
                        -> controlled overlay commands -> Canvas2D renderer
+
+Raw asset observations -> ComparisonEngine -> derived percentage/indexed lines
+                                      -> host-owned chart series and legend
 ```
 
 `CandleStore` and `PointStore` own validated, ordered series data. The
@@ -43,6 +46,13 @@ supplies coordinates and the Canvas renderer consumes pure geometry.
 The plugin registry composes those boundaries without exposing the chart DOM,
 Canvas2D context, or private model. Workspace documents capture public state
 without capturing executable plugin code.
+
+`ComparisonEngine` is another browser- and framework-independent boundary. It
+keeps raw asset observations separate from normalized display lines, selects
+an explicit at-or-before baseline with bounded freshness, and handles
+corrections and disposal without changing the chart's raw price scale. The
+private Studio reference host owns the comparison controls, persistence, and
+derived line-series lifecycle.
 
 The package/release boundary is also explicit: the root package has no runtime
 dependencies, the private Next.js example owns its separate dependency tree,

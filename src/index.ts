@@ -356,6 +356,7 @@ export type {
   QuoteProvider,
   QuoteStatus,
   StudioChartPanelDocument,
+  StudioComparisonDocument,
   StudioLayout,
   StudioSynchronizationPreferences,
   StudioWorkspaceDocument,

@@ -1,4 +1,5 @@
 import { parseWorkspace, type WorkspaceDocument } from "../workspace.js";
+import type { ComparisonNormalizationMode } from "../comparison.js";
 import type { WatchlistDocument } from "./watchlist.js";
 
 export const OPENKLINE_STUDIO_WORKSPACE_VERSION = 1 as const;
@@ -19,6 +20,14 @@ export interface StudioChartPanelDocument {
   readonly workspace: WorkspaceDocument;
 }
 
+export interface StudioComparisonDocument {
+  readonly active: boolean;
+  readonly mode: ComparisonNormalizationMode;
+  readonly baselineTime: number | null;
+  readonly baselineMaxAgeMs: number;
+  readonly assetIds: readonly string[];
+}
+
 export interface StudioWorkspaceDocument {
   readonly version: typeof OPENKLINE_STUDIO_WORKSPACE_VERSION;
   readonly id: string;
@@ -27,6 +36,8 @@ export interface StudioWorkspaceDocument {
   readonly charts: readonly StudioChartPanelDocument[];
   readonly synchronization: StudioSynchronizationPreferences;
   readonly watchlists: WatchlistDocument;
+  /** Optional Phase 8.13 comparison state; omitted by older documents. */
+  readonly comparison?: StudioComparisonDocument;
 }
 
 export interface LegacyWorkspaceMigrationOptions {
@@ -78,7 +89,17 @@ export function parseStudioWorkspace(value: unknown): StudioWorkspaceDocument {
   });
   const synchronization = parseSynchronization(value.synchronization);
   const watchlists = parseWatchlists(value.watchlists);
-  return { version: 1, id, name, layout, charts, synchronization, watchlists };
+  const comparison = value.comparison === undefined ? undefined : parseComparison(value.comparison);
+  return {
+    version: 1,
+    id,
+    name,
+    layout,
+    charts,
+    synchronization,
+    watchlists,
+    ...(comparison === undefined ? {} : { comparison }),
+  };
 }
 
 export function migrateLegacyWorkspace(value: unknown, options: LegacyWorkspaceMigrationOptions = {}): StudioWorkspaceDocument {
@@ -171,6 +192,35 @@ function parseWatchlists(value: unknown): WatchlistDocument {
   });
   if (value.selectedWatchlistId !== null && !listIds.has(value.selectedWatchlistId)) throw new StudioWorkspaceValidationError("Selected watchlist does not exist");
   return { version: 1, selectedWatchlistId: value.selectedWatchlistId, lists };
+}
+
+function parseComparison(value: unknown): StudioComparisonDocument {
+  if (!isPlainObject(value)
+    || typeof value.active !== "boolean"
+    || (value.mode !== "percentage" && value.mode !== "indexed")
+    || (value.baselineTime !== null && (typeof value.baselineTime !== "number" || !Number.isSafeInteger(value.baselineTime) || value.baselineTime < 0))
+    || typeof value.baselineMaxAgeMs !== "number"
+    || !Number.isSafeInteger(value.baselineMaxAgeMs)
+    || value.baselineMaxAgeMs < 0
+    || !Array.isArray(value.assetIds)
+    || value.assetIds.length === 0) {
+    throw new StudioWorkspaceValidationError("Invalid Studio comparison state");
+  }
+  const baselineTime: number | null = value.baselineTime;
+  const baselineMaxAgeMs = value.baselineMaxAgeMs;
+  const ids = new Set<string>();
+  const assetIds = value.assetIds.map((id) => {
+    if (typeof id !== "string" || id.trim().length === 0 || ids.has(id.trim())) throw new StudioWorkspaceValidationError("Invalid or duplicate Studio comparison asset");
+    ids.add(id.trim());
+    return id.trim();
+  });
+  return {
+    active: value.active,
+    mode: value.mode,
+    baselineTime,
+    baselineMaxAgeMs,
+    assetIds,
+  };
 }
 
 function parseNonEmptyString(value: unknown, label: string): string {

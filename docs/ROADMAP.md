@@ -924,3 +924,32 @@ frequency viewport rendering and measuring the actual visual path.
 - [Open / Scope] No merge, npm publication, release, licensing change, or
   GitHub Actions workflow was performed. See
   `docs/reports/phase-8-12-2-viewport-performance.md`.
+
+## Phase 8.13 multi-asset comparison
+
+Phase 8.13 adds the first public multi-asset comparison foundation. The
+framework-independent `ComparisonEngine` validates and orders raw price
+observations, selects an explicit latest-at-or-before baseline with bounded
+freshness, and derives percentage or indexed lines without mutating raw chart
+data. Equal-time corrections, out-of-order updates, missing observations, and
+idempotent disposal are covered by deterministic Node tests and a Chromium
+public-API rendering test.
+
+- [Implemented / Verified locally] `ComparisonEngine` is exported from the
+  root package with raw snapshots, normalized output, status, change listeners,
+  corrections, baseline freshness, and lifecycle APIs.
+- [Implemented / Verified locally] The private Next.js Studio reference
+  consumer supports deterministic BTC-USD/ETH-USD/AAPL comparison, percentage
+  and indexed modes, baseline selection, legend/crosshair values, dynamic
+  asset selection, ordinary-series restoration, replay-aware cutoff behavior,
+  responsive controls, and optional workspace persistence.
+- [Measured locally] `npm run benchmark:comparison` exercises 3 assets at
+  10,000 and 100,000 observations per asset, including normalization, updates,
+  and disposal. Results are environment-specific and recorded in the final
+  Phase 8.13 verification report.
+- [Open / Environment] Official managed Firefox, WebKit, mobile emulation,
+  physical-device, accessibility, and visual-approval gates remain open in this
+  cloud environment unless independently evidenced. No universal browser or
+  performance claim is made from Chromium-only runs.
+- [Open / Scope] No npm publication, release, licensing change, GitHub Actions
+  workflow, or public Studio hosting is authorized by this increment.

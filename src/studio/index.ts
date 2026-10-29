@@ -9,6 +9,7 @@ export {
 export type {
   LegacyWorkspaceMigrationOptions,
   StudioChartPanelDocument,
+  StudioComparisonDocument,
   StudioLayout,
   StudioSynchronizationPreferences,
   StudioWorkspaceDocument,

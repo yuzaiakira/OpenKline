@@ -145,6 +145,35 @@ test("Studio synchronizes crosshair and visible UTC ranges across different time
   await expect(page.locator("canvas")).toHaveCount(1);
 });
 
+test("Studio comparison mode preserves presentation state, normalizes assets, and persists settings", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+
+  await expect(page.locator('[data-panel-id="chart-1"] canvas')).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-1"]').getByText("2 indicators", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Line", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByText("Normalized display values; raw market prices remain unchanged.")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("BTC-USD");
+  await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("ETH-USD");
+
+  await page.getByLabel("Comparison normalization").selectOption("percentage");
+  await page.getByLabel("Compare AAPL").check();
+  await expect(page.getByRole("list", { name: "Comparison legend" })).toContainText("AAPL");
+  await expect(page.getByText(/No future bar is used/)).toBeVisible();
+
+  await page.getByLabel("Workspace name").fill("Comparison Verification");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+  const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as { workspaces: Array<{ name: string; comparison?: { active: boolean; mode: string; assetIds: string[] } }> });
+  expect(saved.workspaces.find((workspace) => workspace.name === "Comparison Verification")).toMatchObject({ comparison: { active: true, mode: "percentage", assetIds: ["BTC-USD", "ETH-USD", "AAPL"] } });
+
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Line", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(errors).toEqual([]);
+});
+
 test("mobile multi-chart Studio switches the visible panel through the accessible selector", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

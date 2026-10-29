@@ -1,11 +1,14 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FinancialChart } from "@openkline/react";
 import type { FinancialChartHandle } from "@openkline/react";
 import {
   WatchlistModel,
   ChartSynchronizationController,
+  ComparisonEngine,
+  type ComparisonAssetOutput,
+  type ComparisonNormalizationMode,
   createDeterministicDemoQuoteProvider,
   createDefaultIndicatorRegistry,
   migrateLegacyWorkspace,
@@ -20,13 +23,16 @@ import {
   type CrosshairMoveEvent,
   type DrawingSnapshot,
   type PriceScaleMode,
+  type PriceScaleConfiguration,
   type ReplayApi,
   type ReplayStatus,
   type StudioLayout,
+  type StudioComparisonDocument,
   type StudioWorkspaceDocument,
   type WatchlistDocument,
   type WatchlistQuote,
   type WorkspaceDocument,
+  type SeriesStyle,
 } from "openkline";
 import type { IndicatorCategory } from "openkline";
 import styles from "./studio.module.css";
@@ -86,12 +92,24 @@ interface ChartPanelProps {
   readonly onCrosshair: (panelId: string, event: CrosshairMoveEvent) => void;
   readonly onViewport: (panelId: string, range: { from: number; to: number }) => void;
   readonly onNotice: (message: string) => void;
+  readonly comparison: ComparisonPanelState | null;
+}
+
+interface ComparisonPanelState {
+  readonly active: boolean;
+  readonly mode: ComparisonNormalizationMode;
+  readonly lines: readonly ComparisonAssetOutput[];
+}
+
+function comparisonSeriesId(assetId: string): string {
+  return `comparison-${encodeURIComponent(assetId)}`;
 }
 
 const WORKSPACES_KEY = "openkline-studio-workspaces-v1";
 const LEGACY_WORKSPACE_KEY = "openkline-studio-workspace-v1";
 const DEFAULT_WORKSPACE_ID = "studio-default";
 const symbols = ["BTC-USD", "ETH-USD", "AAPL"] as const;
+const comparisonColors = ["#f59e0b", "#60a5fa", "#34d399"] as const;
 const timeframes: readonly Timeframe[] = ["5m", "1h", "4h", "1D"];
 const layoutChoices: ReadonlyArray<readonly [StudioLayout, string]> = [
   ["single", "Single chart"],
@@ -164,6 +182,8 @@ function indicatorParameters(id: string, overrides: { readonly period?: number; 
 }
 function chartCount(layout: StudioLayout): number { return layout === "single" ? 1 : layout === "four-grid" ? 4 : 2; }
 function textForCrosshair(event: CrosshairMoveEvent | null): string { return event?.time === null || event?.time === undefined || event?.price === null ? "Move across a chart for timestamp and price" : `${new Date(event.time).toLocaleString()} · ${event.formattedPrice ?? event.price.toLocaleString()}`; }
+function comparisonPointValue(value: CrosshairMoveEvent["series"][number]["value"]): number | null { if (value === null) return null; return "value" in value ? value.value : value.close; }
+function formatComparisonValue(value: number | null, mode: ComparisonNormalizationMode): string { if (value === null) return "—"; return mode === "percentage" ? `${value >= 0 ? "+" : ""}${value.toFixed(2)}%` : value.toFixed(2); }
 function textForReplay(status: ReplayStatus, timeZone: string): string { return status.currentTimestamp === null ? "No current bar" : new Date(status.currentTimestamp).toLocaleString(undefined, { timeZone }); }
 function panelKey(panel: PanelState): string { return `${panel.symbol}|${panel.timeframe}`; }
 
@@ -191,7 +211,7 @@ function syncMainPaneDiagnostics(target: Chart, root: HTMLElement | null): void 
   }
 }
 
-const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice }, ref) {
+const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice, comparison }, ref) {
   const chartHandle = useRef<FinancialChartHandle>(null);
   const chartRef = useRef<Chart | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
@@ -200,6 +220,10 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   const symbolWorkspacesRef = useRef(new Map<string, WorkspaceDocument>());
   const initializedRef = useRef(false);
   const marketKeyRef = useRef(panelKey(panel));
+  const comparisonSeriesIdsRef = useRef<Set<string>>(new Set());
+  const comparisonNormalStylesRef = useRef(new Map<string, SeriesStyle>());
+  const comparisonNormalScaleRef = useRef<PriceScaleConfiguration | null>(null);
+  const comparisonActiveRef = useRef(false);
   const [snapshot, setSnapshot] = useState<PanelSnapshot>(emptySnapshot);
   const [crosshairTime, setCrosshairTime] = useState<number | null>(null);
   const [visibleTimeRange, setVisibleTimeRange] = useState<{ readonly from: number | null; readonly to: number | null } | null>(null);
@@ -297,6 +321,68 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     try { target.restoreWorkspace(document); publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35)); }
     catch (error) { onNotice(`Could not restore ${panel.panelId}: ${error instanceof Error ? error.message : String(error)}`); }
   }, [onNotice, panel.panelId, publish]);
+
+  const applyComparison = useCallback((next: ComparisonPanelState | null): void => {
+    const target = chartRef.current;
+    if (target === null || !initializedRef.current || replayRef.current !== null) return;
+    if (next?.active === true) {
+      if (!comparisonActiveRef.current) {
+        comparisonNormalStylesRef.current.clear();
+        const existingComparisonIds = new Set(target.getSeriesIds().filter((id) => id.startsWith("comparison-")));
+        comparisonSeriesIdsRef.current = existingComparisonIds;
+        target.getSeriesInfo().forEach((series) => {
+          if (!existingComparisonIds.has(series.id)) comparisonNormalStylesRef.current.set(series.id, { ...series.style });
+        });
+        comparisonNormalScaleRef.current = target.getPriceScaleOptions();
+        comparisonActiveRef.current = true;
+      }
+      const nextIds = new Set<string>();
+      for (const line of next.lines) {
+        const id = comparisonSeriesId(line.id);
+        nextIds.add(id);
+        if (target.getSeriesIds().includes(id)) target.removeSeries(id);
+        const series = target.addLineSeries({ id, title: line.label, style: { color: line.color ?? "#60a5fa", lineWidth: 2, visible: true } });
+        series.setData(line.data);
+        target.setSeriesStyle(id, { color: line.color ?? "#60a5fa", lineWidth: 2, visible: true });
+      }
+      for (const id of comparisonSeriesIdsRef.current) {
+        if (!nextIds.has(id) && target.getSeriesIds().includes(id)) target.removeSeries(id);
+      }
+      comparisonSeriesIdsRef.current = nextIds;
+      for (const series of target.getSeriesInfo()) {
+        if (!nextIds.has(series.id)) target.setSeriesStyle(series.id, { visible: false });
+      }
+      target.setPriceScaleOptions({ mode: "linear", autoScale: true, axisVisible: true });
+      return;
+    }
+    if (!comparisonActiveRef.current) return;
+    for (const id of comparisonSeriesIdsRef.current) {
+      if (target.getSeriesIds().includes(id)) target.removeSeries(id);
+    }
+    for (const [id, style] of comparisonNormalStylesRef.current) {
+      if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, style);
+    }
+    const savedScale = comparisonNormalScaleRef.current;
+    if (savedScale !== null) {
+      target.setPriceScaleOptions({
+        mode: savedScale.mode,
+        autoScale: savedScale.autoScale,
+        ...(savedScale.referencePrice === undefined ? {} : { referencePrice: savedScale.referencePrice }),
+        marginTop: savedScale.marginTop,
+        marginBottom: savedScale.marginBottom,
+        axisVisible: savedScale.axisVisible,
+      });
+      if (savedScale.range !== undefined) target.setPriceScaleRange(savedScale.range);
+    }
+    comparisonSeriesIdsRef.current = new Set();
+    comparisonNormalStylesRef.current.clear();
+    comparisonNormalScaleRef.current = null;
+    comparisonActiveRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    applyComparison(comparison);
+  }, [applyComparison, comparison]);
 
   const enterReplay = useCallback((): void => {
     const target = chartRef.current;
@@ -400,6 +486,16 @@ export default function MultiChartStudioClient() {
   const [indicatorConstant, setIndicatorConstant] = useState("0.015");
   const [indicatorMultiplier, setIndicatorMultiplier] = useState("2");
   const [presentation, setPresentation] = useState<Presentation>("candles");
+  const [comparisonSettings, setComparisonSettings] = useState<StudioComparisonDocument>(() => ({
+    active: false,
+    mode: "indexed",
+    baselineTime: buildCandles("BTC-USD", "1h")[0]?.time ?? null,
+    baselineMaxAgeMs: intervalFor("1h"),
+    assetIds: ["BTC-USD", "ETH-USD"],
+  }));
+  const [comparisonLines, setComparisonLines] = useState<ComparisonAssetOutput[]>([]);
+  const comparisonEngineRef = useRef<ComparisonEngine | null>(null);
+  if (comparisonEngineRef.current === null) comparisonEngineRef.current = new ComparisonEngine({ mode: "indexed" });
   const [scaleMode, setScaleMode] = useState<PriceScaleMode>("linear");
   const [autoScale, setAutoScale] = useState(true);
   const [axisVisible, setAxisVisible] = useState(true);
@@ -484,6 +580,37 @@ export default function MultiChartStudioClient() {
   const activeHandle = panelRefs.current.get(activePanel.panelId) ?? null;
   const activeSnapshot = snapshots[activePanel.panelId] ?? activeHandle?.getSnapshot() ?? emptySnapshot();
   const replayActive = activeSnapshot.replayStatus.state !== "idle" && activeSnapshot.replayStatus.state !== "disposed";
+  const comparisonBaselineOptions = useMemo(() => {
+    const candles = buildCandles(activePanel.symbol, activePanel.timeframe);
+    const indexes = [0, Math.floor(candles.length * 0.25), Math.floor(candles.length * 0.5), Math.floor(candles.length * 0.75)];
+    return [...new Set(indexes)].map((index) => candles[index]).filter((candle): candle is Candle => candle !== undefined);
+  }, [activePanel.symbol, activePanel.timeframe]);
+  const comparisonPanel = useMemo<ComparisonPanelState | null>(() => comparisonSettings.active
+    ? { active: true, mode: comparisonSettings.mode, lines: comparisonLines }
+    : null, [comparisonLines, comparisonSettings.active, comparisonSettings.mode]);
+  useEffect(() => {
+    const engine = comparisonEngineRef.current;
+    if (engine === null) return;
+    if (!comparisonSettings.active) {
+      setComparisonLines([]);
+      return;
+    }
+    engine.clear();
+    const cutoff = replayActive ? activeSnapshot.replayStatus.currentTimestamp : null;
+    for (const [index, id] of comparisonSettings.assetIds.entries()) {
+      const candles = buildCandles(id, activePanel.timeframe).filter((candle) => cutoff === null || (candle.time <= cutoff));
+      engine.addAsset({
+        id,
+        label: id,
+        color: comparisonColors[index % comparisonColors.length],
+        data: candles.map((candle) => ({ time: candle.time, price: candle.close })),
+      });
+    }
+    engine.setMode(comparisonSettings.mode);
+    const fallbackBaseline = buildCandles(activePanel.symbol, activePanel.timeframe)[0]?.time ?? null;
+    engine.setBaseline(comparisonSettings.baselineTime ?? fallbackBaseline, { maxAgeMs: comparisonSettings.baselineMaxAgeMs });
+    setComparisonLines(engine.getNormalizedData());
+  }, [activePanel.symbol, activePanel.timeframe, activeSnapshot.replayStatus.currentTimestamp, comparisonSettings, replayActive]);
   const selectedList = watchlists.lists.find((list) => list.id === watchlists.selectedWatchlistId) ?? watchlists.lists[0];
   const filteredSymbols = selectedList?.symbols.filter((symbol) => `${symbol.displaySymbol} ${symbol.name}`.toLowerCase().includes(watchlistSearch.toLowerCase())) ?? [];
   const filteredIndicatorCatalog = indicatorCatalog.filter((item) => (indicatorCategory === "all" || item.category === indicatorCategory) && (!favoritesOnly || favoriteIndicatorIds.includes(item.id)) && item.label.toLowerCase().includes(indicatorSearch.toLowerCase()));
@@ -550,10 +677,10 @@ export default function MultiChartStudioClient() {
 
   const applyDocument = (document: StudioWorkspaceDocument): void => {
     const firstChart = document.charts[0]?.workspace;
-    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
+    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
   };
 
-  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.getChart()?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument() }), [layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
+  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.getChart()?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings }), [comparisonSettings, layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
 
   const persist = useCallback((document: StudioWorkspaceDocument, all: readonly StudioWorkspaceDocument[]): void => {
     try { window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: document.id, workspaces: all })); const activeChart = document.charts[0]?.workspace; if (activeChart !== undefined) window.localStorage.setItem(LEGACY_WORKSPACE_KEY, JSON.stringify(activeChart)); setNotice(`Workspace “${document.name}” saved locally.`); }
@@ -581,8 +708,8 @@ export default function MultiChartStudioClient() {
     setNotice(`Layout changed to ${layoutChoices.find(([id]) => id === nextLayout)?.[1] ?? nextLayout}; hidden panel analysis is retained in this session.`);
   };
 
-  const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
-  const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); };
+  const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setComparisonSettings((current) => current.active ? { ...current, assetIds: [nextSymbol, ...current.assetIds.filter((id) => id !== nextSymbol)] } : current); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
+  const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); setComparisonSettings((current) => ({ ...current, baselineTime: buildCandles(activePanel.symbol, nextTimeframe)[0]?.time ?? current.baselineTime, baselineMaxAgeMs: intervalFor(nextTimeframe) })); };
 
   const onCrosshair = (panelId: string, event: CrosshairMoveEvent): void => { if (panelId === activePanelId) setCrosshair(event); };
   const onViewport = (_panelId: string, _range: { from: number; to: number }): void => undefined;
@@ -596,6 +723,25 @@ export default function MultiChartStudioClient() {
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const inputName = alertNameInputRef.current?.value ?? alertName; const normalizedName = inputName.trim() || "Price alert"; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: normalizedName, condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: normalizedName.slice(0, 120), outcome: "accepted" }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: "", outcome: "rejected" }); setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
   const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };
+
+  const toggleComparison = (): void => {
+    setComparisonSettings((current) => {
+      if (current.active) return { ...current, active: false };
+      const initialAssets = current.assetIds.includes(activePanel.symbol)
+        ? [activePanel.symbol, ...current.assetIds.filter((id) => id !== activePanel.symbol)]
+        : [activePanel.symbol, ...symbols.filter((id) => id !== activePanel.symbol).slice(0, 1)];
+      return { ...current, active: true, mode: current.mode, assetIds: initialAssets, baselineTime: comparisonBaselineOptions[0]?.time ?? current.baselineTime, baselineMaxAgeMs: intervalFor(activePanel.timeframe) };
+    });
+  };
+  const toggleComparisonAsset = (id: string): void => {
+    if (id === activePanel.symbol) return;
+    setComparisonSettings((current) => {
+      const assetIds = current.assetIds.includes(id) ? current.assetIds.filter((assetId) => assetId !== id) : [...current.assetIds, id];
+      return { ...current, assetIds: assetIds.includes(activePanel.symbol) ? assetIds : [activePanel.symbol, ...assetIds] };
+    });
+  };
+  const setComparisonMode = (mode: ComparisonNormalizationMode): void => setComparisonSettings((current) => ({ ...current, mode }));
+  const setComparisonBaseline = (time: number): void => setComparisonSettings((current) => ({ ...current, baselineTime: time }));
 
   const selectedSymbol = (symbolId: string): void => { const symbol = selectedList?.symbols.find((item) => item.id === symbolId); if (symbol !== undefined) changeActiveSymbol(symbol.displaySymbol); };
   const openScreenerChart = (symbol: string): void => { changeActiveSymbol(symbol); setNotice(`Opened ${symbol} from the screener in the active chart.`); };
@@ -630,6 +776,7 @@ export default function MultiChartStudioClient() {
       <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={deleteWorkspace}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceId} onChange={(event) => loadWorkspace(event.target.value)}>{workspaceIds.map((id) => <option key={id} value={id}>{id === workspaceId ? workspaceName : id}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" onClick={() => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const file = new Blob([JSON.stringify(collectDocument(), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `openkline-${workspaceName.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); }}>Export</button><button type="button" onClick={() => importInputRef.current?.click()}>Import</button><input ref={importInputRef} type="file" accept="application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file); event.currentTarget.value = ""; }} /></div>
     </header>
     <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
+    <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{comparisonBaselineOptions.map((candle) => <option key={candle.time} value={candle.time}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL on one shared timeline using deterministic local fixtures.</p>}</section>
     <div className={styles.replayBar}><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label><label className={styles.check}><input aria-label="Snap drawings to visible OHLC" type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} />Snap drawings to visible OHLC</label></div>
     {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
     <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer"><div className={styles.panelHeading}><h2>Indicator Explorer</h2><span>{filteredIndicatorCatalog.length} definitions</span></div><div className={styles.indicatorExplorerFilters}><label>Search<input aria-label="Library search" placeholder="Search indicators" value={indicatorSearch} onChange={(event) => setIndicatorSearch(event.target.value)} /></label><label>Category<select aria-label="Category filter" value={indicatorCategory} onChange={(event) => setIndicatorCategory(event.target.value)}>{indicatorCategories.map((category) => <option key={category} value={category}>{category === "all" ? "All categories" : category}</option>)}</select></label><label className={styles.check}><input aria-label="Favorites only" type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} />Favorites only</label></div><div className={styles.indicatorExplorerItems}>{filteredIndicatorCatalog.map((item) => <button type="button" key={item.id} aria-pressed={indicatorToAdd === item.id} onClick={() => setIndicatorToAdd(item.id)}>{favoriteIndicatorIds.includes(item.id) ? "★" : "☆"} {item.label}<small>{item.category}</small></button>)}</div><div className={styles.indicatorParameters}><strong>{indicatorToAdd} parameters</strong>{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "period") ? <label>Period<input aria-label="Period override" type="number" min="1" value={indicatorPeriodOverride} placeholder="definition default" disabled={replayActive} onChange={(event) => setIndicatorPeriodOverride(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "constant") ? <label>CCI constant<input aria-label="CCI constant" type="number" min="0" step="0.001" value={indicatorConstant} disabled={replayActive} onChange={(event) => setIndicatorConstant(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "multiplier") ? <label>Channel multiplier<input aria-label="Channel multiplier" type="number" min="0" step="0.1" value={indicatorMultiplier} disabled={replayActive} onChange={(event) => setIndicatorMultiplier(event.target.value)} /></label> : null}<button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button></div></section>
@@ -637,7 +784,7 @@ export default function MultiChartStudioClient() {
       <aside className={styles.objectTree} aria-label="Object tree"><h2>Objects</h2><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id}><button type="button" className={styles.objectName} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { activeHandle?.getChart()?.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { activeHandle?.getChart()?.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details></aside>
       <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={(event) => showPrompt("Rename watchlist", "Choose a name for this watchlist.", selectedList.name, (name) => { try { watchlistModel.rename(selectedList.id, name); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }, event.currentTarget)}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={(event) => showConfirm(`Delete watchlist “${selectedList.name}”?`, "The list and its symbols will be removed from this browser.", () => watchlistModel.delete(selectedList.id), event.currentTarget)}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
       <aside className={`${styles.sidebar} ${styles.watchlistSidebar}`} aria-label="Watchlists"><div className={styles.panelHeading}><h2>Watchlists</h2><button type="button" onClick={createWatchlist}>New</button></div><label>List<select aria-label="Watchlist" value={watchlists.selectedWatchlistId ?? ""} onChange={(event) => watchlistModel.select(event.target.value)}>{watchlists.lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label><input aria-label="Search watchlist" placeholder="Search symbols" value={watchlistSearch} onChange={(event) => setWatchlistSearch(event.target.value)} /><button type="button" onClick={addWatchlistSymbol}>Add sample symbol</button><ul className={styles.watchlistRows}>{filteredSymbols.map((symbol) => { const quote = quotes[symbol.id]; return <li key={symbol.id} className={symbol.displaySymbol === activePanel.symbol ? styles.watchlistActive : ""}><button type="button" onClick={() => selectedSymbol(symbol.id)}>{symbol.favorite ? "★" : "☆"} {symbol.displaySymbol}<small>{symbol.name}</small></button><span className={quote?.status === "ready" ? "" : styles.quoteStale}>{quote?.last?.toFixed(2) ?? "—"}<small>{quote === undefined ? "Loading" : quote.demo ? "Demo" : quote.status}</small></span><button type="button" aria-label={`Remove ${symbol.displaySymbol}`} onClick={() => watchlistModel.removeSymbol(selectedList!.id, symbol.id)}>×</button></li>; })}</ul><small>Quotes are deterministic demo data, not exchange prices.</small></aside>
-      <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={onChartReady} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} />)}</div><div className={styles.status} aria-live="polite"><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
+      <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={onChartReady} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} comparison={panel.panelId === activePanelId ? comparisonPanel : null} />)}</div><div className={styles.status} aria-live="polite"><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
       <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => setSync((current) => ({ ...current, crosshair: event.target.checked }))} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => setSync((current) => ({ ...current, visibleRange: event.target.checked }))} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => setSync((current) => ({ ...current, symbol: event.target.checked }))} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => setSync((current) => ({ ...current, timeframe: event.target.checked }))} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { activeHandle?.getChart()?.removeIndicator(indicator.id); activeHandle?.refresh(); }}>×</button></li>)}</ul></details><details open data-alert-input-value={alertNameInputRef.current?.value ?? alertName} data-alert-last-created-name={lastAlertDiagnostic?.createdName ?? ""} data-alert-last-outcome={lastAlertDiagnostic?.outcome ?? ""}><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input ref={alertNameInputRef} aria-label="Alert name" defaultValue={alertName} disabled={replayActive} onInput={(event) => setAlertName(event.currentTarget.value)} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
     </section>
     <ScreenerPanel watchlists={watchlists} onOpenChart={openScreenerChart} onFavorite={favoriteScreenerSymbol} onSelectWatchlist={(id) => { try { watchlistModel.select(id); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }} onNotice={setNotice} />
