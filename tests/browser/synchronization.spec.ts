@@ -110,3 +110,87 @@ test("bidirectional synchronization invalidates stale target caches", async ({ p
   expect(result.finalRange).toEqual({ from: 1_000, to: 2_000 });
   expect(result.remainingCanvases).toBe(0);
 });
+
+test("coalesces rapid synchronized viewport changes into one frame per chart", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(async () => {
+    const moduleUrl: string = "/dist/src/index.js";
+    const module = await import(moduleUrl);
+    const ChartSynchronizationController = module.ChartSynchronizationController as typeof import("../../src/synchronization.js").ChartSynchronizationController;
+    const createChart = module.createChart as typeof import("../../src/chart.js").createChart;
+    const roots = [document.createElement("div"), document.createElement("div")];
+    roots.forEach((root) => {
+      root.style.cssText = "width: 400px; height: 240px";
+      document.body.append(root);
+    });
+    const charts = roots.map((root) => createChart(root, { width: 400, height: 240 }));
+    const candle = (time: number, close: number) => ({ time, open: close - 1, high: close + 1, low: close - 2, close, volume: 1 });
+    charts.forEach((chart, chartIndex) => {
+      const series = chart.addCandlestickSeries({ id: `viewport-${chartIndex}` });
+      series.setData(Array.from({ length: 100 }, (_, index) => candle(index + 1_000, 20 + chartIndex + index / 10)));
+    });
+    const controller = new ChartSynchronizationController({ visibleRange: true });
+    controller.addChart("first", charts[0]!);
+    controller.addChart("second", charts[1]!);
+    const originalClearRect = CanvasRenderingContext2D.prototype.clearRect;
+    let clearRectCalls = 0;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args: Parameters<CanvasRenderingContext2D["clearRect"]>): void {
+      clearRectCalls += 1;
+      originalClearRect.apply(this, args);
+    };
+    const ranges = Array.from({ length: 8 }, (_, index) => ({ from: 1_000 + index * 4, to: 1_020 + index * 4 }));
+    ranges.forEach((range) => charts[0]!.setVisibleTimeRange(range));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const output = {
+      clearRectCalls,
+      firstRange: charts[0]!.getVisibleTimeRange(),
+      secondRange: charts[1]!.getVisibleTimeRange(),
+    };
+    CanvasRenderingContext2D.prototype.clearRect = originalClearRect;
+    controller.destroy();
+    charts.forEach((chart) => chart.destroy());
+    roots.forEach((root) => root.remove());
+    return output;
+  });
+
+  expect(result.clearRectCalls).toBe(2);
+  expect(result.firstRange).toEqual({ from: 1_028, to: 1_048 });
+  expect(result.secondRange).toEqual({ from: 1_028, to: 1_048 });
+});
+
+test("cancels a pending viewport frame when a chart is destroyed", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(async () => {
+    const moduleUrl: string = "/dist/src/index.js";
+    const module = await import(moduleUrl);
+    const root = document.createElement("div");
+    root.style.cssText = "width: 400px; height: 240px";
+    document.body.append(root);
+    const chart = module.createChart(root, { width: 400, height: 240 });
+    const series = chart.addCandlestickSeries({ id: "pending-destroy" });
+    series.setData(Array.from({ length: 20 }, (_, index) => ({
+      time: index + 1_000,
+      open: 20,
+      high: 22,
+      low: 19,
+      close: 21,
+      volume: 1,
+    })));
+    const originalClearRect = CanvasRenderingContext2D.prototype.clearRect;
+    let clearRectCalls = 0;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args: Parameters<CanvasRenderingContext2D["clearRect"]>): void {
+      clearRectCalls += 1;
+      originalClearRect.apply(this, args);
+    };
+    chart.setVisibleTimeRange({ from: 1_004, to: 1_012 });
+    chart.destroy();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    CanvasRenderingContext2D.prototype.clearRect = originalClearRect;
+    const output = { clearRectCalls, remainingCanvases: root.querySelectorAll("canvas").length };
+    root.remove();
+    return output;
+  });
+
+  expect(result.clearRectCalls).toBe(0);
+  expect(result.remainingCanvases).toBe(0);
+});
