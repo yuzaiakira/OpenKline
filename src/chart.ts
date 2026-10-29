@@ -819,14 +819,26 @@ export class Chart {
     this.assertReplayStructureMutationAllowed();
     const state = this.indicators.get(id);
     if (state === undefined) throw new Error(`Unknown indicator: ${id}`);
+    this.disposeManagedIndicator(state);
+    this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
+    this.render();
+  }
+
+  /** Dispose indicator instances, workers, and output series without emitting events. */
+  private clearManagedIndicators(): void {
+    for (const state of [...this.indicators.values()]) {
+      this.disposeManagedIndicator(state);
+      this.emit("indicatorChange", { action: "remove", id: state.id, indicatorId: state.indicatorId });
+    }
+  }
+
+  private disposeManagedIndicator(state: ManagedChartIndicator): void {
     this.disposeWorkerIndicator(state);
     for (const seriesId of state.outputSeriesIds) {
       if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
     }
     state.instance.dispose();
-    this.indicators.delete(id);
-    this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
-    this.render();
+    this.indicators.delete(state.id);
   }
 
   public registerDrawingTool(tool: DrawingToolDefinition): void {
@@ -1001,8 +1013,8 @@ export class Chart {
       datafeed,
       query: { symbol: query.symbol, timeframe: query.timeframe, from: query.from, to: query.to },
     };
-    for (const indicator of this.indicators.values()) indicator.instance.dispose();
-    this.indicators.clear();
+    // Symbol/session changes discard managed indicators; remove series and workers too.
+    this.clearManagedIndicators();
     const requestId = this.datafeedRequestId;
     try {
       await datafeed.resolveSymbol(query.symbol, query.signal);
