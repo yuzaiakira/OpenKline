@@ -13,9 +13,12 @@ Reducing a layout archives removed panels in the current browser session so
 they can be restored when the layout is expanded again. Save a named workspace
 to persist the complete panel set and nested chart workspaces.
 
-The synchronization switches are independent. Crosshair and visible-range
-sync use timestamps and target-side clamping. Symbol and timeframe sync update
-the selected panel set. Replay remains private to each panel.
+The synchronization switches are independent. The Studio registers each live
+Chart with the public `ChartSynchronizationController`; crosshair and
+visible-range sync use UTC timestamps and target-side clamping. Symbol and
+timeframe sync update the selected panel set. Replay remains private to each
+panel, and a replay cutoff prevents synchronized targets from seeing future
+bars.
 
 The Indicator Explorer is keyboard-accessible and exposes metadata categories,
 text search, favorites, and definition parameters. Selecting a definition

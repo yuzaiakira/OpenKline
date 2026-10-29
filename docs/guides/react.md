@@ -57,3 +57,10 @@ complete precedence contract.
 For a data-driven integration, keep the `candles` prop immutable and replace it
 when historical data changes. Use the imperative handle for streaming updates
 or a `Datafeed` subscription owned by the application.
+
+To link two React charts, keep refs to their imperative handles and register
+the charts with the framework-independent `ChartSynchronizationController`
+after both `onChartReady` callbacks have fired. Remove each chart on unmount or
+let its `chartDestroy` event unregister it automatically; destroy the
+controller when the owning workspace is disposed. The controller does not
+couple React state or datafeed instances.
