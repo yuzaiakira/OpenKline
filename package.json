@@ -26,6 +26,7 @@
     "test:browser:compat": "npm run build && playwright test --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari",
     "benchmark": "npm run build && node scripts/benchmark.mjs",
     "benchmark:browser": "npm run build && node scripts/browser-benchmark.mjs",
+    "benchmark:multi-chart": "npm run build && node scripts/multi-chart-benchmark.mjs",
     "benchmark:replay": "npm run build && node scripts/replay-benchmark.mjs",
     "benchmark:alerts": "npm run build && node scripts/alert-benchmark.mjs",
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
