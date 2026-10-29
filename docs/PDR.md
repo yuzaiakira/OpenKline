@@ -966,3 +966,22 @@ activate the custom source-available license, NOTICE, npm license metadata, or
 publication. See `docs/reports/phase-8-8-21-distribution-scope-decision.md`,
 `docs/reports/phase-8-8-21-package-attribution-scope.md`, and
 `docs/reports/phase-8-8-21-release-gate-matrix.md`.
+
+## Phase 8.11 chart UX and interaction quality — VERIFICATION OPEN
+
+Phase 8.11 starts from the consolidated `main` SHA
+`4325884b9b3364201cb28ab9adbf652bcbeffbf4` on a dedicated feature branch. A
+reproducible core defect in RTL wheel-zoom anchoring was fixed by mapping the
+pointer from the primary plot bounds into the logical time direction. The
+focused RTL regression, existing browser interaction tests, React/Studio
+lifecycle and responsive tests, Node tests, API/package/distribution checks,
+and Phase 8.10 CI stress profile pass locally in the cloud environment.
+
+The cloud system-Chromium 100,000-candle observation was approximately 62.47
+FPS with zero canvases after destruction. This is an environment-specific
+measurement and does not replace the prior official managed-browser evidence.
+The pinned Playwright Docker image could not be downloaded because the
+restricted registry returned `Forbidden`, so Firefox, WebKit, Mobile Safari,
+physical-device, and formal assistive-technology gates remain open. No full
+cross-browser compatibility or release readiness is claimed. The detailed
+matrix is in `docs/reports/phase-8-11-verification.md`.
