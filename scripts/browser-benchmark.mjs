@@ -7,12 +7,14 @@ let browser;
 
 try {
   await waitForServer("http://127.0.0.1:4173/examples/vanilla/index.html");
-  // Prefer explicit override, then Playwright-managed browsers (official
-  // container sets PLAYWRIGHT_BROWSERS_PATH=/ms-playwright), then host Chromium.
+  // Prefer explicit override, then an actually present Playwright-managed
+  // binary, then host Chromium. Avoid trusting PLAYWRIGHT_BROWSERS_PATH alone
+  // when the sandbox cache path is empty.
+  const managedChromium = chromium.executablePath();
   const executablePath =
     process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
-    (process.env.PLAYWRIGHT_BROWSERS_PATH ? chromium.executablePath() : undefined) ??
-    (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : chromium.executablePath());
+    (existsSync(managedChromium) ? managedChromium : undefined) ??
+    (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : managedChromium);
   browser = await chromium.launch({
     headless: true,
     executablePath,
