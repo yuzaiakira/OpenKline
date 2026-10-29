@@ -61,9 +61,12 @@ if (result.status === "ready" || result.status === "partial") {
 
 `resolveSymbol` is called before `getBars` for every asset. Historical candles
 are validated, filtered to `[from, to)`, sorted, and deduplicated with
-last-write-wins semantics. If the baseline is earlier than `from`, the
-controller requests from the baseline timestamp. It never fabricates candles
-for closures or missing sessions.
+last-write-wins semantics. When a freshness-limited baseline is configured,
+the acquisition lower bound is `min(window.from, baseline.time - maxAgeMs)`
+with safe non-negative UTC arithmetic. Baseline-supporting candles are retained
+in `getRawCandles()` but are not emitted as visible comparison points outside
+the configured window. It never fabricates candles for closures or missing
+sessions.
 
 ## State and partial failures
 
@@ -88,6 +91,52 @@ The controller retains defensive raw candles through
 `getRawCandles(assetId)`. Normalized values are available independently through
 `getNormalizedData()` and are never written into the raw candle store.
 
+### Coverage and calendars
+
+An asset may provide an optional schedule policy:
+
+```ts
+comparison.registerAsset({
+  id: "BTC-USD",
+  symbol: "BTCUSD",
+  timeframe: "1m",
+  datafeed: btcFeed,
+  coverage: { kind: "continuous", intervalMs: 60_000 },
+});
+
+const coverage = comparison.getState().assets[0]?.coverage;
+// coverage.completeness: "complete" | "incomplete" | "uncertain" | "empty"
+```
+
+`continuous` policies model fixed slots. A `sessions` or `sparse` policy can
+provide `isExpectedTime` to exclude known closures or irregular schedules. With
+no sufficient policy, coverage is `uncertain`; the coordinator does not infer
+that a missing fixed-timeframe bar is a provider failure. Coverage reports the
+visible requested range, observed range, missing intervals, calendar
+knowledge, and whether recovery was attempted.
+
+### Bounded historical recovery
+
+`backfill()` requests only confirmed missing intervals by default. Consumers
+may pass explicit ranges when a provider has no observable connection
+lifecycle:
+
+```ts
+const recovery = await comparison.backfill({
+  maxRanges: 16,
+  maxAttempts: 3,
+  maxConcurrency: 2,
+  retryBackoffMs: 100,
+});
+```
+
+Retries, ranges, concurrency, cancellation, and disposal are bounded. Equal
+timestamps use the same correction rule as initial history. A live candle
+received while a recovery request is pending is authoritative for that
+timestamp, so an older historical response cannot overwrite it. A failed
+recovery remains visible in `coverage.recovery`, `recovery.lastError`, and the
+per-asset status; no market closure is filled automatically.
+
 ## Realtime lifecycle and cancellation
 
 After a successful history load, the controller subscribes independently to
@@ -95,6 +144,13 @@ each feed that implements `subscribeBars`. Equal-timestamp updates replace
 the existing candle; out-of-order updates are inserted chronologically. An
 identical duplicate is ignored. Invalid events and provider errors affect only
 the corresponding asset and cannot corrupt its stored candles.
+
+`SubscribeBarsArgs.onStatus` is optional. Providers such as
+`WebSocketDatafeed` report `connecting`, `connected`, `reconnected`,
+`disconnected`, `error`, and `stopped`. When a reconnect is observable, the
+controller performs bounded recovery for the affected historical interval. A
+provider that cannot expose lifecycle events remains safe; the application can
+call `backfill()` explicitly.
 
 ```ts
 const abort = new AbortController();
@@ -135,9 +191,11 @@ listener and keep the controller's acquired data separate from replay display
 state.
 
 Changing the historical window with `setWindow()` or `setRange()` starts a new
-validated load. Changing mode or baseline is synchronous and does not refetch;
-if a new baseline precedes the already loaded range, call `load()` again so the
-coordinator can acquire the required earlier observation.
+validated load. Changing mode is synchronous. Changing a baseline is
+synchronous when the retained acquisition range is sufficient; if the new
+freshness window precedes retained history, the controller starts a validated
+reload automatically. Applications may still call `load()` explicitly when
+they need to coordinate the refresh with other state.
 
 The private Next.js Studio uses this public controller with deterministic
 `InMemoryDatafeed` instances. Those fixtures demonstrate the integration

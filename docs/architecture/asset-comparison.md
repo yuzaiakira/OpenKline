@@ -11,6 +11,22 @@ Datafeeds -> ComparisonDatafeedController -> ComparisonEngine -> normalized line
      corrections        percentage/indexed     legend/crosshair UI
 ```
 
+The coordinator separates acquisition from presentation. A baseline freshness
+window may request candles before `window.from`; those raw candles remain
+available for causal baseline selection, while normalized output is restricted
+to the visible `[window.from, window.to)` range. Optional provider-neutral
+coverage policies describe continuous slots or session-aware expected slots.
+Without a policy, the state is `uncertain` rather than treating weekends,
+holidays, or sparse observations as missing data.
+
+Confirmed missing intervals can be passed through bounded `backfill()`
+recovery. The coordinator limits ranges, attempts, and concurrency, merges
+equal timestamps deterministically, and gives a realtime candle received while
+recovery is pending precedence over an older historical response. A
+`WebSocketDatafeed` lifecycle signal can trigger this recovery after a
+reconnect; providers without lifecycle visibility retain an explicit manual
+recovery path.
+
 `ComparisonEngine` owns validated, ordered observations per asset, explicit
 baseline and freshness policy, deterministic normalization, change
 notifications, and disposal. It does not depend on DOM, React, Canvas2D,
@@ -34,5 +50,8 @@ fixture data through the public `ComparisonDatafeedController` by applying the
 chart replay cutoff; the core chart replay model still owns the final visibility
 boundary. The controller retains raw OHLCV separately, resolves each asset's
 symbol, loads the shared exclusive UTC window, isolates provider failures, and
-owns independent realtime subscriptions. Removed panels dispose their Chart
-instances and the host controller remains a single managed resource.
+owns independent realtime subscriptions. Its serializable source selector
+distinguishes deterministic demo data from an explicitly selected optional
+public provider; credentials and transport objects are never persisted.
+Removed panels dispose their Chart instances and the host controller remains a
+single managed resource.

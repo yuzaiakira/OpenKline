@@ -203,11 +203,16 @@ export interface GetBarsQuery {
   signal?: AbortSignal;
 }
 
+/** Lifecycle notifications emitted by datafeeds that can observe transport state. */
+export type DatafeedRealtimeStatus = "connecting" | "connected" | "reconnected" | "disconnected" | "error" | "stopped";
+
 export interface SubscribeBarsArgs {
   symbol: string;
   timeframe: string;
   onBar: (bar: Candle) => void;
   onError?: (error: Error) => void;
+  /** Optional transport lifecycle signal; providers that cannot observe it may omit it. */
+  onStatus?: (status: DatafeedRealtimeStatus) => void;
 }
 
 export interface Datafeed {

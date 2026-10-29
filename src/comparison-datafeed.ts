@@ -6,13 +6,81 @@ import type {
   ComparisonNormalizationMode,
   ComparisonPricePoint,
 } from "./comparison.js";
-import type { Candle, Datafeed, SymbolInfo } from "./types.js";
+import type { Candle, Datafeed, DatafeedRealtimeStatus, SymbolInfo } from "./types.js";
 
 export interface ComparisonDatafeedWindow {
   /** Inclusive lower UTC millisecond bound for requested historical bars. */
   readonly from: number;
   /** Exclusive upper UTC millisecond bound, matching `Datafeed.getBars`. */
   readonly to: number;
+}
+
+/**
+ * Optional provider-neutral schedule information used for coverage checks.
+ * `unknown` is the safe default: missing timestamps are reported as uncertain,
+ * never as fabricated market closures or candles.
+ */
+export interface ComparisonDatafeedCoveragePolicy {
+  readonly kind?: "continuous" | "sessions" | "sparse" | "unknown";
+  /** Expected slot spacing in UTC milliseconds when a slot model is available. */
+  readonly intervalMs?: number;
+  /** Optional UTC anchor for slot generation; the visible window start is used otherwise. */
+  readonly anchorTime?: number;
+  /** Return true for expected slots (for example, session-aware calendars). */
+  readonly isExpectedTime?: (time: number) => boolean;
+  /** Bound schedule iteration for irregular or very large ranges. */
+  readonly maxGapIntervals?: number;
+}
+
+export interface ComparisonDatafeedInterval {
+  readonly from: number;
+  readonly to: number;
+}
+
+export type ComparisonDatafeedCoverageCompleteness = "complete" | "incomplete" | "uncertain" | "empty";
+
+export interface ComparisonDatafeedCoverage {
+  readonly requested: ComparisonDatafeedWindow;
+  readonly observedFrom: number | null;
+  readonly observedTo: number | null;
+  readonly missing: readonly ComparisonDatafeedInterval[];
+  readonly completeness: ComparisonDatafeedCoverageCompleteness;
+  readonly calendarKnown: boolean;
+  readonly backfillNeeded: boolean;
+  readonly backfillAttempted: boolean;
+  readonly recovery: "idle" | "needed" | "running" | "complete" | "failed" | "cancelled";
+  readonly recoveryError: string | null;
+}
+
+export interface ComparisonDatafeedRecoveryState {
+  readonly state: "idle" | "needed" | "running" | "complete" | "failed" | "cancelled";
+  readonly attempts: number;
+  readonly lastError: string | null;
+}
+
+export interface ComparisonDatafeedBackfillOptions {
+  readonly assetIds?: readonly string[];
+  /** Explicit ranges are useful when a provider cannot expose a connection lifecycle. */
+  readonly ranges?: Readonly<Record<string, readonly ComparisonDatafeedInterval[]>>;
+  readonly maxRanges?: number;
+  readonly maxAttempts?: number;
+  readonly maxConcurrency?: number;
+  readonly retryBackoffMs?: number;
+  readonly signal?: AbortSignal;
+}
+
+export interface ComparisonDatafeedBackfillAssetResult {
+  readonly id: string;
+  readonly status: "complete" | "failed" | "cancelled" | "idle";
+  readonly requestedRanges: readonly ComparisonDatafeedInterval[];
+  readonly recoveredBars: number;
+  readonly attempts: number;
+  readonly error: string | null;
+}
+
+export interface ComparisonDatafeedBackfillResult {
+  readonly status: "complete" | "partial" | "failed" | "cancelled" | "idle";
+  readonly assets: readonly ComparisonDatafeedBackfillAssetResult[];
 }
 
 export interface ComparisonDatafeedAsset {
@@ -23,6 +91,8 @@ export interface ComparisonDatafeedAsset {
   readonly timeframe: string;
   readonly label?: string;
   readonly color?: string;
+  /** Optional expected-slot/calendar policy for historical coverage reporting. */
+  readonly coverage?: ComparisonDatafeedCoveragePolicy;
 }
 
 export interface ComparisonDatafeedControllerOptions {
@@ -33,7 +103,7 @@ export interface ComparisonDatafeedControllerOptions {
 
 export type ComparisonDatafeedAssetState = "registered" | "loading" | "ready" | "empty" | "error";
 export type ComparisonDatafeedOverallState = "idle" | "loading" | "ready" | "partial" | "empty" | "error" | "disposed";
-export type ComparisonDatafeedRealtimeState = "idle" | "subscribed" | "unsupported" | "stopped" | "error";
+export type ComparisonDatafeedRealtimeState = "idle" | "subscribed" | "unsupported" | "stopped" | "error" | "disconnected" | "recovering";
 
 export interface ComparisonDatafeedAssetStatus {
   readonly id: string;
@@ -49,6 +119,8 @@ export interface ComparisonDatafeedAssetStatus {
   readonly baselineTime: number | null;
   readonly baselinePrice: number | null;
   readonly error: string | null;
+  readonly coverage: ComparisonDatafeedCoverage;
+  readonly recovery: ComparisonDatafeedRecoveryState;
 }
 
 export interface ComparisonDatafeedState {
@@ -79,6 +151,11 @@ export type ComparisonDatafeedChangeKind =
   | "asset-error"
   | "realtime-updated"
   | "realtime-error"
+  | "realtime-status"
+  | "coverage-updated"
+  | "backfill-started"
+  | "backfill-completed"
+  | "backfill-error"
   | "load-cancelled"
   | "load-completed"
   | "window-changed"
@@ -105,12 +182,43 @@ interface AssetRecord {
   resolvedSymbol: string | null;
   error: string | null;
   unsubscribe: (() => void) | null;
+  coverage: ComparisonDatafeedCoverage;
+  recovery: ComparisonDatafeedRecoveryState;
+  liveByTime: Map<number, Candle>;
+  lastRealtimeTime: number | null;
 }
 
 interface ActiveLoad {
   readonly generation: number;
   readonly controller: AbortController;
   readonly records: readonly AssetRecord[];
+}
+
+interface ActiveBackfill {
+  readonly generation: number;
+  readonly controller: AbortController;
+  readonly records: readonly AssetRecord[];
+}
+
+interface BackfillTask {
+  readonly record: AssetRecord;
+  readonly range: ComparisonDatafeedInterval;
+}
+
+interface MutableBackfillResult {
+  readonly id: string;
+  status: "complete" | "failed" | "cancelled" | "idle";
+  readonly requestedRanges: readonly ComparisonDatafeedInterval[];
+  recoveredBars: number;
+  attempts: number;
+  error: string | null;
+}
+
+interface NormalizedBackfillOptions {
+  readonly maxRanges: number;
+  readonly maxAttempts: number;
+  readonly maxConcurrency: number;
+  readonly retryBackoffMs: number;
 }
 
 /**
@@ -130,7 +238,9 @@ export class ComparisonDatafeedController {
   private baseline: ComparisonBaseline | null;
   private replayCutoff: number | null = null;
   private activeLoad: ActiveLoad | null = null;
+  private activeBackfill: ActiveBackfill | null = null;
   private loadGeneration = 0;
+  private backfillGeneration = 0;
   private disposed = false;
 
   public constructor(options: ComparisonDatafeedControllerOptions) {
@@ -161,6 +271,10 @@ export class ComparisonDatafeedController {
       resolvedSymbol: null,
       error: null,
       unsubscribe: null,
+      coverage: emptyCoverage(this.window),
+      recovery: { state: "idle", attempts: 0, lastError: null },
+      liveByTime: new Map(),
+      lastRealtimeTime: null,
     };
     this.assets.set(config.id, record);
     this.engine.addAsset({
@@ -180,6 +294,7 @@ export class ComparisonDatafeedController {
   public removeAsset(id: string): boolean {
     this.assertAlive();
     this.cancelActiveLoad();
+    this.cancelActiveBackfill();
     const normalizedId = normalizeAssetId(id);
     const record = this.assets.get(normalizedId);
     if (record === undefined) return false;
@@ -214,6 +329,7 @@ export class ComparisonDatafeedController {
   public async load(options: ComparisonDatafeedLoadOptions = {}): Promise<ComparisonDatafeedLoadResult> {
     this.assertAlive();
     this.cancelActiveLoad();
+    this.cancelActiveBackfill();
     const generation = ++this.loadGeneration;
     const controller = new AbortController();
     const removeAbortListener = connectAbortSignal(options.signal, controller);
@@ -244,6 +360,109 @@ export class ComparisonDatafeedController {
   public cancel(): void {
     this.assertAlive();
     this.cancelActiveLoad();
+    this.cancelActiveBackfill();
+  }
+
+  /**
+   * Recover only confirmed missing ranges (or explicitly supplied ranges).
+   * Recovery is bounded, cancellable, and keeps live corrections authoritative
+   * when a historical response overlaps an already received realtime candle.
+   */
+  public async backfill(options: ComparisonDatafeedBackfillOptions = {}): Promise<ComparisonDatafeedBackfillResult> {
+    this.assertAlive();
+    this.cancelActiveBackfill();
+    const normalized = normalizeBackfillOptions(options);
+    const selected = options.assetIds === undefined
+      ? [...this.assets.values()]
+      : options.assetIds.map((id) => this.requireAsset(id));
+    const controller = new AbortController();
+    const removeAbortListener = connectAbortSignal(options.signal, controller);
+    const generation = ++this.backfillGeneration;
+    const records = [...new Set(selected)];
+    const active: ActiveBackfill = { generation, controller, records };
+    this.activeBackfill = active;
+    const results = new Map<string, MutableBackfillResult>();
+    const tasks: BackfillTask[] = [];
+    let remainingRanges = normalized.maxRanges;
+    for (const record of records) {
+      const explicit = options.ranges?.[record.config.id];
+      const requested = explicit === undefined
+        ? record.coverage.missing
+        : explicit.map(normalizeInterval);
+      const ranges = requested.slice(0, remainingRanges);
+      remainingRanges -= ranges.length;
+      results.set(record.config.id, {
+        id: record.config.id,
+        status: ranges.length === 0 ? "idle" : "complete",
+        requestedRanges: ranges,
+        recoveredBars: 0,
+        attempts: 0,
+        error: null,
+      });
+      if (ranges.length > 0) {
+        record.recovery = { state: "running", attempts: 0, lastError: null };
+        record.coverage = updateCoverageRecovery(record.coverage, true, "running", null);
+        for (const range of ranges) tasks.push({ record, range });
+      }
+    }
+    if (tasks.length > 0) this.emit({ kind: "backfill-started" });
+
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const task = tasks[cursor];
+        cursor += 1;
+        if (task === undefined) return;
+        if (!this.isCurrentBackfill(active)) return;
+        const result = results.get(task.record.config.id);
+        if (result === undefined) return;
+        try {
+          const recovered = await this.recoverRange(task.record, task.range, active, normalized);
+          result.recoveredBars += recovered.bars;
+          result.attempts += recovered.attempts;
+        } catch (error) {
+          if (isAbortError(error) || !this.isCurrentBackfill(active)) return;
+          result.status = "failed";
+          result.error = toError(error).message;
+          result.attempts += normalized.maxAttempts;
+          task.record.recovery = { state: "failed", attempts: result.attempts, lastError: result.error };
+          task.record.coverage = updateCoverageRecovery(task.record.coverage, true, "failed", result.error);
+          this.emit({ kind: "backfill-error", assetId: task.record.config.id, error: result.error });
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(normalized.maxConcurrency, Math.max(1, tasks.length)) }, () => worker()));
+    removeAbortListener();
+
+    if (this.disposed || !this.isCurrentBackfill(active) || controller.signal.aborted) {
+      if (!this.disposed && this.isCurrentBackfill(active)) this.cancelActiveBackfill();
+      return { status: "cancelled", assets: [...results.values()].map((result) => ({ ...result, status: "cancelled" as const })) };
+    }
+    this.activeBackfill = null;
+    const assets = records.map((record) => {
+      const result = results.get(record.config.id)!;
+      if (result.status === "complete") {
+        const coverage = calculateCoverage(record, this.window, true);
+        const state = coverage.backfillNeeded ? "failed" : "complete";
+        result.status = state;
+        if (state === "failed" && result.error === null) result.error = "Historical coverage remains incomplete after recovery";
+        record.recovery = { state, attempts: result.attempts, lastError: result.error };
+        record.coverage = updateCoverageRecovery(coverage, true, state, result.error);
+      }
+      this.emit({ kind: "coverage-updated", assetId: record.config.id });
+      return { ...result, requestedRanges: result.requestedRanges.map((range) => ({ ...range })) };
+    });
+    const failed = assets.filter((asset) => asset.status === "failed").length;
+    const cancelled = assets.filter((asset) => asset.status === "cancelled").length;
+    const completed = assets.filter((asset) => asset.status === "complete").length;
+    const status = assets.length === 0 || assets.every((asset) => asset.status === "idle")
+      ? "idle"
+      : cancelled > 0 ? "cancelled"
+        : failed === assets.length ? "failed"
+          : failed > 0 ? "partial"
+            : completed > 0 ? "complete" : "idle";
+    this.emit({ kind: "backfill-completed" });
+    return { status, assets };
   }
 
   /** Change the shared historical window and reload all assets. */
@@ -283,6 +502,9 @@ export class ComparisonDatafeedController {
     this.baseline = baseline === null ? null : normalizeBaseline(baseline);
     this.engine.setBaseline(this.baseline?.time ?? null, this.baseline === null ? {} : { maxAgeMs: this.baseline.maxAgeMs });
     this.emit({ kind: "baseline-changed" });
+    if (this.baseline !== null && this.assetsHaveInsufficientBaselineHistory()) {
+      void this.load();
+    }
   }
 
   public setBaselineTime(time: number | null, options: { readonly maxAgeMs?: number } = {}): void {
@@ -309,10 +531,11 @@ export class ComparisonDatafeedController {
   public getNormalizedData(): ComparisonAssetOutput[] {
     this.assertAlive();
     const normalized = this.engine.getNormalizedData();
-    if (this.replayCutoff === null) return normalized;
     return normalized.map((asset) => ({
       ...asset,
-      data: asset.data.filter((point) => point.time <= this.replayCutoff!),
+      data: asset.data.filter((point) => point.time >= this.window.from
+        && point.time < this.window.to
+        && (this.replayCutoff === null || point.time <= this.replayCutoff)),
     }));
   }
 
@@ -347,6 +570,8 @@ export class ComparisonDatafeedController {
         baselineTime: engineStatus?.baselineTime ?? null,
         baselinePrice: engineStatus?.baselinePrice ?? null,
         error: record.error,
+        coverage: cloneCoverage(record.coverage),
+        recovery: { ...record.recovery },
       };
     });
   }
@@ -387,7 +612,9 @@ export class ComparisonDatafeedController {
     if (this.disposed) return;
     this.disposed = true;
     this.activeLoad?.controller.abort();
+    this.activeBackfill?.controller.abort();
     this.activeLoad = null;
+    this.activeBackfill = null;
     for (const record of this.assets.values()) {
       record.token += 1;
       this.stopSubscription(record);
@@ -407,8 +634,7 @@ export class ComparisonDatafeedController {
       throwIfAborted(signal);
       validateSymbolInfo(info);
       record.resolvedSymbol = info.symbol;
-      const baseline = this.baseline;
-      const requestFrom = Math.min(this.window.from, baseline?.time ?? this.window.from);
+      const requestFrom = this.historicalRequestFrom();
       const bars = await awaitWithAbort(record.config.datafeed.getBars({
         symbol: record.config.symbol,
         timeframe: record.config.timeframe,
@@ -425,6 +651,8 @@ export class ComparisonDatafeedController {
       this.engine.replaceAssetData(record.config.id, candles.map(toComparisonPoint));
       record.state = candles.length === 0 ? "empty" : "ready";
       record.error = null;
+      record.coverage = calculateCoverage(record, this.window, false);
+      record.recovery = { state: "idle", attempts: 0, lastError: null };
       this.startSubscription(record);
       this.emit({ kind: candles.length === 0 ? "asset-empty" : "asset-ready", assetId: record.config.id });
     } catch (error) {
@@ -446,6 +674,10 @@ export class ComparisonDatafeedController {
     record.realtime = "stopped";
     record.resolvedSymbol = null;
     record.error = null;
+    record.coverage = emptyCoverage(this.window);
+    record.recovery = { state: "idle", attempts: 0, lastError: null };
+    record.liveByTime.clear();
+    record.lastRealtimeTime = null;
   }
 
   private startSubscription(record: AssetRecord): void {
@@ -461,6 +693,7 @@ export class ComparisonDatafeedController {
         timeframe: record.config.timeframe,
         onBar: (bar) => this.handleRealtime(record.config.id, token, bar),
         onError: (error) => this.handleRealtimeError(record.config.id, token, error),
+        onStatus: (status) => this.handleRealtimeStatus(record.config.id, token, status),
       });
       if (typeof unsubscribe !== "function") throw new Error("Datafeed subscribeBars must return an unsubscribe function");
       if (!this.isCurrentRecord(record, token)) {
@@ -488,9 +721,14 @@ export class ComparisonDatafeedController {
       this.engine.updateAsset(id, toComparisonPoint(normalized));
       record.candles.update(normalized);
       record.rawByTime.set(normalized.time, normalized);
+      record.liveByTime.set(normalized.time, normalized);
+      record.lastRealtimeTime = normalized.time;
       record.state = "ready";
       record.error = null;
+      record.coverage = calculateCoverage(record, this.window, record.coverage.backfillAttempted);
+      if (record.realtime === "recovering" || record.realtime === "disconnected") record.realtime = "subscribed";
       this.emit({ kind: "realtime-updated", assetId: id });
+      this.emit({ kind: "coverage-updated", assetId: id });
     } catch (error) {
       this.handleRealtimeError(id, token, error);
     }
@@ -503,6 +741,49 @@ export class ComparisonDatafeedController {
     record.realtime = "error";
     record.error = normalized.message;
     this.emit({ kind: "realtime-error", assetId: id, error: normalized.message });
+  }
+
+  private handleRealtimeStatus(id: string, token: number, status: DatafeedRealtimeStatus): void {
+    const record = this.assets.get(id);
+    if (record === undefined || !this.isCurrentRecord(record, token)) return;
+    if (status === "connected" || status === "stopped") {
+      record.realtime = status === "connected" ? "subscribed" : "stopped";
+      this.emit({ kind: "realtime-status", assetId: id });
+      return;
+    }
+    if (status === "disconnected") {
+      record.realtime = "disconnected";
+      record.recovery = { state: "needed", attempts: record.recovery.attempts, lastError: null };
+      record.coverage = updateCoverageRecovery(record.coverage, record.coverage.backfillAttempted, "needed", null);
+      this.emit({ kind: "realtime-status", assetId: id });
+      return;
+    }
+    if (status === "reconnected") {
+      record.realtime = "recovering";
+      this.emit({ kind: "realtime-status", assetId: id });
+      const from = this.recoveryFrom(record);
+      if (from === null) {
+        record.realtime = "subscribed";
+        record.recovery = { state: "complete", attempts: record.recovery.attempts, lastError: null };
+        return;
+      }
+      void this.backfill({ assetIds: [id], ranges: { [id]: [from] } }).then((result) => {
+        if (!this.isCurrentRecord(record, token)) return;
+        const asset = result.assets[0];
+        if (asset?.status === "failed") {
+          record.realtime = "error";
+          record.error = asset.error;
+        } else if (asset?.status === "cancelled") {
+          record.realtime = "disconnected";
+        } else {
+          record.realtime = "subscribed";
+        }
+        this.emit({ kind: "realtime-status", assetId: id });
+      }).catch((error: unknown) => this.handleRealtimeError(id, token, error));
+      return;
+    }
+    record.realtime = "error";
+    this.emit({ kind: "realtime-status", assetId: id });
   }
 
   private clearRecordData(record: AssetRecord): void {
@@ -530,12 +811,98 @@ export class ComparisonDatafeedController {
     this.emit({ kind: "load-cancelled" });
   }
 
+  private cancelActiveBackfill(): void {
+    const active = this.activeBackfill;
+    if (active === null) return;
+    active.controller.abort();
+    this.backfillGeneration += 1;
+    this.activeBackfill = null;
+    for (const record of active.records) {
+      if (record.recovery.state === "running") {
+        record.recovery = { state: "cancelled", attempts: record.recovery.attempts, lastError: null };
+        record.coverage = updateCoverageRecovery(record.coverage, true, "cancelled", null);
+      }
+    }
+  }
+
   private isCurrentLoad(record: AssetRecord, generation: number): boolean {
     return !this.disposed && this.activeLoad?.generation === generation && this.assets.get(record.config.id) === record;
   }
 
+  private isCurrentBackfill(active: ActiveBackfill): boolean {
+    return !this.disposed && this.activeBackfill?.generation === active.generation && this.backfillGeneration === active.generation;
+  }
+
   private isCurrentRecord(record: AssetRecord, token: number): boolean {
     return !this.disposed && this.assets.get(record.config.id) === record && record.token === token;
+  }
+
+  private historicalRequestFrom(): number {
+    if (this.baseline === null) return this.window.from;
+    return Math.min(this.window.from, subtractTime(this.baseline.time, this.baseline.maxAgeMs));
+  }
+
+  private assetsHaveInsufficientBaselineHistory(): boolean {
+    const requestFrom = this.historicalRequestFrom();
+    return [...this.assets.values()].some((record) => record.candles.getAll()[0]?.time === undefined || (record.candles.getAll()[0]?.time ?? requestFrom) > requestFrom);
+  }
+
+  private recoveryFrom(record: AssetRecord): ComparisonDatafeedInterval | null {
+    const from = Math.max(this.window.from, record.lastRealtimeTime ?? this.window.from);
+    if (from >= this.window.to) return null;
+    return { from, to: this.window.to };
+  }
+
+  private async recoverRange(
+    record: AssetRecord,
+    range: ComparisonDatafeedInterval,
+    active: ActiveBackfill,
+    options: NormalizedBackfillOptions,
+  ): Promise<{ readonly bars: number; readonly attempts: number }> {
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= options.maxAttempts; attempt += 1) {
+      if (!this.isCurrentBackfill(active)) throw abortError();
+      try {
+        throwIfAborted(active.controller.signal);
+        record.recovery = { state: "running", attempts: Math.max(record.recovery.attempts, attempt), lastError: null };
+        const bars = await awaitWithAbort(record.config.datafeed.getBars({
+          symbol: record.config.symbol,
+          timeframe: record.config.timeframe,
+          from: range.from,
+          to: range.to,
+          signal: active.controller.signal,
+        }), active.controller.signal);
+        if (!this.isCurrentBackfill(active)) throw abortError();
+        const normalized = normalizeHistoricalCandles(bars, range.from, range.to);
+        const changed = this.mergeRecoveredCandles(record, normalized);
+        return { bars: changed, attempts: attempt };
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        lastError = toError(error);
+        if (attempt < options.maxAttempts) await delayWithAbort(options.retryBackoffMs * attempt, active.controller.signal);
+      }
+    }
+    throw lastError ?? new Error("Historical recovery failed");
+  }
+
+  private mergeRecoveredCandles(record: AssetRecord, candles: readonly Candle[]): number {
+    let changed = 0;
+    for (const candle of candles) {
+      if (record.liveByTime.has(candle.time)) continue;
+      const previous = record.rawByTime.get(candle.time);
+      if (previous !== undefined && sameCandle(previous, candle)) continue;
+      record.candles.update(candle);
+      record.rawByTime.set(candle.time, { ...candle });
+      changed += 1;
+    }
+    if (changed > 0) {
+      this.engine.replaceAssetData(record.config.id, record.candles.getAll().map(toComparisonPoint));
+      record.state = "ready";
+      record.error = null;
+      record.coverage = calculateCoverage(record, this.window, true);
+      this.emit({ kind: "realtime-updated", assetId: record.config.id });
+    }
+    return changed;
   }
 
   private stopSubscription(record: AssetRecord): void {
@@ -595,7 +962,161 @@ function normalizeAsset(input: ComparisonDatafeedAsset): ComparisonDatafeedAsset
     timeframe,
     ...(input.label === undefined ? {} : { label: input.label.trim() }),
     ...(input.color === undefined ? {} : { color: input.color.trim() }),
+    ...(input.coverage === undefined ? {} : { coverage: normalizeCoveragePolicy(input.coverage) }),
   };
+}
+
+function normalizeCoveragePolicy(value: ComparisonDatafeedCoveragePolicy): ComparisonDatafeedCoveragePolicy {
+  if (typeof value !== "object" || value === null) throw new Error("Coverage policy must be an object");
+  const kind = value.kind ?? "unknown";
+  if (kind !== "continuous" && kind !== "sessions" && kind !== "sparse" && kind !== "unknown") throw new Error("Unsupported coverage policy kind");
+  const intervalMs = value.intervalMs === undefined ? undefined : normalizePositiveInteger(value.intervalMs, "Coverage intervalMs");
+  const anchorTime = value.anchorTime === undefined ? undefined : normalizeTime(value.anchorTime);
+  const maxGapIntervals = value.maxGapIntervals === undefined ? 10_000 : normalizePositiveInteger(value.maxGapIntervals, "Coverage maxGapIntervals");
+  if (value.isExpectedTime !== undefined && typeof value.isExpectedTime !== "function") throw new Error("Coverage isExpectedTime must be a function");
+  return {
+    kind,
+    ...(intervalMs === undefined ? {} : { intervalMs }),
+    ...(anchorTime === undefined ? {} : { anchorTime }),
+    ...(value.isExpectedTime === undefined ? {} : { isExpectedTime: value.isExpectedTime }),
+    maxGapIntervals,
+  };
+}
+
+function normalizeBackfillOptions(options: ComparisonDatafeedBackfillOptions): NormalizedBackfillOptions {
+  return {
+    maxRanges: options.maxRanges === undefined ? 32 : normalizePositiveInteger(options.maxRanges, "Backfill maxRanges"),
+    maxAttempts: options.maxAttempts === undefined ? 3 : normalizePositiveInteger(options.maxAttempts, "Backfill maxAttempts"),
+    maxConcurrency: options.maxConcurrency === undefined ? 2 : normalizePositiveInteger(options.maxConcurrency, "Backfill maxConcurrency"),
+    retryBackoffMs: options.retryBackoffMs === undefined ? 100 : normalizeNonNegativeInteger(options.retryBackoffMs, "Backfill retryBackoffMs"),
+  };
+}
+
+function normalizeInterval(value: ComparisonDatafeedInterval): ComparisonDatafeedInterval {
+  if (typeof value !== "object" || value === null) throw new Error("Backfill interval must be an object");
+  const from = normalizeTime(value.from);
+  const to = normalizeTime(value.to);
+  if (to <= from) throw new Error("Backfill interval.to must be greater than interval.from");
+  return { from, to };
+}
+
+function normalizePositiveInteger(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${label} must be a positive integer`);
+  return value;
+}
+
+function normalizeNonNegativeInteger(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${label} must be a non-negative integer`);
+  return value;
+}
+
+function subtractTime(time: number, age: number): number {
+  return age >= time ? 0 : time - age;
+}
+
+function emptyCoverage(window: ComparisonDatafeedWindow): ComparisonDatafeedCoverage {
+  return {
+    requested: { ...window },
+    observedFrom: null,
+    observedTo: null,
+    missing: [],
+    completeness: "empty",
+    calendarKnown: false,
+    backfillNeeded: false,
+    backfillAttempted: false,
+    recovery: "idle",
+    recoveryError: null,
+  };
+}
+
+function calculateCoverage(record: AssetRecord, window: ComparisonDatafeedWindow, backfillAttempted: boolean): ComparisonDatafeedCoverage {
+  const policy = record.config.coverage;
+  const visible = record.candles.getAll().filter((candle) => candle.time >= window.from && candle.time < window.to);
+  const previous = record.coverage;
+  const coverage = detectCoverage(policy, window, visible, backfillAttempted, previous.recovery, previous.recoveryError);
+  return coverage;
+}
+
+function detectCoverage(
+  policy: ComparisonDatafeedCoveragePolicy | undefined,
+  window: ComparisonDatafeedWindow,
+  candles: readonly Candle[],
+  backfillAttempted: boolean,
+  recovery: ComparisonDatafeedCoverage["recovery"],
+  recoveryError: string | null,
+): ComparisonDatafeedCoverage {
+  const sorted = [...candles].sort((left, right) => left.time - right.time);
+  const observedFrom = sorted[0]?.time ?? null;
+  const observedTo = sorted.at(-1)?.time ?? null;
+  const kind = policy?.kind ?? "unknown";
+  const intervalMs = policy?.intervalMs;
+  const calendarKnown = intervalMs !== undefined
+    && (kind === "continuous" || typeof policy?.isExpectedTime === "function");
+  if (sorted.length === 0) {
+    return {
+      requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "empty", calendarKnown,
+      backfillNeeded: false, backfillAttempted, recovery, recoveryError,
+    };
+  }
+  if (!calendarKnown || intervalMs === undefined) {
+    return {
+      requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "uncertain", calendarKnown,
+      backfillNeeded: false, backfillAttempted, recovery, recoveryError,
+    };
+  }
+  const maxSlots = policy?.maxGapIntervals ?? 10_000;
+  const anchor = policy?.anchorTime ?? window.from;
+  const firstSlot = anchor >= window.from
+    ? anchor
+    : anchor + Math.ceil((window.from - anchor) / intervalMs) * intervalMs;
+  const expected: number[] = [];
+  for (let time = firstSlot; time < window.to && expected.length <= maxSlots; time += intervalMs) {
+    if (policy?.isExpectedTime === undefined || policy.isExpectedTime(time)) expected.push(time);
+    if (time > Number.MAX_SAFE_INTEGER - intervalMs) break;
+  }
+  if (expected.length > maxSlots) {
+    return {
+      requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "uncertain", calendarKnown,
+      backfillNeeded: false, backfillAttempted, recovery, recoveryError,
+    };
+  }
+  const observed = new Set(sorted.map((candle) => candle.time));
+  const missingSlots = expected.filter((time) => !observed.has(time));
+  const missing = coalesceMissingSlots(missingSlots, intervalMs, window.to);
+  return {
+    requested: { ...window }, observedFrom, observedTo, missing,
+    completeness: missing.length === 0 ? "complete" : "incomplete",
+    calendarKnown, backfillNeeded: missing.length > 0, backfillAttempted, recovery, recoveryError,
+  };
+}
+
+function coalesceMissingSlots(slots: readonly number[], intervalMs: number, upperBound: number): ComparisonDatafeedInterval[] {
+  if (slots.length === 0) return [];
+  const ranges: ComparisonDatafeedInterval[] = [];
+  let from = slots[0]!;
+  let previous = from;
+  for (const slot of slots.slice(1)) {
+    if (slot !== previous + intervalMs) {
+      ranges.push({ from, to: Math.min(upperBound, previous + intervalMs) });
+      from = slot;
+    }
+    previous = slot;
+  }
+  ranges.push({ from, to: Math.min(upperBound, previous + intervalMs) });
+  return ranges;
+}
+
+function updateCoverageRecovery(
+  coverage: ComparisonDatafeedCoverage,
+  attempted: boolean,
+  recovery: ComparisonDatafeedCoverage["recovery"],
+  recoveryError: string | null,
+): ComparisonDatafeedCoverage {
+  return { ...coverage, requested: { ...coverage.requested }, missing: coverage.missing.map((range) => ({ ...range })), backfillAttempted: attempted, recovery, recoveryError };
+}
+
+function cloneCoverage(coverage: ComparisonDatafeedCoverage): ComparisonDatafeedCoverage {
+  return { ...coverage, requested: { ...coverage.requested }, missing: coverage.missing.map((range) => ({ ...range })) };
 }
 
 function normalizeAssetId(value: string): string {
@@ -713,6 +1234,26 @@ function awaitWithAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
       cleanup();
       reject(error);
     });
+  });
+}
+
+function delayWithAbort(delayMs: number, signal: AbortSignal): Promise<void> {
+  if (delayMs <= 0) {
+    throwIfAborted(signal);
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, delayMs);
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      reject(abortError());
+    };
+    if (signal.aborted) onAbort();
+    else signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 

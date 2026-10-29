@@ -163,6 +163,7 @@ test("WebSocketDatafeed reconnects with a bounded schedule and unsubscribes", as
   const sockets: FakeSocket[] = [];
   const historical = new InMemoryDatafeed({ symbol: "TEST", timezone: "UTC", pricePrecision: 2 });
   const received: number[] = [];
+  const statuses: string[] = [];
   const datafeed = new WebSocketDatafeed({
     url: "wss://prices.example.test",
     symbols: { TEST: { symbol: "TEST", timezone: "UTC", pricePrecision: 2 } },
@@ -182,6 +183,7 @@ test("WebSocketDatafeed reconnects with a bounded schedule and unsubscribes", as
     symbol: "TEST",
     timeframe: "1m",
     onBar: (bar) => received.push(bar.close),
+    onStatus: (status) => statuses.push(status),
   });
   sockets[0]!.open();
   sockets[0]!.message(JSON.stringify({ symbol: "TEST", timeframe: "1m", candle: { time: 1, open: 1, high: 2, low: 0, close: 1.5 } }));
@@ -197,6 +199,7 @@ test("WebSocketDatafeed reconnects with a bounded schedule and unsubscribes", as
   assert.deepEqual(received, [1.5, 1.75, 1.6]);
   assert.equal(sockets.length, 2);
   assert.equal(sockets[1]!.closeCount, 1);
+  assert.deepEqual(statuses, ["connecting", "connected", "disconnected", "connecting", "reconnected", "stopped"]);
 });
 
 class FakeSocket implements WebSocketLike {

@@ -1,5 +1,5 @@
 import { CandleStore } from "./core/candle-store.js";
-import type { Candle, Datafeed, SubscribeBarsArgs, SymbolInfo } from "./types.js";
+import type { Candle, Datafeed, DatafeedRealtimeStatus, SubscribeBarsArgs, SymbolInfo } from "./types.js";
 
 export interface WebSocketLike {
   readonly readyState: number;
@@ -91,15 +91,19 @@ class ManagedSubscription {
     this.reconnectTimer = null;
     this.socket?.close();
     this.socket = null;
+    this.args.onStatus?.("stopped");
   }
 
   private connect(): void {
     if (this.stopped) return;
+    this.args.onStatus?.("connecting");
     try {
       const socket = this.createSocket(this.options.url);
       this.socket = socket;
       socket.onopen = () => {
+        const status: DatafeedRealtimeStatus = this.attempts === 0 ? "connected" : "reconnected";
         this.attempts = 0;
+        this.args.onStatus?.(status);
         const message = this.options.createSubscribeMessage?.(this.args);
         if (message !== undefined) socket.send(typeof message === "string" ? message : JSON.stringify(message));
       };
@@ -117,10 +121,19 @@ class ManagedSubscription {
           this.args.onError?.(error instanceof Error ? error : new Error(String(error)));
         }
       };
-      socket.onerror = (event) => this.args.onError?.(new Error(`WebSocket error: ${String(event)}`));
-      socket.onclose = () => this.scheduleReconnect();
+      socket.onerror = (event) => {
+        this.args.onStatus?.("error");
+        this.args.onError?.(new Error(`WebSocket error: ${String(event)}`));
+      };
+      socket.onclose = () => {
+        if (this.stopped) return;
+        this.args.onStatus?.("disconnected");
+        this.scheduleReconnect();
+      };
     } catch (error) {
+      this.args.onStatus?.("error");
       this.args.onError?.(error instanceof Error ? error : new Error(String(error)));
+      this.args.onStatus?.("disconnected");
       this.scheduleReconnect();
     }
   }

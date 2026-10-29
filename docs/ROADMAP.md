@@ -980,6 +980,33 @@ to a vendor, backend, framework, or transport implementation.
   broader visual/accessibility gates remain open in the cloud environment. No
   universal browser or external-provider compatibility claim is made.
 
+## Phase 8.14 completion increments
+
+- [Implemented / Verified locally — 8.14.1] Historical acquisition now uses
+  the complete baseline freshness window with safe UTC subtraction while
+  keeping baseline-only candles outside visible normalized output. Optional
+  continuous, session-aware, sparse, and unknown coverage policies report
+  confirmed gaps versus expected closures and schedule uncertainty.
+- [Implemented / Verified locally — 8.14.2] `backfill()` performs bounded,
+  cancellable recovery with configurable range, attempt, concurrency, and
+  retry limits. Realtime lifecycle notifications are additive; reconnects
+  from `WebSocketDatafeed` trigger recovery, and live corrections win over
+  overlapping older history. Manual recovery remains available for providers
+  without lifecycle signals.
+- [Implemented / Fixture-verified — 8.14.3] The opt-in Binance example and
+  injected browser fixtures provide a provider-oriented REST/WebSocket path
+  outside the core. External live connectivity remains unverified in the
+  managed cloud environment and is not presented as a passing gate.
+- [Implemented / Chromium-verified — 8.14.4] Studio comparison supports an
+  explicit offline demo source or optional public provider source, reports
+  per-asset history/realtime/coverage/recovery state, provides recovery and
+  deterministic correction actions, and persists only serializable source and
+  comparison settings.
+- [Verification scope — 8.14.5] Sequential type, Node, API, package,
+  distribution, Chromium, React/Studio, and comparison benchmark checks are
+  required. Firefox, WebKit, mobile Safari, physical devices, and provider
+  credentials remain open unless independently executable and evidenced.
+
 ## Phase 8.13.1 comparison workspace persistence hardening
 
 Phase 8.13.1 fixes a Studio persistence defect in which saving while comparison
