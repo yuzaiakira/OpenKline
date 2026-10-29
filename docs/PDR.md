@@ -945,3 +945,11 @@ a proposal without effective LICENSE/NOTICE activation. See
 `docs/reports/phase-8-8-18-release-audit.md`,
 `docs/reports/phase-8-8-18-acceptance-matrix.md`, and
 `docs/reports/phase-8-8-18-next-actions.md`.
+
+## Phase 8.8.19 owner decision packet — NOT RELEASE READY
+
+Phase 8.8.19 prepares licensing, attribution, visual, accessibility, Android/iOS,
+and release-scope decisions for product baseline `bb3f1ca` without activating a
+license or publishing. Physical Android remains device-unavailable; native iOS
+Safari remains blocked. See `docs/reports/phase-8-8-19-owner-decision-packet.md`
+and companion Phase 8.8.19 reports.
