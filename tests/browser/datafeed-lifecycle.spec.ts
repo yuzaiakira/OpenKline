@@ -152,6 +152,183 @@ test("rapid symbol changes discard stale historical responses", async ({ page })
   expect(pageErrors).toEqual([]);
 });
 
+test("setDatafeed clears indicators and workers while preserving drawings and allowing id reuse under live pressure", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/examples/vanilla/index.html");
+  await page.waitForFunction(() => Boolean((globalThis as { __openklineChart?: unknown }).__openklineChart));
+
+  const result = await page.evaluate(async () => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
+    type Chart = {
+      setData(candles: Candle[]): void;
+      getData(): Candle[];
+      addIndicator(id: string, options?: object): { id: string };
+      addScriptIndicatorAsync(source: string, options?: object): Promise<{ id: string }>;
+      addDrawing(type: string, options: object): { id: string };
+      getDrawings(): Array<{ id: string }>;
+      getSeriesIds(): string[];
+      serializeWorkspace(): { indicators: Array<{ id: string }> };
+      setDatafeed(datafeed: object, query: object): Promise<void>;
+      stopDatafeed(): void;
+      destroy(): void;
+    };
+    const chart = (globalThis as unknown as { __openklineChart: Chart }).__openklineChart;
+    const moduleUrl = new URL("/dist/src/index.js", location.href).href;
+    const { InMemoryDatafeed } = await import(moduleUrl);
+
+    const makeBars = (count: number, start: number, base: number): Candle[] => Array.from({ length: count }, (_, index) => {
+      const close = base + index;
+      return {
+        time: start + index * 60_000,
+        open: close - 0.5,
+        high: close + 1,
+        low: close - 1,
+        close,
+        volume: 100 + index,
+      };
+    });
+
+    const feedABars = makeBars(24, Date.UTC(2026, 0, 1), 100);
+    const feedBBars = makeBars(18, Date.UTC(2026, 2, 1), 400);
+    const feedA = new InMemoryDatafeed({ symbol: "AAA", timezone: "UTC", pricePrecision: 2 }, feedABars);
+    const feedB = new InMemoryDatafeed({ symbol: "BBB", timezone: "UTC", pricePrecision: 2 }, feedBBars);
+    let activeSubs = 0;
+    const wrapSubscribe = (datafeed: InstanceType<typeof InMemoryDatafeed>) => {
+      const original = datafeed.subscribeBars.bind(datafeed);
+      datafeed.subscribeBars = (args: Parameters<typeof original>[0]) => {
+        activeSubs += 1;
+        const unsubscribe = original(args);
+        return () => {
+          activeSubs -= 1;
+          unsubscribe();
+        };
+      };
+    };
+    wrapSubscribe(feedA);
+    wrapSubscribe(feedB);
+
+    await chart.setDatafeed(feedA, {
+      symbol: "AAA",
+      timeframe: "1m",
+      from: feedABars[0]!.time,
+      to: feedABars.at(-1)!.time + 60_000,
+    });
+    const sma = chart.addIndicator("SMA", { id: "life-sma", period: 5 });
+    const rsi = chart.addIndicator("RSI", { id: "life-rsi", period: 5, pane: "new" });
+    const worker = await chart.addScriptIndicatorAsync('indicator("Life Worker")\nplot(close)', { id: "life-worker", timeoutMs: 2_000 });
+    const drawing = chart.addDrawing("horizontal-line", {
+      id: "life-drawing",
+      points: [{ time: feedABars.at(-1)!.time, price: feedABars.at(-1)!.close }],
+      style: { color: "#f59e0b" },
+    });
+    const seriesWithIndicators = chart.getSeriesIds();
+    const indicatorIdsBefore = chart.serializeWorkspace().indicators.map((item) => item.id).sort();
+
+    // Live updates on A while switching repeatedly to B and back.
+    feedA.pushBar({ ...feedABars.at(-1)!, close: feedABars.at(-1)!.close + 0.25, high: feedABars.at(-1)!.high + 0.25 });
+    let resolveSlow: ((bars: Candle[]) => void) | undefined;
+    const slowFeed = {
+      resolveSymbol: async (symbol: string) => ({ symbol, timezone: "UTC", pricePrecision: 2 }),
+      getBars: () => new Promise<Candle[]>((resolve) => {
+        resolveSlow = resolve;
+      }),
+      subscribeBars: () => {
+        activeSubs += 1;
+        return () => {
+          activeSubs -= 1;
+        };
+      },
+    };
+    const slowPromise = chart.setDatafeed(slowFeed, {
+      symbol: "SLOW",
+      timeframe: "1m",
+      from: feedABars[0]!.time,
+      to: feedABars.at(-1)!.time + 60_000,
+    });
+    // Indicators must already be cleared when the replacement session begins.
+    const midSwitchIndicators = chart.serializeWorkspace().indicators.map((item) => item.id);
+    const midSwitchSeries = chart.getSeriesIds();
+    await chart.setDatafeed(feedB, {
+      symbol: "BBB",
+      timeframe: "1m",
+      from: feedBBars[0]!.time,
+      to: feedBBars.at(-1)!.time + 60_000,
+    });
+    resolveSlow?.(feedABars);
+    await slowPromise.catch(() => undefined);
+
+    const afterB = {
+      closes: chart.getData().map((candle) => candle.close),
+      indicators: chart.serializeWorkspace().indicators.map((item) => item.id),
+      series: chart.getSeriesIds(),
+      drawings: chart.getDrawings().map((item) => item.id),
+      activeSubs,
+    };
+
+    // Re-add prior IDs on the new session.
+    chart.addIndicator("SMA", { id: sma.id, period: 5 });
+    chart.addIndicator("RSI", { id: rsi.id, period: 5, pane: "new" });
+    await chart.addScriptIndicatorAsync('indicator("Life Worker")\nplot(close)', { id: worker.id, timeoutMs: 2_000 });
+    const afterReadd = {
+      indicators: chart.serializeWorkspace().indicators.map((item) => item.id).sort(),
+      series: chart.getSeriesIds(),
+    };
+
+    // Rapid replacement under live B updates.
+    for (let index = 0; index < 3; index += 1) {
+      feedB.pushBar({
+        time: feedBBars.at(-1)!.time + (index + 1) * 60_000,
+        open: 420 + index,
+        high: 421 + index,
+        low: 419 + index,
+        close: 420.5 + index,
+        volume: 10,
+      });
+      await chart.setDatafeed(index % 2 === 0 ? feedA : feedB, {
+        symbol: index % 2 === 0 ? "AAA" : "BBB",
+        timeframe: "1m",
+        from: (index % 2 === 0 ? feedABars : feedBBars)[0]!.time,
+        to: (index % 2 === 0 ? feedABars : feedBBars).at(-1)!.time + 60_000,
+      });
+    }
+
+    chart.stopDatafeed();
+    const afterStopSubs = activeSubs;
+    chart.destroy();
+    return {
+      seriesWithIndicators,
+      indicatorIdsBefore,
+      midSwitchIndicators,
+      midSwitchSeries,
+      afterB,
+      afterReadd,
+      drawingId: drawing.id,
+      afterStopSubs,
+      afterDestroySubs: activeSubs,
+      canvases: document.querySelectorAll("canvas").length,
+    };
+  });
+
+  expect(result.indicatorIdsBefore).toEqual(["life-rsi", "life-sma", "life-worker"]);
+  expect(result.seriesWithIndicators.some((id) => id.startsWith("life-sma:"))).toBe(true);
+  expect(result.seriesWithIndicators.some((id) => id.startsWith("life-rsi:"))).toBe(true);
+  expect(result.seriesWithIndicators.some((id) => id.startsWith("life-worker:"))).toBe(true);
+  expect(result.midSwitchIndicators).toEqual([]);
+  expect(result.midSwitchSeries.some((id) => id.startsWith("life-"))).toBe(false);
+  expect(result.afterB.indicators).toEqual([]);
+  expect(result.afterB.series.some((id) => id.startsWith("life-"))).toBe(false);
+  expect(result.afterB.closes).toEqual(Array.from({ length: 18 }, (_, index) => 400 + index));
+  expect(result.afterB.drawings).toContain("life-drawing");
+  expect(result.afterB.activeSubs).toBe(1);
+  expect(result.afterReadd.indicators).toEqual(["life-rsi", "life-sma", "life-worker"]);
+  expect(result.afterReadd.series.some((id) => id.startsWith("life-sma:"))).toBe(true);
+  expect(result.afterStopSubs).toBe(0);
+  expect(result.afterDestroySubs).toBe(0);
+  expect(result.canvases).toBe(0);
+  expect(pageErrors).toEqual([]);
+});
+
 test("stopDatafeed and destroy release subscriptions", async ({ page }) => {
   await page.goto("/examples/vanilla/index.html");
   await page.waitForFunction(() => Boolean((globalThis as { __openklineChart?: unknown }).__openklineChart));
