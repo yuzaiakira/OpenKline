@@ -865,3 +865,31 @@ cleanup, deterministic browser coverage, and a dual-chart benchmark.
 - [Open / Scope] No merge, npm publication, release, licensing change, or
   GitHub Actions workflow was performed. Phase 8.12 remains open until the
   unresolved verification gates are independently evidenced.
+
+## Phase 8.12.1 synchronization correctness and performance
+
+Phase 8.12.1 is **implemented on `phase-8.12.1-sync-hardening` and locally
+verified; trusted managed-browser verification remains open**. The work
+started from `cde427846a8149390f7d63e7ef546b61814de6b1` and preserves the
+Phase 8.12 public API.
+
+- [Implemented / Verified] Fixed stale per-target crosshair and visible-range
+  deduplication after independent navigation, disabled/re-enabled sync, and
+  bidirectional alternation. Node and real Chromium regressions pass.
+- [Implemented / Measured] Reused visible-data/time-axis snapshots and added a
+  transient crosshair overlay with lazy frame capture. Dual-100k crosshair
+  median/p95 improved from `179.0/277.4 ms` to `5.5/6.1 ms` in equivalent
+  system Chromium runs. Visible-range updates remain Canvas2D render-bound;
+  no universal latency claim is made.
+- [Verified locally] Node tests pass `192/192`; standalone Chromium `22/22`;
+  React/Studio Chromium `28/28`; typecheck, API, package smoke, distribution,
+  Studio separation, stress, and both benchmark suites pass. Final single
+  100k observation is `61.89 FPS` with zero canvases after destruction.
+- [Open / Environment] Official Playwright-managed Firefox, WebKit, Mobile
+  Chrome, and Mobile Safari artifacts remain unavailable in Codex Cloud due
+  to the supported registry returning `Forbidden`. The changed SHA requires
+  the documented trusted-Manjaro handoff; prior browser evidence does not
+  cover it.
+- [Open / Scope] No merge, npm publication, release, license change, or
+  GitHub Actions workflow was performed. See
+  `docs/reports/phase-8-12-1-sync-hardening-verification.md`.
