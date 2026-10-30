@@ -2932,13 +2932,32 @@ export class Chart {
       // CandleStore already performs the validated update. Update the
       // canonical source with the same timestamp semantics instead of asking
       // the model for an O(N) defensive snapshot on every realtime tick.
-      this.rawCandles = upsertRawCandle(this.rawCandles, candle);
+      upsertRawCandleInPlace(this.rawCandles, candle);
       return;
     }
-    const next = upsertRawCandle(this.rawCandles, candle);
+    if (this.corporateActionMode === "split-adjusted" && this.tryUpdateSplitAdjustedCandle(candle)) return;
+    const next = [...this.rawCandles];
+    upsertRawCandleInPlace(next, candle);
     this.model.setData(next);
     this.rawCandles = next;
     this.applyCorporateActionDisplay(false);
+  }
+
+  private tryUpdateSplitAdjustedCandle(candle: Candle): boolean {
+    if (this.corporateActionDataset === null || this.corporateActionMode !== "split-adjusted") return false;
+    const adjustment = adjustCorporateActionData([candle], this.corporateActionDataset, {
+      mode: "split-adjusted",
+      context: this.corporateActionContext,
+      ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
+      volumePolicy: this.corporateActionVolumePolicy,
+    });
+    const adjusted = adjustment.candles?.[0];
+    upsertRawCandleInPlace(this.rawCandles, candle);
+    // A candle beyond a fixed causal completion frontier is retained in the
+    // raw source but must not enter the displayed model yet.
+    if (adjusted !== undefined) this.model.update(adjusted);
+    return true;
   }
 
   private computeCorporateActionAdjustment(): CorporateActionAdjustmentResult | null {
@@ -3999,12 +4018,15 @@ function lowerBoundCandleTime(candles: readonly Candle[], time: number): number 
   return low;
 }
 
-function upsertRawCandle(candles: readonly Candle[], candle: Candle): Candle[] {
-  const next = [...candles];
-  const index = lowerBoundCandleTime(next, candle.time);
-  if (next[index]?.time === candle.time) next[index] = { ...candle };
-  else next.splice(index, 0, { ...candle });
-  return next;
+function upsertRawCandleInPlace(candles: Candle[], candle: Candle): void {
+  const last = candles.at(-1);
+  if (last === undefined || candle.time > last.time) {
+    candles.push({ ...candle });
+    return;
+  }
+  const index = lowerBoundCandleTime(candles, candle.time);
+  if (candles[index]?.time === candle.time) candles[index] = { ...candle };
+  else candles.splice(index, 0, { ...candle });
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {

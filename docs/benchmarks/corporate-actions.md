@@ -33,3 +33,10 @@ results.
 
 No Canvas2D or browser performance conclusion is inferred from this document.
 
+The focused Canvas2D path benchmark is `npm run benchmark:corporate-actions:chart`.
+It compares a plain chart, raw mode with an attached corporate-action dataset,
+and split-adjusted mode at 1k, 10k, and 100k candles. It reports load time,
+append and correction median/p95, displayed-candle count, browser identity,
+and post-destroy canvas count. These are local runtime observations, not
+universal FPS, memory, or device guarantees.
+
