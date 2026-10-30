@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CumulativeVolumeDeltaCalculator,
   MarketTradeStore,
   OrderFlowValidationError,
   TradingCalendarEngine,
@@ -123,6 +124,26 @@ test("CVD is continuous or resets only at real calendar sessions", () => {
   assert.equal(session.observations.some((item) => item.reset), true);
   assert.equal(session.currentValue, -4);
   assert.throws(() => calculateCumulativeVolumeDelta(trades, { from: first.start, to: second.end, reset: "session" }), OrderFlowValidationError);
+});
+
+test("CVD calculator appends chronologically and falls back for corrections", () => {
+  const initial = [
+    makeTrade("a", 1_000, 100, 2, "buy"),
+    makeTrade("b", 1_500, 100, 1, "sell"),
+  ];
+  const options = { from: 0, to: 5_000, intervalMs: 1_000, sourceCoverage: "complete" as const };
+  const calculator = new CumulativeVolumeDeltaCalculator(options, initial);
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(initial, options));
+  calculator.update(makeTrade("c", 1_800, 100, 3, "buy"));
+  const afterSameBucket = [...initial, makeTrade("c", 1_800, 100, 3, "buy")];
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterSameBucket, options));
+  calculator.update(makeTrade("d", 2_500, 100, 4, "sell"));
+  const afterAppend = [...afterSameBucket, makeTrade("d", 2_500, 100, 4, "sell")];
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterAppend, options));
+  calculator.update(makeTrade("a", 1_000, 100, 5, "sell", 1));
+  const afterCorrection = [...afterAppend, makeTrade("a", 1_000, 100, 5, "sell", 1)];
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterCorrection, options));
+  calculator.dispose();
 });
 
 test("Time and Sales is bounded, stable, and replay/as-of safe", () => {

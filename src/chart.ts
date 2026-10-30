@@ -157,6 +157,7 @@ import {
   calculateFootprint,
   calculateTradeFlow,
   getTimeAndSales,
+  CumulativeVolumeDeltaCalculator,
   type CvdDisplayOptions,
   type CvdResult,
   type DepthDisplayOptions,
@@ -345,6 +346,9 @@ export class Chart {
   private orderFlowWorkspaceReference: import("./workspace.js").WorkspaceOrderFlow | null = null;
   private orderFlowRevision = 0;
   private footprintRenderCache: FootprintRenderCache | null = null;
+  private cvdCalculator: CumulativeVolumeDeltaCalculator | null = null;
+  private cvdCalculatorOptionsKey: string | null = null;
+  private cvdCalculatorCalendar: TradingCalendarEngine | null = null;
   private cvdSeriesId: string | null = null;
   private cvdPaneId: string | null = null;
   private cvdPaneOwned = false;
@@ -520,6 +524,7 @@ export class Chart {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
     this.marketTradeStore.update(value);
+    this.cvdCalculator?.update(value);
     this.orderFlowRevision += 1;
     this.refreshOrderFlowPresentation();
     this.render();
@@ -571,6 +576,7 @@ export class Chart {
           onTrade: (trade) => {
             if (this.destroyed || requestId !== this.marketTradeRequestId || this.isReplayActive()) return;
             this.marketTradeStore.update(trade);
+            this.cvdCalculator?.update(trade);
             this.orderFlowRevision += 1;
             this.refreshOrderFlowPresentation();
             this.render();
@@ -758,6 +764,7 @@ export class Chart {
     this.stopOrderBookSource();
     this.marketTradeStore.dispose();
     this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+    this.resetCvdCalculator();
     this.orderBookController?.dispose();
     this.orderBookController = null;
     this.orderBookHeatmap?.dispose();
@@ -2074,7 +2081,15 @@ export class Chart {
     next.setData(values);
     this.marketTradeStore.dispose();
     this.marketTradeStore = next;
+    this.resetCvdCalculator();
     this.updateOrderFlowWorkspaceReference();
+  }
+
+  private resetCvdCalculator(): void {
+    this.cvdCalculator?.dispose();
+    this.cvdCalculator = null;
+    this.cvdCalculatorOptionsKey = null;
+    this.cvdCalculatorCalendar = null;
   }
 
   private stopMarketTradeSource(): void {
@@ -2166,13 +2181,36 @@ export class Chart {
     const trades = this.getOrderFlowTradesForReplay();
     const range = this.resolveOrderFlowRange(trades);
     if (range === null) return null;
+    const cutoff = this.model.getReplayCutoff();
+    const options = {
+      ...range,
+      intervalMs: this.cvdDisplay.intervalMs,
+      reset: this.cvdDisplay.reset,
+      sourceCoverage: this.cvdDisplay.sourceCoverage,
+      ...(this.tradingCalendar === null ? {} : { calendar: this.tradingCalendar.calendar }),
+    } as const;
+    if (cutoff === null) {
+      const key = [range.from, range.to, options.intervalMs, options.reset, options.sourceCoverage].join(":");
+      if (this.cvdCalculator === null) {
+        this.cvdCalculator = new CumulativeVolumeDeltaCalculator(options, this.marketTradeStore.getAll());
+        this.cvdCalculatorOptionsKey = key;
+        this.cvdCalculatorCalendar = this.tradingCalendar?.calendar ?? null;
+      } else if (this.cvdCalculatorOptionsKey !== key || this.cvdCalculatorCalendar !== (this.tradingCalendar?.calendar ?? null)) {
+        this.cvdCalculator.setOptions(options);
+        this.cvdCalculatorOptionsKey = key;
+        this.cvdCalculatorCalendar = this.tradingCalendar?.calendar ?? null;
+      }
+      try {
+        return this.cvdCalculator.getResult();
+      } catch (error) {
+        if (!(error instanceof Error) || !error.message.includes("trading calendar")) throw error;
+        return null;
+      }
+    }
     try {
       return calculateCumulativeVolumeDelta(trades, {
-        ...range,
-        intervalMs: this.cvdDisplay.intervalMs,
-        reset: this.cvdDisplay.reset,
-        sourceCoverage: this.cvdDisplay.sourceCoverage,
-        ...(this.tradingCalendar === null ? {} : { calendar: this.tradingCalendar.calendar }),
+        ...options,
+        asOfTime: cutoff,
       });
     } catch (error) {
       if (!(error instanceof Error) || !error.message.includes("trading calendar")) throw error;
@@ -2579,6 +2617,7 @@ export class Chart {
     this.clearMultiTimeframe();
     this.clearSessionAnalysis();
     this.marketTradeStore.dispose();
+    this.resetCvdCalculator();
     this.orderBookController?.dispose();
     this.orderBookController = null;
     this.orderBookHeatmap?.dispose();
@@ -3737,6 +3776,7 @@ export class Chart {
       this.stopOrderBookSource();
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      this.resetCvdCalculator();
       attachedOrderBook?.dispose();
       this.orderBookController = null;
       this.orderBookHeatmap?.dispose();
@@ -3771,10 +3811,12 @@ export class Chart {
       next.setData(attachedTrades);
       this.marketTradeStore.dispose();
       this.marketTradeStore = next;
+      this.resetCvdCalculator();
     } else {
       this.stopMarketTradeSource();
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      this.resetCvdCalculator();
       if (persisted.tradeSource !== undefined && attachedReference?.tradeSource !== undefined) {
         console.warn(`OpenKline trade source is unresolved: ${persisted.tradeSource.sourceId}@${persisted.tradeSource.sourceVersion}`);
       }

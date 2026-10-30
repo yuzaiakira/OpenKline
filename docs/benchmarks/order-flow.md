@@ -33,4 +33,8 @@ update latency, frame interval/FPS, and heap/canvas state around destruction.
 
 Neither command uses external credentials or market data. Values in the Phase
 14 report are the output of the exact commands on the recorded environment;
-the scripts deliberately make no cross-device performance guarantee.
+the scripts deliberately make no cross-device performance guarantee. The
+chart-facing Phase 14.5 path also measures the effect of indexed visible-range
+reads, deterministic Footprint display LOD, cached CVD append state, and dense
+Canvas2D line-path reduction; these optimizations must be reported separately
+from exact analytics timing.

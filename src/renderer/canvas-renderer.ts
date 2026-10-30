@@ -136,7 +136,7 @@ export class CanvasRenderer {
         } else if (item.type === "heikin-ashi") {
           this.drawCandles(context, item.data.filter(isCandle), timeScale, scale, theme, item.style);
         } else if (item.type === "line") {
-          this.drawLine(context, item.data.filter(isPoint), timeScale, scale, item.style.color ?? theme.upCandle, item.style.lineWidth ?? 2);
+          this.drawLine(context, item.data.filter(isPoint), timeScale, scale, pane, item.style.color ?? theme.upCandle, item.style.lineWidth ?? 2);
         } else if (item.type === "area") {
           this.drawArea(context, item.data.filter(isPoint), timeScale, scale, pane, item.style.color ?? theme.upCandle, item.style.fillColor, item.style.lineWidth ?? 2);
         } else if (item.type === "baseline") {
@@ -270,11 +270,12 @@ export class CanvasRenderer {
     }
   }
 
-  private drawLine(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, color: string, lineWidth: number): void {
+  private drawLine(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, color: string, lineWidth: number): void {
+    const renderPoints = downsampleLinePoints(points, timeScale, pane);
     context.strokeStyle = color;
     context.lineWidth = normalizeLineWidth(lineWidth);
     context.beginPath();
-    points.forEach((point, index) => {
+    renderPoints.forEach((point, index) => {
       const x = timeScale.xForTime(point.time);
       const y = scale.yForPrice(point.value);
       if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
@@ -302,7 +303,7 @@ export class CanvasRenderer {
       context.fill();
       context.globalAlpha = 1;
     }
-    this.drawLine(context, points, timeScale, scale, color, lineWidth);
+    this.drawLine(context, points, timeScale, scale, pane, color, lineWidth);
   }
 
   private drawBaseline(context: CanvasRenderingContext2D, points: readonly Exclude<SeriesPoint, Candle>[], timeScale: TimeScale, scale: PriceScale, pane: PaneBounds, theme: ChartTheme, style: SeriesSnapshot["style"]): void {
@@ -682,6 +683,52 @@ function normalizeOpacity(value: number): number {
 
 function clampScaleY(value: number, pane: PaneBounds): number {
   return Number.isFinite(value) ? Math.max(pane.top, Math.min(pane.bottom, value)) : pane.bottom;
+}
+
+function downsampleLinePoints(
+  points: readonly Exclude<SeriesPoint, Candle>[],
+  timeScale: TimeScale,
+  pane: PaneBounds,
+): readonly Exclude<SeriesPoint, Candle>[] {
+  const maxPoints = Math.max(512, Math.min(4_096, Math.floor((pane.right - pane.left) * 4)));
+  if (points.length <= maxPoints) return points;
+  interface Bucket {
+    first: number;
+    last: number;
+    minimum: number;
+    maximum: number;
+    minimumValue: number;
+    maximumValue: number;
+  }
+  const buckets = new Map<number, Bucket>();
+  const width = Math.max(1, pane.right - pane.left);
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index]!;
+    const x = timeScale.xForTime(point.time);
+    const bucketIndex = Math.max(0, Math.min(Math.ceil(width) - 1, Math.floor(x - pane.left)));
+    const bucket = buckets.get(bucketIndex);
+    if (bucket === undefined) {
+      buckets.set(bucketIndex, { first: index, last: index, minimum: index, maximum: index, minimumValue: point.value, maximumValue: point.value });
+      continue;
+    }
+    bucket.last = index;
+    if (point.value < bucket.minimumValue) {
+      bucket.minimum = index;
+      bucket.minimumValue = point.value;
+    }
+    if (point.value > bucket.maximumValue) {
+      bucket.maximum = index;
+      bucket.maximumValue = point.value;
+    }
+  }
+  const selected = new Set<number>();
+  for (const bucket of buckets.values()) {
+    selected.add(bucket.first);
+    selected.add(bucket.minimum);
+    selected.add(bucket.maximum);
+    selected.add(bucket.last);
+  }
+  return [...selected].sort((left, right) => left - right).map((index) => points[index]!);
 }
 
 function isCandle(point: SeriesPoint): point is Candle {

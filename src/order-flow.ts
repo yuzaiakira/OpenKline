@@ -438,6 +438,8 @@ export function getTimeAndSales(values: readonly MarketTrade[] | MarketTradeData
 export class CumulativeVolumeDeltaCalculator {
   private readonly store: MarketTradeStore;
   private options: CvdOptions;
+  private cachedResult: CvdResult | null = null;
+  private lastTrade: MarketTrade | null = null;
   private disposed = false;
 
   public constructor(options: CvdOptions, values: readonly MarketTrade[] | MarketTradeDataset = []) {
@@ -449,32 +451,158 @@ export class CumulativeVolumeDeltaCalculator {
   public setData(values: readonly MarketTrade[] | MarketTradeDataset): void {
     this.assertAlive();
     this.store.setData(values);
+    this.cachedResult = null;
+    this.lastTrade = null;
   }
 
   public update(value: MarketTrade): void {
     this.assertAlive();
-    this.store.update(value);
+    const status = this.store.update(value);
+    if (status === "duplicate") return;
+    const normalized = this.store.get(value.id);
+    if (this.cachedResult !== null && normalized !== undefined && status === "inserted" && this.lastTrade !== null && compareCanonicalTrades(this.lastTrade, normalized) < 0) {
+      const next = appendCvdTrade(this.cachedResult, normalized, this.options);
+      if (next !== null) {
+        this.cachedResult = next;
+        this.lastTrade = normalized;
+        return;
+      }
+    }
+    this.cachedResult = null;
+    this.lastTrade = null;
   }
 
   public setOptions(options: CvdOptions): void {
     this.assertAlive();
     this.options = { ...options };
+    this.cachedResult = null;
+    this.lastTrade = null;
   }
 
   public getResult(): CvdResult {
     this.assertAlive();
-    return calculateCumulativeVolumeDelta(this.store.getAll(), this.options);
+    if (this.cachedResult === null) {
+      this.cachedResult = calculateCumulativeVolumeDelta(this.store.getAll(), this.options);
+      this.lastTrade = this.store.getAll().at(-1) ?? null;
+    }
+    return cloneCvdResult(this.cachedResult);
   }
 
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.store.dispose();
+    this.cachedResult = null;
+    this.lastTrade = null;
   }
 
   private assertAlive(): void {
     if (this.disposed) throw new OrderFlowValidationError("CumulativeVolumeDeltaCalculator is disposed");
   }
+}
+
+interface IncrementalCvdFlow {
+  readonly buyVolume: number;
+  readonly sellVolume: number;
+  readonly unknownSideVolume: number;
+  readonly delta: number;
+  readonly coverage: TradeFlowCoverage;
+}
+
+function compareCanonicalTrades(left: MarketTrade, right: MarketTrade): number {
+  return left.time - right.time
+    || (left.sequence ?? Number.MAX_SAFE_INTEGER) - (right.sequence ?? Number.MAX_SAFE_INTEGER)
+    || left.id.localeCompare(right.id)
+    || left.revision - right.revision;
+}
+
+function incrementalTradeFlow(trade: MarketTrade, options: CvdOptions): IncrementalCvdFlow {
+  const includeEstimated = options.includeEstimated ?? false;
+  const unknown = trade.aggressorSide === "unknown" || (trade.sideQuality === "estimated" && !includeEstimated);
+  const buyVolume = unknown || trade.aggressorSide !== "buy" ? 0 : trade.quantity;
+  const sellVolume = unknown || trade.aggressorSide !== "sell" ? 0 : trade.quantity;
+  const unknownSideVolume = unknown ? trade.quantity : 0;
+  return {
+    buyVolume,
+    sellVolume,
+    unknownSideVolume,
+    delta: buyVolume - sellVolume,
+    coverage: coverageFor([trade], options, unknownSideVolume, trade.sideQuality === "estimated" ? trade.quantity : 0),
+  };
+}
+
+function mergeTradeFlowCoverage(left: TradeFlowCoverage, right: TradeFlowCoverage): TradeFlowCoverage {
+  if (left === "unknown-coverage" || right === "unknown-coverage") return "unknown-coverage";
+  if (left === "partial-known-side" || right === "partial-known-side") return "partial-known-side";
+  if (left === "empty") return right;
+  if (right === "empty") return left;
+  return "complete-known-side";
+}
+
+function appendCvdTrade(result: CvdResult, trade: MarketTrade, options: CvdOptions): CvdResult | null {
+  if (trade.time < result.from || trade.time > result.to) return null;
+  if (options.asOfTime !== undefined && trade.time > options.asOfTime) return null;
+  const intervalMs = positiveInteger(options.intervalMs, 60_000, "intervalMs", 86_400_000);
+  const bucketStart = result.from + Math.floor((trade.time - result.from) / intervalMs) * intervalMs;
+  const flow = incrementalTradeFlow(trade, options);
+  const observations = [...result.observations];
+  const last = observations.at(-1);
+  const sameBucket = last !== undefined && last.bucketStart === bucketStart;
+  const session = options.reset === "session" ? options.calendar?.findSessionContaining(trade.time) : undefined;
+  const sessionId = session?.id ?? null;
+  if (options.reset === "session" && options.calendar === undefined) return null;
+  const nextCoverage = sameBucket && last !== undefined ? mergeTradeFlowCoverage(last.coverage, flow.coverage) : flow.coverage;
+  if (sameBucket && last !== undefined) {
+    observations[observations.length - 1] = {
+      ...last,
+      time: Math.max(last.time, trade.time),
+      delta: last.delta + flow.delta,
+      value: last.value + flow.delta,
+      buyVolume: last.buyVolume + flow.buyVolume,
+      sellVolume: last.sellVolume + flow.sellVolume,
+      unknownSideVolume: last.unknownSideVolume + flow.unknownSideVolume,
+      coverage: nextCoverage,
+    };
+  } else {
+    const previousSession = last?.sessionId ?? null;
+    const didReset = options.reset === "session" && previousSession !== null && sessionId !== null && previousSession !== sessionId;
+    const previousValue = didReset ? 0 : last?.value ?? 0;
+    observations.push({
+      time: trade.time,
+      bucketStart,
+      bucketEnd: Math.min(result.to, bucketStart + intervalMs),
+      delta: flow.delta,
+      value: previousValue + flow.delta,
+      buyVolume: flow.buyVolume,
+      sellVolume: flow.sellVolume,
+      unknownSideVolume: flow.unknownSideVolume,
+      coverage: nextCoverage,
+      sessionId,
+      reset: didReset,
+    });
+  }
+  const sessionIds = new Set(result.sessionIds);
+  if (sessionId !== null) sessionIds.add(sessionId);
+  return {
+    ...result,
+    observations,
+    currentValue: observations.at(-1)?.value ?? null,
+    totalDelta: result.totalDelta + flow.delta,
+    buyVolume: result.buyVolume + flow.buyVolume,
+    sellVolume: result.sellVolume + flow.sellVolume,
+    unknownSideVolume: result.unknownSideVolume + flow.unknownSideVolume,
+    tradeCount: result.tradeCount + 1,
+    coverage: mergeTradeFlowCoverage(result.coverage, flow.coverage),
+    sessionIds: [...sessionIds],
+  };
+}
+
+function cloneCvdResult(result: CvdResult): CvdResult {
+  return {
+    ...result,
+    observations: result.observations.map((observation) => ({ ...observation })),
+    sessionIds: [...result.sessionIds],
+  };
 }
 
 export class FootprintCalculator {

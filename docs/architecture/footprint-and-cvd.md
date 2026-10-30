@@ -20,3 +20,20 @@ choices. Each bucket/cell exposes buy, sell, unknown, total, count, delta, and
 coverage. This is distinct from the existing OHLCV range-estimated Volume
 Profile and must not be described as exhaustive when source coverage is
 partial or unknown.
+
+## Presentation performance
+
+The chart separates analytical truth from display resolution. A large visible
+Footprint window uses a deterministic time/price pixel grid that conserves
+buy, sell, and unknown volume in aggregated display bins; smaller windows use
+the exact cell result. Price and time culling occurs before command emission,
+and off-tick validation remains explicit. The public calculation functions and
+`getOrderFlowState` continue to return exact bounded analytics rather than the
+display LOD.
+
+The stateful CVD calculator handles chronological appends in-place at the
+affected bucket. Corrections and out-of-order trades intentionally take the
+reference rebuild path because downstream cumulative values can change. The
+Canvas2D renderer independently reduces dense line paths to deterministic
+first/minimum/maximum/last samples per pixel column; this is a rendering
+optimization only and does not discard stored observations.
