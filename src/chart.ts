@@ -527,7 +527,7 @@ export class Chart {
     this.cvdCalculator?.update(value);
     this.orderFlowRevision += 1;
     this.refreshOrderFlowPresentation();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   /** Return defensive trade prints, optionally restricted to an event-time range. */
@@ -579,7 +579,7 @@ export class Chart {
             this.cvdCalculator?.update(trade);
             this.orderFlowRevision += 1;
             this.refreshOrderFlowPresentation();
-            this.render();
+            this.scheduleViewportRender();
           },
           onError: (error) => {
             if (!this.destroyed && requestId === this.marketTradeRequestId) this.emit("datafeedError", error);
@@ -2117,7 +2117,7 @@ export class Chart {
     if (result.kind === "applied") this.orderBookHeatmap.add(state);
     this.orderFlowRevision += 1;
     this.updateOrderFlowWorkspaceReference();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   private applyOrderBookDeltaInternal(delta: OrderBookDelta): void {
@@ -2128,7 +2128,7 @@ export class Chart {
     if (result.kind === "applied" || result.kind === "stale") this.orderBookHeatmap.add(state);
     this.orderFlowRevision += 1;
     this.updateOrderFlowWorkspaceReference();
-    this.render();
+    this.scheduleViewportRender();
   }
 
   private refreshOrderFlowPresentation(): void {
@@ -3194,11 +3194,19 @@ export class Chart {
     if (this.depthDisplay.showHeatmap && this.orderBookHeatmap !== null) {
       const visible = this.getVisibleOrderFlowRange([]);
       if (visible !== null) {
-        for (const observation of this.orderBookHeatmap.getRange(visible.from, visible.to)) {
+        const observations = this.orderBookHeatmap.getRange(visible.from, visible.to);
+        const heatmapCommandBudget = 8_000;
+        const levelsPerObservation = Math.max(1, Math.floor(heatmapCommandBudget / Math.max(1, observations.length)));
+        for (const observation of observations) {
           const color = observation.side === "bid" ? this.depthDisplay.bidColor : this.depthDisplay.askColor;
           const x = context.xForTime(observation.time);
-          for (const level of observation.levels.slice(0, this.depthDisplay.maxLevels)) {
+          if (!Number.isFinite(x) || x < pane.left || x > pane.right) continue;
+          const levels = observation.levels.slice(0, this.depthDisplay.maxLevels);
+          const stride = Math.max(1, Math.ceil(levels.length / levelsPerObservation));
+          for (let levelIndex = 0; levelIndex < levels.length; levelIndex += stride) {
+            const level = levels[levelIndex]!;
             const y = pane.yForPrice(level.price);
+            if (!Number.isFinite(y) || y < pane.top || y > pane.bottom) continue;
             commands.push({ kind: "line", from: { x, y }, to: { x: Math.min(pane.right, x + 5), y }, color, lineWidth: Math.max(1, Math.min(4, level.quantity)), alpha: this.depthDisplay.opacity * 0.35 });
           }
         }

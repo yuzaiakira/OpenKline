@@ -55,4 +55,6 @@ chronological appends to the affected bucket, and falls back to a full
 deterministic rebuild for corrections, out-of-order events, option changes, or
 as-of boundaries. `CvdResult` remains the complete analytical result. Canvas
 line rendering may apply a first/min/max/last per-pixel-column visual LOD while
-retaining the complete series for queries and tooltips.
+retaining the complete series for queries and tooltips. High-frequency chart
+trade and depth mutations update state synchronously but coalesce their visual
+commit to one animation frame; destruction cancels that pending frame.

@@ -43,3 +43,5 @@ contains only accepted timestamped observations; it does not interpolate
 liquidity between provider events. `getDepthState(asOfTime)` and
 `getDepthMetrics()` are safe for replay and expose explicit integrity/quality
 states rather than treating stale or crossed data as available liquidity.
+High-frequency snapshot and delta callbacks keep the controller state
+synchronous while coalescing Canvas2D commits to the chart frame scheduler.
