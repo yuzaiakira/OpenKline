@@ -77,6 +77,12 @@ order book from retained snapshot/delta history. A replay restore retains
 order-flow source identity and presentation settings, but never serializes
 future market events.
 
+The chart's live CVD frontier is not reused across a replay transition. Replay
+cutoff changes rebuild the exact causal CVD/Footprint view from the visible
+event-time prefix; exiting replay restores the live source and re-establishes
+the incremental frontier. This keeps the realtime append optimization separate
+from historical as-of semantics.
+
 ## Causal multi-timeframe replay
 
 Chart-managed higher-timeframe indicators and previous-period reference levels

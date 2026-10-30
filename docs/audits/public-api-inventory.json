@@ -1557,7 +1557,7 @@
       "name": "CumulativeVolumeDeltaCalculator",
       "kind": "runtime",
       "module": "./order-flow.js",
-      "signatureHash": "f6b37005e6bcac9b71d181dd7ac019593e87b99b58f8f74f68da34746a221c40"
+      "signatureHash": "c459b26aaf9db1d80d5a7dbbcef9e14e0db7b8d90a2527c320d135755a2f981b"
     },
     {
       "package": "openkline",
@@ -7460,7 +7460,7 @@
       "name": "CumulativeVolumeDeltaCalculator",
       "kind": "runtime",
       "module": "./order-flow.js",
-      "signatureHash": "f6b37005e6bcac9b71d181dd7ac019593e87b99b58f8f74f68da34746a221c40"
+      "signatureHash": "c459b26aaf9db1d80d5a7dbbcef9e14e0db7b8d90a2527c320d135755a2f981b"
     },
     {
       "package": "openkline",
@@ -13819,5 +13819,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "6ae278a74418f6f499a1a68e6fc2fd52c382afc1"
+  "generatedFrom": "9df096745f77a8d3f11c9eb086a2802ac5bb4f59"
 }

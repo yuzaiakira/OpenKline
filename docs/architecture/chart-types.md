@@ -26,6 +26,14 @@ crosshair snapshots derive Heikin–Ashi from the complete raw history before
 slicing a viewport, so panning does not change the first visible HA open.
 Historical corrections recompute later display candles deterministically.
 
+When a viewport contains more source candles than horizontal CSS pixels, the
+Canvas2D renderer uses a display-only per-column envelope for candlestick, OHLC,
+and hollow-candlestick commands. It preserves the first open, last close, and
+high/low extrema for each column without changing the raw store, indicator
+inputs, crosshair lookup, or tooltip source. Heikin–Ashi remains exact because
+its open is recursively derived; volume and histogram points retain their own
+point semantics.
+
 ## Baseline
 
 `baseline` accepts `LinePoint` data and splits its line/fill around

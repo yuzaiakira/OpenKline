@@ -62,6 +62,12 @@ settings panel uses `getPriceScaleOptions()`, `setPriceScaleOptions()`, and
 the serialized public workspace after load, so chart type, scale mode,
 auto-scaling, margins, theme, indicators, and drawings are restored together.
 
+Order-flow controls remain public-API consumers as well. Studio does not read
+the CVD calculator cache or renderer LOD state; live trade updates, corrections,
+replay cutoffs, and chart disposal continue through the chart lifecycle. The
+Canvas2D display reduction therefore cannot change Studio's source candles,
+tooltip values, or workspace data.
+
 ## Responsive and accessible behavior
 
 The chart itself remains `autoSize`. CSS moves the chart above side panels at

@@ -1317,12 +1317,21 @@ evidence.
   visual commits. The 1k/10k/100k Node and 45-record three-viewport Chromium
   matrix are reproducible locally; the protected API baseline and unavailable
   official Firefox/WebKit/mobile/physical-device gates remain open.
-- [Implemented / benchmarked — Phase 14.6 verification] Added deterministic
-  trade/order-book Node benchmarks and real Chromium Canvas2D workloads at
-  1k/10k/100k records, plus bounded-cell and resource-cleanup regressions.
-  The final acceptance matrix remains open for the protected strict API
-  baseline, unavailable browser engines/devices, licensing/release approval,
-  and performance targets not established by the environment-specific data.
+- [Implemented / Chromium- and Node-verified — Phase 14.6 realtime rendering
+  hardening] Corrected the Chart live-CVD contract so an advancing data frontier
+  no longer changes stable aggregation options, added defensive latest-point
+  reads and same-bucket/new-bucket derived-series updates, and retained exact
+  full rebuilds for corrections, out-of-order events, replay, as-of, and
+  calendar changes. Workspace source references no longer clone the complete
+  trade store per live print. Added deterministic display-only OHLCV candle LOD
+  with direct extrema/source-preservation tests, focused CVD/cache/dense-browser
+  benchmarks, and a complete 45-case 1k/10k/100k × realistic/medium/fit ×
+  plain/CVD/Footprint/depth/combined matrix. In the final local Chromium run,
+  100k combined realistic realtime improved from 3.89 to 57.64 FPS and fit
+  content from 2.25 to 11.29 FPS; fit-content remains renderer/overlay bound
+  and is reported PARTIAL rather than treated as a universal target. The strict
+  protected API baseline, official Firefox/WebKit/mobile/physical-device gates,
+  and release/licensing approvals remain open.
 
 ## Phase 13 corporate actions and total-return analytics
 
