@@ -1231,6 +1231,16 @@ compatibility decision packet, package evidence, and remaining gates.
   repeated linear membership scans. Results are recorded in
   `docs/benchmarks/market-calendars.md`; they are Node calculation timings,
   not Canvas2D or universal device claims.
+- [Implemented / Partially verified locally — 11.5 incremental session analytics]
+  Added indexed session-period state, sorted source membership, incremental
+  OHLCV reductions, and deterministic correction/out-of-order invalidation.
+  Chart-owned session indicators and previous-period references now retain a
+  private runtime and avoid full session recalculation/remapping on ordinary
+  forming-bar updates while preserving causal snapshots on boundary and
+  correction paths. Added focused Node/runtime coverage, a Chromium lifecycle
+  regression, and `benchmark:session-analytics`, which separates Chart update,
+  result-query, and full snapshot costs. See
+  `docs/reports/phase-11-5-performance-hardening.md`.
 - [Open] Full Phase 11 verification remains open for unavailable official
   Firefox/WebKit/mobile browser engines, physical devices, accessibility and
   visual review, and the protected historical API baseline. No Phase 12 work

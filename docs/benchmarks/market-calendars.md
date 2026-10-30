@@ -49,3 +49,60 @@ valid New York boundary fixtures. Calendar, aggregation, coverage, correction,
 seek, replacement, and disposal correctness is covered by the Node test suite.
 Chart overlay rendering and browser frame time remain covered by the existing
 Chromium browser benchmark, not this Node calculation benchmark.
+
+## Phase 11.5 remeasurement
+
+The incremental index and single-segment calendar match were remeasured on the
+same host and Node version at `2026-10-30T13:57:49.718Z`. Values are again
+`median / p95` milliseconds; the 100k case is one cold sample.
+
+| Operation | 1,000 | 10,000 | 100,000 |
+| --- | ---: | ---: | ---: |
+| Session enumeration | 14.757 / 15.111 | 84.948 / 85.309 | 807.664 / 807.664 |
+| Expected-slot lookup | 14.342 / 14.839 | 85.439 / 88.843 | 815.652 / 815.652 |
+| Calendar coverage slots | 13.649 / 15.214 | 87.968 / 90.621 | 861.663 / 861.663 |
+| Session aggregation | 30.555 / 30.769 | 129.966 / 139.635 | 1,179.807 / 1,179.807 |
+| Trading-week aggregation | 58.327 / 120.019 | 144.816 / 148.889 | 1,283.876 / 1,283.876 |
+| Trading-month aggregation | 87.866 / 132.916 | 160.744 / 162.368 | 1,172.014 / 1,172.014 |
+| Session SMA | 27.761 / 31.189 | 122.635 / 140.192 | 1,240.239 / 1,240.239 |
+| Previous-session levels | 28.302 / 31.651 | 127.439 / 134.020 | 1,243.375 / 1,243.375 |
+| Incremental append/read | 0.490 / 0.757 | 1.764 / 1.873 | 79.607 / 79.607 |
+| Historical correction/read | 0.540 / 0.881 | 2.135 / 2.265 | 80.041 / 80.041 |
+| As-of backward/forward seek | 0.377 / 0.510 | 2.271 / 2.291 | 85.820 / 85.820 |
+| Calendar replacement/read | 39.369 / 45.021 | 199.810 / 203.484 | 2,050.928 / 2,050.928 |
+| Setup plus disposal | 15.556 / 23.892 | 101.006 / 103.359 | 1,303.407 / 1,303.407 |
+
+The `append/read`, correction, seek, and replacement cases now reuse the
+indexed store. The setup-plus-disposal row intentionally includes construction
+and source indexing because the benchmark creates the aggregator inside the
+measured action; it is not a bare `dispose()` call. These are local Node
+calculation measurements, not Canvas2D/FPS or universal device claims.
+
+## Chart-owned browser benchmark
+
+Command:
+
+```bash
+npm run benchmark:session-analytics
+```
+
+This scenario uses the actual public `Chart` API with 100,000 deterministic
+one-minute candles, a New York split-session calendar, a session SMA, and a
+previous-session reference. On the same managed Cloud host it selected the
+available system Chromium `HeadlessChrome/154.0.0.0` (the official Firefox,
+WebKit, and mobile engines remain unavailable). The result at the same run
+was:
+
+| Chart operation | Median | p95 | Samples |
+| --- | ---: | ---: | ---: |
+| `Chart.update` forming-bar path | 1.700 ms | 4.300 ms | 50 |
+| `Chart.update` plus indicator/reference `getResult()` | 21.700 ms | 23.800 ms | 5 |
+| One pending update plus full snapshot | 18.800 ms | not distributional | 1 |
+
+Chart setup was 96.600 ms for the 100k dataset. The scenario produced 304
+session observations, one currently materialized indicator output, and 304
+reference points, and destroyed its chart with one pre-existing example-page
+canvas remaining (`remainingCanvasCount: 1`). Browser heap was 158,072,590
+bytes before destroy and 19,268,895 bytes after destroy/GC in this run.
+Browser heap and timings are environment-specific; they are not release
+thresholds.
