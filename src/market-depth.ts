@@ -98,6 +98,8 @@ export class OrderBookHeatmapStore {
   private readonly maxLevels: number;
   private readonly sampleEveryMs: number | undefined;
   private observations: OrderBookHeatmapObservation[] = [];
+  private sortedObservations: OrderBookHeatmapObservation[] = [];
+  private sortedObservationsDirty = true;
   private disposed = false;
 
   public constructor(options: OrderBookHeatmapOptions = {}) {
@@ -116,9 +118,13 @@ export class OrderBookHeatmapStore {
     const addSide = (side: "bid" | "ask", levels: readonly OrderBookPriceLevel[]): void => {
       this.observations.push({ time, side, levels: levels.slice(0, this.maxLevels).map((level) => ({ ...level })), integrity: state.integrity, status: state.status });
     };
+    this.sortedObservationsDirty = true;
     addSide("bid", state.bids);
     addSide("ask", state.asks);
-    if (this.observations.length > this.maxObservations) this.observations.splice(0, this.observations.length - this.maxObservations);
+    if (this.observations.length > this.maxObservations) {
+      this.observations.splice(0, this.observations.length - this.maxObservations);
+      this.sortedObservationsDirty = true;
+    }
     return true;
   }
 
@@ -130,17 +136,32 @@ export class OrderBookHeatmapStore {
   public getRange(from: number, to: number): OrderBookHeatmapObservation[] {
     this.assertAlive();
     if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || from > to) throw new MarketDepthValidationError("Heatmap range must be ascending safe timestamps");
-    return this.getAll().filter((observation) => observation.time >= from && observation.time <= to);
+    const ordered = this.getSortedObservations();
+    const start = lowerBoundTime(ordered, from);
+    const end = upperBoundTime(ordered, to);
+    return ordered.slice(start, end).map(cloneObservation);
   }
 
   public clear(): void {
     this.assertAlive();
     this.observations = [];
+    this.sortedObservations = [];
+    this.sortedObservationsDirty = false;
   }
 
   public dispose(): void {
     this.disposed = true;
     this.observations = [];
+    this.sortedObservations = [];
+    this.sortedObservationsDirty = false;
+  }
+
+  private getSortedObservations(): readonly OrderBookHeatmapObservation[] {
+    if (this.sortedObservationsDirty) {
+      this.sortedObservations = [...this.observations].sort((left, right) => left.time - right.time || (left.side === right.side ? 0 : left.side === "bid" ? -1 : 1));
+      this.sortedObservationsDirty = false;
+    }
+    return this.sortedObservations;
   }
 
   private assertAlive(): void {
@@ -150,5 +171,31 @@ export class OrderBookHeatmapStore {
 
 function sumQuantity(levels: readonly OrderBookPriceLevel[]): number {
   return levels.reduce((sum, level) => sum + level.quantity, 0);
+}
+
+function cloneObservation(observation: OrderBookHeatmapObservation): OrderBookHeatmapObservation {
+  return { ...observation, levels: observation.levels.map((level) => ({ ...level })) };
+}
+
+function lowerBoundTime(values: readonly OrderBookHeatmapObservation[], time: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]!.time < time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBoundTime(values: readonly OrderBookHeatmapObservation[], time: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]!.time <= time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 

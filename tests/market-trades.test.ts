@@ -48,6 +48,22 @@ test("trade store deduplicates stable IDs, accepts higher revisions, sorts out o
   assert.throws(() => store.getAll(), /disposed/);
 });
 
+test("trade range queries stay ordered and only clone the selected indexed slice", () => {
+  const store = new MarketTradeStore({ maxTrades: 10 });
+  store.update(trade("late", 4_000, 4, "sell"));
+  store.update(trade("early", 1_000, 1, "buy"));
+  store.update(trade("middle", 2_000, 2, "sell"));
+  assert.deepEqual(store.getRange(1_000, 2_000).map((item) => item.id), ["early", "middle"]);
+  assert.deepEqual(store.getRange(1_000, 4_000, 2_000).map((item) => item.id), ["early", "middle"]);
+  const selected = store.getRange(2_000, 2_000);
+  assert.notEqual(selected[0]?.source, store.get("middle")?.source);
+  selected[0] = { ...selected[0]!, quantity: 99 };
+  assert.equal(store.get("middle")?.quantity, 2);
+  store.update(trade("middle", 2_000, 3, "buy", 1));
+  assert.equal(store.getRange(2_000, 2_000)[0]?.quantity, 3);
+  store.dispose();
+});
+
 test("in-memory trade feed filters bounded historical queries and cleans live subscriptions", async () => {
   const feed = new InMemoryMarketTradeDatafeed([
     trade("t1", 1_000, 1, "buy"),

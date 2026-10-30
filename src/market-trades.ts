@@ -207,6 +207,8 @@ function normalizeLimit(value: number | undefined): number {
  */
 export class MarketTradeStore {
   private readonly trades = new Map<string, MarketTrade>();
+  private sortedTrades: MarketTrade[] = [];
+  private sortedTradesDirty = true;
   private readonly maxTrades: number;
   private source: MarketTradeSource | undefined;
   private instrumentId: string | undefined;
@@ -226,6 +228,8 @@ export class MarketTradeStore {
     const trades = dataset === undefined ? values : dataset.trades;
     if (!Array.isArray(trades)) throw new MarketTradeValidationError("Trade dataset trades must be an array");
     this.trades.clear();
+    this.sortedTrades = [];
+    this.sortedTradesDirty = true;
     if (dataset !== undefined) {
       this.source = validateSource(dataset.source);
       this.instrumentId = requireNonEmpty(dataset.instrumentId, "instrumentId");
@@ -249,17 +253,23 @@ export class MarketTradeStore {
 
   public getAll(): MarketTrade[] {
     this.assertAlive();
-    return [...this.trades.values()].sort(compareTrades).map(cloneTrade);
+    return this.getSortedTrades().map(cloneTrade);
   }
 
   public getRange(from: number, to: number, asOfTime?: number): MarketTrade[] {
     this.assertAlive();
     if (!isSafeTimestamp(from) || !isSafeTimestamp(to) || from > to) throw new MarketTradeValidationError("Trade range must contain ascending safe timestamps");
     if (asOfTime !== undefined && !isSafeTimestamp(asOfTime)) throw new MarketTradeValidationError("Trade asOfTime must be a safe timestamp");
-    return [...this.trades.values()]
-      .filter((trade) => trade.time >= from && trade.time <= to && (asOfTime === undefined || trade.time <= asOfTime))
-      .sort(compareTrades)
-      .map(cloneTrade);
+    const ordered = this.getSortedTrades();
+    const start = lowerBoundTime(ordered, from);
+    const end = upperBoundTime(ordered, to);
+    const result: MarketTrade[] = [];
+    for (let index = start; index < end; index += 1) {
+      const trade = ordered[index]!;
+      if (asOfTime !== undefined && trade.time > asOfTime) break;
+      result.push(cloneTrade(trade));
+    }
+    return result;
   }
 
   public getDataset(options: { readonly complete?: boolean; readonly note?: string } = {}): MarketTradeDataset {
@@ -289,12 +299,16 @@ export class MarketTradeStore {
   public clear(): void {
     this.assertAlive();
     this.trades.clear();
+    this.sortedTrades = [];
+    this.sortedTradesDirty = false;
   }
 
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.trades.clear();
+    this.sortedTrades = [];
+    this.sortedTradesDirty = false;
   }
 
   private upsert(value: MarketTrade): "inserted" | "revised" | "duplicate" {
@@ -312,10 +326,12 @@ export class MarketTradeStore {
       if (normalized.revision < previous.revision) return "duplicate";
       if (normalized.revision === previous.revision && JSON.stringify(previous) === JSON.stringify(normalized)) return "duplicate";
       this.trades.set(normalized.id, normalized);
+      this.sortedTradesDirty = true;
       this.trim();
       return "revised";
     }
     this.trades.set(normalized.id, normalized);
+    this.sortedTradesDirty = true;
     this.trim();
     return "inserted";
   }
@@ -326,6 +342,16 @@ export class MarketTradeStore {
     const keep = ordered.slice(-this.maxTrades);
     this.trades.clear();
     for (const trade of keep) this.trades.set(trade.id, trade);
+    this.sortedTrades = keep;
+    this.sortedTradesDirty = false;
+  }
+
+  private getSortedTrades(): readonly MarketTrade[] {
+    if (this.sortedTradesDirty) {
+      this.sortedTrades = [...this.trades.values()].sort(compareTrades);
+      this.sortedTradesDirty = false;
+    }
+    return this.sortedTrades;
   }
 
   private assertAlive(): void {
@@ -375,5 +401,27 @@ export class InMemoryMarketTradeDatafeed implements MarketTradeDatafeed {
 
 function cloneTrade(trade: MarketTrade): MarketTrade {
   return { ...trade, source: { ...trade.source } };
+}
+
+function lowerBoundTime(values: readonly MarketTrade[], time: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]!.time < time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBoundTime(values: readonly MarketTrade[], time: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]!.time <= time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 

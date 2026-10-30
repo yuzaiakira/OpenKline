@@ -21,6 +21,11 @@ ignored. Reads are defensive, sorted by event time/sequence/ID, and can be
 bounded by an as-of timestamp. `InMemoryMarketTradeDatafeed` is a deterministic
 offline provider for tests and examples.
 
+Range reads use a lazily maintained chronological index and binary time bounds.
+This keeps the defensive-copy contract while avoiding a full-history filter and
+sort for every visible-window query. Out-of-order inserts and revisions
+invalidate the index; the next read rebuilds it deterministically.
+
 Trade coverage reports known-side volume, unknown-side volume, time bounds,
 completeness, and a source note. Coverage metadata is required before a
 consumer describes CVD or Footprint output as exhaustive.

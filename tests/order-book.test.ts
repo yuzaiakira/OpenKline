@@ -97,6 +97,7 @@ test("order-book as-of reconstruction and heatmap retention never invent interme
   heatmap.add(controller.getStateAt(1_100), 1_100);
   assert.equal(heatmap.getAll().length, 4);
   assert.deepEqual(heatmap.getAll().map((item) => item.time), [1_000, 1_000, 1_100, 1_100]);
+  assert.deepEqual(heatmap.getRange(1_100, 1_100).map((item) => item.time), [1_100, 1_100]);
   heatmap.dispose();
   controller.dispose();
 });

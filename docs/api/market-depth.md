@@ -24,6 +24,11 @@ Displayed liquidity is not executed volume and does not prove executable fills.
 The optional `OrderBookHeatmapStore` retains bounded timestamped observations
 only; it does not interpolate unseen depth samples.
 
+Heatmap range reads use a lazily maintained timestamp index and clone only the
+selected observations. Insertion order remains the retention order exposed by
+`getAll()`, while range results are chronological and safe for viewport-culling
+renderers, including when accepted observations arrive out of order.
+
 ## Chart integration
 
 `Chart.setOrderBookSnapshot` starts or replaces a book when instrument/source
