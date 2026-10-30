@@ -23,3 +23,18 @@ askDepth)`, calculated over the requested top-N levels.
 Displayed liquidity is not executed volume and does not prove executable fills.
 The optional `OrderBookHeatmapStore` retains bounded timestamped observations
 only; it does not interpolate unseen depth samples.
+
+## Chart integration
+
+`Chart.setOrderBookSnapshot` starts or replaces a book when instrument/source
+identity changes. `Chart.applyOrderBookDelta` applies one validated update;
+the controller's sequence state determines whether the book is live, stale, or
+recovering. `setOrderBookSource` adds cancellation, stale-response checks,
+subscription cleanup, and destruction cleanup around a provider-neutral
+`OrderBookDatafeed`.
+
+`setDepthOptions` controls the depth overlay and optional heatmap. The heatmap
+contains only accepted timestamped observations; it does not interpolate
+liquidity between provider events. `getDepthState(asOfTime)` and
+`getDepthMetrics()` are safe for replay and expose explicit integrity/quality
+states rather than treating stale or crossed data as available liquidity.

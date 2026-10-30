@@ -13,6 +13,9 @@ import type {
   AlertDefinition,
   AlertEvent,
   AlertFrequency,
+  MarketTrade,
+  OrderFlowState,
+  OrderBookSnapshot,
   PriceScaleMode,
   ReplayApi,
   ReplayStatus,
@@ -28,6 +31,14 @@ interface StudioObjects {
   readonly series: readonly ChartSeriesInfo[];
   readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string }>;
   readonly drawings: readonly DrawingSnapshot[];
+}
+
+interface StudioTimeAndSalesRow {
+  readonly id: string;
+  readonly time: number;
+  readonly price: number;
+  readonly quantity: number;
+  readonly aggressorSide: MarketTrade["aggressorSide"];
 }
 
 const STORAGE_KEY = "openkline-studio-workspace-v1";
@@ -119,6 +130,34 @@ function volumePoints(candles: readonly Candle[]) {
   }));
 }
 
+/** Clearly labelled offline illustration; these are not observed exchange events. */
+function illustrativeTrades(symbol: string, candles: readonly Candle[]): MarketTrade[] {
+  const source = { id: "studio-illustrative-order-flow", version: "1" };
+  return candles.slice(-48).flatMap((candle, index) => {
+    const price = Number(candle.close.toFixed(2));
+    const quantity = 1 + (index % 5) * 0.25;
+    return [
+      { id: `${symbol}-illustrative-buy-${candle.time}`, instrumentId: symbol, time: candle.time, price, quantity, aggressorSide: "buy" as const, sideQuality: "observed" as const, revision: 0, source },
+      { id: `${symbol}-illustrative-sell-${candle.time}`, instrumentId: symbol, time: candle.time + 1, price: Number((price - 0.01).toFixed(2)), quantity: quantity * 0.7, aggressorSide: index % 7 === 0 ? "unknown" as const : "sell" as const, sideQuality: index % 7 === 0 ? "unknown" as const : "observed" as const, revision: 0, source },
+    ];
+  });
+}
+
+function illustrativeDepth(symbol: string, candle: Candle): OrderBookSnapshot {
+  const mid = Number(candle.close.toFixed(2));
+  return {
+    version: 1,
+    instrumentId: symbol,
+    time: candle.time,
+    sequence: 1,
+    bids: [{ price: Number((mid - 0.01).toFixed(2)), quantity: 120 }, { price: Number((mid - 0.02).toFixed(2)), quantity: 80 }, { price: Number((mid - 0.03).toFixed(2)), quantity: 55 }],
+    asks: [{ price: Number((mid + 0.01).toFixed(2)), quantity: 100 }, { price: Number((mid + 0.02).toFixed(2)), quantity: 75 }, { price: Number((mid + 0.03).toFixed(2)), quantity: 48 }],
+    tickSize: 0.01,
+    quantityUnit: "illustrative base units",
+    source: { id: "studio-illustrative-depth", version: "1" },
+  };
+}
+
 function indicatorParameters(id: string): Record<string, unknown> {
   switch (id) {
     case "MACD": return { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 };
@@ -171,8 +210,44 @@ export default function StudioClient() {
   const [replayStatus, setReplayStatus] = useState<ReplayStatus>(IDLE_REPLAY_STATUS);
   const [replaySourceLength, setReplaySourceLength] = useState(0);
   const [replayStartIndex, setReplayStartIndex] = useState(84);
+  const [footprintVisible, setFootprintVisible] = useState(false);
+  const [cvdVisible, setCvdVisible] = useState(false);
+  const [cvdReset, setCvdReset] = useState<"continuous" | "session">("continuous");
+  const [depthVisible, setDepthVisible] = useState(false);
+  const [depthHeatmap, setDepthHeatmap] = useState(false);
+  const [orderFlowState, setOrderFlowState] = useState<OrderFlowState | null>(null);
+  const [timeAndSales, setTimeAndSales] = useState<StudioTimeAndSalesRow[]>([]);
 
   const chart = (): Chart | null => handleRef.current?.getChart() ?? null;
+
+  const refreshOrderFlow = useCallback((target = chart()): void => {
+    if (target === null) return;
+    setOrderFlowState(target.getOrderFlowState());
+    setTimeAndSales(target.getMarketTrades({ limit: 8 }).map((trade) => ({ id: trade.id, time: trade.time, price: trade.price, quantity: trade.quantity, aggressorSide: trade.aggressorSide })));
+  }, []);
+
+  const applyOrderFlowFixtures = useCallback((target: Chart, candles: readonly Candle[]): void => {
+    const trades = illustrativeTrades(symbol, candles);
+    const snapshot = illustrativeDepth(symbol, candles.at(-1) ?? candles[0]!);
+    target.setMarketTrades(trades);
+    target.setFootprintOptions({ visible: footprintVisible, intervalMs: intervalFor(timeframe), tickSize: 0.01, offTickPolicy: "round", showLabels: false });
+    target.setCvdOptions({ visible: cvdVisible, intervalMs: intervalFor(timeframe), reset: cvdReset, pane: "new", sourceCoverage: "partial" });
+    target.setDepthOptions({ visible: depthVisible, showHeatmap: depthHeatmap, maxLevels: 8, maxHistory: 256 });
+    target.setOrderBookSnapshot(snapshot);
+    target.applyOrderBookDelta({
+      version: 1,
+      id: `${symbol}-illustrative-delta`,
+      instrumentId: symbol,
+      time: snapshot.time + 1,
+      sequence: 2,
+      previousSequence: 1,
+      quantityMode: "absolute",
+      bids: [snapshot.bids[0]!],
+      asks: [snapshot.asks[0]!],
+      source: snapshot.source,
+    });
+    refreshOrderFlow(target);
+  }, [cvdReset, cvdVisible, depthHeatmap, depthVisible, footprintVisible, refreshOrderFlow, symbol, timeframe]);
 
   const refreshObjects = useCallback((target = chart()): void => {
     if (target === null) return;
@@ -348,6 +423,7 @@ export default function StudioClient() {
     };
     try {
       target.restoreWorkspace(nextWorkspace);
+      applyOrderFlowFixtures(target, candles);
       target.resetView();
       syncDisplayPreferences(target);
       refreshObjects(target);
@@ -356,7 +432,7 @@ export default function StudioClient() {
     } catch (error) {
       setNotice(`Could not replace market data: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [refreshAlerts, refreshObjects, syncDisplayPreferences]);
+  }, [applyOrderFlowFixtures, refreshAlerts, refreshObjects, syncDisplayPreferences]);
 
   const initializeChart = useCallback((target: Chart): void => {
     const candles = buildCandles(symbol, timeframe);
@@ -378,6 +454,7 @@ export default function StudioClient() {
     volume.setData(volumePoints(candles));
     target.addIndicator("SMA", { id: "studio-sma", pane: "main", parameters: { period: 20 } });
     target.addIndicator("RSI", { id: "studio-rsi", pane: "new", parameters: { period: 14 } });
+    applyOrderFlowFixtures(target, candles);
     setReplaySourceLength(candles.length);
     setReplayStartIndex(Math.floor(candles.length * 0.35));
     target.subscribe("drawingSelection", () => window.setTimeout(() => refreshObjects(target), 0));
@@ -393,7 +470,7 @@ export default function StudioClient() {
     refreshObjects(target);
     refreshAlerts(target);
     setNotice(`Loaded ${symbol} at ${timeframe} with ${candles.length} deterministic bars.`);
-  }, [refreshAlerts, refreshObjects, symbol, syncDisplayPreferences, timeframe]);
+  }, [applyOrderFlowFixtures, refreshAlerts, refreshObjects, symbol, syncDisplayPreferences, timeframe]);
 
   useEffect(() => () => {
     replayUnsubscribeRef.current?.();
@@ -518,6 +595,7 @@ export default function StudioClient() {
     }
     try {
       target.restoreWorkspace(JSON.parse(raw));
+      applyOrderFlowFixtures(target, target.getData());
       syncDisplayPreferences(target);
       refreshObjects(target);
       setNotice("Local workspace restored through the public workspace contract.");
@@ -741,6 +819,28 @@ export default function StudioClient() {
             </li>)}</ul>}
             <div className={styles.alertHistoryHeading}><small>Recent events</small><button type="button" onClick={() => { chart()?.clearAlertHistory(); refreshAlerts(); }}>Clear</button></div>
             {alertHistory.length === 0 ? <small>No alert events yet.</small> : <ul className={styles.alertList}>{alertHistory.slice(-6).reverse().map((event) => <li key={event.eventId} className={styles.alertEvent}><span>{event.alertName}<small>{new Date(event.barTimestamp).toLocaleString()}</small></span>{event.simulated ? <em>SIM</em> : <em>LIVE</em>}</li>)}</ul>}
+          </details>
+          <details className={styles.orderFlowPanel} open>
+            <summary>Order Flow &amp; Market Depth</summary>
+            <p className={styles.orderFlowDisclaimer}>Illustrative offline fixtures only; these prints and levels are not observed exchange transactions.</p>
+            <label className={styles.check}><input type="checkbox" checked={footprintVisible} disabled={replayActive} onChange={(event) => { const next = event.target.checked; setFootprintVisible(next); const target = chart(); target?.setFootprintOptions({ visible: next }); refreshOrderFlow(target); }} />Footprint</label>
+            <label className={styles.check}><input type="checkbox" checked={cvdVisible} disabled={replayActive} onChange={(event) => { const next = event.target.checked; setCvdVisible(next); const target = chart(); target?.setCvdOptions({ visible: next, reset: cvdReset }); refreshOrderFlow(target); }} />CVD pane</label>
+            <label>CVD reset<select value={cvdReset} disabled={replayActive} onChange={(event) => { const next = event.target.value as "continuous" | "session"; setCvdReset(next); const target = chart(); target?.setCvdOptions({ reset: next }); refreshOrderFlow(target); }}><option value="continuous">Continuous</option><option value="session">Trading session</option></select></label>
+            <label className={styles.check}><input type="checkbox" checked={depthVisible} disabled={replayActive} onChange={(event) => { const next = event.target.checked; setDepthVisible(next); const target = chart(); target?.setDepthOptions({ visible: next }); refreshOrderFlow(target); }} />Depth view</label>
+            <label className={styles.check}><input type="checkbox" checked={depthHeatmap} disabled={replayActive} onChange={(event) => { const next = event.target.checked; setDepthHeatmap(next); const target = chart(); target?.setDepthOptions({ showHeatmap: next, visible: depthVisible }); refreshOrderFlow(target); }} />Liquidity heatmap</label>
+            <div className={styles.orderFlowSummary} aria-live="polite">
+              <span>Coverage <strong>{orderFlowState?.tradeCoverage ?? "empty"}</strong></span>
+              <span>Book <strong>{orderFlowState?.depth?.status ?? "uninitialized"}</strong></span>
+              <span>Best bid <strong>{orderFlowState?.depthMetrics?.bestBid ?? "—"}</strong></span>
+              <span>Best ask <strong>{orderFlowState?.depthMetrics?.bestAsk ?? "—"}</strong></span>
+              <span>Spread <strong>{orderFlowState?.depthMetrics?.spread ?? "—"}</strong></span>
+              <span>Imbalance <strong>{orderFlowState?.depthMetrics?.imbalance?.toFixed(3) ?? "—"}</strong></span>
+            </div>
+            {cvdReset === "session" ? <small className={styles.orderFlowWarning}>Session reset requires an explicit exchange calendar; this offline Studio fixture keeps CVD unavailable until one is attached.</small> : null}
+            <details>
+              <summary>Time &amp; Sales ({timeAndSales.length})</summary>
+              {timeAndSales.length === 0 ? <small>No illustrative trades are loaded.</small> : <ul className={styles.timeAndSalesList}>{timeAndSales.slice().reverse().map((trade) => <li key={trade.id}><time>{new Date(trade.time).toLocaleTimeString()}</time><span>{trade.price}</span><span>{trade.quantity}</span><strong className={trade.aggressorSide === "buy" ? styles.orderFlowBuy : trade.aggressorSide === "sell" ? styles.orderFlowSell : styles.orderFlowUnknown}>{trade.aggressorSide}</strong></li>)}</ul>}
+            </details>
           </details>
           <label>Theme<select value={theme} onChange={(event) => updateTheme(event.target.value as "dark" | "light")}><option value="dark">Dark</option><option value="light">Light</option></select></label>
           <label>Locale<select value={locale} onChange={(event) => { const next = event.target.value; chart()?.setOptions({ locale: next }); setLocale(next); }}><option value="en-US">English (US)</option><option value="de-DE">Deutsch</option><option value="fa-IR">فارسی</option></select></label>

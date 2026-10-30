@@ -24,3 +24,20 @@ offline provider for tests and examples.
 Trade coverage reports known-side volume, unknown-side volume, time bounds,
 completeness, and a source note. Coverage metadata is required before a
 consumer describes CVD or Footprint output as exhaustive.
+
+## Chart integration
+
+`Chart.setMarketTrades` replaces the bounded trade-print store and
+`Chart.updateMarketTrade` inserts or revises one print. `getMarketTrades` and
+`getTimeAndSales` return defensive event-time-ordered records; an explicit
+`asOfTime` applies even when no range is supplied. `setMarketTradeSource`
+loads a historical result with an `AbortSignal`, ignores stale responses, and
+cleans up its optional live subscription on replacement or chart destruction.
+
+`setFootprintOptions` controls the chart-native overlay. `setCvdOptions`
+controls the derived line series and its pane. A session reset is only
+causal when an explicit `TradingCalendarEngine` is attached to the chart;
+otherwise the CVD result is unavailable rather than split at an assumed UTC
+boundary. `getOrderFlowState` exposes the current bounded trade coverage,
+Footprint, CVD, depth state, and depth metrics without exposing renderer
+internals.

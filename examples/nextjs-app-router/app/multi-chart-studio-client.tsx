@@ -39,6 +39,9 @@ import {
   type WatchlistQuote,
   type WorkspaceDocument,
   type SeriesStyle,
+  type MarketTrade,
+  type OrderBookSnapshot,
+  type OrderFlowState,
   type AnchoredVwapPriceSource,
   type ResolvedVolumeProfileOptions,
   type VolumeProfileAllocationMethod,
@@ -88,6 +91,10 @@ interface PanelSnapshot {
   readonly tradingCalendar: { readonly calendarId: string; readonly version: string; readonly visible: boolean } | null;
   readonly sessionIndicators: ReadonlyArray<{ readonly id: string; readonly indicatorId: string; readonly targetPeriod: string; readonly visible?: boolean }>;
   readonly sessionReferences: ReadonlyArray<{ readonly id: string; readonly targetPeriod: string; readonly visible?: boolean }>;
+  readonly orderFlow: OrderFlowState;
+  readonly footprintOptions: ReturnType<Chart["getFootprintOptions"]>;
+  readonly cvdOptions: ReturnType<Chart["getCvdOptions"]>;
+  readonly depthOptions: ReturnType<Chart["getDepthOptions"]>;
 }
 
 interface StudioDialog {
@@ -193,6 +200,63 @@ function buildCandles(symbol: string, timeframe: Timeframe): Candle[] {
     const open = close - Math.sin((index + seed) / 3) * baseline * 0.004;
     const spread = baseline * (0.004 + ((index + seed) % 7) * 0.00045);
     return { time: start + index * interval, open, high: Math.max(open, close) + spread, low: Math.min(open, close) - spread, close, volume: 120 + ((index * 17 + seed) % 180) * 8 };
+  });
+}
+
+/**
+ * Deterministic, clearly labelled offline fixtures for the Studio walkthrough.
+ * These values demonstrate the public order-flow APIs; they are not exchange
+ * prints and must never be presented as live market data.
+ */
+function buildStudioTrades(symbol: string, candles: readonly Candle[]): MarketTrade[] {
+  const source = { id: "studio-illustrative-order-flow", version: "1" };
+  return candles.slice(-96).flatMap((candle, index) => {
+    const price = Number(candle.close.toFixed(2));
+    const quantity = 1 + (index % 5) * 0.25;
+    return [
+      { id: `${symbol}-illustrative-buy-${candle.time}`, instrumentId: symbol, time: candle.time, price, quantity, aggressorSide: "buy" as const, sideQuality: "observed" as const, revision: 0, source },
+      { id: `${symbol}-illustrative-sell-${candle.time}`, instrumentId: symbol, time: candle.time + 1, price: Number((price - 0.01).toFixed(2)), quantity: quantity * 0.7, aggressorSide: index % 11 === 0 ? "unknown" as const : "sell" as const, sideQuality: index % 11 === 0 ? "unknown" as const : "observed" as const, revision: 0, source },
+    ];
+  });
+}
+
+function buildStudioDepth(symbol: string, candle: Candle): OrderBookSnapshot {
+  const mid = Number(candle.close.toFixed(2));
+  return {
+    version: 1,
+    instrumentId: symbol,
+    time: candle.time,
+    sequence: 1,
+    bids: [{ price: Number((mid - 0.01).toFixed(2)), quantity: 120 }, { price: Number((mid - 0.02).toFixed(2)), quantity: 80 }, { price: Number((mid - 0.03).toFixed(2)), quantity: 55 }],
+    asks: [{ price: Number((mid + 0.01).toFixed(2)), quantity: 100 }, { price: Number((mid + 0.02).toFixed(2)), quantity: 75 }, { price: Number((mid + 0.03).toFixed(2)), quantity: 48 }],
+    tickSize: 0.01,
+    quantityUnit: "illustrative base units",
+    source: { id: "studio-illustrative-depth", version: "1" },
+  };
+}
+
+function seedStudioOrderFlow(target: Chart, symbol: string, timeframe: Timeframe, candles: readonly Candle[]): void {
+  const footprintOptions = target.getFootprintOptions();
+  const cvdOptions = target.getCvdOptions();
+  const depthOptions = target.getDepthOptions();
+  target.removeOrderFlow();
+  target.setMarketTrades(buildStudioTrades(symbol, candles));
+  target.setFootprintOptions({ ...footprintOptions, intervalMs: intervalFor(timeframe), tickSize: 0.01, offTickPolicy: "round" });
+  target.setCvdOptions({ ...cvdOptions, intervalMs: intervalFor(timeframe), pane: cvdOptions.pane === "new" ? "new" : cvdOptions.pane });
+  target.setDepthOptions(depthOptions);
+  const snapshot = buildStudioDepth(symbol, candles.at(-1) ?? candles[0]!);
+  target.setOrderBookSnapshot(snapshot);
+  target.applyOrderBookDelta({
+    version: 1,
+    id: `${symbol}-illustrative-delta`,
+    instrumentId: symbol,
+    time: snapshot.time + 1,
+    sequence: 2,
+    previousSequence: 1,
+    quantityMode: "absolute",
+    bids: [snapshot.bids[0]!],
+    asks: [snapshot.asks[0]!],
+    source: snapshot.source,
   });
 }
 
@@ -349,7 +413,15 @@ function parseUtcInput(value: string): number | null {
 }
 
 function emptySnapshot(): PanelSnapshot {
-  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, replayVisibleLatest: null, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [] };
+  return {
+    series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS,
+    replaySourceLength: 0, replayStartIndex: 84, replayVisibleLatest: null, anchoredVwaps: [], volumeProfiles: [],
+    multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [],
+    orderFlow: { tradeCount: 0, tradeCoverage: "empty", footprint: null, cvd: null, depth: null, depthMetrics: null },
+    footprintOptions: { visible: false, intervalMs: 60_000, tickSize: 1, offTickPolicy: "reject", showLabels: true, opacity: 0.5, buyColor: "#22c55e", sellColor: "#ef4444", unknownColor: "#94a3b8", maxCells: 20_000 },
+    cvdOptions: { visible: false, intervalMs: 60_000, reset: "continuous", pane: "new", color: "#38bdf8", lineWidth: 2, baselineColor: "#64748b", sourceCoverage: "unknown" },
+    depthOptions: { visible: false, maxLevels: 10, showLabels: true, showHeatmap: false, opacity: 0.5, bidColor: "#22c55e", askColor: "#ef4444", maxHistory: 2_000 },
+  };
 }
 
 function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
@@ -428,6 +500,10 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       },
       sessionIndicators: target.getSessionIndicators().map((item) => ({ id: item.id, indicatorId: item.getOptions().indicatorId, targetPeriod: item.getOptions().targetPeriod, visible: item.getOptions().visible })),
       sessionReferences: target.getSessionReferences().map((item) => ({ id: item.id, targetPeriod: item.getOptions().targetPeriod, visible: item.getOptions().visible })),
+      orderFlow: target.getOrderFlowState(),
+      footprintOptions: target.getFootprintOptions(),
+      cvdOptions: target.getCvdOptions(),
+      depthOptions: target.getDepthOptions(),
     };
     setSnapshot(next);
     onSnapshot(panel.panelId, next);
@@ -448,6 +524,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     price.setData(candles); ohlc.setData(candles); hollow.setData(candles); heikin.setData(candles); line.setData(pricePoints(candles)); area.setData(pricePoints(candles)); baseline.setData(pricePoints(candles)); volume.setData(volumePoints(candles));
     target.addIndicator("SMA", { id: "studio-sma", pane: "main", parameters: { period: 20 } });
     target.addIndicator("RSI", { id: "studio-rsi", pane: "new", parameters: { period: 14 } });
+    seedStudioOrderFlow(target, symbol, timeframe, candles);
     marketKeyRef.current = `${symbol}|${timeframe}`;
     publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35));
   }, [publish]);
@@ -459,6 +536,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       try {
         const canonical = withoutComparisonSeries(initialWorkspace);
         target.restoreWorkspace(canonical, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
+        seedStudioOrderFlow(target, panel.symbol, panel.timeframe, buildCandles(panel.symbol, panel.timeframe));
         canonicalWorkspaceRef.current = canonical;
         publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
       }
@@ -521,6 +599,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     };
     try {
       target.restoreWorkspace(nextWorkspace, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
+      seedStudioOrderFlow(target, symbol, timeframe, candles);
       canonicalWorkspaceRef.current = nextWorkspace;
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
@@ -542,6 +621,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     try {
       const canonical = withoutComparisonSeries(document);
       target.restoreWorkspace(canonical, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
+      seedStudioOrderFlow(target, panel.symbol, panel.timeframe, buildCandles(panel.symbol, panel.timeframe));
       canonicalWorkspaceRef.current = canonical;
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
@@ -1441,6 +1521,37 @@ export default function MultiChartStudioClient() {
     setNotice(`${activePanel.panelId}: optimizer selection is ready for Strategy Tester; Paper Trading remains unchanged.`);
   };
 
+  const activeOrderFlow = activeSnapshot.orderFlow;
+  const activeFootprintOptions = activeSnapshot.footprintOptions;
+  const activeCvdOptions = activeSnapshot.cvdOptions;
+  const activeDepthOptions = activeSnapshot.depthOptions;
+  const activeTimeAndSales = activeHandle?.getChart()?.getMarketTrades({ limit: 8 }) ?? [];
+  const updateOrderFlow = (operation: (target: Chart) => void, message: string): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    try {
+      operation(target);
+      activeHandle?.refresh();
+      setNotice(message);
+    } catch (error) {
+      setNotice(`Could not update order flow: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  const orderFlowControls = <section className={styles.comparisonPanel} aria-label="Order Flow and Market Depth" data-order-flow-trade-count={activeOrderFlow.tradeCount} data-order-flow-coverage={activeOrderFlow.tradeCoverage} data-order-book-status={activeOrderFlow.depth?.status ?? "uninitialized"}>
+    <div className={styles.panelHeading}><div><h2>Order Flow &amp; Market Depth</h2><small>Provider-neutral trade prints, footprint, CVD, depth, and Time &amp; Sales.</small></div><span>{activeOrderFlow.tradeCount} prints</span></div>
+    <p className={styles.orderFlowDisclaimer}>Illustrative offline fixtures only; these prints and levels are not observed exchange transactions.</p>
+    <div className={styles.comparisonControls}>
+      <label className={styles.check}><input aria-label="Enable Footprint" type="checkbox" checked={activeFootprintOptions.visible} disabled={analyticsDisabled} onChange={(event) => updateOrderFlow((target) => target.setFootprintOptions({ visible: event.target.checked }), `${event.target.checked ? "Enabled" : "Disabled"} Footprint on ${activePanel.panelId}.`)} />Footprint</label>
+      <label className={styles.check}><input aria-label="Enable CVD" type="checkbox" checked={activeCvdOptions.visible} disabled={analyticsDisabled} onChange={(event) => updateOrderFlow((target) => target.setCvdOptions({ visible: event.target.checked }), `${event.target.checked ? "Enabled" : "Disabled"} CVD on ${activePanel.panelId}.`)} />CVD pane</label>
+      <label>CVD reset<select aria-label="CVD reset policy" value={activeCvdOptions.reset} disabled={analyticsDisabled} onChange={(event) => updateOrderFlow((target) => target.setCvdOptions({ reset: event.target.value as "continuous" | "session" }), `CVD reset policy changed to ${event.target.value}.`)}><option value="continuous">Continuous</option><option value="session">Trading session</option></select></label>
+      <label className={styles.check}><input aria-label="Enable Market Depth" type="checkbox" checked={activeDepthOptions.visible} disabled={analyticsDisabled} onChange={(event) => updateOrderFlow((target) => target.setDepthOptions({ visible: event.target.checked }), `${event.target.checked ? "Enabled" : "Disabled"} market depth on ${activePanel.panelId}.`)} />Depth view</label>
+      <label className={styles.check}><input aria-label="Enable Liquidity Heatmap" type="checkbox" checked={activeDepthOptions.showHeatmap} disabled={analyticsDisabled} onChange={(event) => updateOrderFlow((target) => target.setDepthOptions({ showHeatmap: event.target.checked, visible: activeDepthOptions.visible }), `${event.target.checked ? "Enabled" : "Disabled"} liquidity heatmap.`)} />Liquidity heatmap</label>
+    </div>
+    <div className={styles.orderFlowSummary} aria-live="polite"><span>Coverage <strong>{activeOrderFlow.tradeCoverage}</strong></span><span>Book <strong>{activeOrderFlow.depth?.status ?? "uninitialized"}</strong></span><span>Best bid <strong>{activeOrderFlow.depthMetrics?.bestBid ?? "—"}</strong></span><span>Best ask <strong>{activeOrderFlow.depthMetrics?.bestAsk ?? "—"}</strong></span><span>Spread <strong>{activeOrderFlow.depthMetrics?.spread ?? "—"}</strong></span><span>Imbalance <strong>{activeOrderFlow.depthMetrics?.imbalance?.toFixed(3) ?? "—"}</strong></span></div>
+    {activeCvdOptions.reset === "session" ? <small className={styles.orderFlowWarning}>Session CVD uses the Studio's illustrative trading calendar. Attach a provider-owned calendar before treating session boundaries as exchange facts.</small> : null}
+    <details><summary>Time &amp; Sales ({activeTimeAndSales.length})</summary>{activeTimeAndSales.length === 0 ? <small>No trade prints are loaded.</small> : <ul className={styles.timeAndSalesList}>{activeTimeAndSales.slice().reverse().map((trade) => <li key={`${trade.id}:${trade.revision}`}><time>{new Date(trade.time).toLocaleTimeString()}</time><span>{trade.price}</span><span>{trade.quantity}</span><strong className={trade.aggressorSide === "buy" ? styles.orderFlowBuy : trade.aggressorSide === "sell" ? styles.orderFlowSell : styles.orderFlowUnknown}>{trade.aggressorSide}</strong></li>)}</ul>}</details>
+  </section>;
+
   const volumeAnalyticsControls = <details open aria-label="Volume Analytics">
     <summary>Volume Analytics</summary>
     <p><small>Anchored VWAP and Volume Profile use raw OHLCV. Profile values are estimated, not exchange-reported volume-at-price.</small></p>
@@ -1475,6 +1586,7 @@ export default function MultiChartStudioClient() {
     {volumeAnalyticsControls}
     {multiTimeframeControls}
     {sessionControls}
+    {orderFlowControls}
     <header className={styles.topbar}>
       <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.5 analysis workspace</small></div>
       <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>

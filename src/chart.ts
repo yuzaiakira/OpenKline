@@ -523,7 +523,9 @@ export class Chart {
     this.assertAlive();
     const trades = this.getOrderFlowTradesForReplay();
     const filtered = options.from === undefined && options.to === undefined
-      ? trades
+      ? options.asOfTime === undefined
+        ? trades
+        : trades.filter((trade) => trade.time <= options.asOfTime!)
       : options.from !== undefined && options.to !== undefined
         ? getTimeAndSales(trades, { from: options.from, to: options.to, ...(options.asOfTime === undefined ? {} : { asOfTime: options.asOfTime }), limit: options.limit ?? 10_000 })
         : (() => { throw new Error("Market-trade range requires both from and to"); })();
@@ -586,6 +588,14 @@ export class Chart {
   public setOrderBookSnapshot(snapshot: OrderBookSnapshot): void {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
+    const current = this.orderBookController?.getState();
+    if (current !== undefined && (current.instrumentId !== snapshot.instrumentId || (current.source !== null && (current.source.id !== snapshot.source.id || current.source.version !== snapshot.source.version)))) {
+      this.stopOrderBookSource();
+      this.orderBookController?.dispose();
+      this.orderBookController = null;
+      this.orderBookHeatmap?.dispose();
+      this.orderBookHeatmap = null;
+    }
     this.orderBookController ??= new OrderBookController({ instrumentId: snapshot.instrumentId, ...(snapshot.venueId === undefined ? {} : { venueId: snapshot.venueId }), ...(snapshot.tickSize === undefined ? {} : { defaultTickSize: snapshot.tickSize }), source: snapshot.source });
     this.applyOrderBookSnapshot(snapshot);
   }
