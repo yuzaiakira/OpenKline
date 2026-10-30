@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { findProviderSpecificText } from "./package-portability-policy.mjs";
 
 const root = process.cwd();
 const coreManifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -13,9 +14,8 @@ if (typeof coreManifest.exports?.["."]?.import !== "string" || typeof coreManife
 if (typeof reactManifest.exports?.["."]?.import !== "string" || typeof reactManifest.exports?.["."]?.types !== "string") throw new Error("React ESM/type exports are incomplete");
 
 const coreFiles = walk(join(root, "dist/src"));
-const forbiddenVendor = /binance|alpaca|oanda|api\.binance|openkline\.com/i;
-const vendorMatches = coreFiles.filter((file) => forbiddenVendor.test(readFileSync(file, "utf8")));
-if (vendorMatches.length > 0) throw new Error(`core build contains provider-specific text: ${vendorMatches.map((file) => relative(root, file)).join(", ")}`);
+const vendorMatches = findProviderSpecificText(coreFiles.map((file) => ({ path: relative(root, file), contents: readFileSync(file, "utf8") })));
+if (vendorMatches.length > 0) throw new Error(`core build contains provider-specific text: ${vendorMatches.join(", ")}`);
 
 const requiredArtifacts = [
   "dist/src/index.js",

@@ -27,8 +27,8 @@ export interface StudioComparisonDocument {
   readonly baselineTime: number | null;
   readonly baselineMaxAgeMs: number;
   readonly assetIds: readonly string[];
-  /** Optional serializable source selector; credentials and transport objects are never persisted. */
-  readonly dataSource?: "demo" | "binance";
+  /** Optional serializable host-owned source selector; credentials and transport objects are never persisted. */
+  readonly dataSource?: string;
 }
 
 export interface StudioWorkspaceDocument {
@@ -215,7 +215,7 @@ function parseComparison(value: unknown): StudioComparisonDocument {
     || value.baselineMaxAgeMs < 0
     || !Array.isArray(value.assetIds)
     || value.assetIds.length === 0
-    || (value.dataSource !== undefined && value.dataSource !== "demo" && value.dataSource !== "binance")) {
+    || (value.dataSource !== undefined && (typeof value.dataSource !== "string" || value.dataSource.trim().length === 0))) {
     throw new StudioWorkspaceValidationError("Invalid Studio comparison state");
   }
   const baselineTime: number | null = value.baselineTime;
@@ -226,13 +226,14 @@ function parseComparison(value: unknown): StudioComparisonDocument {
     ids.add(id.trim());
     return id.trim();
   });
+  const dataSource = value.dataSource === undefined ? undefined : value.dataSource.trim();
   return {
     active: value.active,
     mode: value.mode,
     baselineTime,
     baselineMaxAgeMs,
     assetIds,
-    ...(value.dataSource === undefined ? {} : { dataSource: value.dataSource }),
+    ...(dataSource === undefined ? {} : { dataSource }),
   };
 }
 
