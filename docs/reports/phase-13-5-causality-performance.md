@@ -26,7 +26,7 @@ Phase 13.5 commit/push ledger:
 - `f0444fb097803be53e8e883861e462da91f2b47a` — enforce causal source isolation
 - `15dd953be639cda19c58780cf8fcab85b6f0b319` — preserve adjusted indicator domains
 - `8c36b5c88b3bdf1ec8e614912e8064e75f625193` — optimize and benchmark realtime paths
-- `1f7379687dddc8e77832c0fb1d2f2e7036be62c985` — document incremental updates
+- `1f7379687dddc8e77832c0fb1f2e7036be62c985` — document incremental updates
 - `1f72615ec774ebe17b4f127afe17a6877cf1da1b` — keep replay getters causal
 - `9e21303f675dd097a9976ea507226fee2d6d9fc1` — verify action revisions
 - `d8c3d48d875dc94eb97e76b32be55b3851b5ceee` — refresh public API inventory
