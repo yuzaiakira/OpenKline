@@ -1296,6 +1296,12 @@ evidence.
   delayed-response handling, sequence-gap stale state, replacement-snapshot
   recovery, as-of reconstruction, depth quality metrics, and non-interpolating
   bounded heatmap observations.
+- [Implemented / Node-verified — Phase 14.2 order-flow analytics] Added
+  correction-aware executed-volume aggregation, explicit unknown/estimated
+  side coverage, tick-normalized trade-derived Footprint cells, continuous and
+  calendar-session-reset CVD, bounded Time & Sales reads, and independent
+  numerical fixtures. Chart-native rendering, Replay/Workspace/Studio
+  workflows, dedicated performance evidence, and final acceptance remain open.
 
 ## Phase 13 corporate actions and total-return analytics
 

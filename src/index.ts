@@ -161,6 +161,33 @@ export {
   OrderBookHeatmapStore,
   calculateOrderBookDepthMetrics,
 } from "./market-depth.js";
+export {
+  CumulativeVolumeDeltaCalculator,
+  FootprintCalculator,
+  OPENKLINE_ORDER_FLOW_VERSION,
+  OrderFlowValidationError,
+  calculateCumulativeVolumeDelta,
+  calculateFootprint,
+  calculateTradeFlow,
+  getTimeAndSales,
+  toMarketTradeInput,
+} from "./order-flow.js";
+export type {
+  CvdObservation,
+  CvdOptions,
+  CvdResult,
+  FootprintBucket,
+  FootprintCell,
+  FootprintOptions,
+  FootprintResult,
+  TimeAndSalesOptions,
+  TradeFlowCoverage,
+  TradeFlowInterval,
+  TradeFlowOffTickPolicy,
+  TradeFlowOptions,
+  TradeFlowResetPolicy,
+  TradeFlowResult,
+} from "./order-flow.js";
 export type {
   OrderBookDepthMetricOptions,
   OrderBookDepthMetrics,
