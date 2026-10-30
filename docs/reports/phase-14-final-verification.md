@@ -11,7 +11,8 @@ cross-browser compatibility, physical devices, licensing, or release approval.
 | Item | Value |
 | --- | --- |
 | Starting revision | `33b80653633dd3df4cf63732fb52e8671353b39d` |
-| Implementation revision before this report | `086c9c6942b5e5dd14ccf1237bf1025564a20683` |
+| Implementation revision before documentation | `086c9c6942b5e5dd14ccf1237bf1025564a20683` |
+| Documentation revision | `9248f01` |
 | Branch | `main` |
 | Remote | `origin/main` |
 | Git identity | `Akira Yuzai <yuzai.akira@gmail.com>` |
@@ -28,8 +29,10 @@ Phase 14 implementation commits, in order:
 7. `086c9c6942b5e5dd14ccf1237bf1025564a20683` — `perf(orderflow): optimize bounded aggregation workloads`
 
 Each implementation commit was created with the required identity, pushed to
-`origin/main`, and synchronized before continuing. The final documentation
-commit(s) will be added to this ledger after the report is committed.
+`origin/main`, and synchronized before continuing. The first documentation
+commit is `9248f01` (`docs(report): verify phase 14 engineering`). The final
+ledger correction containing this exact SHA is the current documentation
+commit.
 
 ## 2. Implemented capabilities
 
@@ -259,6 +262,6 @@ physical-device gates, licensing/release authorization, and the measured 100k
 order-flow rendering limitation have not been cleared. Phase 15 has not been
 started.
 
-Final SHA and remote synchronization are recorded in the commit ledger after
-this report is committed. The worktree must remain clean and `HEAD` must equal
+The final SHA is recorded as the current documentation commit after this
+ledger correction. The worktree must remain clean and `HEAD` must equal
 `origin/main` before this report is considered final.
