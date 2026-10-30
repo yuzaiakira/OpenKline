@@ -46,9 +46,10 @@ otherwise the CVD result is unavailable rather than split at an assumed UTC
 boundary. `getOrderFlowState` exposes the current bounded trade coverage,
 Footprint, CVD, depth state, and depth metrics without exposing renderer
 internals. The chart overlay reads only the visible event-time window and
-caches its deterministic Footprint result by data revision, viewport, replay
-cutoff, and aggregation options; a viewport render therefore does not repeat a
-full-history snapshot when the visible window is unchanged.
+caches its deterministic Footprint result and final render commands by data
+revision, viewport, replay cutoff, price transform, and aggregation/display
+options; a viewport render therefore does not repeat a full-history snapshot or
+rebuild Canvas commands when the visible window is unchanged.
 
 `CumulativeVolumeDeltaCalculator` keeps a cached result, applies strictly
 chronological appends to the affected bucket, and falls back to a full

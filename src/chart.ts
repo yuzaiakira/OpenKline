@@ -244,6 +244,7 @@ interface ManagedSessionReference {
 interface FootprintRenderCache {
   readonly key: string;
   readonly result: FootprintResult | null;
+  readonly commands?: readonly PluginRenderCommand[];
   readonly error?: string;
 }
 
@@ -3089,21 +3090,11 @@ export class Chart {
     const context = this.getPluginRenderContext();
     const pane = context?.pane("main");
     if (context === null || context === undefined || pane === undefined) return null;
-    const range = this.getVisibleOrderFlowRange([]);
-    if (range === null) return null;
+    const visibleFrom = context.times[0];
+    const visibleLast = context.times.at(-1);
+    if (visibleFrom === undefined || visibleLast === undefined) return null;
+    const range = { from: visibleFrom, to: Math.min(Number.MAX_SAFE_INTEGER, visibleLast + 1) };
     const cutoff = this.model.getReplayCutoff();
-    const renderTrades = this.getOrderFlowTradesForReplayRange(range.from, range.to);
-    if (renderTrades.length > 5_000) {
-      const lod = renderFootprintLod(context, pane, renderTrades, this.footprintDisplay);
-      if (lod.error !== undefined) {
-        return {
-          id: "openkline.footprint-warning",
-          zIndex: 18,
-          commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${lod.error}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
-        };
-      }
-      return { id: "openkline.footprint", zIndex: 18, commands: lod.commands };
-    }
     const key = [
       this.orderFlowRevision,
       cutoff === null ? "live" : cutoff,
@@ -3113,37 +3104,55 @@ export class Chart {
       this.footprintDisplay.tickSize,
       this.footprintDisplay.offTickPolicy,
       this.footprintDisplay.maxCells,
+      this.footprintDisplay.showLabels,
+      this.footprintDisplay.opacity,
+      this.footprintDisplay.buyColor,
+      this.footprintDisplay.sellColor,
+      this.footprintDisplay.unknownColor,
+      this.direction,
+      context.width,
+      context.height,
+      context.devicePixelRatio,
+      pane.left,
+      pane.right,
+      pane.top,
+      pane.bottom,
+      pane.priceForY(pane.top),
+      pane.priceForY(pane.bottom),
     ].join(":");
-    if (this.footprintRenderCache?.key !== key) {
-      try {
-        this.footprintRenderCache = {
-          key,
-          result: calculateFootprint(renderTrades, {
-            ...range,
-            intervalMs: this.footprintDisplay.intervalMs,
-            tickSize: this.footprintDisplay.tickSize,
-            offTickPolicy: this.footprintDisplay.offTickPolicy,
-            maxCells: this.footprintDisplay.maxCells,
-          }),
-        };
-      } catch (error) {
-        this.footprintRenderCache = {
-          key,
-          result: null,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
+    const warning = (error: string): PluginOverlayRenderItem => ({
+      id: "openkline.footprint-warning",
+      zIndex: 18,
+      commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${error}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
+    });
+    const cached = this.footprintRenderCache?.key === key ? this.footprintRenderCache : null;
+    if (cached?.error !== undefined) return warning(cached.error);
+    if (cached?.commands !== undefined) return { id: "openkline.footprint", zIndex: 18, commands: cached.commands };
+
+    const renderTrades = this.getOrderFlowTradesForReplayRange(range.from, range.to);
+    if (renderTrades.length > 5_000) {
+      const lod = renderFootprintLod(context, pane, renderTrades, this.footprintDisplay);
+      this.footprintRenderCache = lod.error === undefined
+        ? { key, result: null, commands: lod.commands }
+        : { key, result: null, error: lod.error };
+      if (lod.error !== undefined) return warning(lod.error);
+      return { id: "openkline.footprint", zIndex: 18, commands: lod.commands };
     }
-    const cache = this.footprintRenderCache;
-    if (cache === null || cache.error !== undefined) {
-      return {
-        id: "openkline.footprint-warning",
-        zIndex: 18,
-        commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${cache?.error ?? "unknown error"}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
-      };
+
+    let result: FootprintResult;
+    try {
+      result = calculateFootprint(renderTrades, {
+        ...range,
+        intervalMs: this.footprintDisplay.intervalMs,
+        tickSize: this.footprintDisplay.tickSize,
+        offTickPolicy: this.footprintDisplay.offTickPolicy,
+        maxCells: this.footprintDisplay.maxCells,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.footprintRenderCache = { key, result: null, error: message };
+      return warning(message);
     }
-    const result = cache.result;
-    if (result === null) return null;
     const commands: PluginRenderCommand[] = [];
     for (const bucket of result.buckets) {
       const left = Math.min(context.xForTime(bucket.start), context.xForTime(bucket.end));
@@ -3160,6 +3169,7 @@ export class Chart {
         }
       }
     }
+    this.footprintRenderCache = { key, result, commands };
     return { id: "openkline.footprint", zIndex: 18, commands };
   }
 

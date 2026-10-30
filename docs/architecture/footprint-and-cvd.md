@@ -29,7 +29,10 @@ buy, sell, and unknown volume in aggregated display bins; smaller windows use
 the exact cell result. Price and time culling occurs before command emission,
 and off-tick validation remains explicit. The public calculation functions and
 `getOrderFlowState` continue to return exact bounded analytics rather than the
-display LOD.
+display LOD. The chart caches the resulting overlay commands with the viewport
+geometry, price transform, replay cutoff, direction, and display options in the
+key, so resize, pan, scale, replay, and style changes cannot reuse stale
+coordinates.
 
 The stateful CVD calculator handles chronological appends in-place at the
 affected bucket. Corrections and out-of-order trades intentionally take the
