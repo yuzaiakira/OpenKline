@@ -192,10 +192,15 @@ export function validateMarketReplayTape(value: unknown, options: ParseMarketRep
   if (typeof value.fingerprint !== "string" || value.fingerprint !== created.fingerprint) {
     throw new MarketReplayTapeValidationError("Market replay tape fingerprint does not match canonical events");
   }
-  if (!Array.isArray(value.sources) || !Array.isArray(value.instrumentIds)) {
-    throw new MarketReplayTapeValidationError("Market replay tape metadata is invalid");
+  if (!Array.isArray(value.sources) || !Array.isArray(value.instrumentIds)
+    || canonicalStringify(value.sources) !== canonicalStringify(created.sources)
+    || canonicalStringify(value.instrumentIds) !== canonicalStringify(created.instrumentIds)) {
+    throw new MarketReplayTapeValidationError("Market replay tape metadata is invalid or inconsistent with events");
   }
-  if (value.ordering !== undefined && (!isRecord(value.ordering) || value.ordering.version !== OPENKLINE_MARKET_REPLAY_ORDERING_VERSION || value.ordering.sequencePriority !== "preserve-source-sequence")) {
+  if (!isRecord(value.ordering)
+    || value.ordering.version !== OPENKLINE_MARKET_REPLAY_ORDERING_VERSION
+    || value.ordering.sequencePriority !== "preserve-source-sequence"
+    || canonicalStringify(value.ordering.kindPriority) !== canonicalStringify(created.ordering.kindPriority)) {
     throw new MarketReplayTapeValidationError("Market replay ordering policy is invalid");
   }
 }
@@ -580,9 +585,9 @@ function canonicalStringify(value: unknown): string {
 }
 
 function fnv1a64(value: string): string {
-  let hash = 0xcbf29ce484222325n;
-  const prime = 0x100000001b3n;
-  const mask = 0xffffffffffffffffn;
+  let hash = BigInt("14695981039346656037");
+  const prime = BigInt("1099511628211");
+  const mask = BigInt("18446744073709551615");
   for (let index = 0; index < value.length; index += 1) {
     hash ^= BigInt(value.charCodeAt(index));
     hash = (hash * prime) & mask;

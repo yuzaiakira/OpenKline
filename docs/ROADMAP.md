@@ -1,5 +1,31 @@
 # Roadmap
 
+## Phase 15 — Unified historical market replay
+
+Phase 15 is **implemented locally in the current engineering increment; final
+acceptance remains open**. The additive provider-neutral event tape validates
+versioned candle, trade, Level-2, session, source-status, and corporate-action
+records; deterministic event-time/receive-time projection, causal candle
+completion, trade revision handling, CVD/Footprint reconstruction, sequenced
+order-book recovery, bounded checkpoints, chart attachment, multi-panel
+coordination, configuration-only replay persistence, deterministic
+import/export, and the offline Studio Market Replay Lab are present.
+
+- [Implemented / Verified] Phase 15.0–15.3 event contracts, deterministic
+  timeline, causal analytical state, data-quality flags, and checkpoint parity
+  tests are covered by the replay Node fixtures.
+- [Implemented / Verified] Phase 15.4–15.6 additive Chart/coordinator
+  integration, offline Studio controls, strict workspace references, and
+  canonical tape serialization/import validation are covered locally.
+- [Implemented / In Verification] Phase 15.7 benchmark scripts cover mixed
+  1k/10k/100k workloads and an opt-in 500k workload; a Worker is intentionally
+  not introduced without measured need. Existing Phase 14.6 Canvas2D and
+  Order Flow baselines remain separate acceptance evidence.
+- [Open] Protected API baseline approval, direct push of the latest local
+  commits while this environment lacks valid GitHub write credentials, and
+  official Firefox/WebKit/mobile/physical-device, accessibility, visual,
+  licensing, and release gates remain open. Phase 16 has not started.
+
 ## Current milestone
 
 Phase 7 professional charting foundation — **In progress**. Phase 7.0.1

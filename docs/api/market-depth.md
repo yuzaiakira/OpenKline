@@ -45,3 +45,10 @@ liquidity between provider events. `getDepthState(asOfTime)` and
 states rather than treating stale or crossed data as available liquidity.
 High-frequency snapshot and delta callbacks keep the controller state
 synchronous while coalescing Canvas2D commits to the chart frame scheduler.
+
+In unified replay, snapshots and deltas are applied only after their event
+frontier is eligible. The existing `OrderBookController` remains responsible
+for sequence gaps, duplicate deltas, stale/recovering transitions, and valid
+snapshot recovery. Replay retains a gap diagnostic after recovery and never
+interpolates missing liquidity; a displayed book is historical observation,
+not an executable fill assumption.

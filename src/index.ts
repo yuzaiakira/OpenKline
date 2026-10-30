@@ -493,6 +493,20 @@ export type {
   MarketReplayStateListener,
   MarketReplayTradeSummary,
 } from "./replay/index.js";
+export {
+  OPENKLINE_MARKET_REPLAY_WORKSPACE_VERSION,
+  MarketReplayWorkspaceValidationError,
+  createMarketReplayWorkspace,
+  parseMarketReplayWorkspace,
+  serializeMarketReplayWorkspace,
+} from "./replay/index.js";
+export type {
+  CreateMarketReplayWorkspaceOptions,
+  MarketReplayDisplaySettings,
+  MarketReplayPanelConfiguration,
+  MarketReplayWorkspaceCursor,
+  MarketReplayWorkspaceDocument,
+} from "./replay/index.js";
 export { MarketReplayCoordinator } from "./replay/index.js";
 export type {
   MarketReplayPanelListener,

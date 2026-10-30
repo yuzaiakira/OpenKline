@@ -22,6 +22,7 @@ import {
   type MarketReplaySourceStatusEvent,
   type MarketReplayTape,
   type MarketReplayTradeEvent,
+  validateMarketReplayTape,
 } from "./market-event-tape.js";
 
 export type MarketReplayPlaybackState = "idle" | "ready" | "playing" | "paused" | "completed" | "error" | "disposed";
@@ -296,6 +297,11 @@ export class MarketReplayController {
   private disposed = false;
 
   public constructor(options: MarketReplayControllerOptions) {
+    try {
+      validateMarketReplayTape(options.tape);
+    } catch (error) {
+      throw new MarketReplayValidationError(`Invalid market replay tape: ${error instanceof Error ? error.message : String(error)}`);
+    }
     this.tape = options.tape;
     this.clockPolicy = options.clockPolicy ?? "event-time";
     this.knowledgePolicy = options.knowledgePolicy ?? "strict-causal";
@@ -407,6 +413,13 @@ export class MarketReplayController {
 
   public getEvent(eventId: string): MarketReplayEvent | null {
     const event = this.tape.events.find((candidate) => candidate.id === eventId);
+    return event === undefined ? null : cloneEventForPublic(event);
+  }
+
+  /** Return an eligible projected event by replay cursor index. */
+  public getEligibleEvent(index: number): MarketReplayEvent | null {
+    if (!Number.isSafeInteger(index) || index < 0) return null;
+    const event = this.projectedEvents[index]?.event;
     return event === undefined ? null : cloneEventForPublic(event);
   }
 

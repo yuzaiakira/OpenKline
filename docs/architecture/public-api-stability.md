@@ -61,3 +61,10 @@ and legacy result behavior remains the compatibility reference. The protected
 historical baseline is intentionally not rewritten by Phase 13, so a strict
 `api:check` result must distinguish inherited/additive differences from an
 owner-approved baseline update.
+
+Phase 15 adds the versioned `MarketReplayTape`, deterministic
+`MarketReplayController`, `MarketReplayCoordinator`, and configuration-only
+replay workspace helpers as additive exports. The protected baseline remains
+unchanged. Review these declarations with `npm run api:inventory` and
+`npm run api:diagnostics`; a strict `npm run api:check` failure is not silently
+converted into approval.

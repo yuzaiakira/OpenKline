@@ -82,3 +82,13 @@ future-as-of events invalidate the cache and remain excluded by the causal
 reference calculation. Bounded-result changes also invalidate the cache and use
 the reference calculation. Returned results remain defensive snapshots, so
 callers cannot mutate the calculator's cached state.
+
+## Unified replay frontier
+
+`MarketReplayController` reuses these trade semantics at a historical cursor.
+Stable trade revisions replace earlier records only when their correction
+event is eligible; unknown-side volume remains separate from known buy/sell
+volume. CVD and Footprint state therefore cannot see trades beyond the cursor.
+The replay snapshot is bounded for materialized Time & Sales and Footprint
+cells while its summaries remain deterministic. A source coverage flag is
+required before a host describes the historical result as exhaustive.

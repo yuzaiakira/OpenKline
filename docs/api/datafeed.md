@@ -162,3 +162,10 @@ Unknown aggressor side is retained as unknown and is never inferred from
 candle colour or OHLCV volume. The deterministic `InMemoryMarketTradeDatafeed`
 and `InMemoryOrderBookDatafeed` are suitable for offline fixtures and tests;
 they do not represent venue completeness or executable liquidity.
+
+For historical research, these provider-neutral records can be converted by a
+host into a versioned `MarketReplayTape`. The tape keeps exchange event time
+separate from genuine recorded receive time and reports incomplete knowledge
+when receipt metadata is absent. Replay import validates source identity,
+revisions, timestamps, prices, quantities, and Level-2 sequences before any
+chart or Studio consumer receives the records.

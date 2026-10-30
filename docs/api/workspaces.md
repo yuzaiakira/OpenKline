@@ -106,3 +106,20 @@ state. Repeated parse/serialize cycles therefore preserve the user-owned
 configuration without persisting runtime objects. The version remains `1`;
 this additive optional field does not authorize changing required fields or
 the meaning of existing fields.
+
+## Unified market replay configuration
+
+`createMarketReplayWorkspace()`, `parseMarketReplayWorkspace()`, and
+`serializeMarketReplayWorkspace()` provide a separate version-1, runtime-free
+configuration reference for the Phase 15 replay layer. It stores only the
+tape/source identity, primary instrument, clock and historical-knowledge
+policies, playback speed, bounded display flags, panel instrument references,
+and an optional `{ eventId, timestamp }` cursor reference.
+
+It deliberately does not store event records, trade or book history, derived
+CVD/Footprint values, checkpoints, workers, subscriptions, callbacks,
+credentials, or provider transport state. A consumer reacquires and validates
+the referenced tape before creating `MarketReplayController`; an unresolved
+source remains visible to the host instead of being silently substituted.
+This additive document is independent of legacy `WorkspaceDocument` v1, which
+continues to parse unchanged.

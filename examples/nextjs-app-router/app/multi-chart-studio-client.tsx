@@ -58,6 +58,7 @@ import type { IndicatorCategory } from "openkline";
 import { binanceStudioInterval, binanceStudioSymbol, createBinanceDatafeed } from "../../shared/binance-datafeed.js";
 import styles from "./studio.module.css";
 import { KlineScriptStudioEditor } from "./klinescript-studio-editor";
+import { MarketReplayLab } from "./market-replay-lab";
 import { StrategyTester } from "./strategy-tester";
 import { StrategyOptimizer } from "./strategy-optimizer";
 import { PaperTradingPanel } from "./paper-trading-panel";
@@ -1587,6 +1588,7 @@ export default function MultiChartStudioClient() {
     {multiTimeframeControls}
     {sessionControls}
     {orderFlowControls}
+    <MarketReplayLab />
     <header className={styles.topbar}>
       <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.5 analysis workspace</small></div>
       <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>

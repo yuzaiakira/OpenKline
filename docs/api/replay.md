@@ -123,3 +123,11 @@ and corporate-action boundaries. In `receive-time` mode, records without a
 genuine recorded receive timestamp are not eligible and the snapshot is marked
 uncertain. Displayed historical Level-2 liquidity is observational data and is
 not an executable fill assumption.
+
+The unified controller is additive to `ReplayEngine` and `Chart.createReplay()`.
+It exposes a shared event frontier for candles, trades, Level-2, sessions, and
+corporate actions; it does not replace the legacy inclusive candle-prefix
+presentation. `MarketReplayCoordinator` filters one controller snapshot for
+multiple instrument panels without synthesizing missing data. Use the replay
+workspace helpers for configuration-only persistence; runtime state and event
+tapes remain outside ordinary chart workspaces.
