@@ -1,4 +1,28 @@
 export { Chart, createChart } from "./chart.js";
+export {
+  AnchoredVwapCalculator,
+  VolumeAnalyticsValidationError,
+  calculateAnchoredVwap,
+  calculateEstimatedVolumeProfile,
+  resolveVolumeProfileOptions,
+} from "./volume-analytics.js";
+export type {
+  AnchoredVwapOptions,
+  AnchoredVwapPoint,
+  AnchoredVwapPriceSource,
+  AnchoredVwapResult,
+  EstimatedVolumeProfileResult,
+  ResolvedVolumeProfileOptions,
+  VolumeProfileAllocationMethod,
+  VolumeProfileBin,
+  VolumeProfileCalculationOptions,
+  VolumeProfileDisplayOptions,
+  VolumeProfileMode,
+  VolumeProfileOptions,
+  VolumeProfilePosition,
+  VolumeProfilePriceBounds,
+  VolumeProfileStatus,
+} from "./volume-analytics.js";
 export { ChartSynchronizationController } from "./synchronization.js";
 export type {
   ChartSynchronizationCrosshairEvent,
@@ -175,6 +199,7 @@ export {
   IndicatorValidationError,
   adxDefinition,
   atrDefinition,
+  anchoredVwapDefinition,
   bollingerBandsDefinition,
   builtInIndicatorDefinitions,
   cciDefinition,
@@ -192,6 +217,7 @@ export {
   vwapDefinition,
   williamsRDefinition,
 } from "./indicators/index.js";
+export type { AnchoredVwapParameters } from "./indicators/index.js";
 export {
   createDeterministicPaperMarketStream,
   createPaperTradingAccount,

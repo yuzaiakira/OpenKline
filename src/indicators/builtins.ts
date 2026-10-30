@@ -1,5 +1,6 @@
 import type { Candle } from "../types.js";
 import { advancedIndicatorDefinitions } from "./advanced.js";
+import { anchoredVwapDefinition } from "./anchored-vwap.js";
 import {
   closeValues,
   emaValues,
@@ -208,6 +209,7 @@ export const builtInIndicatorDefinitions: readonly IndicatorDefinition[] = [
   atrDefinition,
   stochasticDefinition,
   vwapDefinition,
+  anchoredVwapDefinition,
   ...advancedIndicatorDefinitions,
 ];
 

@@ -1050,6 +1050,17 @@ acceptance matrix. Phase 8.14 engineering is ready for review for the tested
 scope; the explicitly open external and browser gates must not be silently
 converted into universal compatibility certification.
 
+## Phase 9 professional volume analytics
+
+- [Implemented / Node-verified — 9.0] Added public Anchored VWAP calculation
+  and indicator contracts with inclusive UTC anchors, typical/close price
+  sources, correction-safe ordering, missing/zero-volume semantics, and
+  finite extreme-value handling. Added the estimated OHLCV Volume Profile
+  engine with close and range-uniform allocation, deterministic POC/value-area
+  expansion, explicit empty states, and conserved eligible volume. Chart
+  rendering, interactions, persistence, Studio, replay, and browser gates are
+  delivered in later Phase 9 increments.
+
 ## Phase 8.13.1 comparison workspace persistence hardening
 
 Phase 8.13.1 fixes a Studio persistence defect in which saving while comparison

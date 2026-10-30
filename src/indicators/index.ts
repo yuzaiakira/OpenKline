@@ -1,5 +1,6 @@
 import { IndicatorRegistry } from "./engine.js";
 import { builtInIndicatorDefinitions } from "./builtins.js";
+export { anchoredVwapDefinition } from "./anchored-vwap.js";
 
 export {
   adxDefinition,
@@ -54,6 +55,7 @@ export type {
   VwapParameters,
   VwapSession,
 } from "./builtins.js";
+export type { AnchoredVwapParameters } from "./anchored-vwap.js";
 export type {
   AdxParameters,
   CciParameters,

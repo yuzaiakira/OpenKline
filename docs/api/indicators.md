@@ -29,6 +29,7 @@ rsi.dispose();
 | `ATR` | `period` | `value` |
 | `STOCHASTIC` | `kPeriod`, `dPeriod` | `k`, `d` |
 | `VWAP` | `session: "none" | "utc-day"` | `value` |
+| `ANCHORED_VWAP` | `anchorTime`, `priceSource: "typical" | "close"` | `value` |
 | `ROC` | `period` | `value` |
 | `CCI` | `period`, `constant` | `value` |
 | `WILLIAMS_R` | `period` | `value` |
@@ -114,3 +115,11 @@ Registered definitions are not arbitrary scripts and are never evaluated with
 semantic, type, budget, and runtime validation. See
 `docs/api/klinescript.md`; the DSL is not an OS-level sandbox and is not full
 Python/Pine compatibility.
+
+`ANCHORED_VWAP` is the Phase 9 volume-analysis indicator. Its UTC
+`anchorTime` is inclusive; a candle between the anchor and the next available
+observation does not cause pre-anchor volume to enter the cumulative average.
+Missing and zero volume remain unavailable observations and do not contribute
+to the denominator. For a pure calculation with richer result metadata, use
+`calculateAnchoredVwap` from the package root; see
+[`Anchored VWAP API`](anchored-vwap.md).
