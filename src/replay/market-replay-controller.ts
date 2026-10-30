@@ -285,6 +285,7 @@ export class MarketReplayController {
   private readonly maxFootprintCells: number;
   private readonly maxDepth: number;
   private readonly projectedEvents: readonly ProjectedEvent[];
+  private readonly clockOrderingUncertain: boolean;
   private readonly listeners = new Set<MarketReplayStateListener>();
   private readonly checkpoints = new Map<number, RuntimeCheckpoint>();
   private readonly initialIndex: number;
@@ -313,6 +314,7 @@ export class MarketReplayController {
     this.maxDepth = positiveLimit(options.maxDepth, DEFAULT_MAX_DEPTH, 10_000, "maxDepth");
     this.speed = normalizeSpeed(options.speed ?? 1);
     this.projectedEvents = projectEvents(this.tape, this.clockPolicy);
+    this.clockOrderingUncertain = hasClockRegression(this.projectedEvents);
     this.initialIndex = options.startAt === undefined ? -1 : this.resolveTimestampIndex(options.startAt);
     if (options.startAt !== undefined && (!Number.isSafeInteger(options.startAt) || options.startAt < 0)) throw new MarketReplayValidationError("startAt must be a non-negative safe integer timestamp");
   }
@@ -822,14 +824,16 @@ export class MarketReplayController {
 
   private getIntegrity(): MarketReplayIntegrityState {
     const unknownReceiveTime = this.clockPolicy === "receive-time" && this.tape.events.some((event) => event.receiveTime === undefined);
-    const complete = !unknownReceiveTime && this.runtime.sequenceGaps.size === 0 && this.runtime.staleOrderBooks.size === 0 && this.runtime.rejectedEventIds.size === 0 && [...this.runtime.coverage.values()].every((coverage) => coverage.coverage === "complete" || coverage.coverage === "not-reported");
+    const notes = new Set(this.runtime.notes);
+    if (this.clockOrderingUncertain) notes.add("Sequenced source ordering is not monotonic in the selected clock; timestamp seeks use a conservative eligible prefix.");
+    const complete = !unknownReceiveTime && !this.clockOrderingUncertain && this.runtime.sequenceGaps.size === 0 && this.runtime.staleOrderBooks.size === 0 && this.runtime.rejectedEventIds.size === 0 && [...this.runtime.coverage.values()].every((coverage) => coverage.coverage === "complete" || coverage.coverage === "not-reported");
     return {
       complete,
       unknownReceiveTime,
       sequenceGaps: [...this.runtime.sequenceGaps].sort(),
       staleOrderBooks: [...this.runtime.staleOrderBooks].sort(),
       rejectedEventIds: [...this.runtime.rejectedEventIds].sort(),
-      notes: [...this.runtime.notes].sort(),
+      notes: [...notes].sort(),
     };
   }
 
@@ -903,6 +907,13 @@ function projectEvents(tape: MarketReplayTape, policy: MarketReplayClockPolicy):
       || left.event.id.localeCompare(right.event.id)
       || left.tapeIndex - right.tapeIndex;
   });
+}
+
+function hasClockRegression(events: readonly ProjectedEvent[]): boolean {
+  for (let index = 1; index < events.length; index += 1) {
+    if (events[index]!.clockTimestamp < events[index - 1]!.clockTimestamp) return true;
+  }
+  return false;
 }
 
 function streamKey(event: MarketReplayEvent): string {

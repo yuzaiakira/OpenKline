@@ -41,6 +41,13 @@ The controller has no global singleton and does not mutate a live Chart
 datafeed. Chart attachment can be added by a host, but a stale live
 subscription must remain unable to write into historical replay state.
 
+Sequenced source order is preserved even when the selected clock is not
+monotonic for that stream. In that case the controller marks integrity as
+uncertain and timestamp seeking uses a conservative eligible prefix rather
+than applying a later record whose clock is known to be beyond the requested
+frontier. This preserves no-lookahead semantics while making the chronology
+limitation visible to the consumer.
+
 ## Multi-instrument behavior
 
 One controller can project events for several instruments under one clock.

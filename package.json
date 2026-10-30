@@ -33,6 +33,7 @@
     "profile:multi-chart": "npm run build && node scripts/multi-chart-profile.mjs",
     "benchmark:replay": "npm run build && node scripts/replay-benchmark.mjs",
     "benchmark:market-replay": "npm run build && node --expose-gc scripts/market-replay-benchmark.mjs",
+    "test:market-replay": "npm run build && npm exec -- tsc -p tsconfig.test.json && node --test test-dist/tests/market-replay-tape.test.js test-dist/tests/market-replay-controller.test.js test-dist/tests/market-replay-coordinator.test.js test-dist/tests/market-replay-workspace.test.js test-dist/tests/market-replay-causality.test.js",
     "benchmark:alerts": "npm run build && node scripts/alert-benchmark.mjs",
     "benchmark:plugins": "npm run build && node scripts/plugin-benchmark.mjs",
     "benchmark:studio": "npm run build && node scripts/studio-benchmark.mjs",
