@@ -12,8 +12,12 @@ test("renders Anchored VWAP and an estimated Volume Profile through public chart
         getData(): Array<{ time: number; close: number }>;
         addAnchoredVwap(options: object): { id: string; getResult(): { outputs: Array<{ points: Array<{ value: number | null }> }> }; setAnchor(time: number): void };
         addVolumeProfile(options: object): { id: string; getResult(): { status: string; bins: Array<{ estimatedVolume: number }>; pointOfControl: unknown; valueArea: unknown }; setMode(mode: string, range?: { from: number; to: number }): void };
+        getAnchoredVwaps(): Array<{ getOptions(): { anchorTime: number; priceSource: string }; startPlacement(): void }>;
         getSeriesIds(): string[];
-        getVolumeProfiles(): Array<{ id: string }>;
+        getVolumeProfiles(): Array<{ id: string; getOptions(): { id: string } }>;
+        getPrimaryDrawingPaneBounds(): { left: number; right: number; top: number; bottom: number; chartWidth: number; chartHeight: number };
+        serializeWorkspace(): { indicators: Array<{ indicatorId: string; parameters: Record<string, unknown> }>; volumeAnalytics?: { volumeProfiles: Array<{ id: string }> } };
+        restoreWorkspace(document: unknown): void;
         zoom(scale: number): void;
         destroy(): void;
       };
@@ -33,7 +37,25 @@ test("renders Anchored VWAP and an estimated Volume Profile through public chart
     const fixed = profile.getResult();
     chart.zoom(0.8);
     const fixedAfterZoom = profile.getResult();
-    return { initial, changed, fixed, fixedAfterZoom };
+    const workspace = chart.serializeWorkspace();
+    const beforeRestoreAnchor = chart.getAnchoredVwaps()[0]?.getOptions().anchorTime ?? null;
+    const persistedProfile = workspace.volumeAnalytics?.volumeProfiles[0]?.id ?? null;
+    chart.restoreWorkspace(workspace);
+    const restoredAnchored = chart.getAnchoredVwaps()[0];
+    const restoredProfile = chart.getVolumeProfiles()[0];
+    restoredAnchored?.startPlacement();
+    return {
+      initial,
+      changed,
+      fixed,
+      fixedAfterZoom,
+      beforeRestoreAnchor,
+      persistedProfile,
+      restoredAnchor: restoredAnchored?.getOptions().anchorTime ?? null,
+      restoredProfile: restoredProfile?.getOptions().id ?? null,
+      restoredIndicator: chart.serializeWorkspace().indicators.find((item) => item.indicatorId === "ANCHORED_VWAP")?.parameters.anchorTime ?? null,
+      pane: chart.getPrimaryDrawingPaneBounds(),
+    };
   });
 
   expect(state.initial.resultPoints).toBeGreaterThan(0);
@@ -45,6 +67,21 @@ test("renders Anchored VWAP and an estimated Volume Profile through public chart
   expect(state.initial.series).toContain("browser-anchored-vwap:value");
   expect(state.changed).not.toBeNull();
   expect(state.fixedAfterZoom).toEqual(state.fixed);
+  expect(state.persistedProfile).toBe("browser-volume-profile");
+  expect(state.restoredProfile).toBe("browser-volume-profile");
+  expect(state.restoredAnchor).not.toBeNull();
+  expect(state.restoredIndicator).toBe(state.restoredAnchor);
+  const canvasBox = await page.locator("canvas").boundingBox();
+  expect(canvasBox).not.toBeNull();
+  await page.mouse.click(canvasBox!.x + state.pane.right * 0.9, canvasBox!.y + state.pane.top + (state.pane.bottom - state.pane.top) * 0.5);
+  const placedAnchor = await page.evaluate(() => {
+    const chart = (globalThis as unknown as { __openklineChart: { getAnchoredVwaps(): Array<{ getOptions(): { anchorTime: number } }>; serializeWorkspace(): { indicators: Array<{ indicatorId: string; parameters: Record<string, unknown> }> } } }).__openklineChart;
+    const anchor = chart.getAnchoredVwaps()[0]?.getOptions().anchorTime ?? null;
+    const persisted = chart.serializeWorkspace().indicators.find((item) => item.indicatorId === "ANCHORED_VWAP")?.parameters.anchorTime ?? null;
+    return { anchor, persisted };
+  });
+  expect(placedAnchor.anchor).not.toBe(state.restoredAnchor);
+  expect(placedAnchor.persisted).toBe(placedAnchor.anchor);
   expect(pageErrors).toEqual([]);
 
   const pixelCount = await page.evaluate(() => {

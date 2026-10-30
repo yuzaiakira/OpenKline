@@ -26,6 +26,8 @@ export interface AnchoredVwapApi extends ChartIndicatorApi {
   getOptions(): { readonly anchorTime: number; readonly priceSource: AnchoredVwapPriceSource };
   setAnchor(time: number): void;
   setPriceSource(source: AnchoredVwapPriceSource): void;
+  /** Start a pointer/touch placement that snaps to a visible candle timestamp. */
+  startPlacement(): void;
 }
 
 export interface AnchoredVwapResult {

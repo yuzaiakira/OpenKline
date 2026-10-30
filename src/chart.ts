@@ -166,6 +166,7 @@ export class Chart {
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
+  private readonly anchoredVwaps = new Map<string, AnchoredVwapApi>();
   private nextIndicatorId = 1;
   private readonly volumeProfiles = new Map<string, ManagedVolumeProfile>();
   private nextVolumeProfileId = 1;
@@ -201,6 +202,7 @@ export class Chart {
   private lastPointerX = 0;
   private selectedDrawingId: string | null = null;
   private pendingDrawing: { type: string; options: DrawingStartOptions; points: DrawingPoint[] } | null = null;
+  private pendingAnchoredVwapId: string | null = null;
   private suppressNextPointerDown = false;
   private activeDrawing: { id: string; pointIndex: number | null; time: number; price: number } | null = null;
   private datafeedCleanup: (() => void) | null = null;
@@ -580,6 +582,14 @@ export class Chart {
       drawings: this.getReplayVisibleDrawingDocument(),
       viewport,
       plugins,
+      ...(this.volumeProfiles.size === 0 ? {} : {
+        volumeAnalytics: {
+          volumeProfiles: [...this.volumeProfiles.values()].map((profile) => ({
+            ...profile.options,
+            ...(profile.options.range === undefined ? {} : { range: { ...profile.options.range } }),
+          })),
+        },
+      }),
       ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
         replay: {
@@ -633,6 +643,8 @@ export class Chart {
 
     this.stopDatafeed();
     this.clearVolumeProfiles();
+    this.anchoredVwaps.clear();
+    this.pendingAnchoredVwapId = null;
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     this.nextIndicatorId = 1;
@@ -676,13 +688,26 @@ export class Chart {
     for (const indicator of parsed.indicators) {
       if (missingIndicators.includes(indicator.id)) continue;
       const script = scriptPrograms.get(indicator.id);
-      const api = script === undefined
-        ? this.addIndicator(indicator.indicatorId, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } })
-        : this.addScriptIndicator(script, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } });
+      const anchoredParameters = indicator.indicatorId === "ANCHORED_VWAP"
+        && typeof indicator.parameters.anchorTime === "number"
+        && (indicator.parameters.priceSource === undefined || indicator.parameters.priceSource === "typical" || indicator.parameters.priceSource === "close")
+        ? {
+            id: indicator.id,
+            anchorTime: indicator.parameters.anchorTime,
+            priceSource: indicator.parameters.priceSource === "close" ? "close" as const : "typical" as const,
+            ...(indicator.outputStyles.value === undefined ? {} : { style: { ...indicator.outputStyles.value } }),
+          }
+        : null;
+      const api = anchoredParameters !== null
+        ? this.addAnchoredVwap(anchoredParameters)
+        : script === undefined
+          ? this.addIndicator(indicator.indicatorId, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } })
+          : this.addScriptIndicator(script, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } });
       for (const [outputId, style] of Object.entries(indicator.outputStyles)) api.setOutputStyle(outputId, style);
     }
     this.drawingEngine.restore(parsed.drawings);
     this.model.setViewportState(parsed.viewport);
+    for (const profile of parsed.volumeAnalytics?.volumeProfiles ?? []) this.addVolumeProfile(profile);
     for (const plugin of parsed.plugins) {
       if (!missingPlugins.includes(plugin.id)) this.pluginRegistry.restoreState(plugin.id, plugin.state);
     }
@@ -784,22 +809,44 @@ export class Chart {
       lineWidth: 2,
       ...(options.style ?? {}),
     });
-    return {
+    const api: AnchoredVwapApi = {
       ...indicator,
       getOptions: () => ({ ...state }),
       setAnchor: (time) => {
         this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
         const nextTime = validateAnalyticsTimestamp(time, "Anchored VWAP anchorTime");
         state.anchorTime = nextTime;
         indicator.setParameters({ anchorTime: nextTime, priceSource: state.priceSource });
       },
       setPriceSource: (source: AnchoredVwapPriceSource) => {
         this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
         if (source !== "typical" && source !== "close") throw new Error(`Unsupported Anchored VWAP price source: ${String(source)}`);
         state.priceSource = source;
         indicator.setParameters({ anchorTime: state.anchorTime, priceSource: source });
       },
+      startPlacement: () => {
+        this.startAnchoredVwapPlacement(indicator.id);
+      },
     };
+    this.anchoredVwaps.set(indicator.id, api);
+    return api;
+  }
+
+  /** Start visible-candle timestamp snapping for an existing Anchored VWAP. */
+  public startAnchoredVwapPlacement(id: string): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (!this.anchoredVwaps.has(id)) throw new Error(`Unknown Anchored VWAP: ${id}`);
+    this.pendingAnchoredVwapId = id;
+    this.emit("toolActivation", { type: "anchored-vwap", active: true });
+  }
+
+  /** Return the chart-owned Anchored VWAP APIs created through the additive API. */
+  public getAnchoredVwaps(): AnchoredVwapApi[] {
+    this.assertAlive();
+    return [...this.anchoredVwaps.values()];
   }
 
   /** Add a chart-owned estimated Volume Profile overlay. */
@@ -939,6 +986,8 @@ export class Chart {
       this.disposeManagedIndicator(state);
       this.emit("indicatorChange", { action: "remove", id: state.id, indicatorId: state.indicatorId });
     }
+    this.anchoredVwaps.clear();
+    this.pendingAnchoredVwapId = null;
   }
 
   private disposeManagedIndicator(state: ManagedChartIndicator): void {
@@ -1410,6 +1459,8 @@ export class Chart {
     for (const runtime of this.workerRuntimes) runtime.dispose();
     this.workerRuntimes.clear();
     this.indicators.clear();
+    this.anchoredVwaps.clear();
+    this.pendingAnchoredVwapId = null;
     this.clearVolumeProfiles();
     this.model.destroy();
     this.baseFrame = null;
@@ -1488,6 +1539,7 @@ export class Chart {
       this.suppressNextPointerDown = false;
       return;
     }
+    if (this.handlePendingAnchoredVwapAnchor(position)) return;
     if (this.handlePendingDrawingPoint(position)) return;
 
     const drawingContext = this.getDrawingContext();
@@ -1523,7 +1575,9 @@ export class Chart {
   private readonly handleTouchStart = (event: TouchEvent): void => {
     syncInteractionSize(this.canvas, this.width, this.height, (width, height) => this.resize(width, height));
     const touch = event.changedTouches[0];
-    if (touch === undefined || !this.handlePendingDrawingPoint(this.clientPosition(touch.clientX, touch.clientY))) return;
+    if (touch === undefined) return;
+    const position = this.clientPosition(touch.clientX, touch.clientY);
+    if (!this.handlePendingAnchoredVwapAnchor(position) && !this.handlePendingDrawingPoint(position)) return;
     event.preventDefault();
     this.suppressNextPointerDown = true;
   };
@@ -1531,6 +1585,21 @@ export class Chart {
   private readonly handleTouchEnd = (): void => {
     this.suppressNextPointerDown = false;
   };
+
+  private handlePendingAnchoredVwapAnchor(position: { readonly x: number; readonly y: number }): boolean {
+    const id = this.pendingAnchoredVwapId;
+    if (id === null) return false;
+    const drawingContext = this.getDrawingContext();
+    if (drawingContext === null || !isInsideBounds(position.x, position.y, drawingContext.bounds)) return false;
+    const nearest = nearestTime(this.model.getVisibleData().times, drawingContext.converter.timeForX(position.x));
+    const api = this.anchoredVwaps.get(id);
+    if (nearest === null || api === undefined) return false;
+    this.pendingAnchoredVwapId = null;
+    api.setAnchor(nearest);
+    this.emit("toolActivation", { type: "anchored-vwap", active: false });
+    this.render();
+    return true;
+  }
 
   private handlePendingDrawingPoint(position: { readonly x: number; readonly y: number }): boolean {
     const drawingContext = this.getDrawingContext();

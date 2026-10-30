@@ -98,6 +98,8 @@ export type {
   WorkspaceRestoreOptions,
   WorkspaceRestoreResult,
   WorkspaceSeries,
+  WorkspaceVolumeAnalytics,
+  WorkspaceVolumeProfile,
 } from "./workspace.js";
 export {
   AlertEngine,

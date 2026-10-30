@@ -181,3 +181,36 @@ test("workspace parser preserves serializable alert definitions without runtime 
   assert.deepEqual(parsed.alerts, input.alerts);
   assert.throws(() => parseWorkspace({ ...workspace(), alerts: { version: 2, alerts: [] } }), WorkspaceValidationError);
 });
+
+test("workspace parser preserves optional estimated Volume Profile configuration", () => {
+  const input = {
+    ...workspace(),
+    volumeAnalytics: {
+      volumeProfiles: [{
+        id: "profile-main",
+        mode: "fixed" as const,
+        range: { from: 1, to: 2_000 },
+        binCount: 16,
+        allocation: "range-uniform" as const,
+        valueAreaPercentage: 0.7,
+        position: "left" as const,
+        width: 0.3,
+        opacity: 0.5,
+        color: "#60a5fa",
+        valueAreaColor: "#34d399",
+        pocColor: "#f59e0b",
+        showPoc: true,
+        showValueArea: true,
+        showLabels: false,
+        visible: true,
+      }],
+    },
+  };
+  const parsed = parseWorkspace(input);
+  assert.deepEqual(parsed.volumeAnalytics, input.volumeAnalytics);
+  assert.throws(() => parseWorkspace({
+    ...workspace(),
+    volumeAnalytics: { volumeProfiles: [{ id: "profile-main", mode: "fixed", binCount: 4 }] },
+  }), WorkspaceValidationError);
+  assert.deepEqual(parseWorkspace(workspace()).volumeAnalytics, undefined);
+});

@@ -49,5 +49,10 @@ are optional; when omitted, the eligible candle low/high range is used.
 
 The chart-native `Chart.addVolumeProfile` integration adds fixed-range or
 visible-range rendering, theme-aware estimated bars, POC/VAH/VAL labels, and
-workspace persistence without changing the raw candle series. See the chart
-and Studio documentation for interaction behavior.
+workspace persistence without changing the raw candle series. `setRange` uses
+canonical UTC boundaries and switches to fixed mode; `setMode("visible")`
+follows the chart's replay-visible viewport. The integration is intentionally
+non-interactive at the pixel layer: hosts should edit timestamps through
+labelled controls or existing drawing/snap workflows rather than persisting
+canvas coordinates. See the chart and Studio documentation for control
+behavior.

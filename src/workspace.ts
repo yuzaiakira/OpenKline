@@ -4,6 +4,7 @@ import type { AlertDefinitionDocument } from "./alerts/types.js";
 import { isCandleSeriesType } from "./core/candle-series.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
+import { resolveVolumeProfileOptions, type ResolvedVolumeProfileOptions, type VolumeProfileOptions } from "./volume-analytics.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -53,6 +54,14 @@ export interface WorkspacePluginState {
   readonly state: Readonly<Record<string, JsonValue>>;
 }
 
+/** Serializable chart-owned estimated Volume Profile configuration. */
+export type WorkspaceVolumeProfile = ResolvedVolumeProfileOptions;
+
+/** Optional Phase 9 analytics state. Derived bins and canvas geometry are never persisted. */
+export interface WorkspaceVolumeAnalytics {
+  readonly volumeProfiles: readonly WorkspaceVolumeProfile[];
+}
+
 /** A replay export marker; it is descriptive and is not a replay source. */
 export interface WorkspaceReplayState {
   readonly active: true;
@@ -73,6 +82,8 @@ export interface WorkspaceDocument {
   readonly plugins: readonly WorkspacePluginState[];
   /** Optional serializable alert definitions. Runtime state and history are never persisted. */
   readonly alerts?: AlertDefinitionDocument;
+  /** Optional chart-owned volume analytics configuration; legacy version-1 documents omit it. */
+  readonly volumeAnalytics?: WorkspaceVolumeAnalytics;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -114,6 +125,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const plugins = parsePlugins(value.plugins);
   const replay = value.replay === undefined ? undefined : parseReplay(value.replay);
   const alerts = value.alerts === undefined ? undefined : parseWorkspaceAlerts(value.alerts);
+  const volumeAnalytics = value.volumeAnalytics === undefined ? undefined : parseVolumeAnalytics(value.volumeAnalytics);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -134,8 +146,32 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     viewport,
     plugins,
     ...(alerts === undefined ? {} : { alerts }),
+    ...(volumeAnalytics === undefined ? {} : { volumeAnalytics }),
     ...(replay === undefined ? {} : { replay }),
   };
+}
+
+function parseVolumeAnalytics(value: unknown): WorkspaceVolumeAnalytics {
+  if (!isPlainObject(value) || !Array.isArray(value.volumeProfiles)) {
+    throw new WorkspaceValidationError("Invalid workspace volume analytics");
+  }
+  const ids = new Set<string>();
+  const volumeProfiles = value.volumeProfiles.map((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || ids.has(item.id)) {
+      throw new WorkspaceValidationError("Invalid or duplicate workspace Volume Profile");
+    }
+    ids.add(item.id);
+    try {
+      const resolved = resolveVolumeProfileOptions(item as unknown as VolumeProfileOptions, item.id);
+      return {
+        ...resolved,
+        ...(resolved.range === undefined ? {} : { range: { ...resolved.range } }),
+      };
+    } catch (error) {
+      throw new WorkspaceValidationError(error instanceof Error ? error.message : `Invalid workspace Volume Profile: ${item.id}`);
+    }
+  });
+  return { volumeProfiles };
 }
 
 function parseWorkspaceAlerts(value: unknown): AlertDefinitionDocument {

@@ -1067,6 +1067,12 @@ converted into universal compatibility certification.
   visibility, styling, and empty states are covered by the focused Chromium
   regression. Workspace persistence and Studio controls remain Phase 9.2/9.3
   work.
+- [Implemented / Node-verified — 9.2 foundation] Added optional version-1
+  workspace persistence for estimated Volume Profile configuration and
+  visible-candle timestamp snapping for chart-owned Anchored VWAP objects.
+  Legacy workspaces remain valid; derived bins, canvas geometry, and temporary
+  pointer state are excluded. Studio controls and integrated replay workflows
+  remain in the 9.3/9.4 verification increments.
 
 ## Phase 8.13.1 comparison workspace persistence hardening
 

@@ -55,6 +55,12 @@ For an object that can be updated independently of a chart, use
 `AnchoredVwapCalculator`. Its correction path invalidates the calculation
 instead of retaining a stale append cache.
 
+For chart-native use, `chart.addAnchoredVwap(options)` creates the same built-in
+indicator on the main pane and returns `startPlacement()`. Placement consumes
+the next pointer or touch selection inside the main pane and snaps the anchor
+to the nearest currently visible UTC candle. `setAnchor` and `setPriceSource`
+remain available for keyboard-accessible or application-owned controls.
+
 ## Financial limits
 
 Anchored VWAP is a candle-derived estimate of the volume-weighted average price
