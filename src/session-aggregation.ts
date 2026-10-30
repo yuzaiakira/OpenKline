@@ -2,7 +2,6 @@ import { validateCandle } from "./core/candle-store.js";
 import { createDefaultIndicatorRegistry, type IndicatorRegistry } from "./indicators/index.js";
 import type { IndicatorOutputKind, IndicatorPoint } from "./indicators/types.js";
 import {
-  aggregateCandleValues,
   parseFixedTimeframe,
   type FixedTimeframe,
   type MappedMultiTimeframePoint,
@@ -160,6 +159,31 @@ interface PeriodSchedule {
   readonly sessions: readonly TradingSession[];
 }
 
+interface SessionPeriodState {
+  readonly periodKey: string;
+  readonly sessions: Map<string, TradingSession>;
+  readonly candles: Map<number, Candle>;
+  readonly times: number[];
+  reduction: CandleReduction | null;
+  reductionDirty: boolean;
+}
+
+interface CandleMembership {
+  readonly periodKey: string;
+  readonly sessionId: string;
+}
+
+interface CandleReduction {
+  firstTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volumeSum: number;
+  definedVolumeCount: number;
+  candleCount: number;
+}
+
 /**
  * Incremental source store and deterministic session/week/month projection.
  * Session boundaries come from the selected calendar; OHLCV reduction is shared
@@ -174,10 +198,13 @@ export class SessionAwareCandleAggregator {
   private finalityPolicy: MultiTimeframeFinalityPolicy;
   private asOfTime: number;
   private readonly candles = new Map<number, Candle>();
+  private readonly sortedSourceTimes: number[] = [];
+  private readonly memberships = new Map<number, CandleMembership>();
+  private readonly periods = new Map<string, SessionPeriodState>();
   private readonly localDateSessions = new Map<string, readonly TradingSession[]>();
   private readonly expectedSlots = new Map<string, readonly number[]>();
   private readonly periodSchedules = new Map<string, PeriodSchedule>();
-  /** Cursor used only while getResult walks source candles in time order. */
+  /** Cursor used while indexing source candles in time order. */
   private sessionCursor: TradingSession | null = null;
   private disposed = false;
 
@@ -194,13 +221,33 @@ export class SessionAwareCandleAggregator {
   public setData(candles: readonly Candle[]): void {
     this.assertAlive();
     this.candles.clear();
-    candles.forEach((candle, index) => this.setSourceCandle(candle, index));
+    this.clearIndexes();
+    candles.forEach((candle, index) => {
+      validateCandle(candle, index);
+      this.candles.set(candle.time, { ...candle });
+    });
+    this.rebuildIndexes();
   }
 
   public update(candle: Candle): void {
     this.assertAlive();
     validateCandle(candle, this.candles.size);
-    this.setSourceCandle(candle, this.candles.size);
+    const previous = this.candles.get(candle.time);
+    const lastIndexedTime = this.sortedSourceTimes.at(-1);
+    const outOfOrderInsert = previous === undefined && lastIndexedTime !== undefined && candle.time < lastIndexedTime;
+    if (previous === undefined) insertSorted(this.sortedSourceTimes, candle.time);
+    else this.removeIndexedCandle(candle.time);
+    const copy = { ...candle };
+    this.candles.set(candle.time, copy);
+    // A correction or an out-of-order insertion cannot safely reuse the
+    // forward-only session cursor. The indexed period state remains intact;
+    // only the affected candle is re-resolved.
+    if (previous !== undefined || outOfOrderInsert) this.sessionCursor = null;
+    if (outOfOrderInsert) {
+      this.rebuildIndexes();
+      return;
+    }
+    this.indexCandle(candle.time, copy);
   }
 
   public setAsOfTime(asOfTime: number | undefined): void {
@@ -212,37 +259,39 @@ export class SessionAwareCandleAggregator {
     this.assertAlive();
     this.calendar = calendar;
     this.clearCalendarCaches();
+    this.rebuildIndexes();
   }
 
   public setOptions(options: Pick<SessionAggregationOptions, "targetPeriod" | "coveragePolicy" | "missingVolumePolicy" | "finalityPolicy">): void {
     this.assertAlive();
-    this.targetPeriod = normalizePeriod(options.targetPeriod);
+    const targetPeriod = normalizePeriod(options.targetPeriod);
+    const targetChanged = targetPeriod !== this.targetPeriod;
+    this.targetPeriod = targetPeriod;
     this.coveragePolicy = options.coveragePolicy ?? this.coveragePolicy;
     this.missingVolumePolicy = options.missingVolumePolicy ?? this.missingVolumePolicy;
     this.finalityPolicy = options.finalityPolicy ?? this.finalityPolicy;
     this.periodSchedules.clear();
+    if (targetChanged) {
+      this.periods.clear();
+      this.memberships.clear();
+      this.sessionCursor = null;
+      this.rebuildIndexes();
+    }
   }
 
   public getResult(asOfTime: number | undefined = this.asOfTime): SessionAggregationResult {
     this.assertAlive();
     const frontier = normalizeAsOf(asOfTime);
-    this.sessionCursor = null;
-    const groups = new Map<string, { sessions: Map<string, TradingSession>; candles: Candle[] }>();
-    for (const candle of [...this.candles.values()].sort((left, right) => left.time - right.time)) {
-      if (candle.time + this.source.durationMs > frontier) continue;
-      const match = this.resolveSessionSegment(candle.time);
-      if (match === null || !this.calendar.isExpectedSourceInterval(candle.time, this.source.durationMs)) continue;
-      const periodKey = periodKeyFor(match.session.tradingDate, this.targetPeriod, this.calendar.definition.weekStartsOn ?? 1);
-      const group = groups.get(periodKey) ?? { sessions: new Map<string, TradingSession>(), candles: [] };
-      group.sessions.set(match.session.id, match.session);
-      group.candles.push({ ...candle });
-      groups.set(periodKey, group);
-    }
-
     const observations: SessionCandleObservation[] = [];
-    for (const [periodKey, group] of [...groups.entries()].sort(([left], [right]) => left.localeCompare(right))) {
-      const schedule = this.getPeriodSchedule(periodKey, [...group.sessions.values()][0]!);
-      const sourceTimes = group.candles.map((candle) => candle.time).sort((left, right) => left - right);
+    const eligibleLimit = frontier - this.source.durationMs;
+    for (const periodKey of [...this.periods.keys()].sort((left, right) => left.localeCompare(right))) {
+      const group = this.periods.get(periodKey)!;
+      const eligibleCount = upperBound(group.times, eligibleLimit);
+      if (eligibleCount === 0) continue;
+      const observedSession = group.sessions.values().next().value as TradingSession | undefined;
+      if (observedSession === undefined) continue;
+      const schedule = this.getPeriodSchedule(periodKey, observedSession);
+      const sourceTimes = group.times.slice(0, eligibleCount);
       const periodStart = schedule.sessions[0]?.start ?? Math.min(...sourceTimes);
       const periodEnd = schedule.sessions.at(-1)?.end ?? Math.max(...sourceTimes) + this.source.durationMs;
       const expected = this.coveragePolicy === "unknown" ? null : this.expectedSlotsFor(schedule.sessions);
@@ -266,7 +315,9 @@ export class SessionAwareCandleAggregator {
             ? "closed-partial"
             : "closed-uncertain";
       const available = closed && (this.finalityPolicy === "time-closed" || status === "closed-complete") ? periodEnd : null;
-      const orderedCandles = [...group.candles].sort((left, right) => left.time - right.time);
+      const reduction = eligibleCount === group.times.length
+        ? this.getFullReduction(group)
+        : reduceCandleTimes(group.times, eligibleCount, group.candles);
       observations.push({
         periodKey,
         periodStart,
@@ -280,7 +331,7 @@ export class SessionAwareCandleAggregator {
         expectedSourceCount: expected?.length ?? null,
         missingSourceCount: missing,
         sourceTimes,
-        candle: aggregateCandleValues(orderedCandles, this.missingVolumePolicy, periodStart),
+        candle: candleFromReduction(reduction, this.missingVolumePolicy, periodStart),
       });
     }
     return {
@@ -299,18 +350,87 @@ export class SessionAwareCandleAggregator {
     if (this.disposed) return;
     this.disposed = true;
     this.candles.clear();
+    this.clearIndexes();
     this.clearCalendarCaches();
   }
 
-  private setSourceCandle(candle: Candle, index: number): void {
-    validateCandle(candle, index);
-    this.candles.set(candle.time, { ...candle });
+  private clearIndexes(): void {
+    this.sortedSourceTimes.length = 0;
+    this.memberships.clear();
+    this.periods.clear();
+    this.sessionCursor = null;
   }
 
-  private resolveSessionSegment(time: number): { readonly session: TradingSession } | null {
+  private rebuildIndexes(): void {
+    this.clearIndexes();
+    const ordered = [...this.candles.keys()].sort((left, right) => left - right);
+    this.sortedSourceTimes.push(...ordered);
+    for (const time of ordered) {
+      const candle = this.candles.get(time);
+      if (candle !== undefined) this.indexCandle(time, candle);
+    }
+  }
+
+  private removeIndexedCandle(time: number): void {
+    const membership = this.memberships.get(time);
+    if (membership === undefined) return;
+    const period = this.periods.get(membership.periodKey);
+    if (period === undefined) {
+      this.memberships.delete(time);
+      return;
+    }
+    period.candles.delete(time);
+    const index = lowerBound(period.times, time);
+    if (period.times[index] === time) period.times.splice(index, 1);
+    period.reductionDirty = true;
+    period.reduction = null;
+    if (period.times.length === 0) this.periods.delete(membership.periodKey);
+    this.memberships.delete(time);
+  }
+
+  private indexCandle(time: number, candle: Candle): void {
+    const match = this.resolveSessionSegment(time);
+    if (match === null || time + this.source.durationMs > match.segment.end) return;
+    const periodKey = periodKeyFor(match.session.tradingDate, this.targetPeriod, this.calendar.definition.weekStartsOn ?? 1);
+    let period = this.periods.get(periodKey);
+    if (period === undefined) {
+      period = {
+        periodKey,
+        sessions: new Map<string, TradingSession>(),
+        candles: new Map<number, Candle>(),
+        times: [],
+        reduction: null,
+        reductionDirty: false,
+      };
+      this.periods.set(periodKey, period);
+    }
+    period.sessions.set(match.session.id, match.session);
+    const previousTime = period.times.at(-1);
+    if (previousTime === undefined || previousTime < time) period.times.push(time);
+    else insertSorted(period.times, time);
+    period.candles.set(time, candle);
+    if (period.reduction === null || period.reductionDirty) {
+      period.reductionDirty = true;
+    } else if (previousTime === undefined || previousTime < time) {
+      period.reduction = addCandleToReduction(period.reduction, candle);
+    } else {
+      period.reductionDirty = true;
+    }
+    this.memberships.set(time, { periodKey, sessionId: match.session.id });
+  }
+
+  private getFullReduction(period: SessionPeriodState): CandleReduction {
+    if (period.reduction === null || period.reductionDirty) {
+      period.reduction = reduceCandleTimes(period.times, period.times.length, period.candles);
+      period.reductionDirty = false;
+    }
+    return period.reduction;
+  }
+
+  private resolveSessionSegment(time: number): { readonly session: TradingSession; readonly segment: TradingSession["segments"][number] } | null {
     if (this.sessionCursor !== null) {
       const current = this.sessionCursor.segments.find((segment) => time >= segment.start && time < segment.end);
-      if (current !== undefined) return { session: this.sessionCursor };
+      if (current !== undefined) return { session: this.sessionCursor, segment: current };
       if (time >= this.sessionCursor.end) {
         let date = addDate(this.sessionCursor.tradingDate, 1);
         for (let days = 0; days <= DEFAULT_SESSION_LOOKAHEAD_DAYS; days += 1) {
@@ -319,7 +439,7 @@ export class SessionAwareCandleAggregator {
             this.sessionCursor = candidate;
             if (time < candidate.start) return null;
             const segment = candidate.segments.find((item) => time >= item.start && time < item.end);
-            if (segment !== undefined) return { session: candidate };
+            if (segment !== undefined) return { session: candidate, segment };
             if (time < candidate.end) return null;
           }
           date = addDate(date, 1);
@@ -340,9 +460,10 @@ export class SessionAwareCandleAggregator {
       this.localDateSessions.set(localDate, candidates);
     }
     for (const session of candidates) {
-      if (session.segments.some((segment) => time >= segment.start && time < segment.end)) {
+      const segment = session.segments.find((item) => time >= item.start && time < item.end);
+      if (segment !== undefined) {
         this.sessionCursor = session;
-        return { session };
+        return { session, segment };
       }
     }
     return null;
@@ -499,6 +620,84 @@ function normalizeAsOf(value: number | undefined): number {
   if (value === undefined) return Number.MAX_SAFE_INTEGER;
   if (!Number.isFinite(value)) throw new RangeError("asOfTime must be finite");
   return value;
+}
+
+function addCandleToReduction(reduction: CandleReduction, candle: Candle): CandleReduction {
+  return {
+    firstTime: reduction.firstTime,
+    open: reduction.open,
+    high: Math.max(reduction.high, candle.high),
+    low: Math.min(reduction.low, candle.low),
+    close: candle.close,
+    volumeSum: reduction.volumeSum + (candle.volume ?? 0),
+    definedVolumeCount: reduction.definedVolumeCount + (candle.volume === undefined ? 0 : 1),
+    candleCount: reduction.candleCount + 1,
+  };
+}
+
+function reductionFromCandle(candle: Candle): CandleReduction {
+  return {
+    firstTime: candle.time,
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
+    volumeSum: candle.volume ?? 0,
+    definedVolumeCount: candle.volume === undefined ? 0 : 1,
+    candleCount: 1,
+  };
+}
+
+function reduceCandleTimes(times: readonly number[], count: number, candles: ReadonlyMap<number, Candle>): CandleReduction {
+  const first = candles.get(times[0]!);
+  if (count <= 0 || first === undefined) throw new RangeError("Cannot reduce an empty candle period");
+  let reduction = reductionFromCandle(first);
+  for (let index = 1; index < count; index += 1) {
+    const candle = candles.get(times[index]!);
+    if (candle === undefined) throw new Error(`Missing indexed candle at ${String(times[index])}`);
+    reduction = addCandleToReduction(reduction, candle);
+  }
+  return reduction;
+}
+
+function candleFromReduction(reduction: CandleReduction, missingVolumePolicy: MultiTimeframeMissingVolumePolicy, bucketStart: number): Candle {
+  const hasMissingVolume = reduction.definedVolumeCount < reduction.candleCount;
+  const includeVolume = reduction.definedVolumeCount > 0 && !(missingVolumePolicy === "unknown" && hasMissingVolume);
+  return {
+    time: bucketStart,
+    open: reduction.open,
+    high: reduction.high,
+    low: reduction.low,
+    close: reduction.close,
+    ...(includeVolume ? { volume: reduction.volumeSum } : {}),
+  };
+}
+
+function lowerBound(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]! < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBound(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (values[middle]! <= target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function insertSorted(values: number[], value: number): void {
+  const index = lowerBound(values, value);
+  if (values[index] !== value) values.splice(index, 0, value);
 }
 
 function periodKeyFor(date: string, period: TradingAggregationPeriod, weekStartsOn: number): string {

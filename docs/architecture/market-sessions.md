@@ -51,9 +51,21 @@ outage claim.
 current OHLCV reducer, missing-volume policies, Indicator Registry, as-of
 eligibility, and disposal contracts. It groups explicit session, trading-week,
 or trading-month observations and retains the complete source store so
-backward/forward seeking and corrections remain deterministic. A calendar
-replacement clears resolved-session and expected-slot caches before rebuilding
-dependent output.
+backward/forward seeking and corrections remain deterministic. Its internal
+index keeps source timestamps, period membership, sorted period times, and
+reduction state separately. Appends to the sorted stream update the active
+period in constant time; corrections and out-of-order inserts invalidate only
+the affected period reduction and use a deterministic rebuild on the next
+snapshot. A calendar replacement clears resolved-session and expected-slot
+caches before rebuilding dependent output.
+
+Chart-owned session indicators and references use a private persistent runtime
+around this aggregator. Ordinary realtime bars update the source index without
+materializing all session observations or remapping every source timestamp.
+The runtime publishes a new result when an available period changes, when a
+causal frontier crosses a session boundary, or when a consumer explicitly asks
+for a snapshot. Indicator calculations still run through the existing
+`IndicatorRegistry`; no second indicator-math implementation is introduced.
 
 Datafeed recovery uses `isExpectedSourceInterval` and `expectedSourceTimes`
 instead of duplicating local timezone calculations.
