@@ -1284,14 +1284,15 @@ evidence.
 
 ## Phase 14 order flow and market microstructure analytics
 
-- [Implemented / Node + Chromium-verified — Phase 14.0/14.4 foundation]
+- [Implemented / locally verified — Phase 14.0/14.4 foundation]
   Added versioned provider-neutral trade contracts, explicit
   observed/estimated/unknown aggressor semantics, correction-aware bounded
   trade storage, source/venue provenance, historical as-of filtering,
   deterministic in-memory feeds, Chart APIs, Canvas2D Footprint/CVD/depth
   overlays, Time & Sales reads, replay masking, and cleanup-safe lifecycle
-  integration. Studio controls, dedicated benchmarks, full compatibility
-  evidence, and the final acceptance matrix remain open.
+  integration. The foundation is covered by Node tests and Chromium browser
+  workflows; official Firefox, WebKit, mobile-device, physical-device, and
+  release gates remain unverified.
 - [Implemented / Node-verified — Phase 14.1 order-book foundation] Added
   bounded snapshot/delta reconstruction, explicit absolute versus signed-delta
   semantics, source/venue checks, tick normalization policy, duplicate and
@@ -1302,8 +1303,18 @@ evidence.
   correction-aware executed-volume aggregation, explicit unknown/estimated
   side coverage, tick-normalized trade-derived Footprint cells, continuous and
   calendar-session-reset CVD, bounded Time & Sales reads, and independent
-  numerical fixtures. Chart-native rendering, Replay/Workspace/Studio
-  workflows, dedicated performance evidence, and final acceptance remain open.
+  numerical fixtures.
+- [Implemented / Chromium-verified — Phase 14.3–14.5 integration] Added
+  depth quality/imbalance displays, chart-native Footprint/CVD/depth overlays,
+  replay-causal filtering, source lifecycle cancellation and cleanup,
+  canonical workspace references, deterministic offline Studio controls, and
+  multi-chart isolation coverage.
+- [Implemented / benchmarked — Phase 14.6 verification] Added deterministic
+  trade/order-book Node benchmarks and real Chromium Canvas2D workloads at
+  1k/10k/100k records, plus bounded-cell and resource-cleanup regressions.
+  The final acceptance matrix remains open for the protected strict API
+  baseline, unavailable browser engines/devices, licensing/release approval,
+  and performance targets not established by the environment-specific data.
 
 ## Phase 13 corporate actions and total-return analytics
 

@@ -672,6 +672,13 @@
     },
     {
       "package": "openkline",
+      "name": "calculateCumulativeVolumeDelta",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "31c04c465dbe5a6ecb93cc298184936a9657244c382588390601a89cafc6054d"
+    },
+    {
+      "package": "openkline",
       "name": "calculateEstimatedVolumeProfile",
       "kind": "runtime",
       "module": "./volume-analytics.js",
@@ -679,10 +686,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculateFootprint",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "b64da7ca4a9e2eeb0c79231926b641c7d2465922b530899303fb679ec183518c"
+    },
+    {
+      "package": "openkline",
       "name": "calculateMultiTimeframeIndicator",
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "24177137a6480df0772b2828446e66d914d89b687562c246d22eefdfab5a59a9"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateOrderBookDepthMetrics",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "3c06e639d5585e12477b9c12b8bf4877986ab63d7f2ad61a1b21b69cc734cc4c"
     },
     {
       "package": "openkline",
@@ -718,6 +739,13 @@
       "kind": "runtime",
       "module": "./corporate-actions.js",
       "signatureHash": "1bfb21a44a608c0ea50d2ffbcc9fdeb264c5f099ead9a8cade674b0af42d762f"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateTradeFlow",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "d4f8687cf6b51fed89955ca78e994d9491f702bf38d311ca4876243d44c39e1f"
     },
     {
       "package": "openkline",
@@ -801,7 +829,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "a2d853d367539d40efa900caa6551b3477d30c1dead600ae18e1c0f60ad7588b"
+      "signatureHash": "5a25728f1ab9e5443a44c9d32bfd7952d2aaff261c9240e5443d67b17e9507dd"
     },
     {
       "package": "openkline",
@@ -1526,6 +1554,41 @@
     },
     {
       "package": "openkline",
+      "name": "CumulativeVolumeDeltaCalculator",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "f6b37005e6bcac9b71d181dd7ac019593e87b99b58f8f74f68da34746a221c40"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "b4f0ad6f5134885477cfa7b40b835f474380b83a42d881340736f9b345f6169c"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdObservation",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "e02b76062c748b2d0d5e4eb1ab69dc43465ce3dce04889755f81c9a7c18a7377"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "373f71f6192823fb18ebff693823cb0983cd563ba05a32abe69bf1e736b4d87a"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "78612294ad9af27e8cc9b97e78d7aed25a7e7ffee1c6ac6d1eeca1657a9b4dd9"
+    },
+    {
+      "package": "openkline",
       "name": "Datafeed",
       "kind": "type",
       "module": "./types.js",
@@ -1586,6 +1649,13 @@
       "kind": "runtime",
       "module": "./klinescript/index.js",
       "signatureHash": "0fade94741dfeac0d85e9420d128201aa26ce6923359d374a13ac98c0c839ace"
+    },
+    {
+      "package": "openkline",
+      "name": "DepthDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "2ae4a2fe4b1fe6b7e9453737b92dd7e70b1bd862396ce8fa577c5dba1d7fa219"
     },
     {
       "package": "openkline",
@@ -1890,6 +1960,48 @@
     },
     {
       "package": "openkline",
+      "name": "FootprintBucket",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "1dc830e785f4cb9192e93f5222b6db8ec35a8157c9b6e44812a479232693fe5c"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintCalculator",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "5e2412c25580ec0b60fa3215149e28f0eae4dd089e9f98965f71267414c92c69"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintCell",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "92e8da7e1b5d065c76c49a63d546e9603ea00c316bdf979b1fbe13d4c50b80c0"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "6612cea8d25edb11ac64844d9b034930d55673dc506a4e1c2700101266a51a78"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "05e0d58fd975a99bf0ffe29e8a8cfe21477ad99f64194f72ad3f5c560f2bad61"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "a14ab6d99aaf246ca892529228f8fe03c2e93af15a8675bf20f860362c78be1c"
+    },
+    {
+      "package": "openkline",
       "name": "formatTimeTick",
       "kind": "runtime",
       "module": "./core/scales.js",
@@ -1922,6 +2034,13 @@
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "4f42a24aeff7d5f06adf039129a4e6e46e8de91ab7f20c2e1cfa16deca32c8e5"
+    },
+    {
+      "package": "openkline",
+      "name": "getTimeAndSales",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "93d299869a7eb97e6be39a71217f4719c4a02ebae7edfa1a57bb2176515a5270"
     },
     {
       "package": "openkline",
@@ -2076,6 +2195,20 @@
       "kind": "runtime",
       "module": "./datafeed.js",
       "signatureHash": "3c87c242f6e3eb88e2e438c7d7c4898a3121543756ec893e44c0ee434a1e6181"
+    },
+    {
+      "package": "openkline",
+      "name": "InMemoryMarketTradeDatafeed",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "9fdb5a4710c2c1512a4d710de4079f90189dc6563d822b24ffefe42331b1b319"
+    },
+    {
+      "package": "openkline",
+      "name": "InMemoryOrderBookDatafeed",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "b7c699696436cd64a250da43f84359fe679c5248e444dd00fc920ee8a20c2b0a"
     },
     {
       "package": "openkline",
@@ -2562,6 +2695,118 @@
     },
     {
       "package": "openkline",
+      "name": "MarketDepthValidationError",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "7660d810b4c63ee2c7dc05d290bddb775f9ab590ff5299cbe3a51539228293c8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTrade",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "461a5bf6382253c9801bf89e3b8639928b324ebeec17c1ca81811b2dea98553f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeAggressorSide",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "000c0b8c1ba0989fbf4adf0a4565cfc3123a4b1762f3a4ba041bdc52ef739c3d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeCoverage",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "89726241578ff1d8609cb85ad7f7d368b596e89df3382aba88e880fde77c7715"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDatafeed",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "c0537b43f0dd23e1c4670676b8c19a455cab46cf924303c85ae12fc3727cf498"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDatafeedError",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "d829a1b4a1ea0d4a04229d1044611952c6dcd04b19a6ea845d3b581c09fdbd52"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDataset",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "6b09eb4021fc71eae6d45e2b19caa156ae8461b9ba32d93fca4b2021f171c87d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeInput",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "0ebf031a2fc90aa4949e5ff1516c3004fa6aaff2fb40838e6ec6b5d2d58f6ed2"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeQuery",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "c0a68fb568c2cc15474ecdaa20d462d2e81ceaf79ad8cec225cdddbf602eb020"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeRealtimeStatus",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "ccb50b00a10efb6e97a494a65e085ab61f3fe1f31dad60decb20f264e979080d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSideQuality",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "11e18f439577a7f6aaad9883d448266f1be5132fdd52da83a299d5cc1c43f8b3"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSource",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "3e5421f850517d699f2ea5053c6f6517b47015c83147eb050c2e882ab64f2197"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeStore",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "bd78cfca718547f71ac703fede18734c710d3d4e7c238cc89f83a56fff72318c"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeStoreOptions",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "a3748b237de073687b2991e846e56b6060fae9e634bf0c2cb83f75ebe5815a73"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSubscriptionArgs",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "5a9e6e688847c862342d771192258abc8a8ad60f223c1e1e6f6e47008dd32228"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeValidationError",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "4ae8ef1e36ac6eb2208b4b063102de8ac750f3e70758159f7c699ff17e5b692b"
+    },
+    {
+      "package": "openkline",
       "name": "mfiDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -2716,6 +2961,13 @@
     },
     {
       "package": "openkline",
+      "name": "normalizeMarketTrade",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "9d47beb9ff6abb58bf78ac2c8baefbdf10e96a505a504149c8f9b9b611abbaf4"
+    },
+    {
+      "package": "openkline",
       "name": "normalizePaperEvent",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -2800,10 +3052,31 @@
     },
     {
       "package": "openkline",
+      "name": "OPENKLINE_MARKET_TRADES_VERSION",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "23b09ca0be9fae631ce71ee82cefe2e6c3e0b6cfef43d55643432ae30b15e212"
+    },
+    {
+      "package": "openkline",
       "name": "OPENKLINE_OPTIMIZATION_EXPORT_VERSION",
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "b5692cb2872af4b47732203dbdb6f3dccc2a6b0435fb04f9f6d3792e1962a934"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_ORDER_BOOK_VERSION",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "ea5c2d7bca2668c3924b37fea7ea415c94b819968fb8f63654861b6e5195affa"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_ORDER_FLOW_VERSION",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "2a8bea5ded48423b5e19d3d07a0cf6cb69f04cc436e9eddef63a29928f23c5ea"
     },
     {
       "package": "openkline",
@@ -3091,6 +3364,209 @@
       "kind": "type",
       "module": "./optimization/index.js",
       "signatureHash": "b0b6951f105f311eeef71ee0c3b7a60ad8286937a39348ef3a8d900b4c22f1a9"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookApplyKind",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "5da271a75208f5cd780132503d59b3b06d2a659bd1f8b76692ffd9460de2f0ee"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookApplyResult",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "854e1bca63b571b7593badfce9567652ffea9c98cf6ed404191cbcd0eae0614f"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookController",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "e4ab5aa422ea4754236ffe4c74f5431884e0025ec91964e510b84a3d93fa1106"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookControllerOptions",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "2fb43a51de6c5e95cec36a8575e0f9ab21aa7d5a91850aeb450103b73103a3ea"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDatafeed",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "039cae176845f84639c52965cb093c2819ce835ef4885fd59cabcf263029c462"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDelta",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "996b4410f075ca3a6db0e3bc70a35a3b1a6fe815dfaabecd3c18e62364cc0d24"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDepthMetricOptions",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "560cbd3fa12935d971b481f9d66c3d0a424eca9de28e7109073cbccd90433665"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDepthMetrics",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "15829a843e73e9aa5f9d94f960c82e78c9cdf2d602ffa0779d3b62448673ec2a"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapObservation",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "845328c7bd169d797084493209b948a57af57467ffed6800b9bd7866d6cedc17"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapOptions",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "4e2b1eb471bb462ea41b6e2597d5322e15c7355eea68e08019dee1a2baab744e"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapStore",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "da3d6858a4601a63817ea8770503bb46be9e60a75ffac746df971650f589350b"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHistory",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "0149a330975164aa26791426218a934be482a0b48db4547527e50953ed4f2aba"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookIntegrity",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "27caaa37e140d02fb207d4adc1bba6beceb750e7f4a37ae3fb15c6b09536aeb6"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookLifecycleError",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "e881a7fc24eea6511e7f9835fe951d2671ff7a2444839736eccba87e56b0a686"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookMetricQuality",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "fcf790e737fe4a9c2947e344be93c640a7c36199d2916ef3623a83f0554901a9"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookPriceLevel",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "c58389a9ff073f03495a8054106da784ef1e5ce3b68b9cf719fed3f533f6621b"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookQuantityMode",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "a8c309ba14dfa01dc464d176482ab89a9d88f430bbfc2fa0664efdca4e987048"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookQuery",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "ede9d1e856b81550242eeba6c8ee9efc45425ad2e1ae400f51e59c39f2f51a04"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookRealtimeStatus",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "e8d6ec0a89138620f112a818f63b37f0646dbc7086f7f4615da31574d076e591"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSequence",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "07bc3f87ba6953cc989503bfab73261360d9b448c97827679bf7f3a974854ed3"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSequenceRange",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "5ec0846ebad58a98774b676da238ff851ac562b49bc50cf26ec45291a9ab5fda"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSnapshot",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "e752108366a2d5d8d8bd03e0a0188815f1dfb652bc89cf2c59727e2f3f9daaa8"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSource",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "547f5e454e8b7758dd03fbebf1a3beee1b9a9e3894cf280e0e2cc3398b1af636"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookState",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "ef066b904e8c2246267c12dd80872aad5c609d6ba444e3d9d709edc7e1ca0a01"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookStatus",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "d17c0f02896280438233ecd81246189df71d55514ea7447eaffd019c323b5b86"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSubscriptionArgs",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "a2ba074e0d22c5e44e6ba3e3d0e308608ec8f812703ccbcc7285e0ef027be7ca"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookValidationError",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "2957241edde10f362a1752d965d4f5a48e9dff04d498849ba19e84686239d005"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderFlowState",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "bc8cf70322d03ce9c1f2dc2b0d82a60340a826b86da3b64f2d27ca2f4951df4c"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderFlowValidationError",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "7fd1d7328ab7368837914b41771fe259b627dd8fd159d440ea095b8e7c772417"
     },
     {
       "package": "openkline",
@@ -5649,6 +6125,13 @@
     },
     {
       "package": "openkline",
+      "name": "TimeAndSalesOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "65f9e3683bfd69757cca691235732ae7792d23ee77a09af8955f395e2b9d40ca"
+    },
+    {
+      "package": "openkline",
       "name": "TimeAxisTick",
       "kind": "type",
       "module": "./core/scales.js",
@@ -5684,6 +6167,13 @@
     },
     {
       "package": "openkline",
+      "name": "toMarketTradeInput",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "11626033c2853d5dbcfc615e3032f3dbf957952bba91ec746dede53485307b3f"
+    },
+    {
+      "package": "openkline",
       "name": "TotalReturnPoint",
       "kind": "type",
       "module": "./corporate-actions.js",
@@ -5702,6 +6192,48 @@
       "kind": "runtime",
       "module": "./session-visualization.js",
       "signatureHash": "e169c5153ab9c1a0fa13a0e0cb0e382918fa59da2ba0ff41a6d27c41528ca790"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowCoverage",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "55a254fd072d0ebe7d141c1dd5f0a6e72936944e287be27a5ff4c0bb4d2ba884"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowInterval",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "9e9b508c1359842a806cd30c1ede9c2e0e46a72a5ffba827538cd0e164012bf2"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowOffTickPolicy",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "b153ddcec6ced0316c17dde9104748872081ca2e6964cb5eb4de4922c52eaf74"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "9d0497d973b02a2678d767e72618bda62c2ceabc03d9549f59669e4aefd124ad"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowResetPolicy",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "10a54f668593a551958472ac67f371e14de523a9177d67af45d26a4e4fe46598"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "5e1232b6d8c2bfb17521885582cbc91ad842def8594c32b3eb5f46b5e12c8c6f"
     },
     {
       "package": "openkline",
@@ -6233,7 +6765,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "482a5277035a59e4ebc406e9580cf25016155c797833852b7ceb9b492e61a3b4"
+      "signatureHash": "a64cd69cc0971622e461d6009b6a0837c161e2f48ada76fc4f222068f25e67dd"
     },
     {
       "package": "openkline",
@@ -6269,6 +6801,20 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "70df633e0484ce9823127ebea4d3dbdb3b11e4b732ed02042aa66875ae762855"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceOrderFlow",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "d9e4dcff0625702384c8cbb77cb8fabf717c8f6cf42bbcc4a3763c334fd14a6b"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceOrderFlowSource",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "28ab5220e38e66c356ee8feeea074433c5bf1d3d68a990bdd79d7097f8ac768e"
     },
     {
       "package": "openkline",
@@ -6547,6 +7093,13 @@
     },
     {
       "package": "openkline",
+      "name": "calculateCumulativeVolumeDelta",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "31c04c465dbe5a6ecb93cc298184936a9657244c382588390601a89cafc6054d"
+    },
+    {
+      "package": "openkline",
       "name": "calculateEstimatedVolumeProfile",
       "kind": "runtime",
       "module": "./volume-analytics.js",
@@ -6554,10 +7107,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculateFootprint",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "b64da7ca4a9e2eeb0c79231926b641c7d2465922b530899303fb679ec183518c"
+    },
+    {
+      "package": "openkline",
       "name": "calculateMultiTimeframeIndicator",
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "24177137a6480df0772b2828446e66d914d89b687562c246d22eefdfab5a59a9"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateOrderBookDepthMetrics",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "3c06e639d5585e12477b9c12b8bf4877986ab63d7f2ad61a1b21b69cc734cc4c"
     },
     {
       "package": "openkline",
@@ -6593,6 +7160,13 @@
       "kind": "runtime",
       "module": "./corporate-actions.js",
       "signatureHash": "1bfb21a44a608c0ea50d2ffbcc9fdeb264c5f099ead9a8cade674b0af42d762f"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateTradeFlow",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "d4f8687cf6b51fed89955ca78e994d9491f702bf38d311ca4876243d44c39e1f"
     },
     {
       "package": "openkline",
@@ -6641,7 +7215,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "a2d853d367539d40efa900caa6551b3477d30c1dead600ae18e1c0f60ad7588b"
+      "signatureHash": "5a25728f1ab9e5443a44c9d32bfd7952d2aaff261c9240e5443d67b17e9507dd"
     },
     {
       "package": "openkline",
@@ -6883,6 +7457,13 @@
     },
     {
       "package": "openkline",
+      "name": "CumulativeVolumeDeltaCalculator",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "f6b37005e6bcac9b71d181dd7ac019593e87b99b58f8f74f68da34746a221c40"
+    },
+    {
+      "package": "openkline",
       "name": "dateRangeTool",
       "kind": "runtime",
       "module": "./drawings/index.js",
@@ -7037,6 +7618,13 @@
     },
     {
       "package": "openkline",
+      "name": "FootprintCalculator",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "5e2412c25580ec0b60fa3215149e28f0eae4dd089e9f98965f71267414c92c69"
+    },
+    {
+      "package": "openkline",
       "name": "formatTimeTick",
       "kind": "runtime",
       "module": "./core/scales.js",
@@ -7062,6 +7650,13 @@
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "4f42a24aeff7d5f06adf039129a4e6e46e8de91ab7f20c2e1cfa16deca32c8e5"
+    },
+    {
+      "package": "openkline",
+      "name": "getTimeAndSales",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "93d299869a7eb97e6be39a71217f4719c4a02ebae7edfa1a57bb2176515a5270"
     },
     {
       "package": "openkline",
@@ -7104,6 +7699,20 @@
       "kind": "runtime",
       "module": "./datafeed.js",
       "signatureHash": "3c87c242f6e3eb88e2e438c7d7c4898a3121543756ec893e44c0ee434a1e6181"
+    },
+    {
+      "package": "openkline",
+      "name": "InMemoryMarketTradeDatafeed",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "9fdb5a4710c2c1512a4d710de4079f90189dc6563d822b24ffefe42331b1b319"
+    },
+    {
+      "package": "openkline",
+      "name": "InMemoryOrderBookDatafeed",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "b7c699696436cd64a250da43f84359fe679c5248e444dd00fc920ee8a20c2b0a"
     },
     {
       "package": "openkline",
@@ -7282,6 +7891,34 @@
     },
     {
       "package": "openkline",
+      "name": "MarketDepthValidationError",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "7660d810b4c63ee2c7dc05d290bddb775f9ab590ff5299cbe3a51539228293c8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDatafeedError",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "d829a1b4a1ea0d4a04229d1044611952c6dcd04b19a6ea845d3b581c09fdbd52"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeStore",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "bd78cfca718547f71ac703fede18734c710d3d4e7c238cc89f83a56fff72318c"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeValidationError",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "4ae8ef1e36ac6eb2208b4b063102de8ac750f3e70758159f7c699ff17e5b692b"
+    },
+    {
+      "package": "openkline",
       "name": "mfiDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -7300,6 +7937,13 @@
       "kind": "runtime",
       "module": "./corporate-actions.js",
       "signatureHash": "d2f1e2758e141bb55ae76392a1d0255795c590edd38856b0b477780cf36b9246"
+    },
+    {
+      "package": "openkline",
+      "name": "normalizeMarketTrade",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "9d47beb9ff6abb58bf78ac2c8baefbdf10e96a505a504149c8f9b9b611abbaf4"
     },
     {
       "package": "openkline",
@@ -7373,10 +8017,31 @@
     },
     {
       "package": "openkline",
+      "name": "OPENKLINE_MARKET_TRADES_VERSION",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "23b09ca0be9fae631ce71ee82cefe2e6c3e0b6cfef43d55643432ae30b15e212"
+    },
+    {
+      "package": "openkline",
       "name": "OPENKLINE_OPTIMIZATION_EXPORT_VERSION",
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "b5692cb2872af4b47732203dbdb6f3dccc2a6b0435fb04f9f6d3792e1962a934"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_ORDER_BOOK_VERSION",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "ea5c2d7bca2668c3924b37fea7ea415c94b819968fb8f63654861b6e5195affa"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_ORDER_FLOW_VERSION",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "2a8bea5ded48423b5e19d3d07a0cf6cb69f04cc436e9eddef63a29928f23c5ea"
     },
     {
       "package": "openkline",
@@ -7510,6 +8175,41 @@
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "33643102e334bf5ae9d2f1e0479e787281c6818ab3e246b28f1a46697b74c394"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookController",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "e4ab5aa422ea4754236ffe4c74f5431884e0025ec91964e510b84a3d93fa1106"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapStore",
+      "kind": "runtime",
+      "module": "./market-depth.js",
+      "signatureHash": "da3d6858a4601a63817ea8770503bb46be9e60a75ffac746df971650f589350b"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookLifecycleError",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "e881a7fc24eea6511e7f9835fe951d2671ff7a2444839736eccba87e56b0a686"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookValidationError",
+      "kind": "runtime",
+      "module": "./order-book.js",
+      "signatureHash": "2957241edde10f362a1752d965d4f5a48e9dff04d498849ba19e84686239d005"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderFlowValidationError",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "7fd1d7328ab7368837914b41771fe259b627dd8fd159d440ea095b8e7c772417"
     },
     {
       "package": "openkline",
@@ -8154,6 +8854,13 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "6a7b09e64398d2d0c954d7889a3b25389b53eaaa42d37d7c5d68b15acad6c04b"
+    },
+    {
+      "package": "openkline",
+      "name": "toMarketTradeInput",
+      "kind": "runtime",
+      "module": "./order-flow.js",
+      "signatureHash": "11626033c2853d5dbcfc615e3032f3dbf957952bba91ec746dede53485307b3f"
     },
     {
       "package": "openkline",
@@ -9300,6 +10007,34 @@
     },
     {
       "package": "openkline",
+      "name": "CvdDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "b4f0ad6f5134885477cfa7b40b835f474380b83a42d881340736f9b345f6169c"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdObservation",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "e02b76062c748b2d0d5e4eb1ab69dc43465ce3dce04889755f81c9a7c18a7377"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "373f71f6192823fb18ebff693823cb0983cd563ba05a32abe69bf1e736b4d87a"
+    },
+    {
+      "package": "openkline",
+      "name": "CvdResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "78612294ad9af27e8cc9b97e78d7aed25a7e7ffee1c6ac6d1eeca1657a9b4dd9"
+    },
+    {
+      "package": "openkline",
       "name": "Datafeed",
       "kind": "type",
       "module": "./types.js",
@@ -9318,6 +10053,13 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "be6c72e6510c851e665a13031cbb02f8f4a2d44ac4a4a1ec47cf21786d449e7a"
+    },
+    {
+      "package": "openkline",
+      "name": "DepthDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "2ae4a2fe4b1fe6b7e9453737b92dd7e70b1bd862396ce8fa577c5dba1d7fa219"
     },
     {
       "package": "openkline",
@@ -9507,6 +10249,41 @@
       "kind": "type",
       "module": "./multi-timeframe.js",
       "signatureHash": "326ac823f04c6a3a50a5562d237225aae4459f54618808a7281dca13d0b773e1"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintBucket",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "1dc830e785f4cb9192e93f5222b6db8ec35a8157c9b6e44812a479232693fe5c"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintCell",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "92e8da7e1b5d065c76c49a63d546e9603ea00c316bdf979b1fbe13d4c50b80c0"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintDisplayOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "6612cea8d25edb11ac64844d9b034930d55673dc506a4e1c2700101266a51a78"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "05e0d58fd975a99bf0ffe29e8a8cfe21477ad99f64194f72ad3f5c560f2bad61"
+    },
+    {
+      "package": "openkline",
+      "name": "FootprintResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "a14ab6d99aaf246ca892529228f8fe03c2e93af15a8675bf20f860362c78be1c"
     },
     {
       "package": "openkline",
@@ -9937,6 +10714,90 @@
     },
     {
       "package": "openkline",
+      "name": "MarketTrade",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "461a5bf6382253c9801bf89e3b8639928b324ebeec17c1ca81811b2dea98553f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeAggressorSide",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "000c0b8c1ba0989fbf4adf0a4565cfc3123a4b1762f3a4ba041bdc52ef739c3d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeCoverage",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "89726241578ff1d8609cb85ad7f7d368b596e89df3382aba88e880fde77c7715"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDatafeed",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "c0537b43f0dd23e1c4670676b8c19a455cab46cf924303c85ae12fc3727cf498"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeDataset",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "6b09eb4021fc71eae6d45e2b19caa156ae8461b9ba32d93fca4b2021f171c87d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeInput",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "0ebf031a2fc90aa4949e5ff1516c3004fa6aaff2fb40838e6ec6b5d2d58f6ed2"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeQuery",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "c0a68fb568c2cc15474ecdaa20d462d2e81ceaf79ad8cec225cdddbf602eb020"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeRealtimeStatus",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "ccb50b00a10efb6e97a494a65e085ab61f3fe1f31dad60decb20f264e979080d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSideQuality",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "11e18f439577a7f6aaad9883d448266f1be5132fdd52da83a299d5cc1c43f8b3"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSource",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "3e5421f850517d699f2ea5053c6f6517b47015c83147eb050c2e882ab64f2197"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeStoreOptions",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "a3748b237de073687b2991e846e56b6060fae9e634bf0c2cb83f75ebe5815a73"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketTradeSubscriptionArgs",
+      "kind": "type",
+      "module": "./market-trades.js",
+      "signatureHash": "5a9e6e688847c862342d771192258abc8a8ad60f223c1e1e6f6e47008dd32228"
+    },
+    {
+      "package": "openkline",
       "name": "MultiTimeframeAggregationMetadata",
       "kind": "type",
       "module": "./multi-timeframe.js",
@@ -10235,6 +11096,174 @@
       "kind": "type",
       "module": "./optimization/index.js",
       "signatureHash": "b0b6951f105f311eeef71ee0c3b7a60ad8286937a39348ef3a8d900b4c22f1a9"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookApplyKind",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "5da271a75208f5cd780132503d59b3b06d2a659bd1f8b76692ffd9460de2f0ee"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookApplyResult",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "854e1bca63b571b7593badfce9567652ffea9c98cf6ed404191cbcd0eae0614f"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookControllerOptions",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "2fb43a51de6c5e95cec36a8575e0f9ab21aa7d5a91850aeb450103b73103a3ea"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDatafeed",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "039cae176845f84639c52965cb093c2819ce835ef4885fd59cabcf263029c462"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDelta",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "996b4410f075ca3a6db0e3bc70a35a3b1a6fe815dfaabecd3c18e62364cc0d24"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDepthMetricOptions",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "560cbd3fa12935d971b481f9d66c3d0a424eca9de28e7109073cbccd90433665"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookDepthMetrics",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "15829a843e73e9aa5f9d94f960c82e78c9cdf2d602ffa0779d3b62448673ec2a"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapObservation",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "845328c7bd169d797084493209b948a57af57467ffed6800b9bd7866d6cedc17"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHeatmapOptions",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "4e2b1eb471bb462ea41b6e2597d5322e15c7355eea68e08019dee1a2baab744e"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookHistory",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "0149a330975164aa26791426218a934be482a0b48db4547527e50953ed4f2aba"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookIntegrity",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "27caaa37e140d02fb207d4adc1bba6beceb750e7f4a37ae3fb15c6b09536aeb6"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookMetricQuality",
+      "kind": "type",
+      "module": "./market-depth.js",
+      "signatureHash": "fcf790e737fe4a9c2947e344be93c640a7c36199d2916ef3623a83f0554901a9"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookPriceLevel",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "c58389a9ff073f03495a8054106da784ef1e5ce3b68b9cf719fed3f533f6621b"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookQuantityMode",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "a8c309ba14dfa01dc464d176482ab89a9d88f430bbfc2fa0664efdca4e987048"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookQuery",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "ede9d1e856b81550242eeba6c8ee9efc45425ad2e1ae400f51e59c39f2f51a04"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookRealtimeStatus",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "e8d6ec0a89138620f112a818f63b37f0646dbc7086f7f4615da31574d076e591"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSequence",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "07bc3f87ba6953cc989503bfab73261360d9b448c97827679bf7f3a974854ed3"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSequenceRange",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "5ec0846ebad58a98774b676da238ff851ac562b49bc50cf26ec45291a9ab5fda"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSnapshot",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "e752108366a2d5d8d8bd03e0a0188815f1dfb652bc89cf2c59727e2f3f9daaa8"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSource",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "547f5e454e8b7758dd03fbebf1a3beee1b9a9e3894cf280e0e2cc3398b1af636"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookState",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "ef066b904e8c2246267c12dd80872aad5c609d6ba444e3d9d709edc7e1ca0a01"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookStatus",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "d17c0f02896280438233ecd81246189df71d55514ea7447eaffd019c323b5b86"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderBookSubscriptionArgs",
+      "kind": "type",
+      "module": "./order-book.js",
+      "signatureHash": "a2ba074e0d22c5e44e6ba3e3d0e308608ec8f812703ccbcc7285e0ef027be7ca"
+    },
+    {
+      "package": "openkline",
+      "name": "OrderFlowState",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "bc8cf70322d03ce9c1f2dc2b0d82a60340a826b86da3b64f2d27ca2f4951df4c"
     },
     {
       "package": "openkline",
@@ -12163,6 +13192,13 @@
     },
     {
       "package": "openkline",
+      "name": "TimeAndSalesOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "65f9e3683bfd69757cca691235732ae7792d23ee77a09af8955f395e2b9d40ca"
+    },
+    {
+      "package": "openkline",
       "name": "TimeAxisTick",
       "kind": "type",
       "module": "./core/scales.js",
@@ -12188,6 +13224,48 @@
       "kind": "type",
       "module": "./corporate-actions.js",
       "signatureHash": "927fc4ab6ed655e89c6bfd54b04d2442d6a1f74130129a639e538172f7679438"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowCoverage",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "55a254fd072d0ebe7d141c1dd5f0a6e72936944e287be27a5ff4c0bb4d2ba884"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowInterval",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "9e9b508c1359842a806cd30c1ede9c2e0e46a72a5ffba827538cd0e164012bf2"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowOffTickPolicy",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "b153ddcec6ced0316c17dde9104748872081ca2e6964cb5eb4de4922c52eaf74"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowOptions",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "9d0497d973b02a2678d767e72618bda62c2ceabc03d9549f59669e4aefd124ad"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowResetPolicy",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "10a54f668593a551958472ac67f371e14de523a9177d67af45d26a4e4fe46598"
+    },
+    {
+      "package": "openkline",
+      "name": "TradeFlowResult",
+      "kind": "type",
+      "module": "./order-flow.js",
+      "signatureHash": "5e1232b6d8c2bfb17521885582cbc91ad842def8594c32b3eb5f46b5e12c8c6f"
     },
     {
       "package": "openkline",
@@ -12600,7 +13678,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "482a5277035a59e4ebc406e9580cf25016155c797833852b7ceb9b492e61a3b4"
+      "signatureHash": "a64cd69cc0971622e461d6009b6a0837c161e2f48ada76fc4f222068f25e67dd"
     },
     {
       "package": "openkline",
@@ -12636,6 +13714,20 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "70df633e0484ce9823127ebea4d3dbdb3b11e4b732ed02042aa66875ae762855"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceOrderFlow",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "d9e4dcff0625702384c8cbb77cb8fabf717c8f6cf42bbcc4a3763c334fd14a6b"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceOrderFlowSource",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "28ab5220e38e66c356ee8feeea074433c5bf1d3d68a990bdd79d7097f8ac768e"
     },
     {
       "package": "openkline",
@@ -12727,5 +13819,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "9e21303f675dd097a9976ea507226fee2d6d9fc1"
+  "generatedFrom": "086c9c6942b5e5dd14ccf1237bf1025564a20683"
 }
