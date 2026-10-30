@@ -1282,6 +1282,15 @@ See `docs/api/portfolio-backtesting.md`,
 `docs/reports/phase-12-final-verification.md` for the current contract and
 evidence.
 
+## Phase 14 order flow and market microstructure analytics
+
+- [In progress / Phase 14.0 trade foundation] Added versioned provider-neutral
+  trade contracts, explicit observed/estimated/unknown aggressor semantics,
+  correction-aware bounded trade storage, source/venue provenance, historical
+  as-of filtering, and a deterministic in-memory trade feed. Level-2
+  reconstruction, trade-derived Footprint/CVD, Chart/Studio integration,
+  browser evidence, and the final acceptance matrix remain open.
+
 ## Phase 13 corporate actions and total-return analytics
 
 - [Implemented / Node-verified — 13.0/13.1 foundation and adjustment engine]

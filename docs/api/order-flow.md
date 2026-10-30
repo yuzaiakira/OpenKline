@@ -1,0 +1,26 @@
+# Order-flow data contracts
+
+OpenKline treats trade prints as an optional market-data domain. They do not
+replace the chart's OHLCV candle source. `MarketTrade.time` is the UTC event
+timestamp; `receiveTime` is optional transport metadata and is never used as an
+event timestamp implicitly.
+
+Each print carries a stable `id`, instrument and optional venue identity,
+positive execution `price` and base-asset `quantity`, source `{ id, version }`,
+and an explicit `aggressorSide`: `buy`, `sell`, or `unknown`. Unknown-side
+volume remains unknown. Candle colour, OHLCV volume, and a missing provider
+classification are not valid substitutes for executed buy/sell volume.
+
+`sideQuality` distinguishes source-observed classification from a host-labelled
+estimate. An estimate must still be produced by an explicitly supplied host
+algorithm; the core never derives it from candles.
+
+`MarketTradeStore` is correction-aware and bounded. A higher `revision`
+replaces an earlier print with the same stable ID; an exact duplicate is
+ignored. Reads are defensive, sorted by event time/sequence/ID, and can be
+bounded by an as-of timestamp. `InMemoryMarketTradeDatafeed` is a deterministic
+offline provider for tests and examples.
+
+Trade coverage reports known-side volume, unknown-side volume, time bounds,
+completeness, and a source note. Coverage metadata is required before a
+consumer describes CVD or Footprint output as exhaustive.
