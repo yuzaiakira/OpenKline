@@ -240,6 +240,12 @@ interface ManagedSessionReference {
   runtime: SessionReferenceRuntime;
 }
 
+interface FootprintRenderCache {
+  readonly key: string;
+  readonly result: FootprintResult | null;
+  readonly error?: string;
+}
+
 const DEFAULT_FOOTPRINT_DISPLAY: Required<FootprintDisplayOptions> = {
   visible: false,
   intervalMs: 60_000,
@@ -338,6 +344,7 @@ export class Chart {
   private depthDisplay: Required<DepthDisplayOptions> = { ...DEFAULT_DEPTH_DISPLAY };
   private orderFlowWorkspaceReference: import("./workspace.js").WorkspaceOrderFlow | null = null;
   private orderFlowRevision = 0;
+  private footprintRenderCache: FootprintRenderCache | null = null;
   private cvdSeriesId: string | null = null;
   private cvdPaneId: string | null = null;
   private cvdPaneOwned = false;
@@ -2188,6 +2195,12 @@ export class Chart {
     }
   }
 
+  private getOrderFlowTradesForReplayRange(from: number, to: number): MarketTrade[] {
+    const cutoff = this.model.getReplayCutoff();
+    if (cutoff === Number.NEGATIVE_INFINITY || from > to) return [];
+    return this.marketTradeStore.getRange(from, to, cutoff === null ? undefined : cutoff);
+  }
+
   private getOrderFlowTradesForReplay(): MarketTrade[] {
     const cutoff = this.model.getReplayCutoff();
     const trades = this.marketTradeStore.getAll();
@@ -3037,25 +3050,61 @@ export class Chart {
     const context = this.getPluginRenderContext();
     const pane = context?.pane("main");
     if (context === null || context === undefined || pane === undefined) return null;
-    const trades = this.getOrderFlowTradesForReplay();
-    const range = this.getVisibleOrderFlowRange(trades);
+    const range = this.getVisibleOrderFlowRange([]);
     if (range === null) return null;
-    let result: FootprintResult | null;
-    try {
-      result = calculateFootprint(trades, {
-        ...range,
-        intervalMs: this.footprintDisplay.intervalMs,
-        tickSize: this.footprintDisplay.tickSize,
-        offTickPolicy: this.footprintDisplay.offTickPolicy,
-        maxCells: this.footprintDisplay.maxCells,
-      });
-    } catch (error) {
+    const cutoff = this.model.getReplayCutoff();
+    const renderTrades = this.getOrderFlowTradesForReplayRange(range.from, range.to);
+    if (renderTrades.length > 5_000) {
+      const lod = renderFootprintLod(context, pane, renderTrades, this.footprintDisplay);
+      if (lod.error !== undefined) {
+        return {
+          id: "openkline.footprint-warning",
+          zIndex: 18,
+          commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${lod.error}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
+        };
+      }
+      return { id: "openkline.footprint", zIndex: 18, commands: lod.commands };
+    }
+    const key = [
+      this.orderFlowRevision,
+      cutoff === null ? "live" : cutoff,
+      range.from,
+      range.to,
+      this.footprintDisplay.intervalMs,
+      this.footprintDisplay.tickSize,
+      this.footprintDisplay.offTickPolicy,
+      this.footprintDisplay.maxCells,
+    ].join(":");
+    if (this.footprintRenderCache?.key !== key) {
+      try {
+        this.footprintRenderCache = {
+          key,
+          result: calculateFootprint(renderTrades, {
+            ...range,
+            intervalMs: this.footprintDisplay.intervalMs,
+            tickSize: this.footprintDisplay.tickSize,
+            offTickPolicy: this.footprintDisplay.offTickPolicy,
+            maxCells: this.footprintDisplay.maxCells,
+          }),
+        };
+      } catch (error) {
+        this.footprintRenderCache = {
+          key,
+          result: null,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
+    const cache = this.footprintRenderCache;
+    if (cache === null || cache.error !== undefined) {
       return {
         id: "openkline.footprint-warning",
         zIndex: 18,
-        commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${error instanceof Error ? error.message : String(error)}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
+        commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${cache?.error ?? "unknown error"}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
       };
     }
+    const result = cache.result;
+    if (result === null) return null;
     const commands: PluginRenderCommand[] = [];
     for (const bucket of result.buckets) {
       const left = Math.min(context.xForTime(bucket.start), context.xForTime(bucket.end));
@@ -4693,6 +4742,71 @@ function normalizeDepthDisplay(value: DepthDisplayOptions): Required<DepthDispla
 function formatOrderFlowQuantity(value: number): string {
   if (!Number.isFinite(value)) return "—";
   return Math.abs(value) >= 1000 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(2).replace(/\.00$/, "");
+}
+
+interface FootprintLodBin {
+  readonly column: number;
+  readonly row: number;
+  buyVolume: number;
+  sellVolume: number;
+  unknownSideVolume: number;
+  totalVolume: number;
+  tradeCount: number;
+}
+
+function renderFootprintLod(
+  context: PluginRenderContext,
+  pane: PluginPaneRenderContext,
+  trades: readonly MarketTrade[],
+  options: Required<FootprintDisplayOptions>,
+): { readonly commands: PluginRenderCommand[]; readonly error?: string } {
+  const tickSize = options.tickSize;
+  const columns = Math.max(16, Math.min(160, Math.floor((pane.right - pane.left) / 5)));
+  const rows = Math.max(8, Math.min(64, Math.floor((pane.bottom - pane.top) / 6)));
+  const priceAtTop = pane.priceForY(pane.top);
+  const priceAtBottom = pane.priceForY(pane.bottom);
+  const lowPrice = Math.min(priceAtTop, priceAtBottom);
+  const highPrice = Math.max(priceAtTop, priceAtBottom);
+  const bins = new Map<string, FootprintLodBin>();
+  for (const trade of trades) {
+    const rawIndex = trade.price / tickSize;
+    const tickIndex = Math.round(rawIndex);
+    const normalized = tickIndex * tickSize;
+    const tolerance = Math.max(Number.EPSILON * Math.max(1, Math.abs(trade.price)), tickSize * 1e-9);
+    if (Math.abs(normalized - trade.price) > tolerance && options.offTickPolicy === "reject") {
+      return { commands: [], error: `Trade ${trade.id} price ${trade.price} is off tick ${tickSize}` };
+    }
+    const price = options.offTickPolicy === "round" ? normalized : trade.price;
+    if (price < lowPrice || price > highPrice) continue;
+    const x = context.xForTime(trade.time);
+    const y = pane.yForPrice(price);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < pane.left || x > pane.right || y < pane.top || y > pane.bottom) continue;
+    const column = Math.max(0, Math.min(columns - 1, Math.floor(((x - pane.left) / Math.max(1, pane.right - pane.left)) * columns)));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor(((y - pane.top) / Math.max(1, pane.bottom - pane.top)) * rows)));
+    const key = `${column}:${row}`;
+    const bin = bins.get(key) ?? { column, row, buyVolume: 0, sellVolume: 0, unknownSideVolume: 0, totalVolume: 0, tradeCount: 0 };
+    bin.totalVolume += trade.quantity;
+    bin.tradeCount += 1;
+    if (trade.aggressorSide === "buy" && trade.sideQuality !== "estimated") bin.buyVolume += trade.quantity;
+    else if (trade.aggressorSide === "sell" && trade.sideQuality !== "estimated") bin.sellVolume += trade.quantity;
+    else bin.unknownSideVolume += trade.quantity;
+    bins.set(key, bin);
+  }
+  const cellWidth = Math.max(1, (pane.right - pane.left) / columns);
+  const cellHeight = Math.max(1, (pane.bottom - pane.top) / rows);
+  const commands: PluginRenderCommand[] = [];
+  for (const bin of [...bins.values()].sort((left, right) => left.row - right.row || left.column - right.column)) {
+    const left = pane.left + bin.column * cellWidth;
+    const top = pane.top + bin.row * cellHeight;
+    const fillColor = bin.unknownSideVolume > 0 && bin.buyVolume === 0 && bin.sellVolume === 0
+      ? options.unknownColor
+      : bin.buyVolume - bin.sellVolume >= 0 ? options.buyColor : options.sellColor;
+    commands.push({ kind: "rectangle", left, top, width: Math.max(1, cellWidth), height: Math.max(1, cellHeight), fillColor, color: fillColor, alpha: options.opacity, lineWidth: 0.5 });
+    if (options.showLabels && cellWidth >= 20 && cellHeight >= 10) {
+      commands.push({ kind: "text", x: left + 2, y: top + 1, text: formatOrderFlowQuantity(bin.totalVolume), color: options.unknownColor, font: "9px system-ui, sans-serif", alpha: 0.95 });
+    }
+  }
+  return { commands };
 }
 
 function isAbortError(error: unknown): boolean {
