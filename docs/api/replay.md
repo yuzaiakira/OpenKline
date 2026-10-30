@@ -94,3 +94,32 @@ leak into a replay snapshot. Seeking backward removes values that are no longer
 eligible; seeking forward deterministically restores them from the retained
 source history. See `docs/api/multi-timeframe.md` for the source-time mapping
 and finality contract.
+
+## Unified multi-stream research replay
+
+Phase 15 also exports `MarketReplayController` and the versioned
+`MarketReplayTape` helpers. This is an additive strict-causal research API for
+coordinating candles, trades, Level-2, sessions, and corporate actions. It
+does not replace the legacy `ReplayEngine` or `Chart.createReplay()`.
+
+```ts
+const tape = createMarketReplayTape({ events: fixtureEvents });
+const replay = new MarketReplayController({
+  tape,
+  clockPolicy: "event-time",
+  knowledgePolicy: "strict-causal",
+  checkpointInterval: 250,
+});
+
+replay.start();
+replay.stepNextEvent();
+replay.seekToTimestamp(asOfTime);
+const snapshot = replay.getSnapshot();
+```
+
+The strict snapshot exposes final candles only after completion events,
+eligible trade revisions, CVD/Footprint, Level-2 integrity, source coverage,
+and corporate-action boundaries. In `receive-time` mode, records without a
+genuine recorded receive timestamp are not eligible and the snapshot is marked
+uncertain. Displayed historical Level-2 liquidity is observational data and is
+not an executable fill assumption.

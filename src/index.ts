@@ -468,6 +468,29 @@ export type {
   MarketReplayTradeEvent,
   ParseMarketReplayTapeOptions,
 } from "./replay/index.js";
+export {
+  MarketReplayController,
+  MarketReplayLifecycleError,
+  MarketReplayValidationError,
+} from "./replay/index.js";
+export type {
+  MarketReplayCheckpoint,
+  MarketReplayControllerOptions,
+  MarketReplayCvdState,
+  MarketReplayCursor,
+  MarketReplayFootprintCell,
+  MarketReplayFormingCandle,
+  MarketReplayIntegrityState,
+  MarketReplayOrderBookState,
+  MarketReplayPlaybackState,
+  MarketReplayProgress,
+  MarketReplaySessionState,
+  MarketReplaySnapshot,
+  MarketReplaySourceCoverageState,
+  MarketReplayState,
+  MarketReplayStateListener,
+  MarketReplayTradeSummary,
+} from "./replay/index.js";
 export type {
   RestBarPayload,
   RestBarsPage,

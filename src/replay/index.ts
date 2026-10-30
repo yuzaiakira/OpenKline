@@ -49,3 +49,26 @@ export type {
   MarketReplayTradeEvent,
   ParseMarketReplayTapeOptions,
 } from "./market-event-tape.js";
+export {
+  MarketReplayController,
+  MarketReplayLifecycleError,
+  MarketReplayValidationError,
+} from "./market-replay-controller.js";
+export type {
+  MarketReplayCheckpoint,
+  MarketReplayControllerOptions,
+  MarketReplayCvdState,
+  MarketReplayCursor,
+  MarketReplayFootprintCell,
+  MarketReplayFormingCandle,
+  MarketReplayIntegrityState,
+  MarketReplayOrderBookState,
+  MarketReplayPlaybackState,
+  MarketReplayProgress,
+  MarketReplaySessionState,
+  MarketReplaySnapshot,
+  MarketReplaySourceCoverageState,
+  MarketReplayState,
+  MarketReplayStateListener,
+  MarketReplayTradeSummary,
+} from "./market-replay-controller.js";
