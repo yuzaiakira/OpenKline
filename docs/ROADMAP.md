@@ -1060,6 +1060,13 @@ converted into universal compatibility certification.
   expansion, explicit empty states, and conserved eligible volume. Chart
   rendering, interactions, persistence, Studio, replay, and browser gates are
   delivered in later Phase 9 increments.
+- [Implemented / Chromium-verified — 9.1] Added chart-native `addAnchoredVwap`
+  and estimated `addVolumeProfile` APIs. Both reuse the existing indicator,
+  calculation, Canvas2D overlay, viewport, replay, and disposal lifecycles;
+  fixed/visible profile modes, allocation methods, POC/value-area markers,
+  visibility, styling, and empty states are covered by the focused Chromium
+  regression. Workspace persistence and Studio controls remain Phase 9.2/9.3
+  work.
 
 ## Phase 8.13.1 comparison workspace persistence hardening
 

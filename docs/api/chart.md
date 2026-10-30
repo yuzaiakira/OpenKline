@@ -32,6 +32,19 @@ const support = chart.addDrawing("horizontal-line", {
   points: [{ time: candles.at(-1)!.time, price: candles.at(-1)!.close }],
   style: { color: "#f59e0b" },
 });
+const anchoredVwap = chart.addAnchoredVwap({
+  id: "anchor-vwap",
+  anchorTime: candles[20]!.time,
+  priceSource: "typical",
+  style: { color: "#f59e0b", lineWidth: 2 },
+});
+const profile = chart.addVolumeProfile({
+  id: "estimated-profile",
+  mode: "fixed",
+  range: { from: candles[0]!.time, to: candles.at(-1)!.time + 1 },
+  allocation: "range-uniform",
+  binCount: 32,
+});
 
 // Legacy convenience methods target the primary candlestick series.
 chart.setData(candles);
@@ -68,6 +81,18 @@ chart.destroy();
   changes and disposal through `ChartIndicatorApi`. Band outputs are rendered
   as an upper/lower filled region; `setOutputStyle(outputId, style)` changes
   the output line and band fill color/opacity at runtime.
+- `addAnchoredVwap(options)` creates the built-in causal `ANCHORED_VWAP` on
+  the main pane and returns its normal indicator lifecycle plus `setAnchor` and
+  `setPriceSource` helpers. It uses the same raw OHLCV data and replay mask as
+  other indicators.
+- `addVolumeProfile(options)` creates an estimated OHLCV-derived horizontal
+  profile overlay. `mode: "fixed"` uses the supplied `[from, to)` range;
+  `mode: "visible"` follows the current visible time range. The returned API
+  supports `getResult`, `setOptions`, `setMode`, `setRange`, `setVisible`, and
+  `remove`. It renders through the existing Canvas2D overlay path, so it does
+  not add a second canvas or mutate candle data. POC and value-area labels are
+  explicitly estimated from OHLCV candles, not exchange-reported trade
+  distributions.
 - `installExtension(extension)` activates a trusted versioned extension and
   returns an idempotent `ExtensionHandle`. The host currently exposes cleanup
   registrations for custom indicators and drawing tools.
@@ -137,8 +162,8 @@ chart.destroy();
   [Asset comparison API](comparison.md); hosts must render its derived points as
   separate series rather than replacing raw price data.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
-  datafeed subscription, and stored series data. Other methods throw after
-  destruction.
+  datafeed subscription, analytics overlays, and stored series data. Other
+  methods throw after destruction.
 
 `ChartEvents` includes `chartReady`, `chartDestroy`, `dataUpdated`,
 `viewportChange`, `indicatorChange`, `drawingSelection`, `toolActivation`,

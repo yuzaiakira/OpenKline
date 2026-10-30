@@ -8,6 +8,8 @@ export {
 } from "./volume-analytics.js";
 export type {
   AnchoredVwapOptions,
+  AnchoredVwapApi,
+  AnchoredVwapChartOptions,
   AnchoredVwapPoint,
   AnchoredVwapPriceSource,
   AnchoredVwapResult,
@@ -19,6 +21,8 @@ export type {
   VolumeProfileDisplayOptions,
   VolumeProfileMode,
   VolumeProfileOptions,
+  VolumeProfileOptionsPatch,
+  VolumeProfileApi,
   VolumeProfilePosition,
   VolumeProfilePriceBounds,
   VolumeProfileStatus,

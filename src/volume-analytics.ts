@@ -1,5 +1,5 @@
 import { validateCandle } from "./core/candle-store.js";
-import type { Candle } from "./types.js";
+import type { Candle, ChartIndicatorApi, SeriesStyle } from "./types.js";
 
 /** Price source used by Anchored VWAP. */
 export type AnchoredVwapPriceSource = "typical" | "close";
@@ -15,6 +15,17 @@ export interface AnchoredVwapPoint {
 export interface AnchoredVwapOptions {
   readonly anchorTime: number;
   readonly priceSource?: AnchoredVwapPriceSource;
+}
+
+export interface AnchoredVwapChartOptions extends AnchoredVwapOptions {
+  readonly id?: string;
+  readonly style?: SeriesStyle;
+}
+
+export interface AnchoredVwapApi extends ChartIndicatorApi {
+  getOptions(): { readonly anchorTime: number; readonly priceSource: AnchoredVwapPriceSource };
+  setAnchor(time: number): void;
+  setPriceSource(source: AnchoredVwapPriceSource): void;
 }
 
 export interface AnchoredVwapResult {
@@ -87,6 +98,19 @@ export interface ResolvedVolumeProfileOptions {
   readonly showValueArea: boolean;
   readonly showLabels: boolean;
   readonly visible: boolean;
+}
+
+export type VolumeProfileOptionsPatch = Partial<Omit<VolumeProfileOptions, "id">>;
+
+export interface VolumeProfileApi {
+  readonly id: string;
+  getOptions(): ResolvedVolumeProfileOptions;
+  getResult(): EstimatedVolumeProfileResult;
+  setOptions(options: VolumeProfileOptionsPatch): void;
+  setMode(mode: VolumeProfileMode, range?: { readonly from: number; readonly to: number }): void;
+  setRange(range: { readonly from: number; readonly to: number }): void;
+  setVisible(visible: boolean): void;
+  remove(): void;
 }
 
 export interface VolumeProfileBin {

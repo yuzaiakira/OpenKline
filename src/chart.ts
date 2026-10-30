@@ -23,6 +23,7 @@ import type {
   PluginCommandMetadata,
   PluginHandle,
   PluginOverlayDefinition,
+  PluginRenderCommand,
   PluginOverlayRenderItem,
   PluginPaneRenderContext,
   PluginRenderContext,
@@ -79,6 +80,18 @@ import type { JsonValue } from "./extensions/types.js";
 import type { StrategyMarker } from "./backtesting/markers.js";
 import type { PaperTradingMarker } from "./paper-trading/markers.js";
 import { validatePaperTradingMarkers } from "./paper-trading/markers.js";
+import {
+  calculateEstimatedVolumeProfile,
+  resolveVolumeProfileOptions,
+  type AnchoredVwapApi,
+  type AnchoredVwapChartOptions,
+  type AnchoredVwapPriceSource,
+  type EstimatedVolumeProfileResult,
+  type ResolvedVolumeProfileOptions,
+  type VolumeProfileApi,
+  type VolumeProfileOptions,
+  type VolumeProfileOptionsPatch,
+} from "./volume-analytics.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -102,6 +115,13 @@ interface ManagedWorkerScript {
   disposed: boolean;
   pending: Set<KlineScriptWorkerTask<KlineScriptExecutionResult>>;
   readonly signal?: AbortSignal;
+}
+
+interface ManagedVolumeProfile {
+  readonly id: string;
+  options: ResolvedVolumeProfileOptions;
+  cache: { readonly key: string; readonly result: EstimatedVolumeProfileResult } | undefined;
+  api?: VolumeProfileApi;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -147,6 +167,9 @@ export class Chart {
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
   private nextIndicatorId = 1;
+  private readonly volumeProfiles = new Map<string, ManagedVolumeProfile>();
+  private nextVolumeProfileId = 1;
+  private volumeAnalyticsRevision = 0;
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
   private strategyMarkers: StrategyMarker[] = [];
@@ -251,6 +274,7 @@ export class Chart {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
     this.model.setData(candles);
+    this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromInput();
     this.refreshWorkerIndicatorsFromInput();
     this.resetLiveAlerts(candles.at(-1));
@@ -264,6 +288,7 @@ export class Chart {
     const lastTime = this.model.getLatestCandleTime();
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.model.update(candle);
+    this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
     this.refreshWorkerIndicatorsFromUpdate(candle);
     this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
@@ -607,6 +632,7 @@ export class Chart {
     this.drawingEngine.validate(parsed.drawings);
 
     this.stopDatafeed();
+    this.clearVolumeProfiles();
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     this.nextIndicatorId = 1;
@@ -741,6 +767,85 @@ export class Chart {
         this.removeIndicator(id);
       },
     };
+  }
+
+  /** Add a main-pane Anchored VWAP using the normal indicator lifecycle. */
+  public addAnchoredVwap(options: AnchoredVwapChartOptions): AnchoredVwapApi {
+    this.assertAlive();
+    const priceSource = options.priceSource ?? "typical";
+    const indicator = this.addIndicator("ANCHORED_VWAP", {
+      ...(options.id === undefined ? {} : { id: options.id }),
+      pane: "main",
+      parameters: { anchorTime: options.anchorTime, priceSource },
+    });
+    const state = { anchorTime: options.anchorTime, priceSource };
+    indicator.setOutputStyle("value", {
+      color: "#f59e0b",
+      lineWidth: 2,
+      ...(options.style ?? {}),
+    });
+    return {
+      ...indicator,
+      getOptions: () => ({ ...state }),
+      setAnchor: (time) => {
+        this.assertAlive();
+        const nextTime = validateAnalyticsTimestamp(time, "Anchored VWAP anchorTime");
+        state.anchorTime = nextTime;
+        indicator.setParameters({ anchorTime: nextTime, priceSource: state.priceSource });
+      },
+      setPriceSource: (source: AnchoredVwapPriceSource) => {
+        this.assertAlive();
+        if (source !== "typical" && source !== "close") throw new Error(`Unsupported Anchored VWAP price source: ${String(source)}`);
+        state.priceSource = source;
+        indicator.setParameters({ anchorTime: state.anchorTime, priceSource: source });
+      },
+    };
+  }
+
+  /** Add a chart-owned estimated Volume Profile overlay. */
+  public addVolumeProfile(options: VolumeProfileOptions = {}): VolumeProfileApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const fallbackId = `volume-profile-${this.nextVolumeProfileId++}`;
+    const resolved = resolveVolumeProfileOptions(options, fallbackId);
+    if (this.volumeProfiles.has(resolved.id)) throw new Error(`Volume Profile id already exists: ${resolved.id}`);
+    const state: ManagedVolumeProfile = { id: resolved.id, options: resolved, cache: undefined };
+    this.volumeProfiles.set(state.id, state);
+    const api: VolumeProfileApi = {
+      id: state.id,
+      getOptions: () => ({ ...state.options, ...(state.options.range === undefined ? {} : { range: { ...state.options.range } }) }),
+      getResult: () => this.getVolumeProfileResult(state),
+      setOptions: (patch) => {
+        this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
+        state.options = resolveVolumeProfileOptions({ ...state.options, ...patch, id: state.id }, state.id);
+        state.cache = undefined;
+        this.invalidateVolumeAnalytics();
+        this.render();
+      },
+      setMode: (mode, range) => {
+        const next: VolumeProfileOptionsPatch = { mode, ...(range === undefined ? {} : { range }) };
+        api.setOptions(next);
+      },
+      setRange: (range) => api.setOptions({ mode: "fixed", range }),
+      setVisible: (visible) => api.setOptions({ visible }),
+      remove: () => {
+        this.assertAlive();
+        if (!this.volumeProfiles.delete(state.id)) return;
+        state.cache = undefined;
+        this.invalidateVolumeAnalytics();
+        this.render();
+      },
+    };
+    state.api = api;
+    this.render();
+    return api;
+  }
+
+  /** Return defensive APIs for chart-owned Volume Profiles. */
+  public getVolumeProfiles(): VolumeProfileApi[] {
+    this.assertAlive();
+    return [...this.volumeProfiles.values()].map((state) => state.api!).filter((api): api is VolumeProfileApi => api !== undefined);
   }
 
   /** Add a validated KlineScript program through the existing indicator lifecycle. */
@@ -961,6 +1066,7 @@ export class Chart {
     this.assertReplayStructureMutationAllowed();
     const wasPrimaryCandleSeries = this.model.isPrimaryCandleSeries(id);
     this.model.removeSeries(id);
+    this.invalidateVolumeAnalytics();
     if (wasPrimaryCandleSeries) this.refreshIndicatorsFromInput();
     this.render();
   }
@@ -1168,6 +1274,7 @@ export class Chart {
   public setVisibleTimeRange(range: { from: number; to: number }): void {
     this.assertAlive();
     this.model.setVisibleTimeRange(range.from, range.to);
+    this.invalidateVolumeAnalytics();
     this.emitViewportChange();
     this.scheduleViewportRender();
   }
@@ -1199,6 +1306,7 @@ export class Chart {
   public pan(deltaBars: number): void {
     this.assertAlive();
     this.model.pan(deltaBars);
+    this.invalidateVolumeAnalytics();
     this.emitViewportChange();
     this.scheduleViewportRender();
   }
@@ -1207,6 +1315,7 @@ export class Chart {
   public zoom(scale: number, anchorRatio = 0.5): void {
     this.assertAlive();
     this.model.zoom(scale, anchorRatio);
+    this.invalidateVolumeAnalytics();
     this.emitViewportChange();
     this.scheduleViewportRender();
   }
@@ -1215,6 +1324,7 @@ export class Chart {
   public fitContent(): void {
     this.assertAlive();
     this.model.fitContent();
+    this.invalidateVolumeAnalytics();
     this.emitViewportChange();
     this.scheduleViewportRender();
   }
@@ -1223,6 +1333,7 @@ export class Chart {
   public resetView(): void {
     this.assertAlive();
     this.model.resetView();
+    this.invalidateVolumeAnalytics();
     this.emitViewportChange();
     this.scheduleViewportRender();
   }
@@ -1299,6 +1410,7 @@ export class Chart {
     for (const runtime of this.workerRuntimes) runtime.dispose();
     this.workerRuntimes.clear();
     this.indicators.clear();
+    this.clearVolumeProfiles();
     this.model.destroy();
     this.baseFrame = null;
     this.replayCursorIndex = null;
@@ -1716,6 +1828,7 @@ export class Chart {
     if (strategyMarkers !== null) items.push(strategyMarkers);
     const paperTradingMarkers = this.getPaperTradingMarkerOverlay();
     if (paperTradingMarkers !== null) items.push(paperTradingMarkers);
+    items.push(...this.getVolumeProfileOverlayItems());
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -1736,6 +1849,105 @@ export class Chart {
         }
       }));
     return items;
+  }
+
+  private getVolumeProfileOverlayItems(): PluginOverlayRenderItem[] {
+    const visibleProfiles = [...this.volumeProfiles.values()].filter((profile) => profile.options.visible);
+    if (visibleProfiles.length === 0) return [];
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return [];
+    return visibleProfiles.map((profile) => {
+      const result = this.getVolumeProfileResult(profile);
+      const options = profile.options;
+      const width = options.width <= 1 ? (pane.right - pane.left) * options.width : Math.min(options.width, pane.right - pane.left);
+      const left = options.position === "left" ? pane.left : pane.right - width;
+      const right = left + width;
+      const maxVolume = result.bins.reduce((maximum, bin) => Math.max(maximum, bin.estimatedVolume), 0);
+      const commands: PluginRenderCommand[] = [];
+      if (result.status === "empty") {
+        if (options.showLabels) commands.push({ kind: "text", x: left + 4, y: pane.top + 4, text: "Estimated Volume Profile: no positive volume", color: options.color, font: "11px system-ui, sans-serif", alpha: options.opacity });
+        return { id: `openkline.${profile.id}`, zIndex: 12, commands };
+      }
+      for (const bin of result.bins) {
+        if (maxVolume <= 0 || bin.estimatedVolume <= 0) continue;
+        const barWidth = width * (bin.estimatedVolume / maxVolume);
+        const yTop = Math.min(pane.yForPrice(bin.upperBound), pane.yForPrice(bin.lowerBound));
+        const yBottom = Math.max(pane.yForPrice(bin.upperBound), pane.yForPrice(bin.lowerBound));
+        const inValueArea = result.valueArea !== null && bin.index >= result.valueArea.lowIndex && bin.index <= result.valueArea.highIndex;
+        const barLeft = options.position === "left" ? left : right - barWidth;
+        commands.push({
+          kind: "rectangle",
+          left: barLeft,
+          top: yTop,
+          width: Math.max(1, barWidth),
+          height: Math.max(1, yBottom - yTop),
+          fillColor: inValueArea && options.showValueArea ? options.valueAreaColor : options.color,
+          color: inValueArea && options.showValueArea ? options.valueAreaColor : options.color,
+          lineWidth: 1,
+          alpha: options.opacity,
+        });
+      }
+      if (options.showPoc && result.pointOfControl !== null) {
+        const y = pane.yForPrice(result.pointOfControl.price);
+        commands.push({ kind: "line", from: { x: left, y }, to: { x: right, y }, color: options.pocColor, lineWidth: 2, alpha: Math.min(1, options.opacity + 0.25) });
+        if (options.showLabels) commands.push({ kind: "text", x: left + 4, y: y - 16, text: `Estimated POC ${result.pointOfControl.price.toPrecision(6)}`, color: options.pocColor, font: "11px system-ui, sans-serif", alpha: 1 });
+      }
+      if (options.showValueArea && result.valueArea !== null) {
+        const lowY = pane.yForPrice(result.valueArea.low);
+        const highY = pane.yForPrice(result.valueArea.high);
+        commands.push({ kind: "line", from: { x: left, y: lowY }, to: { x: right, y: lowY }, color: options.valueAreaColor, lineWidth: 1, alpha: options.opacity });
+        commands.push({ kind: "line", from: { x: left, y: highY }, to: { x: right, y: highY }, color: options.valueAreaColor, lineWidth: 1, alpha: options.opacity });
+        if (options.showLabels) {
+          commands.push({ kind: "text", x: left + 4, y: highY + 2, text: `Estimated VAH ${result.valueArea.high.toPrecision(6)}`, color: options.valueAreaColor, font: "11px system-ui, sans-serif", alpha: 1 });
+          commands.push({ kind: "text", x: left + 4, y: lowY - 14, text: `Estimated VAL ${result.valueArea.low.toPrecision(6)}`, color: options.valueAreaColor, font: "11px system-ui, sans-serif", alpha: 1 });
+        }
+      }
+      return { id: `openkline.${profile.id}`, zIndex: 12, commands };
+    });
+  }
+
+  private getVolumeProfileResult(profile: ManagedVolumeProfile): EstimatedVolumeProfileResult {
+    const visible = this.model.getVisibleData();
+    const lastVisibleTime = visible.times.at(-1);
+    const visibleFrom = visible.times[0] ?? 0;
+    const visibleTo = lastVisibleTime === undefined
+      ? 1
+      : Math.min(Number.MAX_SAFE_INTEGER, Math.max(visibleFrom + 1, lastVisibleTime + 1));
+    const range = profile.options.mode === "fixed" && profile.options.range !== undefined
+      ? profile.options.range
+      : { from: visibleFrom, to: visibleTo };
+    const key = [
+      this.volumeAnalyticsRevision,
+      this.model.getReplayCutoff() ?? "none",
+      profile.options.mode,
+      range.from,
+      range.to,
+      profile.options.binCount,
+      profile.options.allocation,
+      profile.options.valueAreaPercentage,
+    ].join(":");
+    if (profile.cache?.key === key) return profile.cache.result;
+    const result = calculateEstimatedVolumeProfile(this.model.allCandles, {
+      from: range.from,
+      to: range.to,
+      binCount: profile.options.binCount,
+      allocation: profile.options.allocation,
+      valueAreaPercentage: profile.options.valueAreaPercentage,
+    });
+    profile.cache = { key, result };
+    return result;
+  }
+
+  private invalidateVolumeAnalytics(): void {
+    this.volumeAnalyticsRevision += 1;
+    for (const profile of this.volumeProfiles.values()) profile.cache = undefined;
+  }
+
+  private clearVolumeProfiles(): void {
+    this.volumeProfiles.clear();
+    this.nextVolumeProfileId = 1;
+    this.invalidateVolumeAnalytics();
   }
 
   private getStrategyMarkerOverlay(): PluginOverlayRenderItem | null {
@@ -1900,6 +2112,7 @@ export class Chart {
         this.assertAlive();
         this.assertReplayDataMutationAllowed();
         this.model.setSeriesData(id, data as SeriesData);
+        if (this.model.isPrimaryCandleSeries(id)) this.invalidateVolumeAnalytics();
         if (this.model.isPrimaryCandleSeries(id)) {
           this.refreshIndicatorsFromInput();
           this.resetLiveAlerts((data.at(-1) as Candle | undefined));
@@ -1914,6 +2127,7 @@ export class Chart {
         const lastTime = primaryCandleSeries ? this.model.getLatestCandleTime() : undefined;
         const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
         this.model.updateSeries(id, point);
+        if (primaryCandleSeries) this.invalidateVolumeAnalytics();
         if (primaryCandleSeries) {
           this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
           this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
@@ -2147,6 +2361,7 @@ export class Chart {
     try {
       this.model.setReplaySource(source);
       this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
+      this.invalidateVolumeAnalytics();
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
@@ -2163,6 +2378,7 @@ export class Chart {
   private applyReplayCursor(cursor: ReplayCursor): void {
     if (this.replayBaseWorkspace === null) throw new Error("Replay chart state has not been prepared");
     this.model.setReplayCutoff(cursor.timestamp ?? Number.NEGATIVE_INFINITY);
+    this.invalidateVolumeAnalytics();
     this.model.resetView();
     const isSequentialAppend = cursor.index !== null
       && this.replayCursorIndex !== null
@@ -2196,6 +2412,7 @@ export class Chart {
       this.replayRestoring = false;
       this.replayBaseWorkspace = null;
       this.model.setReplayCutoff(null);
+      this.invalidateVolumeAnalytics();
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
     }
@@ -2208,6 +2425,7 @@ export class Chart {
     this.suspendDatafeed();
     this.datafeedSession = null;
     this.model.setReplayCutoff(null);
+    this.invalidateVolumeAnalytics();
     this.replayCursorIndex = null;
     this.replayBaseWorkspace = null;
   }
@@ -2260,6 +2478,11 @@ function normalizePricePrecision(value: number): number {
   if (!Number.isInteger(value) || value < 0 || value > 100) {
     throw new RangeError("pricePrecision must be an integer between 0 and 100");
   }
+  return value;
+}
+
+function validateAnalyticsTimestamp(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value < 0) throw new RangeError(`${label} must be a non-negative safe integer timestamp`);
   return value;
 }
 
