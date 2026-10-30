@@ -1187,3 +1187,17 @@ compatibility decision packet, package evidence, and remaining gates.
   `docs/reports/phase-10-5-causal-hardening.md`. Firefox, WebKit, mobile
   Safari, physical-device, and historical API-baseline approval gates remain
   open in the cloud environment.
+
+## Phase 11 market sessions and calendar-aware analytics
+
+- [Implemented / Node-verified — 11.0 foundation] Added a provider-neutral,
+  versioned trading calendar engine with IANA timezone resolution, explicit DST
+  ambiguity/nonexistent-time rejection or host-selected policy, weekly
+  schedules, split segments and breaks, holidays, modified/early/late sessions,
+  overnight trading dates, validity ranges, bounded queries, registry versions,
+  and an adapter for the existing `TimeframeCalendar` contract. The fixed UTC
+  Phase 10 engine remains unchanged. See `docs/api/trading-calendars.md` and
+  `docs/architecture/market-sessions.md`.
+- [Open] Session-based OHLCV aggregation, calendar-aware Datafeed recovery,
+  Chart overlays, Studio controls, workspace persistence, and full Phase 11
+  verification remain to be implemented. No Phase 12 work has started.

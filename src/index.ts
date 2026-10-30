@@ -120,6 +120,34 @@ export type {
   TimeframeCalendar,
 } from "./multi-timeframe.js";
 export {
+  TradingCalendarEngine,
+  TradingCalendarRegistry,
+  createIllustrativeWeekdayCalendar,
+  resolveTradingLocalDateTime,
+  toTimeframeCalendar,
+  tradingDateForTimestamp,
+} from "./trading-calendar.js";
+export type {
+  LocalTimeDisambiguation,
+  TradingCalendarCoverage,
+  TradingCalendarCoverageStatus,
+  TradingCalendarDefinition,
+  TradingCalendarException,
+  TradingCalendarExceptionKind,
+  TradingCalendarLocalDateTime,
+  TradingCalendarQueryOptions,
+  TradingCalendarRegistryEntry,
+  TradingCalendarSnapshot,
+  TradingCalendarValidity,
+  TradingDate,
+  TradingSession,
+  TradingSessionBreak,
+  TradingSessionClassification,
+  TradingSessionSegment,
+  TradingSessionSegmentDefinition,
+  TradingSessionTemplate,
+} from "./trading-calendar.js";
+export {
   OPENKLINE_WORKSPACE_VERSION,
   WorkspaceCompatibilityError,
   WorkspaceValidationError,
