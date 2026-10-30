@@ -33,6 +33,12 @@ function measure(fn, repetitions) {
   return { medianMs: median(values), p95Ms: percentile(values, 0.95), samples: values.length };
 }
 
+function createAggregator(candles) {
+  const result = new CausalTimeframeAggregator({ sourceTimeframe: "1m", targetTimeframe: "1h", coveragePolicy: "fixed-duration", finalityPolicy: "time-closed", asOfTime: candles.at(-1)?.time });
+  result.setData(candles);
+  return result;
+}
+
 const report = {
   generatedAt: new Date().toISOString(),
   node: process.version,
@@ -48,18 +54,44 @@ for (const count of sizes) {
   const candles = makeCandles(count);
   const repetitions = count === 100_000 ? 3 : 5;
   const initial = measure(() => {
-    const result = new CausalTimeframeAggregator({ sourceTimeframe: "1m", targetTimeframe: "1h", coveragePolicy: "fixed-duration", finalityPolicy: "time-closed", asOfTime: candles.at(-1)?.time });
-    result.setData(candles);
+    const result = createAggregator(candles);
     result.getResult();
     result.dispose();
   }, repetitions);
   const incremental = measure(() => {
-    const result = new CausalTimeframeAggregator({ sourceTimeframe: "1m", targetTimeframe: "1h", coveragePolicy: "fixed-duration", finalityPolicy: "time-closed", asOfTime: candles.at(-1)?.time });
-    result.setData(candles);
+    const result = createAggregator(candles);
     const last = candles.at(-1);
     if (last === undefined) throw new Error("Benchmark data is empty");
     result.update({ ...last, time: last.time + minute, close: last.close + 0.1, high: last.high + 0.1 });
     result.getResult();
+    result.dispose();
+  }, repetitions);
+  const midpointIndex = Math.floor(Math.max(0, count - 1) / 2);
+  const midpointAsOf = candles[midpointIndex]?.time ?? 0;
+  const latestAsOf = candles.at(-1)?.time ?? 0;
+  const seekAggregator = createAggregator(candles);
+  let asOfSnapshot;
+  const asOfSnapshotTiming = measure(() => { asOfSnapshot = seekAggregator.getResult(midpointAsOf); }, repetitions);
+  const backwardSeek = measure(() => { seekAggregator.getResult(midpointAsOf); }, repetitions);
+  const forwardSeek = measure(() => { seekAggregator.getResult(latestAsOf); }, repetitions);
+  const repeatedReplayMovement = measure(() => {
+    const steps = Math.min(16, count);
+    for (let step = 0; step < steps; step += 1) {
+      const index = Math.floor((step / Math.max(1, steps - 1)) * Math.max(0, count - 1));
+      seekAggregator.getResult(candles[index]?.time ?? latestAsOf);
+    }
+  }, repetitions);
+  seekAggregator.dispose();
+  const correction = measure(() => {
+    const result = createAggregator(candles);
+    const middle = candles[midpointIndex];
+    if (middle === undefined) throw new Error("Benchmark data is empty");
+    result.update({ ...middle, close: middle.close + 0.25, high: middle.high + 0.25 });
+    result.getResult(latestAsOf);
+    result.dispose();
+  }, repetitions);
+  const disposal = measure(() => {
+    const result = createAggregator(candles);
     result.dispose();
   }, repetitions);
   let indicatorResult;
@@ -71,7 +103,8 @@ for (const count of sizes) {
   const mapped = measure(() => { mappedOutput = mapMultiTimeframeIndicatorToSourceTimes(indicatorResult, candles.map((candle) => candle.time), outputId); }, repetitions);
   const references = measure(() => calculatePreviousTimeframeLevels(candles, { sourceTimeframe: "1m", targetTimeframe: "1h", coveragePolicy: "fixed-duration", finalityPolicy: "time-closed", asOfTime: candles.at(-1)?.time }), repetitions);
   const noLookahead = mappedOutput.every((point) => point.availableAt === null || point.availableAt <= point.time);
-  report.cases.push({ count, repetitions, aggregation: initial, appendAndRead: incremental, indicator, mapping: mapped, previousLevels: references, noLookahead, outputPoints: indicatorResult?.outputs.reduce((sum, output) => sum + output.points.length, 0) ?? 0, sourcePoints: count });
+  const snapshotNoLookahead = (asOfSnapshot?.observations ?? []).every((observation) => observation.sourceTimes.every((time) => time + minute <= midpointAsOf));
+  report.cases.push({ count, repetitions, aggregation: initial, asOfSnapshot: asOfSnapshotTiming, backwardSeek, forwardSeek, repeatedReplayMovement, appendAndRead: incremental, correction, disposal, indicator, mapping: mapped, previousLevels: references, noLookahead: noLookahead && snapshotNoLookahead, outputPoints: indicatorResult?.outputs.reduce((sum, output) => sum + output.points.length, 0) ?? 0, sourcePoints: count });
 }
 
 console.log(JSON.stringify(report, null, 2));
