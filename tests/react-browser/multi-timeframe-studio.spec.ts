@@ -10,10 +10,10 @@ test("Studio exposes causal multi-timeframe analysis per panel and persists conf
   const panel = page.locator('[data-panel-id="chart-1"]');
   const target = page.getByLabel("Higher-timeframe target");
   await expect(target).toHaveValue("4h");
-  await page.locator('select[aria-label="Higher-timeframe indicator"]').selectOption("EMA");
+  await page.locator('select[aria-label="Higher-timeframe study"]').selectOption("EMA");
   await page.getByLabel("Higher-timeframe period").fill("8");
   await page.getByLabel("Higher-timeframe finality").selectOption("complete-only");
-  await page.getByRole("button", { name: "Toggle higher-timeframe indicator", exact: true }).click();
+  await page.getByRole("button", { name: "Toggle higher-timeframe study", exact: true }).click();
   await expect(page.locator('[data-multi-timeframe-indicator]')).toContainText("EMA");
   await expect(panel).toBeVisible();
 
@@ -30,10 +30,10 @@ test("Studio exposes causal multi-timeframe analysis per panel and persists conf
   expect(saved?.charts[0]?.workspace.multiTimeframe?.references).toHaveLength(1);
 
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
-  await expect(page.locator('select[aria-label="Higher-timeframe indicator"]')).toBeDisabled();
+  await expect(page.locator('select[aria-label="Higher-timeframe study"]')).toBeDisabled();
   await expect(page.getByLabel("Higher-timeframe target")).toBeDisabled();
   await page.getByRole("button", { name: "Exit replay", exact: true }).click();
-  await expect(page.locator('select[aria-label="Higher-timeframe indicator"]')).toBeEnabled();
+  await expect(page.locator('select[aria-label="Higher-timeframe study"]')).toBeEnabled();
 
   await page.getByLabel("Chart layout").selectOption("two-horizontal");
   await expect(page.locator("[data-panel-id]")).toHaveCount(2);
@@ -47,8 +47,8 @@ test("Studio exposes causal multi-timeframe analysis per panel and persists conf
   await expect(page.locator('[data-multi-timeframe-indicator]')).toContainText("EMA");
 
   await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
-  await expect(page.locator('select[aria-label="Higher-timeframe indicator"]')).toBeDisabled();
+  await expect(page.locator('select[aria-label="Higher-timeframe study"]')).toBeDisabled();
   await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
-  await expect(page.locator('select[aria-label="Higher-timeframe indicator"]')).toBeEnabled();
+  await expect(page.locator('select[aria-label="Higher-timeframe study"]')).toBeEnabled();
   expect(errors).toEqual([]);
 });
