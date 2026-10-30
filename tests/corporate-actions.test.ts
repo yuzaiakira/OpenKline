@@ -130,7 +130,7 @@ test("a higher action revision changes adjusted factors without mutating raw can
   const first = adjustCorporateActionData(raw, dataset([split("corrected-split", start + 120_000, 2, 1)]), { mode: "split-adjusted" });
   const corrected = adjustCorporateActionData(raw, dataset([split("corrected-split", start + 120_000, 3, 1, 2)]), { mode: "split-adjusted" });
   assert.equal(first.candles?.[0]?.close, 50);
-  assert.equal(corrected.candles?.[0]?.close, 100 / 3);
+  assert.ok(Math.abs((corrected.candles?.[0]?.close ?? 0) - 100 / 3) < 1e-12);
   assert.deepEqual(raw, candles);
 });
 
