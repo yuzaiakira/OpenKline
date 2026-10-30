@@ -328,6 +328,25 @@ export class TradingCalendarEngine implements TimeframeCalendar {
     return match !== null && time + durationMs <= match.segment.end;
   }
 
+  /** Enumerate expected source openings without iterating through closed dates or breaks. */
+  public expectedSourceTimes(from: number, to: number, durationMs: number, maxSlots = DEFAULT_MAX_SESSIONS): readonly number[] {
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) throw new RangeError("Expected-slot range must be finite and ascending");
+    if (!Number.isFinite(durationMs) || durationMs <= 0) throw new RangeError("Expected-slot duration must be positive");
+    const limit = positiveLimit(maxSlots, DEFAULT_MAX_SESSIONS, "maxSlots");
+    const slots: number[] = [];
+    for (const session of this.enumerateSessions(from, to, { maxSessions: limit })) {
+      for (const segment of session.segments) {
+        for (let time = segment.start; time + durationMs <= segment.end; time += durationMs) {
+          if (time >= from && time < to) {
+            slots.push(time);
+            if (slots.length > limit) throw new RangeError("Expected-slot enumeration exceeded maxSlots");
+          }
+        }
+      }
+    }
+    return slots.sort((left, right) => left - right);
+  }
+
   /** TimeframeCalendar compatibility adapter; callers with duration should use isExpectedSourceInterval. */
   public isExpectedSourceTime(time: number): boolean {
     return this.findSegmentContaining(time) !== null;

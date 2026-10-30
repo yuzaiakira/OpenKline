@@ -54,7 +54,7 @@ export type {
   ComparisonNormalizationMode,
   ComparisonPricePoint,
 } from "./comparison.js";
-export { ComparisonDatafeedController } from "./comparison-datafeed.js";
+export { ComparisonDatafeedController, createComparisonDatafeedCalendarCoverage } from "./comparison-datafeed.js";
 export type {
   ComparisonDatafeedAsset,
   ComparisonDatafeedAssetStatus,

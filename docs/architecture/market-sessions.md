@@ -55,11 +55,15 @@ backward/forward seeking and corrections remain deterministic. A calendar
 replacement clears resolved-session and expected-slot caches before rebuilding
 dependent output.
 
-Datafeed recovery should use `isExpectedSourceInterval` instead of duplicating
-local timezone calculations. Chart overlays can enumerate only the bounded
-visible range and render UTC coordinates with localized labels. Calendar
-configuration is serializable by ID/version; executable callbacks and resolved
-caches are runtime-only.
+Datafeed recovery uses `isExpectedSourceInterval` and `expectedSourceTimes`
+instead of duplicating local timezone calculations.
+`createComparisonDatafeedCalendarCoverage` supplies those schedule-aligned
+openings to comparison coverage and bounded backfill. It never treats a break,
+holiday, or early close as an outage, and it returns uncertain coverage when a
+bounded schedule query cannot be trusted. Chart overlays can enumerate only
+the bounded visible range and render UTC coordinates with localized labels.
+Calendar configuration is serializable by ID/version; executable callbacks and
+resolved caches are runtime-only.
 
 The illustrative calendar is intentionally labelled as a demo fixture. Hosts
 remain responsible for supplying a verified market schedule, its source, and

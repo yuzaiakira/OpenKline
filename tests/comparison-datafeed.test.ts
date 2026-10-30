@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ComparisonDatafeedController } from "../src/index.js";
+import {
+  ComparisonDatafeedController,
+  TradingCalendarEngine,
+  createComparisonDatafeedCalendarCoverage,
+} from "../src/index.js";
 import type { ComparisonDatafeedControllerOptions } from "../src/index.js";
 import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, GetBarsQuery, SubscribeBarsArgs, SymbolInfo } from "../src/types.js";
+import type { TradingCalendarDefinition } from "../src/index.js";
 
 const info = (symbol: string): SymbolInfo => ({ symbol, timezone: "UTC", pricePrecision: 2 });
 
@@ -334,6 +339,56 @@ test("coverage policies do not classify session closures or sparse schedules as 
   assert.equal(sparseController.getAssetStatuses()[0]?.coverage.completeness, "uncertain");
   assert.equal(sparseController.getAssetStatuses()[0]?.coverage.backfillNeeded, false);
   sparseController.dispose();
+});
+
+test("calendar coverage follows split sessions and repairs only an expected opening", async () => {
+  const calendar = new TradingCalendarEngine({
+    id: "comparison-session-market",
+    version: "1",
+    timeZone: "UTC",
+    weeklySchedule: [{
+      weekday: 1,
+      segments: [
+        { start: "09:00", end: "12:00" },
+        { start: "13:00", end: "16:00" },
+      ],
+    }],
+  } satisfies TradingCalendarDefinition);
+  const from = Date.parse("2024-01-01T09:00:00.000Z");
+  const to = Date.parse("2024-01-01T16:00:00.000Z");
+  const feed = new CapturingFeed(info("SESSION"), [
+    candle(from, 9),
+    candle(from + 2 * 60 * 60 * 1000, 11),
+    candle(from + 4 * 60 * 60 * 1000, 13),
+    candle(from + 5 * 60 * 60 * 1000, 14),
+    candle(from + 6 * 60 * 60 * 1000, 15),
+  ]);
+  const controller = new ComparisonDatafeedController({ window: { from, to } });
+  controller.registerAsset({
+    id: "session",
+    symbol: "SESSION",
+    timeframe: "1h",
+    datafeed: feed,
+    coverage: createComparisonDatafeedCalendarCoverage(calendar, 60 * 60 * 1000),
+  });
+
+  await controller.load();
+  const coverage = controller.getAssetStatuses()[0]?.coverage;
+  assert.equal(coverage?.calendarKnown, true);
+  assert.equal(coverage?.completeness, "incomplete");
+  assert.deepEqual(coverage?.missing, [{
+    from: from + 60 * 60 * 1000,
+    to: from + 2 * 60 * 60 * 1000,
+  }]);
+  assert.equal(coverage?.backfillNeeded, true);
+  assert.equal(calendar.expectedSourceTimes(from, to, 60 * 60 * 1000).length, 6);
+
+  feed.append(candle(from + 60 * 60 * 1000, 10));
+  const recovery = await controller.backfill({ retryBackoffMs: 0 });
+  assert.equal(recovery.status, "complete");
+  assert.equal(controller.getAssetStatuses()[0]?.coverage.completeness, "complete");
+  assert.deepEqual(controller.getAssetStatuses()[0]?.coverage.missing, []);
+  controller.dispose();
 });
 
 test("backfill keeps live corrections authoritative and cannot resurrect a disposed controller", async () => {

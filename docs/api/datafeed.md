@@ -35,6 +35,39 @@ metadata remains application-owned and does not turn the chart into a provider
 registry. If a stale request is stopped, destroyed, or replaced while symbol
 resolution or history is pending, the result is ignored.
 
+## Calendar-aware coverage and recovery
+
+`createComparisonDatafeedCalendarCoverage(calendar, intervalMs)` adapts a
+resolved `TradingCalendarEngine` to `ComparisonDatafeedAsset.coverage`. The
+controller then checks only source openings that fit wholly inside an open
+session segment. Scheduled breaks, holidays, early closes, and overnight/DST
+boundaries are not reported as missing provider data. A missing expected
+opening is reported as an incomplete coverage range and can be repaired with
+the existing bounded `backfill()` API.
+
+```ts
+import {
+  ComparisonDatafeedController,
+  createComparisonDatafeedCalendarCoverage,
+} from "openkline";
+
+controller.registerAsset({
+  id: "market",
+  symbol: "MARKET",
+  timeframe: "1h",
+  datafeed,
+  coverage: createComparisonDatafeedCalendarCoverage(calendar, 60 * 60 * 1000),
+});
+```
+
+The calendar adapter is provider-neutral and does not synthesize candles. It
+uses the calendar version supplied by the host for the current runtime; hosts
+must persist and audit that ID/version when historical reproducibility matters.
+If schedule enumeration exceeds its configured `maxGapIntervals` bound or
+returns invalid data, coverage becomes `uncertain` and recovery does not claim
+that a gap is confirmed. The controller retains stale-response cancellation,
+last-write-wins corrections, bounded retries, and disposal cleanup.
+
 ## REST adapter
 
 `RestDatafeed` expects pages shaped like `{ bars, next }`, where `next` is a

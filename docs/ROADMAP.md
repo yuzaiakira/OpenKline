@@ -1205,6 +1205,12 @@ compatibility decision packet, package evidence, and remaining gates.
   calendar replacement, previous-period levels, and Indicator Registry
   calculations. See the session section in
   `docs/api/multi-timeframe.md`.
-- [Open] Calendar-aware Datafeed recovery, Chart overlays, Studio controls,
-  workspace persistence, and full Phase 11 verification remain to be
-  implemented. No Phase 12 work has started.
+- [Implemented / Node-verified — 11.2 datafeed coverage] Added a provider-
+  neutral calendar coverage adapter and schedule-aligned expected-slot
+  enumeration for comparison assets. Recovery now distinguishes missing open
+  intervals from breaks, holidays, and early closes while preserving bounded
+  backfill, correction, stale-response, and disposal behavior. See
+  `docs/api/datafeed.md` and `docs/architecture/market-sessions.md`.
+- [Open] Chart overlays, Studio controls, workspace persistence, benchmarks,
+  and full Phase 11 verification remain to be implemented. No Phase 12 work
+  has started.

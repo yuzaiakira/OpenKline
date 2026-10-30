@@ -7,6 +7,7 @@ import type {
   ComparisonPricePoint,
 } from "./comparison.js";
 import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, SymbolInfo } from "./types.js";
+import { TradingCalendarEngine } from "./trading-calendar.js";
 
 export interface ComparisonDatafeedWindow {
   /** Inclusive lower UTC millisecond bound for requested historical bars. */
@@ -28,8 +29,28 @@ export interface ComparisonDatafeedCoveragePolicy {
   readonly anchorTime?: number;
   /** Return true for expected slots (for example, session-aware calendars). */
   readonly isExpectedTime?: (time: number) => boolean;
+  /** Generate schedule-aligned source openings without assuming UTC anchoring. */
+  readonly getExpectedTimes?: (window: ComparisonDatafeedWindow, intervalMs: number) => readonly number[];
   /** Bound schedule iteration for irregular or very large ranges. */
   readonly maxGapIntervals?: number;
+}
+
+/** Adapt a resolved IANA trading calendar to comparison coverage/recovery. */
+export function createComparisonDatafeedCalendarCoverage(
+  calendar: TradingCalendarEngine,
+  intervalMs: number,
+  options: { readonly maxGapIntervals?: number } = {},
+): ComparisonDatafeedCoveragePolicy {
+  if (!Number.isSafeInteger(intervalMs) || intervalMs <= 0) throw new RangeError("Calendar coverage intervalMs must be a positive integer");
+  const maxGapIntervals = options.maxGapIntervals ?? 10_000;
+  if (!Number.isSafeInteger(maxGapIntervals) || maxGapIntervals < 1) throw new RangeError("Calendar coverage maxGapIntervals must be a positive integer");
+  return {
+    kind: "sessions",
+    intervalMs,
+    maxGapIntervals,
+    isExpectedTime: (time) => calendar.isExpectedSourceInterval(time, intervalMs),
+    getExpectedTimes: (window, duration) => calendar.expectedSourceTimes(window.from, window.to, duration, maxGapIntervals),
+  };
 }
 
 export interface ComparisonDatafeedInterval {
@@ -1039,11 +1060,13 @@ function normalizeCoveragePolicy(value: ComparisonDatafeedCoveragePolicy): Compa
   const anchorTime = value.anchorTime === undefined ? undefined : normalizeTime(value.anchorTime);
   const maxGapIntervals = value.maxGapIntervals === undefined ? 10_000 : normalizePositiveInteger(value.maxGapIntervals, "Coverage maxGapIntervals");
   if (value.isExpectedTime !== undefined && typeof value.isExpectedTime !== "function") throw new Error("Coverage isExpectedTime must be a function");
+  if (value.getExpectedTimes !== undefined && typeof value.getExpectedTimes !== "function") throw new Error("Coverage getExpectedTimes must be a function");
   return {
     kind,
     ...(intervalMs === undefined ? {} : { intervalMs }),
     ...(anchorTime === undefined ? {} : { anchorTime }),
     ...(value.isExpectedTime === undefined ? {} : { isExpectedTime: value.isExpectedTime }),
+    ...(value.getExpectedTimes === undefined ? {} : { getExpectedTimes: value.getExpectedTimes }),
     maxGapIntervals,
   };
 }
@@ -1116,7 +1139,7 @@ function detectCoverage(
   const kind = policy?.kind ?? "unknown";
   const intervalMs = policy?.intervalMs;
   const calendarKnown = intervalMs !== undefined
-    && (kind === "continuous" || typeof policy?.isExpectedTime === "function");
+    && (kind === "continuous" || typeof policy?.isExpectedTime === "function" || typeof policy?.getExpectedTimes === "function");
   if (sorted.length === 0) {
     return {
       requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "empty", calendarKnown,
@@ -1130,14 +1153,33 @@ function detectCoverage(
     };
   }
   const maxSlots = policy?.maxGapIntervals ?? 10_000;
-  const anchor = policy?.anchorTime ?? window.from;
-  const firstSlot = anchor >= window.from
-    ? anchor
-    : anchor + Math.ceil((window.from - anchor) / intervalMs) * intervalMs;
-  const expected: number[] = [];
-  for (let time = firstSlot; time < window.to && expected.length <= maxSlots; time += intervalMs) {
-    if (policy?.isExpectedTime === undefined || policy.isExpectedTime(time)) expected.push(time);
-    if (time > Number.MAX_SAFE_INTEGER - intervalMs) break;
+  let expected: number[];
+  try {
+    if (policy?.getExpectedTimes !== undefined) {
+      expected = [...policy.getExpectedTimes(window, intervalMs)];
+    } else {
+      const anchor = policy?.anchorTime ?? window.from;
+      const firstSlot = anchor >= window.from
+        ? anchor
+        : anchor + Math.ceil((window.from - anchor) / intervalMs) * intervalMs;
+      expected = [];
+      for (let time = firstSlot; time < window.to && expected.length <= maxSlots; time += intervalMs) {
+        if (policy?.isExpectedTime === undefined || policy.isExpectedTime(time)) expected.push(time);
+        if (time > Number.MAX_SAFE_INTEGER - intervalMs) break;
+      }
+    }
+  } catch {
+    return {
+      requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "uncertain", calendarKnown,
+      backfillNeeded: false, backfillAttempted, recovery, recoveryError,
+    };
+  }
+  expected = [...new Set(expected)].sort((left, right) => left - right);
+  if (expected.some((time) => !Number.isFinite(time) || time < window.from || time >= window.to)) {
+    return {
+      requested: { ...window }, observedFrom, observedTo, missing: [], completeness: "uncertain", calendarKnown,
+      backfillNeeded: false, backfillAttempted, recovery, recoveryError,
+    };
   }
   if (expected.length > maxSlots) {
     return {
