@@ -187,6 +187,10 @@ export type {
   TradeFlowOptions,
   TradeFlowResetPolicy,
   TradeFlowResult,
+  FootprintDisplayOptions,
+  CvdDisplayOptions,
+  DepthDisplayOptions,
+  OrderFlowState,
 } from "./order-flow.js";
 export type {
   OrderBookDepthMetricOptions,
@@ -209,6 +213,7 @@ export type {
   MarketTradeStoreOptions,
   MarketTradeSubscriptionArgs,
 } from "./market-trades.js";
+export type { WorkspaceOrderFlow, WorkspaceOrderFlowSource } from "./workspace.js";
 export {
   CausalTimeframeAggregator,
   aggregateCandlesByTimeframe,

@@ -75,7 +75,7 @@ import type {
   VolumePoint,
   AsyncScriptIndicatorOptions,
 } from "./types.js";
-import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceCorporateActions, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
+import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceCorporateActions, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceOrderFlow, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { StrategyMarker } from "./backtesting/markers.js";
 import type { PaperTradingMarker } from "./paper-trading/markers.js";
@@ -136,6 +136,35 @@ import {
   type CorporateActionDisplayOptions,
   type CorporateActionVolumePolicy,
 } from "./corporate-actions.js";
+import {
+  MarketTradeStore,
+  type MarketTrade,
+  type MarketTradeDatafeed,
+  type MarketTradeDataset,
+  type MarketTradeQuery,
+} from "./market-trades.js";
+import {
+  OrderBookController,
+  type OrderBookDatafeed,
+  type OrderBookDelta,
+  type OrderBookQuery,
+  type OrderBookSnapshot,
+  type OrderBookState,
+} from "./order-book.js";
+import { OrderBookHeatmapStore, calculateOrderBookDepthMetrics } from "./market-depth.js";
+import {
+  calculateCumulativeVolumeDelta,
+  calculateFootprint,
+  calculateTradeFlow,
+  getTimeAndSales,
+  type CvdDisplayOptions,
+  type CvdResult,
+  type DepthDisplayOptions,
+  type FootprintDisplayOptions,
+  type FootprintResult,
+  type OrderFlowState,
+  type TimeAndSalesOptions,
+} from "./order-flow.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -211,6 +240,41 @@ interface ManagedSessionReference {
   runtime: SessionReferenceRuntime;
 }
 
+const DEFAULT_FOOTPRINT_DISPLAY: Required<FootprintDisplayOptions> = {
+  visible: false,
+  intervalMs: 60_000,
+  tickSize: 1,
+  offTickPolicy: "reject",
+  showLabels: true,
+  opacity: 0.55,
+  buyColor: "#22c55e",
+  sellColor: "#ef4444",
+  unknownColor: "#94a3b8",
+  maxCells: 20_000,
+};
+
+const DEFAULT_CVD_DISPLAY: Required<CvdDisplayOptions> = {
+  visible: false,
+  intervalMs: 60_000,
+  reset: "continuous",
+  pane: "new",
+  color: "#38bdf8",
+  lineWidth: 2,
+  baselineColor: "#64748b",
+  sourceCoverage: "unknown",
+};
+
+const DEFAULT_DEPTH_DISPLAY: Required<DepthDisplayOptions> = {
+  visible: false,
+  maxLevels: 10,
+  showLabels: true,
+  showHeatmap: false,
+  opacity: 0.5,
+  bidColor: "#22c55e",
+  askColor: "#ef4444",
+  maxHistory: 2_000,
+};
+
 const LIGHT_THEME: ChartTheme = {
   background: "#ffffff",
   text: "#52606d",
@@ -260,6 +324,23 @@ export class Chart {
   private corporateActionVolumePolicy: CorporateActionVolumePolicy = "equivalent-shares";
   private corporateActionMarkersVisible = true;
   private corporateActionWorkspaceReference: WorkspaceCorporateActions | null = null;
+  private marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+  private marketTradeDatafeedCleanup: (() => void) | null = null;
+  private marketTradeAbortController: AbortController | null = null;
+  private marketTradeRequestId = 0;
+  private orderBookController: OrderBookController | null = null;
+  private orderBookDatafeedCleanup: (() => void) | null = null;
+  private orderBookAbortController: AbortController | null = null;
+  private orderBookRequestId = 0;
+  private orderBookHeatmap: OrderBookHeatmapStore | null = null;
+  private footprintDisplay: Required<FootprintDisplayOptions> = { ...DEFAULT_FOOTPRINT_DISPLAY };
+  private cvdDisplay: Required<CvdDisplayOptions> = { ...DEFAULT_CVD_DISPLAY };
+  private depthDisplay: Required<DepthDisplayOptions> = { ...DEFAULT_DEPTH_DISPLAY };
+  private orderFlowWorkspaceReference: import("./workspace.js").WorkspaceOrderFlow | null = null;
+  private orderFlowRevision = 0;
+  private cvdSeriesId: string | null = null;
+  private cvdPaneId: string | null = null;
+  private cvdPaneOwned = false;
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
@@ -413,6 +494,260 @@ export class Chart {
     const alertCandle = adjustedView ? this.model.allCandles.at(-1) ?? candle : candle;
     this.evaluateLiveAlerts(alertCandle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
+    this.render();
+  }
+
+  /** Replace the bounded trade-print source used by Footprint, CVD, and Time & Sales. */
+  public setMarketTrades(values: readonly MarketTrade[] | MarketTradeDataset): void {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.stopMarketTradeSource();
+    this.replaceMarketTrades(values);
+    this.orderFlowRevision += 1;
+    this.refreshOrderFlowPresentation();
+    this.render();
+  }
+
+  /** Insert or revise one provider-normalized trade print. */
+  public updateMarketTrade(value: MarketTrade): void {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.marketTradeStore.update(value);
+    this.orderFlowRevision += 1;
+    this.refreshOrderFlowPresentation();
+    this.render();
+  }
+
+  /** Return defensive trade prints, optionally restricted to an event-time range. */
+  public getMarketTrades(options: { readonly from?: number; readonly to?: number; readonly asOfTime?: number; readonly limit?: number } = {}): MarketTrade[] {
+    this.assertAlive();
+    const trades = this.getOrderFlowTradesForReplay();
+    const filtered = options.from === undefined && options.to === undefined
+      ? trades
+      : options.from !== undefined && options.to !== undefined
+        ? getTimeAndSales(trades, { from: options.from, to: options.to, ...(options.asOfTime === undefined ? {} : { asOfTime: options.asOfTime }), limit: options.limit ?? 10_000 })
+        : (() => { throw new Error("Market-trade range requires both from and to"); })();
+    return options.limit === undefined || options.from !== undefined
+      ? filtered.map((trade) => ({ ...trade, source: { ...trade.source } }))
+      : filtered.slice(-options.limit).map((trade) => ({ ...trade, source: { ...trade.source } }));
+  }
+
+  /** Return stable event-time ordered Time & Sales records. */
+  public getTimeAndSales(options: TimeAndSalesOptions): MarketTrade[] {
+    this.assertAlive();
+    const trades = this.getOrderFlowTradesForReplay();
+    return getTimeAndSales(trades, this.clampOrderFlowAsOf(options));
+  }
+
+  /** Load historical trade prints and attach an optional live subscription. */
+  public async setMarketTradeSource(datafeed: MarketTradeDatafeed, query: MarketTradeQuery): Promise<void> {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.stopMarketTradeSource();
+    const requestId = ++this.marketTradeRequestId;
+    const abortController = new AbortController();
+    this.marketTradeAbortController = abortController;
+    const abortExternal = (): void => abortController.abort();
+    query.signal?.addEventListener("abort", abortExternal, { once: true });
+    try {
+      const result = await datafeed.getTrades({ ...query, signal: abortController.signal });
+      if (this.destroyed || requestId !== this.marketTradeRequestId || abortController.signal.aborted) return;
+      this.replaceMarketTrades(result);
+      this.orderFlowRevision += 1;
+      this.refreshOrderFlowPresentation();
+      if (datafeed.subscribeTrades !== undefined) {
+        this.marketTradeDatafeedCleanup = datafeed.subscribeTrades({
+          instrumentId: query.instrumentId,
+          ...(query.venueId === undefined ? {} : { venueId: query.venueId }),
+          onTrade: (trade) => {
+            if (this.destroyed || requestId !== this.marketTradeRequestId || this.isReplayActive()) return;
+            this.marketTradeStore.update(trade);
+            this.orderFlowRevision += 1;
+            this.refreshOrderFlowPresentation();
+            this.render();
+          },
+          onError: (error) => {
+            if (!this.destroyed && requestId === this.marketTradeRequestId) this.emit("datafeedError", error);
+          },
+        });
+      }
+      this.render();
+    } catch (error) {
+      if (this.destroyed || requestId !== this.marketTradeRequestId || abortController.signal.aborted || isAbortError(error)) return;
+      const normalized = error instanceof Error ? error : new Error(String(error));
+      this.emit("datafeedError", normalized);
+      throw normalized;
+    } finally {
+      query.signal?.removeEventListener("abort", abortExternal);
+    }
+  }
+
+  /** Replace the current Level-2 snapshot and refresh depth-derived displays. */
+  public setOrderBookSnapshot(snapshot: OrderBookSnapshot): void {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.orderBookController ??= new OrderBookController({ instrumentId: snapshot.instrumentId, ...(snapshot.venueId === undefined ? {} : { venueId: snapshot.venueId }), ...(snapshot.tickSize === undefined ? {} : { defaultTickSize: snapshot.tickSize }), source: snapshot.source });
+    this.applyOrderBookSnapshot(snapshot);
+  }
+
+  /** Apply one sequenced or unsequenced Level-2 delta. */
+  public applyOrderBookDelta(delta: OrderBookDelta): void {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.orderBookController ??= new OrderBookController({ instrumentId: delta.instrumentId, ...(delta.venueId === undefined ? {} : { venueId: delta.venueId }), source: delta.source });
+    this.applyOrderBookDeltaInternal(delta);
+  }
+
+  /** Load a Level-2 snapshot/history and subscribe to provider updates. */
+  public async setOrderBookSource(datafeed: OrderBookDatafeed, query: OrderBookQuery): Promise<void> {
+    this.assertAlive();
+    this.assertReplayDataMutationAllowed();
+    this.stopOrderBookSource();
+    this.orderBookController?.dispose();
+    this.orderBookController = new OrderBookController({ instrumentId: query.instrumentId, ...(query.venueId === undefined ? {} : { venueId: query.venueId }), ...(query.maxDepth === undefined ? {} : { maxDepth: query.maxDepth }) });
+    this.orderBookHeatmap?.dispose();
+    this.orderBookHeatmap = new OrderBookHeatmapStore({ maxObservations: this.depthDisplay.maxHistory, maxLevels: this.depthDisplay.maxLevels });
+    const requestId = ++this.orderBookRequestId;
+    const abortController = new AbortController();
+    this.orderBookAbortController = abortController;
+    const abortExternal = (): void => abortController.abort();
+    query.signal?.addEventListener("abort", abortExternal, { once: true });
+    try {
+      const result = await datafeed.getOrderBook({ ...query, signal: abortController.signal });
+      if (this.destroyed || requestId !== this.orderBookRequestId || abortController.signal.aborted) return;
+      if ("snapshot" in result) {
+        this.applyOrderBookSnapshot(result.snapshot);
+        for (const delta of result.deltas ?? []) this.applyOrderBookDeltaInternal(delta);
+      } else {
+        this.applyOrderBookSnapshot(result);
+      }
+      if (datafeed.subscribeOrderBook !== undefined) {
+        this.orderBookController.disconnect();
+        this.orderBookDatafeedCleanup = datafeed.subscribeOrderBook({
+          instrumentId: query.instrumentId,
+          ...(query.venueId === undefined ? {} : { venueId: query.venueId }),
+          onSnapshot: (snapshot) => {
+            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isReplayActive()) this.applyOrderBookSnapshot(snapshot);
+          },
+          onDelta: (delta) => {
+            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isReplayActive()) this.applyOrderBookDeltaInternal(delta);
+          },
+          onError: (error) => {
+            if (!this.destroyed && requestId === this.orderBookRequestId) this.emit("datafeedError", error);
+          },
+        });
+      }
+      this.render();
+    } catch (error) {
+      if (this.destroyed || requestId !== this.orderBookRequestId || abortController.signal.aborted || isAbortError(error)) return;
+      const normalized = error instanceof Error ? error : new Error(String(error));
+      this.emit("datafeedError", normalized);
+      throw normalized;
+    } finally {
+      query.signal?.removeEventListener("abort", abortExternal);
+    }
+  }
+
+  public getDepthState(asOfTime?: number): OrderBookState | null {
+    this.assertAlive();
+    if (this.orderBookController === null) return null;
+    const cutoff = this.model.getReplayCutoff();
+    if (cutoff === Number.NEGATIVE_INFINITY) return null;
+    if (asOfTime !== undefined) return this.orderBookController.getStateAt(cutoff === null ? asOfTime : Math.min(asOfTime, cutoff));
+    return cutoff === null ? this.orderBookController.getState(this.depthDisplay.maxLevels) : this.orderBookController.getStateAt(cutoff);
+  }
+
+  public getDepthMetrics(): ReturnType<typeof calculateOrderBookDepthMetrics> | null {
+    this.assertAlive();
+    const state = this.getDepthState();
+    return state === null ? null : calculateOrderBookDepthMetrics(state, { topN: this.depthDisplay.maxLevels });
+  }
+
+  public setFootprintOptions(options: FootprintDisplayOptions): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.footprintDisplay = normalizeFootprintDisplay({ ...this.footprintDisplay, ...options });
+    this.updateOrderFlowWorkspaceReference();
+    this.render();
+  }
+
+  public getFootprintOptions(): Required<FootprintDisplayOptions> {
+    this.assertAlive();
+    return { ...this.footprintDisplay };
+  }
+
+  public setCvdOptions(options: CvdDisplayOptions): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const previousPane = this.cvdDisplay.pane;
+    this.cvdDisplay = normalizeCvdDisplay({ ...this.cvdDisplay, ...options });
+    if (previousPane !== this.cvdDisplay.pane && this.cvdSeriesId !== null) this.removeCvdSeries();
+    if (this.cvdDisplay.visible) this.ensureCvdSeries();
+    else this.removeCvdSeries();
+    this.updateOrderFlowWorkspaceReference();
+    this.refreshCvdSeries();
+    this.render();
+  }
+
+  public getCvdOptions(): Required<CvdDisplayOptions> {
+    this.assertAlive();
+    return { ...this.cvdDisplay };
+  }
+
+  public getCvdResult(): CvdResult | null {
+    this.assertAlive();
+    return this.calculateCvdResult();
+  }
+
+  public setDepthOptions(options: DepthDisplayOptions): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.depthDisplay = normalizeDepthDisplay({ ...this.depthDisplay, ...options });
+    if (this.orderBookHeatmap !== null) {
+      const previous = this.orderBookHeatmap.getAll();
+      this.orderBookHeatmap.dispose();
+      this.orderBookHeatmap = new OrderBookHeatmapStore({ maxObservations: this.depthDisplay.maxHistory, maxLevels: this.depthDisplay.maxLevels });
+      for (const observation of previous) this.orderBookHeatmap.add({ status: observation.status, integrity: observation.integrity, instrumentId: null, venueId: null, source: null, bids: observation.side === "bid" ? observation.levels : [], asks: observation.side === "ask" ? observation.levels : [], tickSize: null, lastEventTime: observation.time, lastSynchronizedTime: observation.time, lastSequence: null, pendingDeltaCount: 0 }, observation.time);
+    }
+    this.updateOrderFlowWorkspaceReference();
+    this.render();
+  }
+
+  public getDepthOptions(): Required<DepthDisplayOptions> {
+    this.assertAlive();
+    return { ...this.depthDisplay };
+  }
+
+  public getOrderFlowState(): OrderFlowState {
+    this.assertAlive();
+    const trades = this.getOrderFlowTradesForReplay();
+    const range = this.resolveOrderFlowRange(trades);
+    const tradeFlow = range === null ? null : calculateTradeFlow(trades, { ...range, sourceCoverage: this.cvdDisplay.sourceCoverage });
+    return {
+      tradeCount: trades.length,
+      tradeCoverage: tradeFlow?.coverage ?? "empty",
+      footprint: range === null ? null : this.calculateFootprintResult(trades, this.getVisibleOrderFlowRange(trades) ?? range),
+      cvd: this.calculateCvdResult(),
+      depth: this.getDepthState(),
+      depthMetrics: this.getDepthMetrics(),
+    };
+  }
+
+  /** Remove all order-flow data, subscriptions, derived series, and overlays. */
+  public removeOrderFlow(): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.stopMarketTradeSource();
+    this.stopOrderBookSource();
+    this.marketTradeStore.dispose();
+    this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+    this.orderBookController?.dispose();
+    this.orderBookController = null;
+    this.orderBookHeatmap?.dispose();
+    this.orderBookHeatmap = null;
+    this.orderFlowWorkspaceReference = null;
+    this.removeCvdSeries();
+    this.orderFlowRevision += 1;
     this.render();
   }
 
@@ -650,6 +985,7 @@ export class Chart {
         ...[...this.sessionIndicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
       ],
     );
+    if (this.cvdSeriesId !== null) indicatorSeriesIds.add(this.cvdSeriesId);
     const panes = this.model.getPaneConfigs().map((pane) => ({
       id: pane.id,
       height: pane.preferredHeight,
@@ -742,6 +1078,7 @@ export class Chart {
       && replay.state !== "idle"
       && replay.state !== "disposed";
     const alerts = this.alertEngine.exportDefinitions();
+    const orderFlow = this.getOrderFlowWorkspaceReference();
     return {
       version: 1,
       ...(metadata === undefined ? {} : { metadata: { ...metadata } }),
@@ -777,6 +1114,7 @@ export class Chart {
         sessionAnalysis: { indicators: sessionIndicators, references: sessionReferences },
       }),
       ...(this.getCorporateActionWorkspaceReference() === null ? {} : { corporateActions: this.getCorporateActionWorkspaceReference()! }),
+      ...(orderFlow === null ? {} : { orderFlow }),
       ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
         replay: {
@@ -828,6 +1166,10 @@ export class Chart {
     }
     this.drawingEngine.validate(parsed.drawings);
     const attachedCorporateActions = this.corporateActionDataset;
+    const attachedMarketTrades = this.marketTradeStore.getAll();
+    const attachedMarketTradeDataset = attachedMarketTrades.length === 0 ? null : this.marketTradeStore.getDataset();
+    const attachedOrderBook = this.orderBookController;
+    const attachedOrderFlowReference = this.getOrderFlowWorkspaceReference();
 
     this.stopDatafeed();
     this.clearVolumeProfiles();
@@ -840,6 +1182,9 @@ export class Chart {
     this.indicators.clear();
     this.nextIndicatorId = 1;
     this.model.destroy();
+    this.cvdSeriesId = null;
+    this.cvdPaneId = null;
+    this.cvdPaneOwned = false;
     this.rawCandles = [];
     this.corporateActionDataset = null;
     this.corporateActionWorkspaceReference = null;
@@ -905,6 +1250,7 @@ export class Chart {
       this.corporateActionMarkersVisible = parsed.corporateActions.markersVisible;
       this.applyCorporateActionDisplay();
     }
+    this.restoreOrderFlowRuntime(parsed.orderFlow, attachedMarketTradeDataset, attachedOrderBook, attachedOrderFlowReference);
     for (const indicator of parsed.indicators) {
       if (missingIndicators.includes(indicator.id)) continue;
       const script = scriptPrograms.get(indicator.id);
@@ -1706,6 +2052,162 @@ export class Chart {
     this.datafeedSession = null;
   }
 
+  private replaceMarketTrades(values: readonly MarketTrade[] | MarketTradeDataset): void {
+    const next = new MarketTradeStore({ maxTrades: 1_000_000 });
+    next.setData(values);
+    this.marketTradeStore.dispose();
+    this.marketTradeStore = next;
+    this.updateOrderFlowWorkspaceReference();
+  }
+
+  private stopMarketTradeSource(): void {
+    this.marketTradeRequestId += 1;
+    this.marketTradeAbortController?.abort();
+    this.marketTradeAbortController = null;
+    this.marketTradeDatafeedCleanup?.();
+    this.marketTradeDatafeedCleanup = null;
+  }
+
+  private stopOrderBookSource(): void {
+    this.orderBookRequestId += 1;
+    this.orderBookAbortController?.abort();
+    this.orderBookAbortController = null;
+    this.orderBookDatafeedCleanup?.();
+    this.orderBookDatafeedCleanup = null;
+    this.orderBookController?.disconnect();
+  }
+
+  private applyOrderBookSnapshot(snapshot: OrderBookSnapshot): void {
+    if (this.orderBookController === null) return;
+    const result = this.orderBookController.applySnapshot(snapshot);
+    const state = this.orderBookController.getState(this.depthDisplay.maxLevels);
+    this.orderBookHeatmap ??= new OrderBookHeatmapStore({ maxObservations: this.depthDisplay.maxHistory, maxLevels: this.depthDisplay.maxLevels });
+    if (result.kind === "applied") this.orderBookHeatmap.add(state);
+    this.orderFlowRevision += 1;
+    this.updateOrderFlowWorkspaceReference();
+    this.render();
+  }
+
+  private applyOrderBookDeltaInternal(delta: OrderBookDelta): void {
+    if (this.orderBookController === null) return;
+    const result = this.orderBookController.applyDelta(delta);
+    const state = this.orderBookController.getState(this.depthDisplay.maxLevels);
+    this.orderBookHeatmap ??= new OrderBookHeatmapStore({ maxObservations: this.depthDisplay.maxHistory, maxLevels: this.depthDisplay.maxLevels });
+    if (result.kind === "applied" || result.kind === "stale") this.orderBookHeatmap.add(state);
+    this.orderFlowRevision += 1;
+    this.updateOrderFlowWorkspaceReference();
+    this.render();
+  }
+
+  private refreshOrderFlowPresentation(): void {
+    if (this.cvdDisplay.visible) this.ensureCvdSeries();
+    else this.removeCvdSeries();
+    this.refreshCvdSeries();
+    this.updateOrderFlowWorkspaceReference();
+  }
+
+  private ensureCvdSeries(): void {
+    if (this.cvdSeriesId !== null) return;
+    let paneId: string;
+    if (this.cvdDisplay.pane === "new") {
+      paneId = this.model.addPane({ id: "order-flow-cvd", height: 160 });
+      this.cvdPaneOwned = true;
+    } else {
+      paneId = this.cvdDisplay.pane;
+      if (!this.model.getPaneIds().includes(paneId)) throw new Error(`Unknown CVD pane: ${paneId}`);
+      this.cvdPaneOwned = false;
+    }
+    this.cvdPaneId = paneId;
+    this.cvdSeriesId = this.model.addSeries("line", {
+      id: "openkline.cvd",
+      pane: paneId,
+      title: "Cumulative Volume Delta",
+      style: { color: this.cvdDisplay.color, lineWidth: this.cvdDisplay.lineWidth, visible: this.cvdDisplay.visible },
+    });
+  }
+
+  private removeCvdSeries(): void {
+    if (this.cvdSeriesId !== null && this.model.getSeriesIds().includes(this.cvdSeriesId)) this.model.removeSeries(this.cvdSeriesId);
+    if (this.cvdPaneOwned && this.cvdPaneId !== null && this.model.getPaneIds().includes(this.cvdPaneId)) this.model.removePane(this.cvdPaneId);
+    this.cvdSeriesId = null;
+    this.cvdPaneId = null;
+    this.cvdPaneOwned = false;
+  }
+
+  private refreshCvdSeries(): void {
+    if (this.cvdSeriesId === null) return;
+    const result = this.calculateCvdResult();
+    this.model.setSeriesData(this.cvdSeriesId, result?.observations.map((observation) => ({ time: observation.time, value: observation.value })) ?? []);
+    this.model.setSeriesStyle(this.cvdSeriesId, {
+      color: this.cvdDisplay.color,
+      lineWidth: this.cvdDisplay.lineWidth,
+      visible: this.cvdDisplay.visible,
+    });
+  }
+
+  private calculateCvdResult(): CvdResult | null {
+    const trades = this.getOrderFlowTradesForReplay();
+    const range = this.resolveOrderFlowRange(trades);
+    if (range === null) return null;
+    try {
+      return calculateCumulativeVolumeDelta(trades, {
+        ...range,
+        intervalMs: this.cvdDisplay.intervalMs,
+        reset: this.cvdDisplay.reset,
+        sourceCoverage: this.cvdDisplay.sourceCoverage,
+        ...(this.tradingCalendar === null ? {} : { calendar: this.tradingCalendar.calendar }),
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("trading calendar")) throw error;
+      return null;
+    }
+  }
+
+  private calculateFootprintResult(trades: readonly MarketTrade[], range: { readonly from: number; readonly to: number }): FootprintResult | null {
+    if (trades.length === 0) return null;
+    try {
+      return calculateFootprint(trades, {
+        ...range,
+        intervalMs: this.footprintDisplay.intervalMs,
+        tickSize: this.footprintDisplay.tickSize,
+        offTickPolicy: this.footprintDisplay.offTickPolicy,
+        maxCells: this.footprintDisplay.maxCells,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private getOrderFlowTradesForReplay(): MarketTrade[] {
+    const cutoff = this.model.getReplayCutoff();
+    const trades = this.marketTradeStore.getAll();
+    if (cutoff === null) return trades;
+    if (cutoff === Number.NEGATIVE_INFINITY) return [];
+    return trades.filter((trade) => trade.time <= cutoff);
+  }
+
+  private resolveOrderFlowRange(trades: readonly MarketTrade[]): { readonly from: number; readonly to: number } | null {
+    const candles = this.model.allCandles;
+    const first = Math.min(candles[0]?.time ?? Number.MAX_SAFE_INTEGER, trades[0]?.time ?? Number.MAX_SAFE_INTEGER);
+    const last = Math.max(candles.at(-1)?.time ?? 0, trades.at(-1)?.time ?? 0);
+    if (!Number.isSafeInteger(first) || first === Number.MAX_SAFE_INTEGER || !Number.isSafeInteger(last)) return null;
+    return { from: first, to: last === Number.MAX_SAFE_INTEGER ? last : Math.min(Number.MAX_SAFE_INTEGER, last + 1) };
+  }
+
+  private getVisibleOrderFlowRange(trades: readonly MarketTrade[]): { readonly from: number; readonly to: number } | null {
+    const times = this.model.getVisibleData().times;
+    if (times.length === 0) return this.resolveOrderFlowRange(trades);
+    const from = times[0]!;
+    const last = times.at(-1)!;
+    return { from, to: Math.min(Number.MAX_SAFE_INTEGER, last + 1) };
+  }
+
+  private clampOrderFlowAsOf(options: TimeAndSalesOptions): TimeAndSalesOptions {
+    const cutoff = this.model.getReplayCutoff();
+    if (cutoff === null || cutoff === Number.NEGATIVE_INFINITY) return options;
+    return { ...options, asOfTime: options.asOfTime === undefined ? cutoff : Math.min(options.asOfTime, cutoff) };
+  }
+
   public resize(width: number, height: number): void {
     this.assertAlive();
     const nextWidth = Math.max(0, Math.floor(width));
@@ -2038,6 +2540,8 @@ export class Chart {
     for (const dispose of [...this.extensionDisposers]) dispose();
     this.destroyed = true;
     this.stopDatafeed();
+    this.stopMarketTradeSource();
+    this.stopOrderBookSource();
     for (const indicator of this.indicators.values()) {
       this.disposeWorkerIndicator(indicator);
       indicator.instance.dispose();
@@ -2051,6 +2555,15 @@ export class Chart {
     this.tradingCalendar = null;
     this.clearMultiTimeframe();
     this.clearSessionAnalysis();
+    this.marketTradeStore.dispose();
+    this.orderBookController?.dispose();
+    this.orderBookController = null;
+    this.orderBookHeatmap?.dispose();
+    this.orderBookHeatmap = null;
+    this.cvdSeriesId = null;
+    this.cvdPaneId = null;
+    this.cvdPaneOwned = false;
+    this.orderFlowWorkspaceReference = null;
     this.model.destroy();
     this.rawCandles = [];
     this.corporateActionDataset = null;
@@ -2509,6 +3022,93 @@ export class Chart {
     return { id: "openkline.corporate-actions", zIndex: 16, commands };
   }
 
+  private getFootprintOverlayItem(): PluginOverlayRenderItem | null {
+    if (!this.footprintDisplay.visible) return null;
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return null;
+    const trades = this.getOrderFlowTradesForReplay();
+    const range = this.getVisibleOrderFlowRange(trades);
+    if (range === null) return null;
+    let result: FootprintResult | null;
+    try {
+      result = calculateFootprint(trades, {
+        ...range,
+        intervalMs: this.footprintDisplay.intervalMs,
+        tickSize: this.footprintDisplay.tickSize,
+        offTickPolicy: this.footprintDisplay.offTickPolicy,
+        maxCells: this.footprintDisplay.maxCells,
+      });
+    } catch (error) {
+      return {
+        id: "openkline.footprint-warning",
+        zIndex: 18,
+        commands: [{ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Footprint unavailable: ${error instanceof Error ? error.message : String(error)}`, color: this.footprintDisplay.unknownColor, font: "11px system-ui, sans-serif" }],
+      };
+    }
+    const commands: PluginRenderCommand[] = [];
+    for (const bucket of result.buckets) {
+      const left = Math.min(context.xForTime(bucket.start), context.xForTime(bucket.end));
+      const right = Math.max(context.xForTime(bucket.start), context.xForTime(bucket.end));
+      for (const cell of bucket.cells) {
+        const top = Math.min(pane.yForPrice(cell.price + result.tickSize / 2), pane.yForPrice(cell.price - result.tickSize / 2));
+        const bottom = Math.max(pane.yForPrice(cell.price + result.tickSize / 2), pane.yForPrice(cell.price - result.tickSize / 2));
+        const fillColor = cell.unknownSideVolume > 0 && cell.buyVolume === 0 && cell.sellVolume === 0
+          ? this.footprintDisplay.unknownColor
+          : cell.delta >= 0 ? this.footprintDisplay.buyColor : this.footprintDisplay.sellColor;
+        commands.push({ kind: "rectangle", left, top, width: Math.max(1, right - left), height: Math.max(1, bottom - top), fillColor, color: fillColor, alpha: this.footprintDisplay.opacity, lineWidth: 0.5 });
+        if (this.footprintDisplay.showLabels && right - left >= 20 && bottom - top >= 10) {
+          commands.push({ kind: "text", x: left + 2, y: top + 1, text: formatOrderFlowQuantity(cell.totalVolume), color: this.footprintDisplay.unknownColor, font: "9px system-ui, sans-serif", alpha: 0.95 });
+        }
+      }
+    }
+    return { id: "openkline.footprint", zIndex: 18, commands };
+  }
+
+  private getDepthOverlayItem(): PluginOverlayRenderItem | null {
+    if (!this.depthDisplay.visible || this.orderBookController === null) return null;
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return null;
+    const state = this.getDepthState();
+    const metrics = this.getDepthMetrics();
+    if (state === null || metrics === null) return null;
+    const commands: PluginRenderCommand[] = [];
+    if (metrics.quality !== "available") {
+      commands.push({ kind: "text", x: pane.left + 8, y: pane.top + 24, text: `Depth ${metrics.quality}${metrics.reason === undefined ? "" : `: ${metrics.reason}`}`, color: this.depthDisplay.askColor, font: "11px system-ui, sans-serif" });
+    } else {
+      const levels = [...state.bids.slice(0, this.depthDisplay.maxLevels), ...state.asks.slice(0, this.depthDisplay.maxLevels)];
+      const maxQuantity = Math.max(1, ...levels.map((level) => level.quantity));
+      const barMax = Math.min(140, Math.max(40, (pane.right - pane.left) * 0.22));
+      const drawLevels = (levelsToDraw: readonly { readonly price: number; readonly quantity: number }[], color: string, direction: 1 | -1): void => {
+        levelsToDraw.forEach((level, index) => {
+          const y = pane.yForPrice(level.price);
+          const width = barMax * level.quantity / maxQuantity;
+          const left = direction > 0 ? pane.right - width - 4 : pane.right - 4;
+          commands.push({ kind: "rectangle", left, top: y - 2, width, height: 4, fillColor: color, color, alpha: this.depthDisplay.opacity, lineWidth: 0.5 });
+          if (this.depthDisplay.showLabels && index < 3) commands.push({ kind: "text", x: left + (direction > 0 ? 2 : width + 4), y: y - 7, text: `${level.price} · ${formatOrderFlowQuantity(level.quantity)}`, color, font: "9px system-ui, sans-serif", alpha: 0.9 });
+        });
+      };
+      drawLevels(state.bids, this.depthDisplay.bidColor, 1);
+      drawLevels(state.asks, this.depthDisplay.askColor, -1);
+      if (this.depthDisplay.showLabels) commands.push({ kind: "text", x: pane.left + 8, y: pane.top + 8, text: `Spread ${metrics.spread} · Imbalance ${(metrics.imbalance ?? 0).toFixed(3)}`, color: this.depthDisplay.bidColor, font: "11px system-ui, sans-serif" });
+    }
+    if (this.depthDisplay.showHeatmap && this.orderBookHeatmap !== null) {
+      const visible = this.getVisibleOrderFlowRange([]);
+      if (visible !== null) {
+        for (const observation of this.orderBookHeatmap.getRange(visible.from, visible.to)) {
+          const color = observation.side === "bid" ? this.depthDisplay.bidColor : this.depthDisplay.askColor;
+          const x = context.xForTime(observation.time);
+          for (const level of observation.levels.slice(0, this.depthDisplay.maxLevels)) {
+            const y = pane.yForPrice(level.price);
+            commands.push({ kind: "line", from: { x, y }, to: { x: Math.min(pane.right, x + 5), y }, color, lineWidth: Math.max(1, Math.min(4, level.quantity)), alpha: this.depthDisplay.opacity * 0.35 });
+          }
+        }
+      }
+    }
+    return { id: "openkline.depth", zIndex: 19, commands };
+  }
+
   private getPluginOverlayItems(): PluginOverlayRenderItem[] {
     const items: PluginOverlayRenderItem[] = [];
     const strategyMarkers = this.getStrategyMarkerOverlay();
@@ -2522,6 +3122,10 @@ export class Chart {
     items.push(...this.getSessionReferenceOverlayItems());
     const corporateActions = this.getCorporateActionOverlayItem();
     if (corporateActions !== null) items.push(corporateActions);
+    const footprint = this.getFootprintOverlayItem();
+    if (footprint !== null) items.push(footprint);
+    const depth = this.getDepthOverlayItem();
+    if (depth !== null) items.push(depth);
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -3013,6 +3617,130 @@ export class Chart {
   private getCorporateActionWorkspaceReference(): WorkspaceCorporateActions | null {
     this.updateCorporateActionWorkspaceReference();
     return this.corporateActionWorkspaceReference === null ? null : { ...this.corporateActionWorkspaceReference };
+  }
+
+  private updateOrderFlowWorkspaceReference(): void {
+    const trades = this.marketTradeStore.getAll();
+    const tradeDataset = trades.length === 0 ? null : this.marketTradeStore.getDataset();
+    const depth = this.orderBookController?.getState(this.depthDisplay.maxLevels);
+    const hasRuntime = tradeDataset !== null || depth !== undefined || this.footprintDisplay.visible || this.cvdDisplay.visible || this.depthDisplay.visible;
+    if (!hasRuntime && this.orderFlowWorkspaceReference === null) return;
+    const tradeSource = tradeDataset === null ? this.orderFlowWorkspaceReference?.tradeSource : {
+      instrumentId: tradeDataset.instrumentId,
+      sourceId: tradeDataset.source.id,
+      sourceVersion: tradeDataset.source.version,
+      ...(tradeDataset.venueId === undefined ? {} : { venueId: tradeDataset.venueId }),
+    };
+    const orderBookSource = depth?.source === null || depth === undefined ? this.orderFlowWorkspaceReference?.orderBookSource : {
+      instrumentId: depth.instrumentId ?? "unknown",
+      sourceId: depth.source.id,
+      sourceVersion: depth.source.version,
+      ...(depth.venueId === null ? {} : { venueId: depth.venueId }),
+    };
+    this.orderFlowWorkspaceReference = {
+      ...(tradeSource === undefined ? {} : { tradeSource }),
+      ...(orderBookSource === undefined ? {} : { orderBookSource }),
+      footprint: { ...this.footprintDisplay },
+      cvd: {
+        visible: this.cvdDisplay.visible,
+        intervalMs: this.cvdDisplay.intervalMs,
+        reset: this.cvdDisplay.reset,
+        paneId: this.cvdPaneId ?? this.cvdDisplay.pane,
+        color: this.cvdDisplay.color,
+        lineWidth: this.cvdDisplay.lineWidth,
+        baselineColor: this.cvdDisplay.baselineColor,
+        sourceCoverage: this.cvdDisplay.sourceCoverage,
+      },
+      depth: { ...this.depthDisplay },
+    };
+  }
+
+  private getOrderFlowWorkspaceReference(): WorkspaceOrderFlow | null {
+    this.updateOrderFlowWorkspaceReference();
+    if (this.orderFlowWorkspaceReference === null) return null;
+    return {
+      ...(this.orderFlowWorkspaceReference.tradeSource === undefined ? {} : { tradeSource: { ...this.orderFlowWorkspaceReference.tradeSource } }),
+      ...(this.orderFlowWorkspaceReference.orderBookSource === undefined ? {} : { orderBookSource: { ...this.orderFlowWorkspaceReference.orderBookSource } }),
+      ...(this.orderFlowWorkspaceReference.footprint === undefined ? {} : { footprint: { ...this.orderFlowWorkspaceReference.footprint } }),
+      ...(this.orderFlowWorkspaceReference.cvd === undefined ? {} : { cvd: { ...this.orderFlowWorkspaceReference.cvd } }),
+      ...(this.orderFlowWorkspaceReference.depth === undefined ? {} : { depth: { ...this.orderFlowWorkspaceReference.depth } }),
+    };
+  }
+
+  private restoreOrderFlowRuntime(
+    persisted: WorkspaceOrderFlow | undefined,
+    attachedTrades: MarketTradeDataset | null,
+    attachedOrderBook: OrderBookController | null,
+    attachedReference: WorkspaceOrderFlow | null,
+  ): void {
+    if (persisted === undefined) {
+      this.stopMarketTradeSource();
+      this.stopOrderBookSource();
+      this.marketTradeStore.dispose();
+      this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      attachedOrderBook?.dispose();
+      this.orderBookController = null;
+      this.orderBookHeatmap?.dispose();
+      this.orderBookHeatmap = null;
+      this.orderFlowWorkspaceReference = null;
+      this.footprintDisplay = { ...DEFAULT_FOOTPRINT_DISPLAY };
+      this.cvdDisplay = { ...DEFAULT_CVD_DISPLAY };
+      this.depthDisplay = { ...DEFAULT_DEPTH_DISPLAY };
+      return;
+    }
+    const footprint = persisted.footprint;
+    const cvd = persisted.cvd;
+    const depth = persisted.depth;
+    if (footprint !== undefined) this.footprintDisplay = normalizeFootprintDisplay(footprint);
+    if (cvd !== undefined) this.cvdDisplay = normalizeCvdDisplay({ ...cvd, pane: cvd.paneId });
+    if (depth !== undefined) this.depthDisplay = normalizeDepthDisplay(depth);
+    this.orderFlowWorkspaceReference = {
+      ...(persisted.tradeSource === undefined ? {} : { tradeSource: { ...persisted.tradeSource } }),
+      ...(persisted.orderBookSource === undefined ? {} : { orderBookSource: { ...persisted.orderBookSource } }),
+      ...(persisted.footprint === undefined ? {} : { footprint: { ...persisted.footprint } }),
+      ...(persisted.cvd === undefined ? {} : { cvd: { ...persisted.cvd } }),
+      ...(persisted.depth === undefined ? {} : { depth: { ...persisted.depth } }),
+    };
+    const tradeMatches = attachedTrades !== null
+      && persisted.tradeSource !== undefined
+      && attachedTrades.instrumentId === persisted.tradeSource.instrumentId
+      && attachedTrades.source.id === persisted.tradeSource.sourceId
+      && attachedTrades.source.version === persisted.tradeSource.sourceVersion
+      && (persisted.tradeSource.venueId === undefined || attachedTrades.venueId === persisted.tradeSource.venueId);
+    if (tradeMatches && attachedTrades !== null) {
+      const next = new MarketTradeStore({ maxTrades: 1_000_000 });
+      next.setData(attachedTrades);
+      this.marketTradeStore.dispose();
+      this.marketTradeStore = next;
+    } else {
+      this.stopMarketTradeSource();
+      this.marketTradeStore.dispose();
+      this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      if (persisted.tradeSource !== undefined && attachedReference?.tradeSource !== undefined) {
+        console.warn(`OpenKline trade source is unresolved: ${persisted.tradeSource.sourceId}@${persisted.tradeSource.sourceVersion}`);
+      }
+    }
+    const depthState = attachedOrderBook?.getState(this.depthDisplay.maxLevels);
+    const bookMatches = attachedOrderBook !== null
+      && persisted.orderBookSource !== undefined
+      && depthState?.source !== null
+      && depthState?.instrumentId === persisted.orderBookSource.instrumentId
+      && depthState.source.id === persisted.orderBookSource.sourceId
+      && depthState.source.version === persisted.orderBookSource.sourceVersion
+      && (persisted.orderBookSource.venueId === undefined || depthState.venueId === persisted.orderBookSource.venueId);
+    if (bookMatches && attachedOrderBook !== null) {
+      this.orderBookController = attachedOrderBook;
+      this.orderBookHeatmap ??= new OrderBookHeatmapStore({ maxObservations: this.depthDisplay.maxHistory, maxLevels: this.depthDisplay.maxLevels });
+    } else {
+      this.stopOrderBookSource();
+      attachedOrderBook?.dispose();
+      this.orderBookController = null;
+      this.orderBookHeatmap?.dispose();
+      this.orderBookHeatmap = null;
+      if (persisted.orderBookSource !== undefined) console.warn(`OpenKline order-book source is unresolved: ${persisted.orderBookSource.sourceId}@${persisted.orderBookSource.sourceVersion}`);
+    }
+    if (this.cvdDisplay.visible) this.ensureCvdSeries();
+    this.refreshCvdSeries();
   }
 
   private applyCorporateActionDisplay(refresh = true): void {
@@ -3680,6 +4408,7 @@ export class Chart {
       this.model.setReplaySource(this.replayRawSource);
       this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
       this.invalidateVolumeAnalytics();
+      this.refreshCvdSeries();
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
@@ -3710,6 +4439,7 @@ export class Chart {
     }
     this.model.setReplayCutoff(cursor.timestamp ?? Number.NEGATIVE_INFINITY);
     this.invalidateVolumeAnalytics();
+    this.refreshCvdSeries();
     this.model.resetView();
     const isSequentialAppend = cursor.index !== null
       && this.replayCursorIndex !== null
@@ -3749,6 +4479,7 @@ export class Chart {
       this.replayRawSource = null;
       this.model.setReplayCutoff(null);
       this.invalidateVolumeAnalytics();
+      this.refreshCvdSeries();
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
     }
@@ -3901,6 +4632,61 @@ function cloneSessionReferenceResult(result: SessionReferenceResult): SessionRef
 function nearestTime(times: readonly number[], target: number): number | null {
   if (times.length === 0 || !Number.isFinite(target)) return null;
   return times.reduce((nearest, time) => Math.abs(time - target) < Math.abs(nearest - target) ? time : nearest, times[0] ?? target);
+}
+
+function normalizeFootprintDisplay(value: FootprintDisplayOptions): Required<FootprintDisplayOptions> {
+  const intervalMs = value.intervalMs ?? DEFAULT_FOOTPRINT_DISPLAY.intervalMs;
+  const tickSize = value.tickSize ?? DEFAULT_FOOTPRINT_DISPLAY.tickSize;
+  const opacity = value.opacity ?? DEFAULT_FOOTPRINT_DISPLAY.opacity;
+  const maxCells = value.maxCells ?? DEFAULT_FOOTPRINT_DISPLAY.maxCells;
+  if (!Number.isSafeInteger(intervalMs) || intervalMs < 1 || intervalMs > 86_400_000) throw new Error("Footprint intervalMs must be a positive safe integer");
+  if (!Number.isFinite(tickSize) || tickSize <= 0) throw new Error("Footprint tickSize must be finite and positive");
+  if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new Error("Footprint opacity must be between 0 and 1");
+  if (!Number.isSafeInteger(maxCells) || maxCells < 1 || maxCells > 1_000_000) throw new Error("Footprint maxCells is out of range");
+  const offTickPolicy = value.offTickPolicy ?? DEFAULT_FOOTPRINT_DISPLAY.offTickPolicy;
+  if (offTickPolicy !== "reject" && offTickPolicy !== "round" && offTickPolicy !== "allow") throw new Error("Unsupported Footprint offTickPolicy");
+  const colors = { buyColor: value.buyColor ?? DEFAULT_FOOTPRINT_DISPLAY.buyColor, sellColor: value.sellColor ?? DEFAULT_FOOTPRINT_DISPLAY.sellColor, unknownColor: value.unknownColor ?? DEFAULT_FOOTPRINT_DISPLAY.unknownColor };
+  if (Object.values(colors).some((color) => color.trim().length === 0)) throw new Error("Footprint colors must be non-empty");
+  return { visible: value.visible ?? DEFAULT_FOOTPRINT_DISPLAY.visible, intervalMs, tickSize, offTickPolicy, showLabels: value.showLabels ?? DEFAULT_FOOTPRINT_DISPLAY.showLabels, opacity, ...colors, maxCells };
+}
+
+function normalizeCvdDisplay(value: CvdDisplayOptions): Required<CvdDisplayOptions> {
+  const intervalMs = value.intervalMs ?? DEFAULT_CVD_DISPLAY.intervalMs;
+  const lineWidth = value.lineWidth ?? DEFAULT_CVD_DISPLAY.lineWidth;
+  if (!Number.isSafeInteger(intervalMs) || intervalMs < 1 || intervalMs > 86_400_000) throw new Error("CVD intervalMs must be a positive safe integer");
+  if (!Number.isFinite(lineWidth) || lineWidth <= 0 || lineWidth > 8) throw new Error("CVD lineWidth must be between 0 and 8");
+  const pane = value.pane ?? DEFAULT_CVD_DISPLAY.pane;
+  const reset = value.reset ?? DEFAULT_CVD_DISPLAY.reset;
+  const sourceCoverage = value.sourceCoverage ?? DEFAULT_CVD_DISPLAY.sourceCoverage;
+  if (reset !== "continuous" && reset !== "session") throw new Error("Unsupported CVD reset policy");
+  if (sourceCoverage !== "complete" && sourceCoverage !== "partial" && sourceCoverage !== "unknown") throw new Error("Unsupported CVD source coverage");
+  if (pane !== "new" && pane.trim().length === 0) throw new Error("CVD pane must be non-empty");
+  const color = value.color ?? DEFAULT_CVD_DISPLAY.color;
+  const baselineColor = value.baselineColor ?? DEFAULT_CVD_DISPLAY.baselineColor;
+  if (color.trim().length === 0 || baselineColor.trim().length === 0) throw new Error("CVD colors must be non-empty");
+  return { visible: value.visible ?? DEFAULT_CVD_DISPLAY.visible, intervalMs, reset, pane, color, lineWidth, baselineColor, sourceCoverage };
+}
+
+function normalizeDepthDisplay(value: DepthDisplayOptions): Required<DepthDisplayOptions> {
+  const maxLevels = value.maxLevels ?? DEFAULT_DEPTH_DISPLAY.maxLevels;
+  const opacity = value.opacity ?? DEFAULT_DEPTH_DISPLAY.opacity;
+  const maxHistory = value.maxHistory ?? DEFAULT_DEPTH_DISPLAY.maxHistory;
+  if (!Number.isSafeInteger(maxLevels) || maxLevels < 1 || maxLevels > 10_000) throw new Error("Depth maxLevels is out of range");
+  if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new Error("Depth opacity must be between 0 and 1");
+  if (!Number.isSafeInteger(maxHistory) || maxHistory < 1 || maxHistory > 100_000) throw new Error("Depth maxHistory is out of range");
+  const bidColor = value.bidColor ?? DEFAULT_DEPTH_DISPLAY.bidColor;
+  const askColor = value.askColor ?? DEFAULT_DEPTH_DISPLAY.askColor;
+  if (bidColor.trim().length === 0 || askColor.trim().length === 0) throw new Error("Depth colors must be non-empty");
+  return { visible: value.visible ?? DEFAULT_DEPTH_DISPLAY.visible, maxLevels, showLabels: value.showLabels ?? DEFAULT_DEPTH_DISPLAY.showLabels, showHeatmap: value.showHeatmap ?? DEFAULT_DEPTH_DISPLAY.showHeatmap, opacity, bidColor, askColor, maxHistory };
+}
+
+function formatOrderFlowQuantity(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  return Math.abs(value) >= 1000 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(2).replace(/\.00$/, "");
+}
+
+function isAbortError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "name" in error && (error as { name?: unknown }).name === "AbortError";
 }
 
 function isInsideBounds(x: number, y: number, bounds: { left: number; right: number; top: number; bottom: number }): boolean {

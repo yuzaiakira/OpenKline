@@ -172,6 +172,18 @@ chart.destroy();
   candle `SeriesApi.update()` refresh analytical consumers from the displayed
   adjusted domain; raw candles remain the executable source.
   See [Corporate actions API](corporate-actions.md).
+- Order-flow presentation is additive to the candle chart. `setMarketTrades()`
+  and `updateMarketTrade()` accept provider-normalized prints with explicit
+  buy/sell/unknown aggression; `setMarketTradeSource()` adds cancellable
+  history loading and cleanup-safe streaming. `getTimeAndSales()` returns
+  bounded event-time records. `setOrderBookSnapshot()`,
+  `applyOrderBookDelta()`, and `setOrderBookSource()` expose sequenced Level-2
+  reconstruction with stale/gap states rather than inventing liquidity.
+  `setFootprintOptions()`, `setCvdOptions()`, and `setDepthOptions()` enable
+  bounded Canvas2D Footprint, trade-derived CVD, and depth/heatmap overlays;
+  `getOrderFlowState()` reports numeric results and coverage. CVD is a normal
+  chart line series at runtime, but derived data, callbacks, live book history,
+  and trade history are excluded from workspace persistence.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, analytics overlays, and stored series data. Other
   methods throw after destruction.

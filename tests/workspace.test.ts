@@ -62,6 +62,30 @@ test("workspace parser preserves corporate-action presentation references withou
   assert.deepEqual(parseWorkspace(JSON.parse(JSON.stringify(input))).corporateActions, input.corporateActions);
 });
 
+test("workspace parser round-trips order-flow source references and bounded display settings", () => {
+  const input = {
+    ...workspace(),
+    orderFlow: {
+      tradeSource: { instrumentId: "BTC-USD", sourceId: "fixture-trades", sourceVersion: "1", venueId: "X" },
+      orderBookSource: { instrumentId: "BTC-USD", sourceId: "fixture-depth", sourceVersion: "1", venueId: "X" },
+      footprint: {
+        visible: true, intervalMs: 60_000, tickSize: 0.5, offTickPolicy: "round" as const, showLabels: true,
+        opacity: 0.4, buyColor: "#22c55e", sellColor: "#ef4444", unknownColor: "#94a3b8", maxCells: 5000,
+      },
+      cvd: {
+        visible: true, intervalMs: 60_000, reset: "continuous" as const, paneId: "order-flow-cvd", color: "#38bdf8",
+        lineWidth: 2, baselineColor: "#64748b", sourceCoverage: "partial" as const,
+      },
+      depth: { visible: true, maxLevels: 12, showLabels: true, showHeatmap: true, opacity: 0.5, bidColor: "#22c55e", askColor: "#ef4444", maxHistory: 1000 },
+    },
+  };
+  const parsed = parseWorkspace(input);
+  assert.deepEqual(parsed.orderFlow, input.orderFlow);
+  assert.deepEqual(parseWorkspace(JSON.parse(JSON.stringify(input))).orderFlow, input.orderFlow);
+  assert.throws(() => parseWorkspace({ ...input, orderFlow: {} }), WorkspaceValidationError);
+  assert.throws(() => parseWorkspace({ ...input, orderFlow: { ...input.orderFlow, cvd: { ...input.orderFlow.cvd, reset: "session", paneId: "" } } }), WorkspaceValidationError);
+});
+
 test("workspace parser keeps Phase 7 price-scale settings while accepting prior version-1 workspaces", () => {
   const legacy = parseWorkspace(workspace());
   assert.equal(legacy.chart.priceScale, undefined);

@@ -135,3 +135,30 @@ Attach the resulting `CorporateActionDataset` to a chart with
 the selected display projection. A consuming application must declare whether
 its source is known or has incomplete knowledge coverage; the core never
 inventories exchange events or guesses missing corrections.
+
+## Trade-print and Level-2 feeds
+
+Order-flow sources are separate from the OHLCV `Datafeed` so a provider can
+declare its actual market-data coverage:
+
+```ts
+interface MarketTradeDatafeed {
+  getTrades(query: MarketTradeQuery): Promise<readonly MarketTrade[] | MarketTradeDataset>;
+  subscribeTrades?(args: MarketTradeSubscriptionArgs): () => void;
+}
+
+interface OrderBookDatafeed {
+  getOrderBook(query: OrderBookQuery): Promise<OrderBookSnapshot | OrderBookHistory>;
+  subscribeOrderBook?(args: OrderBookSubscriptionArgs): () => void;
+}
+```
+
+`Chart.setMarketTradeSource()` and `Chart.setOrderBookSource()` pass an
+`AbortSignal`, ignore stale responses after replacement/destruction, and
+dispose the previous subscription before attaching a new one. Trade IDs and
+revisions are deduplicated by `MarketTradeStore`; Level-2 sequence gaps move
+the controller to a stale state until a replacement snapshot is accepted.
+Unknown aggressor side is retained as unknown and is never inferred from
+candle colour or OHLCV volume. The deterministic `InMemoryMarketTradeDatafeed`
+and `InMemoryOrderBookDatafeed` are suitable for offline fixtures and tests;
+they do not represent venue completeness or executable liquidity.

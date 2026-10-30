@@ -1284,12 +1284,14 @@ evidence.
 
 ## Phase 14 order flow and market microstructure analytics
 
-- [In progress / Phase 14.0 trade foundation] Added versioned provider-neutral
-  trade contracts, explicit observed/estimated/unknown aggressor semantics,
-  correction-aware bounded trade storage, source/venue provenance, historical
-  as-of filtering, and a deterministic in-memory trade feed. Level-2
-  reconstruction, trade-derived Footprint/CVD, Chart/Studio integration,
-  browser evidence, and the final acceptance matrix remain open.
+- [Implemented / Node + Chromium-verified — Phase 14.0/14.4 foundation]
+  Added versioned provider-neutral trade contracts, explicit
+  observed/estimated/unknown aggressor semantics, correction-aware bounded
+  trade storage, source/venue provenance, historical as-of filtering,
+  deterministic in-memory feeds, Chart APIs, Canvas2D Footprint/CVD/depth
+  overlays, Time & Sales reads, replay masking, and cleanup-safe lifecycle
+  integration. Studio controls, dedicated benchmarks, full compatibility
+  evidence, and the final acceptance matrix remain open.
 - [Implemented / Node-verified — Phase 14.1 order-book foundation] Added
   bounded snapshot/delta reconstruction, explicit absolute versus signed-delta
   semantics, source/venue checks, tick normalization policy, duplicate and

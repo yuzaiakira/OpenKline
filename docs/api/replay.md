@@ -69,6 +69,14 @@ The active datafeed subscription is suspended and safely resubscribed after
 `exit()`. A workspace serialized during replay is marked as a partial replay
 snapshot and cannot be restored without the complete replay source.
 
+Trade-derived order-flow state follows the same event-time frontier. Chart
+Footprint, CVD, Time & Sales, and Level-2 `getDepthState()` reads exclude
+prints or book events after the inclusive replay cursor. Before the first
+cursor the derived state is empty; seeking backward reconstructs the bounded
+order book from retained snapshot/delta history. A replay restore retains
+order-flow source identity and presentation settings, but never serializes
+future market events.
+
 ## Causal multi-timeframe replay
 
 Chart-managed higher-timeframe indicators and previous-period reference levels

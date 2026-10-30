@@ -9,6 +9,7 @@ import { parseFixedTimeframe, validateTimeframePair, type MultiTimeframeFinality
 import type { TradingCalendarEngine } from "./trading-calendar.js";
 import { resolveTradingCalendarDisplayOptions, type WorkspaceTradingCalendar } from "./session-visualization.js";
 import type { CorporateActionAdjustmentContext, CorporateActionAdjustmentMode, CorporateActionVolumePolicy } from "./corporate-actions.js";
+import type { TradeFlowOffTickPolicy, TradeFlowResetPolicy } from "./order-flow.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -147,6 +148,51 @@ export interface WorkspaceCorporateActions {
   readonly markersVisible: boolean;
 }
 
+export interface WorkspaceOrderFlowSource {
+  readonly instrumentId: string;
+  readonly sourceId: string;
+  readonly sourceVersion: string;
+  readonly venueId?: string;
+}
+
+/** Canonical order-flow references and bounded presentation settings only. */
+export interface WorkspaceOrderFlow {
+  readonly tradeSource?: WorkspaceOrderFlowSource;
+  readonly orderBookSource?: WorkspaceOrderFlowSource;
+  readonly footprint?: {
+    readonly visible: boolean;
+    readonly intervalMs: number;
+    readonly tickSize: number;
+    readonly offTickPolicy: TradeFlowOffTickPolicy;
+    readonly showLabels: boolean;
+    readonly opacity: number;
+    readonly buyColor: string;
+    readonly sellColor: string;
+    readonly unknownColor: string;
+    readonly maxCells: number;
+  };
+  readonly cvd?: {
+    readonly visible: boolean;
+    readonly intervalMs: number;
+    readonly reset: TradeFlowResetPolicy;
+    readonly paneId: string;
+    readonly color: string;
+    readonly lineWidth: number;
+    readonly baselineColor: string;
+    readonly sourceCoverage: "complete" | "partial" | "unknown";
+  };
+  readonly depth?: {
+    readonly visible: boolean;
+    readonly maxLevels: number;
+    readonly showLabels: boolean;
+    readonly showHeatmap: boolean;
+    readonly opacity: number;
+    readonly bidColor: string;
+    readonly askColor: string;
+    readonly maxHistory: number;
+  };
+}
+
 /** A replay export marker; it is descriptive and is not a replay source. */
 export interface WorkspaceReplayState {
   readonly active: true;
@@ -177,6 +223,8 @@ export interface WorkspaceDocument {
   readonly tradingCalendar?: WorkspaceTradingCalendar;
   /** Optional Phase 13 corporate-action source and analytical presentation reference. */
   readonly corporateActions?: WorkspaceCorporateActions;
+  /** Optional Phase 14 market-data source references and bounded display settings. */
+  readonly orderFlow?: WorkspaceOrderFlow;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -225,6 +273,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const sessionAnalysis = value.sessionAnalysis === undefined ? undefined : parseSessionAnalysis(value.sessionAnalysis, panes.map((pane) => pane.id));
   const tradingCalendar = value.tradingCalendar === undefined ? undefined : parseTradingCalendar(value.tradingCalendar);
   const corporateActions = value.corporateActions === undefined ? undefined : parseCorporateActions(value.corporateActions);
+  const orderFlow = value.orderFlow === undefined ? undefined : parseOrderFlow(value.orderFlow);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -250,6 +299,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     ...(sessionAnalysis === undefined ? {} : { sessionAnalysis }),
     ...(tradingCalendar === undefined ? {} : { tradingCalendar }),
     ...(corporateActions === undefined ? {} : { corporateActions }),
+    ...(orderFlow === undefined ? {} : { orderFlow }),
     ...(replay === undefined ? {} : { replay }),
   };
 }
@@ -279,6 +329,83 @@ function parseCorporateActions(value: unknown): WorkspaceCorporateActions {
     volumePolicy: value.volumePolicy,
     markersVisible: value.markersVisible,
   };
+}
+
+function parseOrderFlow(value: unknown): WorkspaceOrderFlow {
+  if (!isPlainObject(value)) throw new WorkspaceValidationError("Invalid workspace order-flow configuration");
+  const tradeSource = value.tradeSource === undefined ? undefined : parseOrderFlowSource(value.tradeSource);
+  const orderBookSource = value.orderBookSource === undefined ? undefined : parseOrderFlowSource(value.orderBookSource);
+  const footprint = value.footprint === undefined ? undefined : parseOrderFlowFootprint(value.footprint);
+  const cvd = value.cvd === undefined ? undefined : parseOrderFlowCvd(value.cvd);
+  const depth = value.depth === undefined ? undefined : parseOrderFlowDepth(value.depth);
+  if (tradeSource === undefined && orderBookSource === undefined && footprint === undefined && cvd === undefined && depth === undefined) {
+    throw new WorkspaceValidationError("Workspace order-flow configuration cannot be empty");
+  }
+  return {
+    ...(tradeSource === undefined ? {} : { tradeSource }),
+    ...(orderBookSource === undefined ? {} : { orderBookSource }),
+    ...(footprint === undefined ? {} : { footprint }),
+    ...(cvd === undefined ? {} : { cvd }),
+    ...(depth === undefined ? {} : { depth }),
+  };
+}
+
+function parseOrderFlowSource(value: unknown): WorkspaceOrderFlowSource {
+  if (!isPlainObject(value)
+    || typeof value.instrumentId !== "string" || value.instrumentId.trim().length === 0
+    || typeof value.sourceId !== "string" || value.sourceId.trim().length === 0
+    || typeof value.sourceVersion !== "string" || value.sourceVersion.trim().length === 0
+    || (value.venueId !== undefined && (typeof value.venueId !== "string" || value.venueId.trim().length === 0))) {
+    throw new WorkspaceValidationError("Invalid workspace order-flow source reference");
+  }
+  return {
+    instrumentId: value.instrumentId.trim(),
+    sourceId: value.sourceId.trim(),
+    sourceVersion: value.sourceVersion.trim(),
+    ...(value.venueId === undefined ? {} : { venueId: value.venueId.trim() }),
+  };
+}
+
+function parseOrderFlowFootprint(value: unknown): NonNullable<WorkspaceOrderFlow["footprint"]> {
+  if (!isPlainObject(value)
+    || typeof value.visible !== "boolean"
+    || !isFiniteInteger(value.intervalMs) || value.intervalMs < 1
+    || !isFiniteNumber(value.tickSize) || value.tickSize <= 0
+    || (value.offTickPolicy !== "reject" && value.offTickPolicy !== "round" && value.offTickPolicy !== "allow")
+    || typeof value.showLabels !== "boolean"
+    || !isFiniteNumber(value.opacity) || value.opacity < 0 || value.opacity > 1
+    || typeof value.buyColor !== "string" || typeof value.sellColor !== "string" || typeof value.unknownColor !== "string"
+    || !isFiniteInteger(value.maxCells) || value.maxCells < 1 || value.maxCells > 1_000_000) {
+    throw new WorkspaceValidationError("Invalid workspace Footprint settings");
+  }
+  return { visible: value.visible, intervalMs: value.intervalMs, tickSize: value.tickSize, offTickPolicy: value.offTickPolicy, showLabels: value.showLabels, opacity: value.opacity, buyColor: value.buyColor, sellColor: value.sellColor, unknownColor: value.unknownColor, maxCells: value.maxCells };
+}
+
+function parseOrderFlowCvd(value: unknown): NonNullable<WorkspaceOrderFlow["cvd"]> {
+  if (!isPlainObject(value)
+    || typeof value.visible !== "boolean"
+    || !isFiniteInteger(value.intervalMs) || value.intervalMs < 1
+    || (value.reset !== "continuous" && value.reset !== "session")
+    || typeof value.paneId !== "string" || value.paneId.length === 0
+    || typeof value.color !== "string" || !isFiniteNumber(value.lineWidth) || value.lineWidth < 0 || value.lineWidth > 8
+    || typeof value.baselineColor !== "string"
+    || (value.sourceCoverage !== "complete" && value.sourceCoverage !== "partial" && value.sourceCoverage !== "unknown")) {
+    throw new WorkspaceValidationError("Invalid workspace CVD settings");
+  }
+  return { visible: value.visible, intervalMs: value.intervalMs, reset: value.reset, paneId: value.paneId, color: value.color, lineWidth: value.lineWidth, baselineColor: value.baselineColor, sourceCoverage: value.sourceCoverage };
+}
+
+function parseOrderFlowDepth(value: unknown): NonNullable<WorkspaceOrderFlow["depth"]> {
+  if (!isPlainObject(value)
+    || typeof value.visible !== "boolean"
+    || !isFiniteInteger(value.maxLevels) || value.maxLevels < 1 || value.maxLevels > 10_000
+    || typeof value.showLabels !== "boolean" || typeof value.showHeatmap !== "boolean"
+    || !isFiniteNumber(value.opacity) || value.opacity < 0 || value.opacity > 1
+    || typeof value.bidColor !== "string" || typeof value.askColor !== "string"
+    || !isFiniteInteger(value.maxHistory) || value.maxHistory < 1 || value.maxHistory > 100_000) {
+    throw new WorkspaceValidationError("Invalid workspace market-depth settings");
+  }
+  return { visible: value.visible, maxLevels: value.maxLevels, showLabels: value.showLabels, showHeatmap: value.showHeatmap, opacity: value.opacity, bidColor: value.bidColor, askColor: value.askColor, maxHistory: value.maxHistory };
 }
 
 function parseTradingCalendar(value: unknown): WorkspaceTradingCalendar {

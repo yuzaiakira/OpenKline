@@ -57,6 +57,15 @@ credentials, or runtime subscriptions. Restore keeps a missing source as an
 unresolved reference and warns instead of substituting another instrument or
 provider. Legacy version-1 workspaces that omit the member remain valid.
 
+The optional Phase 14 `orderFlow` member stores only trade/order-book source
+identity (`instrumentId`, source ID/version, and optional venue) plus bounded
+Footprint, CVD, and depth display settings. It never stores trade prints,
+Level-2 levels, heatmap observations, derived CVD/Footprint values, provider
+callbacks, credentials, or transport state. Restore preserves an attached
+runtime source only when its identity matches the persisted reference;
+otherwise it leaves the reference unresolved and does not substitute a
+different provider.
+
 ## Trading calendars and session analysis
 
 The optional Phase 11 `tradingCalendar` member stores the stable calendar ID,

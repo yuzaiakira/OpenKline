@@ -123,6 +123,50 @@ export interface TimeAndSalesOptions extends TradeFlowInterval {
   readonly limit?: number;
 }
 
+export interface FootprintDisplayOptions {
+  readonly visible?: boolean;
+  readonly intervalMs?: number;
+  readonly tickSize?: number;
+  readonly offTickPolicy?: TradeFlowOffTickPolicy;
+  readonly showLabels?: boolean;
+  readonly opacity?: number;
+  readonly buyColor?: string;
+  readonly sellColor?: string;
+  readonly unknownColor?: string;
+  readonly maxCells?: number;
+}
+
+export interface CvdDisplayOptions {
+  readonly visible?: boolean;
+  readonly intervalMs?: number;
+  readonly reset?: TradeFlowResetPolicy;
+  readonly pane?: string | "new";
+  readonly color?: string;
+  readonly lineWidth?: number;
+  readonly baselineColor?: string;
+  readonly sourceCoverage?: "complete" | "partial" | "unknown";
+}
+
+export interface DepthDisplayOptions {
+  readonly visible?: boolean;
+  readonly maxLevels?: number;
+  readonly showLabels?: boolean;
+  readonly showHeatmap?: boolean;
+  readonly opacity?: number;
+  readonly bidColor?: string;
+  readonly askColor?: string;
+  readonly maxHistory?: number;
+}
+
+export interface OrderFlowState {
+  readonly tradeCount: number;
+  readonly tradeCoverage: TradeFlowCoverage;
+  readonly footprint: FootprintResult | null;
+  readonly cvd: CvdResult | null;
+  readonly depth: import("./order-book.js").OrderBookState | null;
+  readonly depthMetrics: import("./market-depth.js").OrderBookDepthMetrics | null;
+}
+
 export class OrderFlowValidationError extends Error {
   public constructor(message: string) {
     super(message);
