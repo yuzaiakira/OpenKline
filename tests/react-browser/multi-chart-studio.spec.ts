@@ -199,6 +199,50 @@ test("Studio comparison mode preserves presentation state, normalizes assets, an
   expect(errors).toEqual([]);
 });
 
+test("Studio comparison follows deterministic realtime, recovers missed bars, and remains replay-safe", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  const status = page.locator('[data-comparison-feed-status="ready"]');
+  await expect(status).toBeVisible();
+  const initialLatest = Number(await status.getAttribute("data-comparison-visible-latest"));
+  expect(Number.isFinite(initialLatest)).toBe(true);
+
+  await page.getByRole("button", { name: "Advance demo stream", exact: true }).click();
+  await expect.poll(async () => Number(await status.getAttribute("data-comparison-visible-latest"))).toBeGreaterThan(initialLatest);
+  const connectedLatest = Number(await status.getAttribute("data-comparison-visible-latest"));
+
+  await page.getByRole("button", { name: "Simulate disconnect", exact: true }).click();
+  await expect(status).toContainText("disconnected");
+  await page.getByRole("button", { name: "Advance demo stream", exact: true }).click();
+  await page.getByRole("button", { name: "Advance demo stream", exact: true }).click();
+  expect(Number(await status.getAttribute("data-comparison-visible-latest"))).toBe(connectedLatest);
+
+  await page.getByRole("button", { name: "Reconnect and recover", exact: true }).click();
+  await expect.poll(async () => Number(await status.getAttribute("data-comparison-visible-latest"))).toBeGreaterThan(connectedLatest);
+  await expect(status).toContainText("recovery complete");
+  const recoveredLatest = Number(await status.getAttribute("data-comparison-visible-latest"));
+
+  await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Exit replay", exact: true })).toBeEnabled();
+  const replayCutoff = Number(await status.getAttribute("data-comparison-replay-cutoff"));
+  const replayLatest = Number(await status.getAttribute("data-comparison-visible-latest"));
+  expect(Number.isFinite(replayCutoff)).toBe(true);
+  expect(replayLatest).toBeLessThanOrEqual(replayCutoff);
+  await page.getByRole("button", { name: "Replay previous bar", exact: true }).click();
+  await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
+  await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  await expect.poll(async () => Number(await status.getAttribute("data-comparison-visible-latest"))).toBeGreaterThanOrEqual(recoveredLatest);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Comparison mode", exact: true })).toHaveText("Exit comparison");
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Comparison mode", exact: true })).toHaveText("Compare assets");
+  expect(errors).toEqual([]);
+});
+
 test("Studio reload restores canonical presentation after saving while comparison is active", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

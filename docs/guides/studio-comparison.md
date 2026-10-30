@@ -21,6 +21,20 @@ replay, the chart's inclusive cutoff also limits comparison observations and
 controls are disabled where a structural or future-data mutation would be
 unsafe.
 
+The Studio's deterministic demo source uses the public controller in
+`realtimeWindowMode: "follow"`. **Advance demo stream** appends a new bar
+without rebuilding the historical request. **Simulate disconnect** suppresses
+delivery while retaining provider history, and **Reconnect and recover** emits
+the lifecycle event that requests the missed `[frontier, target)` interval.
+These controls are offline regression fixtures, not market data. The displayed
+per-asset status distinguishes `disconnected`, `recovering`, and incomplete
+bounded recovery from a connected/freshness claim.
+
+The optional provider source uses only explicitly mapped Binance symbols
+(BTC-USD and ETH-USD in this Studio). Unsupported symbols such as AAPL are
+reported as provider errors rather than being silently renamed to a plausible
+exchange symbol. External connectivity remains optional and unverified.
+
 Comparison settings are included in a `StudioWorkspaceDocument` when present:
 mode, baseline timestamp, freshness window, active state, and ordered asset
 IDs. Older documents omit this optional field and continue to load unchanged.

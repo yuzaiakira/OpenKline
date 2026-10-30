@@ -8,8 +8,6 @@ import {
   ChartSynchronizationController,
   ComparisonDatafeedController,
   InMemoryDatafeed,
-  RestDatafeed,
-  WebSocketDatafeed,
   type ComparisonAssetOutput,
   type ComparisonDatafeedState,
   type ComparisonNormalizationMode,
@@ -41,9 +39,11 @@ import {
   type WorkspaceDocument,
   type SeriesStyle,
   type SubscribeBarsArgs,
+  type DatafeedRealtimeSubscriptionArgs,
   type SymbolInfo,
 } from "openkline";
 import type { IndicatorCategory } from "openkline";
+import { binanceStudioInterval, binanceStudioSymbol, createBinanceDatafeed } from "../../shared/binance-datafeed.js";
 import styles from "./studio.module.css";
 import { KlineScriptStudioEditor } from "./klinescript-studio-editor";
 import { StrategyTester } from "./strategy-tester";
@@ -173,9 +173,15 @@ function buildCandles(symbol: string, timeframe: Timeframe): Candle[] {
 class RecoverableStudioDatafeed implements Datafeed {
   private readonly source: InMemoryDatafeed;
   private readonly hiddenHistoricalTimes = new Set<number>();
+  private readonly subscriptions = new Set<DatafeedRealtimeSubscriptionArgs>();
+  private latestCandle: Candle;
+  private streaming = true;
 
   public constructor(info: SymbolInfo, candles: readonly Candle[]) {
     this.source = new InMemoryDatafeed(info, candles);
+    const latest = candles.at(-1);
+    if (latest === undefined) throw new Error("Studio datafeed requires at least one candle");
+    this.latestCandle = { ...latest };
   }
 
   public resolveSymbol(symbol: string, signal?: AbortSignal): Promise<SymbolInfo> {
@@ -188,11 +194,50 @@ class RecoverableStudioDatafeed implements Datafeed {
   }
 
   public subscribeBars(args: SubscribeBarsArgs): () => void {
-    return this.source.subscribeBars(args);
+    const lifecycleArgs = args as DatafeedRealtimeSubscriptionArgs;
+    const wrapped: DatafeedRealtimeSubscriptionArgs = {
+      symbol: lifecycleArgs.symbol,
+      timeframe: lifecycleArgs.timeframe,
+      onBar: (bar) => { if (this.streaming) lifecycleArgs.onBar(bar); },
+      ...(lifecycleArgs.onError === undefined ? {} : { onError: lifecycleArgs.onError }),
+      ...(lifecycleArgs.onStatus === undefined ? {} : { onStatus: lifecycleArgs.onStatus }),
+    };
+    this.subscriptions.add(lifecycleArgs);
+    const unsubscribe = this.source.subscribeBars(wrapped);
+    return () => {
+      this.subscriptions.delete(lifecycleArgs);
+      unsubscribe();
+    };
   }
 
   public pushBar(candle: Candle): void {
+    this.latestCandle = { ...candle };
     this.source.pushBar(candle);
+  }
+
+  public pushNextBar(interval: number): Candle {
+    const previous = this.latestCandle;
+    const close = previous.close * 1.0005;
+    const next: Candle = {
+      time: previous.time + interval,
+      open: previous.close,
+      high: Math.max(previous.close, close) + Math.abs(previous.close - close) * 0.25,
+      low: Math.min(previous.close, close) - Math.abs(previous.close - close) * 0.25,
+      close,
+      volume: (previous.volume ?? 0) + 10,
+    };
+    this.pushBar(next);
+    return next;
+  }
+
+  public getLatestTime(): number {
+    return this.latestCandle.time;
+  }
+
+  public emitStatus(status: "connected" | "reconnected" | "disconnected" | "stopped"): void {
+    if (status === "disconnected" || status === "stopped") this.streaming = false;
+    if (status === "connected" || status === "reconnected") this.streaming = true;
+    for (const subscription of this.subscriptions) subscription.onStatus?.(status);
   }
 
   public hideHistoricalBar(time: number): void {
@@ -215,59 +260,22 @@ interface StudioDatafeedSource {
   readonly symbol: string;
 }
 
-function binanceInterval(timeframe: Timeframe): string {
-  return { "5m": "5m", "1h": "1h", "4h": "4h", "1D": "1d" }[timeframe];
-}
-
-function binanceSymbol(symbol: string): string {
-  return symbol === "BTC-USD" ? "BTCUSDT" : symbol === "ETH-USD" ? "ETHUSDT" : symbol.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+function unavailableBinanceDatafeed(symbol: string, timeframe: Timeframe, reason: string): StudioDatafeedSource {
+  const message = `Binance does not support Studio symbol ${symbol} or timeframe ${timeframe}: ${reason}`;
+  return {
+    symbol,
+    datafeed: {
+      async resolveSymbol(): Promise<SymbolInfo> { throw new Error(message); },
+      async getBars(): Promise<readonly Candle[]> { throw new Error(message); },
+    },
+  };
 }
 
 function createBinanceStudioDatafeed(symbol: string, timeframe: Timeframe): StudioDatafeedSource {
-  const providerSymbol = binanceSymbol(symbol);
-  const interval = binanceInterval(timeframe);
-  const info = { symbol: providerSymbol, exchange: "BINANCE", currency: "USDT", timezone: "UTC", pricePrecision: 8 };
-  const historical = new RestDatafeed({
-    baseUrl: "https://api.binance.com",
-    barsPath: "/api/v3/klines",
-    symbols: { [providerSymbol]: info },
-    fetcher: async (input, init) => {
-      const request = new URL(input);
-      const endpoint = new URL("/api/v3/klines", "https://api.binance.com");
-      endpoint.searchParams.set("symbol", providerSymbol);
-      endpoint.searchParams.set("interval", interval);
-      endpoint.searchParams.set("startTime", request.searchParams.get("from") ?? "0");
-      endpoint.searchParams.set("endTime", request.searchParams.get("to") ?? String(Date.now()));
-      endpoint.searchParams.set("limit", "1000");
-      const response = await fetch(endpoint.href, init);
-      if (!response.ok) return response;
-      const payload: unknown = await response.json();
-      if (!Array.isArray(payload)) return new Response(JSON.stringify({ bars: [], next: null }), { status: 200 });
-      const bars = payload.map((value) => {
-        if (!Array.isArray(value) || value.length < 6) return value;
-        return { time: Number(value[0]), open: Number(value[1]), high: Number(value[2]), low: Number(value[3]), close: Number(value[4]), volume: Number(value[5]) };
-      });
-      return new Response(JSON.stringify({ bars, next: null }), { status: 200, headers: { "content-type": "application/json" } });
-    },
-  });
-  return {
-    symbol: providerSymbol,
-    datafeed: new WebSocketDatafeed({
-      url: `wss://stream.binance.com:9443/ws/${providerSymbol.toLowerCase()}@kline_${interval}`,
-      symbols: { [providerSymbol]: info },
-      historical,
-      parseMessage: (data) => {
-        const payload = typeof data === "string" ? JSON.parse(data) as { readonly s?: string; readonly k?: Record<string, unknown> } : data as { readonly s?: string; readonly k?: Record<string, unknown> };
-        const kline = payload?.k;
-        if (payload?.s !== providerSymbol || kline === undefined) return null;
-        return {
-          symbol: providerSymbol,
-          timeframe: interval,
-          candle: { time: Number(kline.t), open: Number(kline.o), high: Number(kline.h), low: Number(kline.l), close: Number(kline.c), volume: Number(kline.v) },
-        };
-      },
-    }),
-  };
+  const providerSymbol = binanceStudioSymbol(symbol);
+  const interval = binanceStudioInterval(timeframe);
+  if (providerSymbol === null || interval === null) return unavailableBinanceDatafeed(symbol, timeframe, "no explicit provider mapping is configured");
+  return { symbol: providerSymbol, datafeed: createBinanceDatafeed({ symbol: providerSymbol, interval }) };
 }
 
 function createStudioDatafeedSource(symbol: string, timeframe: Timeframe, source: StudioComparisonSource): StudioDatafeedSource {
@@ -788,17 +796,28 @@ export default function MultiChartStudioClient() {
     const controller = new ComparisonDatafeedController({
       window,
       mode: comparisonSettings.mode,
+      realtimeWindowMode: "follow",
+      ...(source === "demo" ? {
+        recoveryNow: (): number => comparisonSettings.assetIds.reduce((latest, id) => {
+          const feed = comparisonFeedsRef.current.get(`${source}|${id}|${activePanel.timeframe}`);
+          if (!(feed instanceof RecoverableStudioDatafeed)) return latest;
+          return Math.max(latest, feed.getLatestTime() + interval);
+        }, window.to),
+      } : {}),
       baseline: baselineTime === null ? null : { time: baselineTime, maxAgeMs: comparisonSettings.baselineMaxAgeMs },
     });
     comparisonSettings.assetIds.forEach((id, index) => {
       const key = `${source}|${id}|${activePanel.timeframe}`;
       let datafeed = comparisonFeedsRef.current.get(key);
+      let providerSymbol = id;
       if (datafeed === undefined) {
         const created = createStudioDatafeedSource(id, activePanel.timeframe, source);
         datafeed = created.datafeed;
+        providerSymbol = created.symbol;
         comparisonFeedsRef.current.set(key, datafeed);
+      } else if (source === "binance") {
+        providerSymbol = binanceStudioSymbol(id) ?? id;
       }
-      const providerSymbol = source === "binance" ? binanceSymbol(id) : id;
       controller.registerAsset({ id, symbol: providerSymbol, timeframe: activePanel.timeframe, datafeed, label: id, color: comparisonColors[index % comparisonColors.length], coverage: { kind: "continuous", intervalMs: interval } });
     });
     const publishComparisonState = (): void => {
@@ -1034,6 +1053,45 @@ export default function MultiChartStudioClient() {
     setComparisonLines(comparisonDatafeedRef.current?.getNormalizedData() ?? []);
     setNotice(`Simulated a deterministic realtime correction for ${id}.`);
   };
+  const advanceComparisonStream = (): void => {
+    if ((comparisonSettings.dataSource ?? "demo") !== "demo") {
+      setNotice("Deterministic stream controls are available only for the offline demo source.");
+      return;
+    }
+    let advanced = 0;
+    for (const id of comparisonSettings.assetIds) {
+      const feed = comparisonFeedsRef.current.get(`demo|${id}|${activePanel.timeframe}`);
+      if (feed instanceof RecoverableStudioDatafeed) {
+        feed.pushNextBar(intervalFor(activePanel.timeframe));
+        advanced += 1;
+      }
+    }
+    setComparisonFeedState(comparisonDatafeedRef.current?.getState() ?? null);
+    setComparisonLines(comparisonDatafeedRef.current?.getNormalizedData() ?? []);
+    setNotice(`Advanced ${advanced} deterministic comparison stream${advanced === 1 ? "" : "s"}.`);
+  };
+  const disconnectComparisonStream = (): void => {
+    if ((comparisonSettings.dataSource ?? "demo") !== "demo") {
+      setNotice("Deterministic stream controls are available only for the offline demo source.");
+      return;
+    }
+    for (const id of comparisonSettings.assetIds) {
+      const feed = comparisonFeedsRef.current.get(`demo|${id}|${activePanel.timeframe}`);
+      if (feed instanceof RecoverableStudioDatafeed) feed.emitStatus("disconnected");
+    }
+    setNotice("Deterministic comparison streams disconnected; subsequent bars are retained for bounded recovery.");
+  };
+  const reconnectComparisonStream = (): void => {
+    if ((comparisonSettings.dataSource ?? "demo") !== "demo") {
+      setNotice("Deterministic stream controls are available only for the offline demo source.");
+      return;
+    }
+    for (const id of comparisonSettings.assetIds) {
+      const feed = comparisonFeedsRef.current.get(`demo|${id}|${activePanel.timeframe}`);
+      if (feed instanceof RecoverableStudioDatafeed) feed.emitStatus("reconnected");
+    }
+    setNotice("Deterministic comparison streams reconnected; bounded recovery is running.");
+  };
 
   const selectedSymbol = (symbolId: string): void => { const symbol = selectedList?.symbols.find((item) => item.id === symbolId); if (symbol !== undefined) changeActiveSymbol(symbol.displaySymbol); };
   const openScreenerChart = (symbol: string): void => { changeActiveSymbol(symbol); setNotice(`Opened ${symbol} from the screener in the active chart.`); };
@@ -1068,7 +1126,7 @@ export default function MultiChartStudioClient() {
       <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={deleteWorkspace}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceId} onChange={(event) => loadWorkspace(event.target.value)}>{workspaceIds.map((id) => <option key={id} value={id}>{id === workspaceId ? workspaceName : id}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" onClick={() => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const file = new Blob([JSON.stringify(collectDocument(), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `openkline-${workspaceName.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); }}>Export</button><button type="button" onClick={() => importInputRef.current?.click()}>Import</button><input ref={importInputRef} type="file" accept="application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file); event.currentTarget.value = ""; }} /></div>
     </header>
     <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
-    <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>
+    <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button><button type="button" onClick={advanceComparisonStream} disabled={replayActive}>Advance demo stream</button><button type="button" onClick={disconnectComparisonStream} disabled={replayActive}>Simulate disconnect</button><button type="button" onClick={reconnectComparisonStream} disabled={replayActive}>Reconnect and recover</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>
     <div className={styles.replayBar}><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label><label className={styles.check}><input aria-label="Snap drawings to visible OHLC" type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} />Snap drawings to visible OHLC</label></div>
     {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
     <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer"><div className={styles.panelHeading}><h2>Indicator Explorer</h2><span>{filteredIndicatorCatalog.length} definitions</span></div><div className={styles.indicatorExplorerFilters}><label>Search<input aria-label="Library search" placeholder="Search indicators" value={indicatorSearch} onChange={(event) => setIndicatorSearch(event.target.value)} /></label><label>Category<select aria-label="Category filter" value={indicatorCategory} onChange={(event) => setIndicatorCategory(event.target.value)}>{indicatorCategories.map((category) => <option key={category} value={category}>{category === "all" ? "All categories" : category}</option>)}</select></label><label className={styles.check}><input aria-label="Favorites only" type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} />Favorites only</label></div><div className={styles.indicatorExplorerItems}>{filteredIndicatorCatalog.map((item) => <button type="button" key={item.id} aria-pressed={indicatorToAdd === item.id} onClick={() => setIndicatorToAdd(item.id)}>{favoriteIndicatorIds.includes(item.id) ? "★" : "☆"} {item.label}<small>{item.category}</small></button>)}</div><div className={styles.indicatorParameters}><strong>{indicatorToAdd} parameters</strong>{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "period") ? <label>Period<input aria-label="Period override" type="number" min="1" value={indicatorPeriodOverride} placeholder="definition default" disabled={replayActive} onChange={(event) => setIndicatorPeriodOverride(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "constant") ? <label>CCI constant<input aria-label="CCI constant" type="number" min="0" step="0.001" value={indicatorConstant} disabled={replayActive} onChange={(event) => setIndicatorConstant(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "multiplier") ? <label>Channel multiplier<input aria-label="Channel multiplier" type="number" min="0" step="0.1" value={indicatorMultiplier} disabled={replayActive} onChange={(event) => setIndicatorMultiplier(event.target.value)} /></label> : null}<button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button></div></section>

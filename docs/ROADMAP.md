@@ -1007,6 +1007,19 @@ to a vendor, backend, framework, or transport implementation.
   required. Firefox, WebKit, mobile Safari, physical devices, and provider
   credentials remain open unless independently executable and evidenced.
 
+- [Implemented / Verification in progress — 8.14.6] Realtime comparison now
+  has an explicit fixed/follow window policy. Follow mode keeps normalized
+  lines advancing after the initial historical upper bound, retains raw
+  acquisition semantics, and applies replay cutoffs after live visibility
+  filtering. Reconnect recovery uses a monotonic per-asset frontier, an
+  injectable target clock, valid exclusive ranges, bounded automatic recovery,
+  and honest incomplete-recovery state. Deterministic Node and React/Studio
+  regressions cover future bars, out-of-order corrections, repeated
+  reconnects, missed bars, replay masking, workspace reload, and cleanup.
+  The optional Binance adapter is shared by the standalone example and Studio;
+  unsupported Studio symbols are reported rather than guessed. External
+  Binance connectivity and non-Chromium/physical-device gates remain open.
+
 ## Phase 8.14 final engineering verification
 
 The provider-neutral comparison foundation, historical completeness semantics,
