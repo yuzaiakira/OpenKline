@@ -2962,10 +2962,18 @@ export class Chart {
 
   private computeCorporateActionAdjustment(): CorporateActionAdjustmentResult | null {
     if (this.corporateActionDataset === null) return null;
-    return adjustCorporateActionData(this.rawCandles, this.corporateActionDataset, {
+    const replayActive = this.isReplayActive() && this.replayRawSource !== null;
+    const replayCutoff = replayActive ? this.model.getReplayCutoff() : null;
+    const replaySource = replayActive ? this.replayRawSource! : this.rawCandles;
+    const replayAsOfTime: number = replayCutoff === Number.NEGATIVE_INFINITY
+      ? Math.max(0, (replaySource[0]?.time ?? 0) - 1)
+      : replayCutoff ?? 0;
+    return adjustCorporateActionData(replaySource, this.corporateActionDataset, {
       mode: this.corporateActionMode,
-      context: this.corporateActionContext,
-      ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      context: replayActive ? "causal-as-of" : this.corporateActionContext,
+      ...(replayActive
+        ? { asOfTime: replayAsOfTime }
+        : this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
       ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
       volumePolicy: this.corporateActionVolumePolicy,
     });
@@ -2987,15 +2995,19 @@ export class Chart {
 
   private updateCorporateActionWorkspaceReference(): void {
     if (this.corporateActionDataset !== null) this.corporateActionWorkspaceReference = this.createCorporateActionWorkspaceReference(this.corporateActionDataset);
-    else if (this.corporateActionWorkspaceReference !== null) this.corporateActionWorkspaceReference = {
-      ...this.corporateActionWorkspaceReference,
+    else if (this.corporateActionWorkspaceReference !== null) {
+      const next = { ...this.corporateActionWorkspaceReference };
+      delete next.sourceDurationMs;
+      this.corporateActionWorkspaceReference = {
+      ...next,
       mode: this.corporateActionMode,
       context: this.corporateActionContext,
       asOfTime: this.corporateActionAsOfTime ?? null,
       ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
       volumePolicy: this.corporateActionVolumePolicy,
       markersVisible: this.corporateActionMarkersVisible,
-    };
+      };
+    }
   }
 
   private getCorporateActionWorkspaceReference(): WorkspaceCorporateActions | null {

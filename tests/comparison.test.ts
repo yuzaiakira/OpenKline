@@ -54,6 +54,31 @@ test("comparison integration requires and preserves an explicit corporate-action
   assert.deepEqual(rounded(asset?.data ?? []), [{ time: 1_000, value: 100 }, { time: 2_000, value: 100 }]);
 });
 
+test("causal corporate-action comparison honors source completion and hides future observations", () => {
+  const engine = new ComparisonEngine({ mode: "indexed", baseline: { time: 1_000, maxAgeMs: 0 } });
+  engine.addCorporateActionAsset({
+    id: "causal",
+    candles: [
+      { time: 1_000, open: 100, high: 101, low: 99, close: 100 },
+      { time: 2_000, open: 100, high: 101, low: 99, close: 100 },
+      { time: 3_000, open: 10_000, high: 10_001, low: 9_999, close: 10_000 },
+    ],
+    corporateActions: {
+      version: 1,
+      instrumentId: "AAA",
+      source: { id: "comparison-causal-fixture", version: "1" },
+      knowledgeCoverage: "known",
+      actions: [],
+    },
+    mode: "raw",
+    context: "causal-as-of",
+    asOfTime: 2_500,
+    sourceDurationMs: 1_000,
+  });
+  const asset = engine.getNormalizedData()[0];
+  assert.deepEqual(asset?.data, [{ time: 1_000, value: 100 }]);
+});
+
 test("baseline selection never uses a future observation and handles freshness explicitly", () => {
   const engine = new ComparisonEngine({ mode: "percentage" });
   engine.addAsset("late", [{ time: 2_000, price: 50 }, { time: 3_000, price: 75 }]);

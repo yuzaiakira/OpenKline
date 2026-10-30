@@ -672,3 +672,65 @@ test("primary SeriesApi updates keep adjusted indicators on the displayed domain
   expect(result.corrected).toBeCloseTo(55, 8);
   expect(result.canvases).toBe(1);
 });
+
+test("corporate-action split adjustment remains causal through replay seek and restoration", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(() => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
+    type Replay = { start(): void; seekToBar(index: number): void; exit(): void };
+    type Chart = {
+      getData(): Candle[];
+      getDisplayedData(): Candle[];
+      setCorporateActions(dataset: object, options?: object): void;
+      getCorporateActionAdjustment(): { candles: Candle[] | null } | null;
+      createReplay(options: { source: Candle[]; startAt: number }): Replay;
+      destroy(): void;
+    };
+    const chart = (globalThis as unknown as { __openklineChart: Chart }).__openklineChart;
+    const source = chart.getData();
+    const actionTime = source[40]!.time;
+    chart.setCorporateActions({
+      version: 1,
+      instrumentId: "TEST",
+      source: { id: "replay-corporate-fixture", version: "1" },
+      knowledgeCoverage: "known",
+      actions: [{
+        id: "replay-split",
+        instrumentId: "TEST",
+        kind: "stock-split",
+        effectiveTime: actionTime,
+        revision: 1,
+        source: { id: "replay-corporate-fixture", version: "1" },
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }, { mode: "split-adjusted", context: "retrospective" });
+    const retrospectiveClose = chart.getDisplayedData()[0]!.close;
+    const replay = chart.createReplay({ source, startAt: source[30]!.time });
+    replay.start();
+    const before = { length: chart.getDisplayedData().length, close: chart.getDisplayedData()[0]!.close, adjustmentLength: chart.getCorporateActionAdjustment()?.candles?.length ?? 0 };
+    replay.seekToBar(45);
+    const after = { length: chart.getDisplayedData().length, close: chart.getDisplayedData()[0]!.close, adjustmentLength: chart.getCorporateActionAdjustment()?.candles?.length ?? 0 };
+    replay.seekToBar(30);
+    const backward = { length: chart.getDisplayedData().length, close: chart.getDisplayedData()[0]!.close };
+    replay.exit();
+    const restored = { length: chart.getDisplayedData().length, close: chart.getDisplayedData()[0]!.close };
+    chart.destroy();
+    return { sourceClose: source[0]!.close, retrospectiveClose, before, after, backward, restored };
+  });
+  expect(result.retrospectiveClose).toBeCloseTo(result.sourceClose / 2, 8);
+  expect(result.before.length).toBe(31);
+  expect(result.before.close).toBe(result.sourceClose);
+  expect(result.before.adjustmentLength).toBe(31);
+  expect(result.after.length).toBe(46);
+  expect(result.after.close).toBeCloseTo(result.sourceClose / 2, 8);
+  expect(result.after.adjustmentLength).toBe(46);
+  expect(result.backward.length).toBe(31);
+  expect(result.backward.close).toBe(result.sourceClose);
+  expect(result.restored.length).toBe(sourceLengthForReplay());
+  expect(result.restored.close).toBeCloseTo(result.sourceClose / 2, 8);
+});
+
+function sourceLengthForReplay(): number {
+  return 80;
+}

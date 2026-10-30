@@ -80,6 +80,9 @@ Charts expose `setCorporateActions`, `setCorporateActionDisplayMode`,
 `setCorporateActionMarkersVisible`. `getData()` remains the defensive raw
 candle snapshot during normal operation; while replay is active it returns
 only the revealed raw prefix so consumers cannot observe future bars.
+`getCorporateActionAdjustment()` follows the same replay cutoff and returns a
+causal projection while replay is active; it does not expose the complete
+retrospective adjustment through a replay-time getter.
 Chart indicators consume the currently displayed OHLCV
 domain; total-return mode remains an explicit analytical result instead of
 being passed off as executable candles. Workspace persistence stores only the

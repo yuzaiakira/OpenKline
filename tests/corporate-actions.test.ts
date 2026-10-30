@@ -125,6 +125,15 @@ test("causal action metadata is bounded by the knowledge frontier", () => {
   assert.equal((result.appliedActions[0] as { announcementTime?: number }).announcementTime, start + 60_000);
 });
 
+test("a higher action revision changes adjusted factors without mutating raw candles", () => {
+  const raw = candles.map((candle) => ({ ...candle }));
+  const first = adjustCorporateActionData(raw, dataset([split("corrected-split", start + 120_000, 2, 1)]), { mode: "split-adjusted" });
+  const corrected = adjustCorporateActionData(raw, dataset([split("corrected-split", start + 120_000, 3, 1, 2)]), { mode: "split-adjusted" });
+  assert.equal(first.candles?.[0]?.close, 50);
+  assert.equal(corrected.candles?.[0]?.close, 100 / 3);
+  assert.deepEqual(raw, candles);
+});
+
 test("store enforces stable ids, monotonic revisions, deterministic order, and bounded queries", async () => {
   const store = new CorporateActionStore({ instrumentId: "ACME", source, knowledgeCoverage: "known", actions: [dividend("b", start + 120_000, 1), dividend("a", start + 60_000, 1)] });
   assert.deepEqual(store.getAll().map((action) => action.id), ["a", "b"]);
