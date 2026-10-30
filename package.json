@@ -49,6 +49,8 @@
     "benchmark:volume-analytics": "npm run build && node scripts/volume-analytics-benchmark.mjs",
     "benchmark:multi-timeframe": "npm run build && node scripts/multi-timeframe-benchmark.mjs",
     "benchmark:calendar": "npm run build && node --expose-gc scripts/market-calendar-benchmark.mjs",
+    "benchmark:order-flow": "npm run build && node --expose-gc scripts/order-flow-benchmark.mjs",
+    "benchmark:order-flow:browser": "npm run build && node scripts/order-flow-browser-benchmark.mjs",
     "benchmark:session-analytics": "npm run build && node --expose-gc scripts/session-analytics-browser-benchmark.mjs",
     "stress:ci": "npm run build && OPENKLINE_STRESS_PROFILE=ci node --expose-gc scripts/phase-8-10-node-stress.mjs && OPENKLINE_STRESS_PROFILE=ci node --expose-gc scripts/phase-8-10-browser-stress.mjs",
     "stress:local": "npm run build && OPENKLINE_STRESS_PROFILE=local node --expose-gc scripts/phase-8-10-node-stress.mjs && OPENKLINE_STRESS_PROFILE=local node --expose-gc scripts/phase-8-10-browser-stress.mjs",

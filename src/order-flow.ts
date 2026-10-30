@@ -222,22 +222,22 @@ function childFlowOptions(options: TradeFlowOptions, from: number, to: number): 
   };
 }
 
-function cloneTradeInput(value: MarketTradeInput): MarketTrade {
-  return normalizeMarketTrade(value);
-}
-
-/** Calculate executed trade volume; unknown side is never signed. */
-export function calculateTradeFlow(values: readonly MarketTrade[] | MarketTradeDataset, options: TradeFlowOptions): TradeFlowResult {
-  const interval = range(options);
-  const dataset = Array.isArray(values) ? undefined : values as MarketTradeDataset;
-  const trades = canonicalTrades(values, { ...interval, ...(options.asOfTime === undefined ? {} : { asOfTime: safeTime(options.asOfTime, "asOfTime") }) });
-  const includeEstimated = options.includeEstimated ?? false;
+/**
+ * Aggregate an already canonicalized trade slice without rebuilding a store.
+ *
+ * Public calculations still canonicalize provider input exactly once. Nested
+ * CVD and footprint buckets are already ordered, deduplicated, and revision
+ * resolved, so recreating a MarketTradeStore for every bucket only adds
+ * allocation and sorting work without changing financial semantics.
+ */
+function calculateTradeFlowFromCanonical(trades: readonly MarketTrade[], options: TradeFlowOptions): TradeFlowResult {
   let buyVolume = 0;
   let sellVolume = 0;
   let unknownSideVolume = 0;
   let estimatedSideVolume = 0;
   let knownSideTradeCount = 0;
   let unknownSideTradeCount = 0;
+  const includeEstimated = options.includeEstimated ?? false;
   for (const trade of trades) {
     if (trade.aggressorSide === "unknown") {
       unknownSideVolume += trade.quantity;
@@ -256,11 +256,10 @@ export function calculateTradeFlow(values: readonly MarketTrade[] | MarketTradeD
       if (trade.sideQuality === "estimated") estimatedSideVolume += trade.quantity;
     }
   }
-  const sourceCoverageOption = options.sourceCoverage ?? sourceCoverage(dataset);
-  const coverageOptions = sourceCoverageOption === undefined ? options : { ...options, sourceCoverage: sourceCoverageOption };
   return {
     version: OPENKLINE_ORDER_FLOW_VERSION,
-    ...interval,
+    from: options.from,
+    to: options.to,
     buyVolume,
     sellVolume,
     unknownSideVolume,
@@ -270,11 +269,26 @@ export function calculateTradeFlow(values: readonly MarketTrade[] | MarketTradeD
     tradeCount: trades.length,
     knownSideTradeCount,
     unknownSideTradeCount,
-    coverage: coverageFor(trades, coverageOptions, unknownSideVolume, estimatedSideVolume),
-    instrumentId: trades[0]?.instrumentId ?? (dataset?.instrumentId ?? null),
+    coverage: coverageFor(trades, options, unknownSideVolume, estimatedSideVolume),
+    instrumentId: trades[0]?.instrumentId ?? null,
     venueIds: [...new Set(trades.map((trade) => trade.venueId).filter((venue): venue is string => venue !== undefined))].sort(),
     sourceIds: [...new Set(trades.map((trade) => `${trade.source.id}@${trade.source.version}`))].sort(),
   };
+}
+
+function cloneTradeInput(value: MarketTradeInput): MarketTrade {
+  return normalizeMarketTrade(value);
+}
+
+/** Calculate executed trade volume; unknown side is never signed. */
+export function calculateTradeFlow(values: readonly MarketTrade[] | MarketTradeDataset, options: TradeFlowOptions): TradeFlowResult {
+  const interval = range(options);
+  const dataset = Array.isArray(values) ? undefined : values as MarketTradeDataset;
+  const trades = canonicalTrades(values, { ...interval, ...(options.asOfTime === undefined ? {} : { asOfTime: safeTime(options.asOfTime, "asOfTime") }) });
+  const sourceCoverageOption = options.sourceCoverage ?? sourceCoverage(dataset);
+  const coverageOptions = sourceCoverageOption === undefined ? options : { ...options, sourceCoverage: sourceCoverageOption };
+  const result = calculateTradeFlowFromCanonical(trades, { ...interval, ...(coverageOptions.includeEstimated === undefined ? {} : { includeEstimated: coverageOptions.includeEstimated }), ...(coverageOptions.sourceCoverage === undefined ? {} : { sourceCoverage: coverageOptions.sourceCoverage }) });
+  return { ...result, instrumentId: result.instrumentId ?? (dataset?.instrumentId ?? null) };
 }
 
 export function calculateCumulativeVolumeDelta(values: readonly MarketTrade[] | MarketTradeDataset, options: CvdOptions): CvdResult {
@@ -301,7 +315,7 @@ export function calculateCumulativeVolumeDelta(values: readonly MarketTrade[] | 
   const orderedBuckets = [...buckets.keys()].sort((left, right) => left - right);
   for (const bucketStart of orderedBuckets) {
     const bucketTrades = buckets.get(bucketStart)!;
-    const flow = calculateTradeFlow(bucketTrades, childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
+    const flow = calculateTradeFlowFromCanonical(bucketTrades, childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
     const session = reset === "session" ? options.calendar!.findSessionContaining(bucketTrades[0]!.time) : null;
     const sessionId = session?.id ?? null;
     const didReset = reset === "session" && previousSession !== null && sessionId !== null && previousSession !== sessionId;
@@ -354,6 +368,7 @@ export function calculateFootprint(values: readonly MarketTrade[] | MarketTradeD
   const offTickPolicy = options.offTickPolicy ?? "reject";
   const trades = canonicalTrades(values, { ...interval, ...(options.asOfTime === undefined ? {} : { asOfTime: safeTime(options.asOfTime, "asOfTime") }) });
   const buckets = new Map<number, Map<string, { price: number; tickIndex: number | null; trades: MarketTrade[] }>>();
+  let cellCount = 0;
   for (const trade of trades) {
     const rawIndex = trade.price / tickSize;
     const tickIndex = Math.round(rawIndex);
@@ -367,7 +382,10 @@ export function calculateFootprint(values: readonly MarketTrade[] | MarketTradeD
     const bucket = buckets.get(bucketStart) ?? new Map<string, { price: number; tickIndex: number | null; trades: MarketTrade[] }>();
     const key = index === null ? price.toPrecision(15) : String(index);
     const cell = bucket.get(key) ?? { price, tickIndex: index, trades: [] };
-    if (bucket.get(key) === undefined && [...buckets.values()].reduce((sum, item) => sum + item.size, 0) >= maxCells) throw new OrderFlowValidationError("Footprint cell limit exceeded");
+    if (bucket.get(key) === undefined) {
+      if (cellCount >= maxCells) throw new OrderFlowValidationError("Footprint cell limit exceeded");
+      cellCount += 1;
+    }
     cell.trades.push(trade);
     bucket.set(key, cell);
     buckets.set(bucketStart, bucket);
@@ -382,7 +400,7 @@ export function calculateFootprint(values: readonly MarketTrade[] | MarketTradeD
     const cells: FootprintCell[] = [];
     const bucket = buckets.get(bucketStart)!;
     for (const cell of [...bucket.values()].sort((left, right) => left.price - right.price)) {
-      const flow = calculateTradeFlow(cell.trades, childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
+      const flow = calculateTradeFlowFromCanonical(cell.trades, childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
       const denominator = flow.buyVolume + flow.sellVolume;
       cells.push({
         bucketStart,
@@ -403,7 +421,7 @@ export function calculateFootprint(values: readonly MarketTrade[] | MarketTradeD
       totalDelta += flow.delta;
       tradeCount += flow.tradeCount;
     }
-    const bucketFlow = calculateTradeFlow(cellTrades(bucket), childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
+    const bucketFlow = calculateTradeFlowFromCanonical(cellTrades(bucket), childFlowOptions(options, bucketStart, Math.min(interval.to, bucketStart + intervalMs)));
     results.push({ start: bucketStart, end: Math.min(interval.to, bucketStart + intervalMs), buyVolume: bucketFlow.buyVolume, sellVolume: bucketFlow.sellVolume, unknownSideVolume: bucketFlow.unknownSideVolume, totalVolume: bucketFlow.totalVolume, delta: bucketFlow.delta, tradeCount: bucketFlow.tradeCount, coverage: bucketFlow.coverage, cells });
   }
   const coverage = results.length === 0 ? "empty" : results.some((bucket) => bucket.coverage === "unknown-coverage") ? "unknown-coverage" : results.some((bucket) => bucket.coverage === "partial-known-side") ? "partial-known-side" : "complete-known-side";

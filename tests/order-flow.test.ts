@@ -78,6 +78,34 @@ test("Footprint aggregates actual trade prices, cells, bar delta, and explicit t
   assert.equal(rounded.buckets[0]?.cells[0]?.price, 100);
 });
 
+test("Footprint enforces one bounded cell budget across all buckets", () => {
+  const trades = Array.from({ length: 1_000 }, (_, index) => makeTrade(
+    `cell-${index}`,
+    1_000 + index * 60_000,
+    100 + index * 0.5,
+    1,
+    index % 2 === 0 ? "buy" : "sell",
+  ));
+  const result = calculateFootprint(trades, {
+    from: 1_000,
+    to: 1_000 + trades.length * 60_000,
+    intervalMs: 60_000,
+    tickSize: 0.5,
+    maxCells: trades.length,
+    sourceCoverage: "complete",
+  });
+  assert.equal(result.tradeCount, trades.length);
+  assert.equal(result.buckets.reduce((sum, bucket) => sum + bucket.cells.length, 0), trades.length);
+  assert.throws(() => calculateFootprint(trades, {
+    from: 1_000,
+    to: 1_000 + trades.length * 60_000,
+    intervalMs: 60_000,
+    tickSize: 0.5,
+    maxCells: trades.length - 1,
+    sourceCoverage: "complete",
+  }), OrderFlowValidationError);
+});
+
 test("CVD is continuous or resets only at real calendar sessions", () => {
   const calendar = new TradingCalendarEngine(createIllustrativeWeekdayCalendar());
   const sessions = calendar.enumerateSessions(Date.UTC(2026, 0, 2), Date.UTC(2026, 0, 7));

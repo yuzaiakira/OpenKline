@@ -293,6 +293,7 @@ export class OrderBookController {
   private asks = new Map<string, NormalizedLevel>();
   private pendingDeltas: OrderBookDelta[] = [];
   private history: HistoricalEvent[] = [];
+  private historyStart = 0;
   private appliedDeltaIds = new Set<string>();
   private lastEventTime: number | null = null;
   private lastSynchronizedTime: number | null = null;
@@ -445,7 +446,7 @@ export class OrderBookController {
       ...(this.venueId === undefined ? {} : { venueId: this.venueId }),
       ...(this.sourceIdentity === undefined ? {} : { source: this.sourceIdentity }),
     });
-    for (const item of [...this.history].sort(eventOrder)) {
+    for (const item of this.history.slice(this.historyStart).sort(eventOrder)) {
       if (item.event.time > asOfTime) continue;
       if (item.kind === "snapshot") replay.applySnapshot(item.event); else replay.applyDelta(item.event);
     }
@@ -454,7 +455,7 @@ export class OrderBookController {
 
   public getHistory(): HistoricalEvent[] {
     this.assertAlive();
-    return this.history.map((item) => item.kind === "snapshot" ? { kind: item.kind, event: cloneSnapshot(item.event) } : { kind: item.kind, event: cloneDelta(item.event) });
+    return this.history.slice(this.historyStart).map((item) => item.kind === "snapshot" ? { kind: item.kind, event: cloneSnapshot(item.event) } : { kind: item.kind, event: cloneDelta(item.event) });
   }
 
   public async connect(datafeed: OrderBookDatafeed, query: OrderBookQuery): Promise<void> {
@@ -501,6 +502,7 @@ export class OrderBookController {
     this.asks.clear();
     this.pendingDeltas = [];
     this.history = [];
+    this.historyStart = 0;
     this.appliedDeltaIds.clear();
     this.status = "uninitialized";
     this.lastEventTime = null;
@@ -518,6 +520,7 @@ export class OrderBookController {
     this.asks.clear();
     this.pendingDeltas = [];
     this.history = [];
+    this.historyStart = 0;
     this.appliedDeltaIds.clear();
   }
 
@@ -614,7 +617,14 @@ export class OrderBookController {
 
   private record(item: HistoricalEvent): void {
     this.history.push(item);
-    if (this.history.length > this.maxHistory) this.history.splice(0, this.history.length - this.maxHistory);
+    const retained = this.history.length - this.historyStart;
+    if (retained > this.maxHistory) this.historyStart += retained - this.maxHistory;
+    // Compact occasionally, not on every bounded append. This keeps the
+    // logical history bounded while preserving an amortized O(1) append path.
+    if (this.historyStart > 1_024 && this.historyStart * 2 >= this.history.length) {
+      this.history = this.history.slice(this.historyStart);
+      this.historyStart = 0;
+    }
   }
 
   private markGap(reason: string): OrderBookApplyResult {

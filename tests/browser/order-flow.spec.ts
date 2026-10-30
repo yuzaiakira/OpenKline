@@ -63,6 +63,7 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
     const after = chart.getOrderFlowState().tradeCount;
     replay.exit();
     const restored = chart.getOrderFlowState().tradeCount;
+    const asOfTrades = chart.getMarketTrades({ asOfTime: start + 30_000 });
     const visible = chart.getVisibleTimeRange();
     chart.destroy();
     const remainingCanvases = host.querySelectorAll("canvas").length;
@@ -80,6 +81,7 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
       workspace: { hasOrderFlow: workspace.orderFlow !== undefined, hasDerivedCvdSeries: (workspace.series as Array<{ id: string }>).some((item: { id: string }) => item.id === "openkline.cvd") },
       seriesBeforeReplay,
       replayCounts: { before, after, restored },
+      asOfTradeCount: asOfTrades.length,
       remainingCanvases,
     };
   });
@@ -90,5 +92,6 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
   expect(result.replayCounts.before).toBe(1);
   expect(result.replayCounts.after).toBe(2);
   expect(result.replayCounts.restored).toBe(4);
+  expect(result.asOfTradeCount).toBe(2);
   expect(result.remainingCanvases).toBe(0);
 });
