@@ -67,6 +67,15 @@ causal presentation boundary. The projection filters unavailable signals and
 future outcomes, retains a boundary account snapshot, and derives positions
 that were open at the selected time. It never changes the source result.
 
+Corporate actions enter the same deterministic timeline. Effective split
+events precede the market-open event, while dividend settlement occurs only at
+the payment phase. Held quantity and aggregate cost basis are updated
+atomically; a dividend receivable is included in equity but excluded from
+available cash until payment. Pending orders are cancelled at a split under
+the fixed policy, and unsupported fractional entitlements fail closed. The
+action source and ledger are cloned into results and exports so a consumer can
+audit the exact event identity and revision used by the run.
+
 ## Workspace boundary
 
 Studio workspace persistence stores only `PortfolioBacktestWorkspaceDocument`.

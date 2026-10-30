@@ -104,6 +104,18 @@ An as-of projection is a presentation of the completed deterministic ledger;
 it is not a resumable backtest session and must not be used to infer fills
 after its `asOfTime`.
 
+### Corporate-action accounting
+
+An instrument may provide a validated `corporateActions` dataset. When one is
+present, the engine applies the explicit policy recorded in
+`result.assumptions.corporateActionPolicy`: pending orders crossing a split
+are cancelled, held quantity and per-share cost basis are adjusted without
+changing aggregate cost, and cash dividends become receivables at the
+ex-dividend boundary and cash only at their declared payment boundary. No FX,
+cash-in-lieu, or vendor-specific behavior is inferred. Results expose the
+action records, receivables, and ledger only when action accounting was active;
+legacy no-action result shapes remain unchanged.
+
 ## Worker boundary
 
 `createPortfolioBacktestWorker()` accepts the serializable

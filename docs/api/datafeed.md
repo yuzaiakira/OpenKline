@@ -123,3 +123,15 @@ The repository includes standalone consumers for [direct local data](../guides/d
 and generic REST/WebSocket transports. The optional
 [Binance example](../guides/optional-binance-example.md) is outside the core
 package and is never initialized by importing `openkline`.
+
+## Corporate-action datafeeds
+
+Corporate actions use a separate provider-neutral `CorporateActionDatafeed`
+contract so a bar provider does not have to own issuer-event semantics. The
+in-memory and bounded REST reference adapters validate stable event IDs,
+revisions, source identity, timestamp boundaries, and instrument association.
+Attach the resulting `CorporateActionDataset` to a chart with
+`setCorporateActions()`. The chart keeps raw candles canonical and derives
+the selected display projection. A consuming application must declare whether
+its source is known or has incomplete knowledge coverage; the core never
+inventories exchange events or guesses missing corrections.

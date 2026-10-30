@@ -40,3 +40,17 @@ multi-timeframe series and reference levels so normalized scales are not mixed
 with price values, then restores their prior visibility on exit. This is a
 presentation policy of the private Studio, not a restriction on the core Chart
 API.
+
+## Corporate actions and total return
+
+The reference Studio also exposes a Corporate Actions & Total Return panel.
+It demonstrates raw, split-adjusted, and analytical total-return views,
+event-marker visibility, source/revision details, replay masking, and a small
+portfolio accounting summary. Its default source is a clearly labeled,
+deterministic offline illustration. It is not authoritative market data.
+
+The panel respects unresolved corporate-action workspace references. A missing
+source is warned about and is not replaced automatically; loading the offline
+illustration is an explicit action. Workspace persistence follows the core
+boundary and stores source/policy references only, not action datasets,
+derived values, runtime clients, results, or credentials.

@@ -60,6 +60,7 @@ import { StrategyOptimizer } from "./strategy-optimizer";
 import { PaperTradingPanel } from "./paper-trading-panel";
 import { ScreenerPanel } from "./screener-panel";
 import { PortfolioBacktestingPanel } from "./portfolio-backtesting-panel";
+import { CorporateActionsPanel } from "./corporate-actions-panel";
 
 type Timeframe = "5m" | "1h" | "4h" | "1D";
 type Presentation = "candles" | "ohlc" | "hollow" | "heikin-ashi" | "line" | "area" | "baseline";
@@ -1498,6 +1499,7 @@ export default function MultiChartStudioClient() {
     <StrategyOptimizer key={`optimizer-${strategyScopeKey}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onApplyParameters={applyStrategyParameters} onNotice={setNotice} />
     <StrategyTester key={strategyScopeKey} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} initialResult={strategyResultsRef.current.get(strategyScopeKey) ?? null} appliedParameters={appliedStrategyParametersRef.current.get(strategyScopeKey) ?? null} onResult={(nextResult) => { if (nextResult === null) strategyResultsRef.current.delete(strategyScopeKey); else strategyResultsRef.current.set(strategyScopeKey, nextResult); }} onNotice={setNotice} />
     <PaperTradingPanel key={`paper-${activePanel.panelId}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onNotice={setNotice} />
+    <CorporateActionsPanel chart={activeHandle?.getChart() ?? null} symbol={activePanel.symbol} timeframe={activePanel.timeframe} replayActive={replayActive} onNotice={setNotice} />
     <PortfolioBacktestingPanel initialConfiguration={portfolioConfiguration} onConfigurationChange={setPortfolioConfiguration} onNotice={setNotice} />
     {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation" data-studio-dialog-open="true" data-studio-dialog-kind={dialog.kind}><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby="studio-dialog-message" data-studio-dialog-title={dialog.title}><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
   </main>;
