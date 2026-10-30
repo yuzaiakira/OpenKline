@@ -97,6 +97,7 @@ import {
   calculatePreviousTimeframeLevels,
   mapMultiTimeframeIndicatorToSourceTimes,
   mapMultiTimeframeReferenceToSourceTimes,
+  type MultiTimeframeAggregationOptions,
   type MultiTimeframeIndicatorApi,
   type MultiTimeframeIndicatorOptions,
   type MultiTimeframeIndicatorResult,
@@ -2568,10 +2569,10 @@ export class Chart {
 
   private syncMultiTimeframeIndicator(state: ManagedMultiTimeframeIndicator): void {
     const candles = this.model.allCandles;
-    const latestTime = candles.at(-1)?.time;
+    const asOfTime = this.resolveMultiTimeframeAsOf(state.options, candles);
     state.result = calculateMultiTimeframeIndicator(candles, {
       ...state.options,
-      ...(latestTime === undefined ? {} : { asOfTime: latestTime }),
+      ...(asOfTime === undefined ? {} : { asOfTime }),
     }, this.indicatorRegistry);
     for (const [index, output] of state.result.outputs.entries()) {
       const seriesId = state.outputSeriesIds[index];
@@ -2586,11 +2587,21 @@ export class Chart {
 
   private syncMultiTimeframeReference(state: ManagedMultiTimeframeReference): void {
     const candles = this.model.allCandles;
-    const latestTime = candles.at(-1)?.time;
+    const asOfTime = this.resolveMultiTimeframeAsOf(state.options, candles);
     state.result = calculatePreviousTimeframeLevels(candles, {
       ...state.options,
-      ...(latestTime === undefined ? {} : { asOfTime: latestTime }),
+      ...(asOfTime === undefined ? {} : { asOfTime }),
     });
+  }
+
+  /** Resolve a safe chart frontier without allowing replay to see beyond its cursor. */
+  private resolveMultiTimeframeAsOf(options: MultiTimeframeAggregationOptions, candles: readonly Candle[]): number | undefined {
+    const requested = options.asOfTime;
+    const latestTime = candles.at(-1)?.time;
+    if (this.model.getReplayCutoff() !== null && latestTime !== undefined) {
+      return requested === undefined ? latestTime : Math.min(requested, latestTime);
+    }
+    return requested ?? latestTime;
   }
 
   private refreshMultiTimeframe(): void {
