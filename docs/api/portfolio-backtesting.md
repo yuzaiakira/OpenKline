@@ -79,7 +79,30 @@ try {
 signals, timeline, orders, completed trades, open positions, shared equity
 snapshots, final account state, per-instrument contributions, metrics, and a
 deterministic input fingerprint. JSON export includes `schemaVersion: 1`;
-CSV helpers export orders, completed trades, and equity snapshots.
+CSV helpers export orders, completed trades, and equity snapshots. JSON import
+validates ledger identities, finite financial values, timestamps, status
+transitions, references, and bounded array sizes before returning a defensive
+copy.
+
+### Causal as-of presentation
+
+`projectPortfolioBacktestAsOf(result, asOfTime)` creates a presentation-safe
+projection of a completed run. It includes only signals available by the
+boundary, hides future fills and completed trades, derives positions that were
+open at the boundary, and selects the last causal account snapshot. The source
+result remains unchanged and `sourceFinalAccount` is retained only as an
+explicit comparison field:
+
+```ts
+import { projectPortfolioBacktestAsOf } from "openkline";
+
+const asOf = projectPortfolioBacktestAsOf(result, Date.UTC(2025, 0, 15));
+console.log(asOf.projection, asOf.finalAccount, asOf.metrics);
+```
+
+An as-of projection is a presentation of the completed deterministic ledger;
+it is not a resumable backtest session and must not be used to infer fills
+after its `asOfTime`.
 
 ## Worker boundary
 
@@ -92,6 +115,9 @@ run supersedes the previous run; stale responses, timeouts, malformed messages,
 crashes, and disposal cannot update the current result. Use
 `docs/architecture/portfolio-execution.md` for the lifecycle and ownership
 model.
+In a bundled application the host should provide a Worker entry that bundles
+`createPortfolioBacktestWorkerHandler`; package-relative Worker URLs are not
+assumed to work in every bundler.
 
 ## Workspace and Studio
 
@@ -101,6 +127,6 @@ valuation, strategy parameters, and calendar identity. Candle history,
 credentials, Worker objects, progress, results, and runtime subscriptions are
 never persisted. `StudioWorkspaceDocument.portfolioBacktest` is optional so
 older workspaces remain valid. The Next.js Studio uses deterministic offline
-fixtures and displays an explicit main-thread fallback if its host cannot serve
-the Worker artifact; this is not a claim of Worker availability in every
-bundler.
+fixtures and a host-owned Worker entry. Its synchronous fallback is visible and
+bounded to small demo runs only; large runs fail explicitly when the host
+cannot serve a Worker.

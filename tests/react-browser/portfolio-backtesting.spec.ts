@@ -44,6 +44,13 @@ test("Studio runs a deterministic multi-instrument portfolio backtest and persis
   await panel.getByRole("tab", { name: /Orders/ }).click();
   await expect(panel.getByText("Deterministic order ledger")).toBeVisible();
   await panel.getByRole("button", { name: "Export JSON", exact: true }).click();
+  const asOfInput = panel.getByLabel("Portfolio as-of timestamp");
+  await asOfInput.fill((await asOfInput.getAttribute("min")) ?? "0");
+  await panel.getByRole("button", { name: "View causal as-of", exact: true }).click();
+  await expect(panel).toHaveAttribute("data-portfolio-result-view", "as-of");
+  await expect(panel.getByText("Portfolio report timeline is independent from chart replay.")).toBeVisible();
+  await panel.getByRole("button", { name: "View full run", exact: true }).click();
+  await expect(panel).toHaveAttribute("data-portfolio-result-view", "full");
 
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
   await expect(page.getByText("Replay: ready", { exact: true })).toBeVisible();

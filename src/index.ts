@@ -716,6 +716,7 @@ export {
   isPortfolioBacktestWorkerRequest,
   isPortfolioBacktestWorkerResponse,
   parsePortfolioBacktestResult,
+  projectPortfolioBacktestAsOf,
   parsePortfolioBacktestWorkspace,
   serializePortfolioBacktestResult,
   serializePortfolioOrdersCsv,
@@ -726,6 +727,7 @@ export {
 } from "./portfolio-backtesting/index.js";
 export type {
   PortfolioAccountSnapshot,
+  PortfolioBacktestAsOfResult,
   PortfolioBacktestApi,
   PortfolioBacktestAssumptions,
   PortfolioBacktestOptions,

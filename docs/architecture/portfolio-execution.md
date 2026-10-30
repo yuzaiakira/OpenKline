@@ -54,10 +54,18 @@ supersession, timeout, Worker crash, malformed messages, and host disposal
 terminate the Worker and reject the active promise. No partial portfolio result
 is retained.
 
-The browser Studio attempts the Worker first. If a host cannot serve the module
-Worker artifact, it reports that condition and uses the same synchronous public
-engine for the deterministic offline fixture. This fallback is intentionally
-visible and does not change the library Worker contract.
+The browser Studio attempts a host-owned bundled Worker first. The Next.js
+consumer provides a dedicated Worker entry that bundles the public handler and
+its dependencies, so it does not depend on a package-relative Worker asset.
+If a host cannot serve the artifact, the Studio reports that condition and
+allows the synchronous public engine only for a bounded small demonstration;
+large runs fail explicitly instead of blocking the main thread. This fallback
+is intentionally visible and does not change the library Worker contract.
+
+Completed results can be projected with `projectPortfolioBacktestAsOf()` for a
+causal presentation boundary. The projection filters unavailable signals and
+future outcomes, retains a boundary account snapshot, and derives positions
+that were open at the selected time. It never changes the source result.
 
 ## Workspace boundary
 

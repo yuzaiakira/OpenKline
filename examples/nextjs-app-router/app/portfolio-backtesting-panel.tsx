@@ -6,6 +6,7 @@ import {
   createPortfolioBacktest,
   createPortfolioBacktestWorker,
   createPortfolioBacktestWorkspace,
+  projectPortfolioBacktestAsOf,
   serializePortfolioBacktestResult,
   serializePortfolioEquityCsv,
   serializePortfolioOrdersCsv,
@@ -13,6 +14,7 @@ import {
 } from "openkline";
 import type {
   Candle,
+  PortfolioBacktestAsOfResult,
   PortfolioBacktestResult,
   PortfolioBacktestWorkerApi,
   PortfolioBacktestWorkerLike,
@@ -116,17 +118,43 @@ function createNextPortfolioBacktestWorker(): PortfolioBacktestWorkerLike {
   return new Worker(new URL("./portfolio-backtest-worker.ts", import.meta.url), { type: "module" }) as unknown as PortfolioBacktestWorkerLike;
 }
 
+const MAX_EQUITY_POINTS = 800;
+
+function sampleEquityCurve(points: readonly PortfolioBacktestResult["equityCurve"][number][]): readonly PortfolioBacktestResult["equityCurve"][number][] {
+  if (points.length <= MAX_EQUITY_POINTS) return points;
+  const selected = new Set<number>([0, points.length - 1]);
+  const bucketCount = Math.max(1, MAX_EQUITY_POINTS - 2);
+  for (let bucket = 0; bucket < bucketCount; bucket += 1) {
+    const start = Math.floor(bucket * points.length / bucketCount);
+    const end = Math.max(start + 1, Math.min(points.length, Math.floor((bucket + 1) * points.length / bucketCount)));
+    let minimumIndex = start;
+    let maximumIndex = start;
+    let drawdownIndex = start;
+    for (let index = start + 1; index < end; index += 1) {
+      const point = points[index]!;
+      const minimum = points[minimumIndex]!;
+      const maximum = points[maximumIndex]!;
+      const drawdown = points[drawdownIndex]!;
+      if ((point.equity ?? Number.POSITIVE_INFINITY) < (minimum.equity ?? Number.POSITIVE_INFINITY)) minimumIndex = index;
+      if ((point.equity ?? Number.NEGATIVE_INFINITY) > (maximum.equity ?? Number.NEGATIVE_INFINITY)) maximumIndex = index;
+      if (Math.abs(point.drawdownPercent ?? 0) > Math.abs(drawdown.drawdownPercent ?? 0)) drawdownIndex = index;
+    }
+    selected.add(minimumIndex); selected.add(maximumIndex); selected.add(drawdownIndex);
+  }
+  return [...selected].sort((left, right) => left - right).map((index) => points[index]!);
+}
+
 function PortfolioEquityCurve({ result }: { readonly result: PortfolioBacktestResult }): ReactElement {
   const width = 640;
   const height = 150;
-  const points = result.equityCurve.filter((point) => point.equity !== null && Number.isFinite(point.equity));
+  const points = sampleEquityCurve(result.equityCurve.filter((point) => point.equity !== null && Number.isFinite(point.equity)));
   const values = points.map((point) => point.equity as number);
-  const minimum = Math.min(...values);
-  const maximum = Math.max(...values);
+  const minimum = values.reduce((current, value) => Math.min(current, value), Number.POSITIVE_INFINITY);
+  const maximum = values.reduce((current, value) => Math.max(current, value), Number.NEGATIVE_INFINITY);
   const span = maximum - minimum || 1;
   const equityPoints = points.map((point, index) => `${(points.length <= 1 ? width / 2 : index / (points.length - 1) * width).toFixed(2)},${(height - ((point.equity as number - minimum) / span) * (height - 12) - 6).toFixed(2)}`).join(" ");
   const drawdownPoints = points.map((point, index) => `${(points.length <= 1 ? width / 2 : index / (points.length - 1) * width).toFixed(2)},${(6 + Math.min(1, Math.abs(point.drawdownPercent ?? 0)) * (height - 12)).toFixed(2)}`).join(" ");
-  return <div className={styles.portfolioEquityChart} data-portfolio-equity-curve><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Portfolio equity and drawdown curve"><polyline points={equityPoints} fill="none" stroke="#34d399" strokeWidth="2" vectorEffect="non-scaling-stroke" /><polyline points={drawdownPoints} fill="none" stroke="#fb7185" strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg><small>Equity {formatNumber(minimum)} → {formatNumber(maximum)} · drawdown shown in red</small></div>;
+  return <div className={styles.portfolioEquityChart} data-portfolio-equity-curve><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Portfolio equity and drawdown curve"><polyline points={equityPoints} fill="none" stroke="#34d399" strokeWidth="2" vectorEffect="non-scaling-stroke" /><polyline points={drawdownPoints} fill="none" stroke="#fb7185" strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg><small>Equity {formatNumber(minimum)} → {formatNumber(maximum)} · drawdown shown in red · visualized {points.length.toLocaleString()} of {result.equityCurve.length.toLocaleString()} snapshots</small></div>;
 }
 
 function choiceFromWorkspace(instrumentId: string, configuration: PortfolioBacktestWorkspaceDocument | null): StrategyChoice {
@@ -158,6 +186,9 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
   const [status, setStatus] = useState<PortfolioBacktestWorkerStatus["state"]>("idle");
   const [workerStatus, setWorkerStatus] = useState<PortfolioBacktestWorkerStatus | null>(null);
   const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
+  const [asOfResult, setAsOfResult] = useState<PortfolioBacktestAsOfResult | null>(null);
+  const [asOfTime, setAsOfTime] = useState("");
+  const [resultView, setResultView] = useState<"full" | "as-of">("full");
   const [error, setError] = useState<string | null>(null);
   const [execution, setExecution] = useState<"idle" | "worker" | "fallback">("idle");
   const [tab, setTab] = useState<"overview" | "orders" | "trades" | "equity">("overview");
@@ -232,7 +263,7 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
     sessionRef.current = session;
     unsubscribeRef.current = session.subscribe((next) => { setWorkerStatus(next); setStatus(next.state); });
     setError(null); setResult(null); setExecution("worker");
-    void session.run().then((next) => { setResult(next); setStatus("completed"); onNotice(`Portfolio backtest completed: ${next.trades.length} trades across ${next.instruments.length} instruments.`); }).catch((reason: unknown) => {
+    void session.run().then((next) => { setResult(next); setAsOfResult(null); setAsOfTime(""); setResultView("full"); setStatus("completed"); onNotice(`Portfolio backtest completed: ${next.trades.length} trades across ${next.instruments.length} instruments.`); }).catch((reason: unknown) => {
       const code = typeof reason === "object" && reason !== null && "code" in reason ? String((reason as { readonly code?: unknown }).code) : "";
       const totalBars = options.instruments.reduce((total, instrument) => total + instrument.candles.length, 0);
       if ((code === "WORKER_CRASHED" || code === "WORKER_UNAVAILABLE" || code === "TIMEOUT") && totalBars <= MAX_SYNCHRONOUS_FALLBACK_BARS && sessionRef.current === session) {
@@ -260,12 +291,28 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
   };
 
   const cancel = (): void => { sessionRef.current?.cancel(); setStatus("cancelled"); };
+  const viewAsOf = (): void => {
+    if (result === null) return;
+    const cutoff = Number(asOfTime);
+    if (!Number.isSafeInteger(cutoff)) { setError("Enter a safe integer UTC timestamp for the as-of view."); return; }
+    try {
+      setAsOfResult(projectPortfolioBacktestAsOf(result, cutoff));
+      setResultView("as-of");
+      setError(null);
+      onNotice(`Portfolio report projected causally through ${new Date(cutoff).toISOString()}.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
   const exportResult = (name: string, text: string, type: string): void => downloadText(name, text, type);
   const selectedCount = selectedIds.length;
   const isRunning = status === "running";
-  const metrics = result?.metrics;
+  const displayedResult = resultView === "as-of" ? asOfResult : result;
+  const metrics = displayedResult?.metrics;
+  const firstResultTime = result?.equityCurve.find((point) => point.time !== null)?.time ?? null;
+  const lastResultTime = result?.equityCurve.at(-1)?.time ?? null;
 
-  return <section className={styles.portfolioBacktestingPanel} aria-label="Portfolio Backtesting" data-portfolio-status={status} data-portfolio-execution={execution} data-portfolio-instruments={selectedCount} data-portfolio-accepted-orders={result === null ? undefined : result.orders.filter((order) => order.status === "filled").length} data-portfolio-rejected-orders={result === null ? undefined : result.orders.filter((order) => order.status === "rejected").length} data-portfolio-final-equity={result?.finalAccount.equity ?? undefined}>
+  return <section className={styles.portfolioBacktestingPanel} aria-label="Portfolio Backtesting" data-portfolio-status={status} data-portfolio-execution={execution} data-portfolio-result-view={resultView} data-portfolio-instruments={selectedCount} data-portfolio-accepted-orders={displayedResult === null ? undefined : displayedResult.orders.filter((order) => order.status === "filled").length} data-portfolio-rejected-orders={displayedResult === null ? undefined : displayedResult.orders.filter((order) => order.status === "rejected").length} data-portfolio-final-equity={displayedResult?.finalAccount.equity ?? undefined}>
     <div className={styles.paperTradingHeader}><div><h2>Portfolio Backtesting</h2><p>Deterministic shared-capital simulation across multiple instruments. Historical data never leaves this browser.</p></div><span className={styles.portfolioBadge}>LONG-ONLY · NO LEVERAGE</span></div>
     <div className={styles.portfolioControls}>
       <fieldset><legend>Instruments ({selectedCount}/5)</legend>{INSTRUMENTS.map((instrument) => <label className={styles.check} key={instrument.id}><input aria-label={`Portfolio instrument ${instrument.id}`} type="checkbox" checked={selectedIds.includes(instrument.id)} onChange={() => toggleInstrument(instrument.id)} disabled={isRunning || (selectedIds.includes(instrument.id) && selectedCount <= 2)} />{instrument.label}</label>)}</fieldset>
@@ -275,15 +322,17 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
     </div>
     <div className={styles.portfolioStrategies}><strong>Strategy assignments</strong>{INSTRUMENTS.filter((instrument) => selectedIds.includes(instrument.id)).map((instrument) => { const choice = strategies[instrument.id] ?? defaultStrategy(instrument.id); return <div className={styles.portfolioStrategyRow} key={instrument.id}><span>{instrument.label}</span><select aria-label={`Portfolio strategy ${instrument.id}`} value={choice.id} disabled={isRunning} onChange={(event) => updateStrategies(instrument.id, { id: event.target.value as StrategyId })}><option value="EMA_TREND">EMA trend</option><option value="EMA_CROSSOVER">EMA crossover</option></select>{choice.id === "EMA_CROSSOVER" ? <><label>Fast<input aria-label={`${instrument.id} fast EMA`} type="number" min="1" value={choice.fastPeriod} disabled={isRunning} onChange={(event) => updateStrategies(instrument.id, { fastPeriod: Math.max(1, parseNumber(event.target.value, 1)) })} /></label><label>Slow<input aria-label={`${instrument.id} slow EMA`} type="number" min="2" value={choice.slowPeriod} disabled={isRunning} onChange={(event) => updateStrategies(instrument.id, { slowPeriod: Math.max(2, parseNumber(event.target.value, 2)) })} /></label></> : <label>Period<input aria-label={`${instrument.id} EMA period`} type="number" min="1" value={choice.period} disabled={isRunning} onChange={(event) => updateStrategies(instrument.id, { period: Math.max(1, parseNumber(event.target.value, 1)) })} /></label>}</div>; })}</div>
     <div className={styles.strategyActions}><button type="button" onClick={run} disabled={isRunning || options === null}>Run portfolio backtest</button><button type="button" onClick={cancel} disabled={!isRunning}>Cancel</button><span className={styles.strategyStatus} data-portfolio-progress>{status}{workerStatus === null ? "" : ` · ${workerStatus.processed}/${workerStatus.total} bars · ${workerStatus.filledOrderCount} fills`}</span>{error === null ? null : <p className={styles.strategyError} role="alert">{error}</p>}</div>
-    {result === null ? <p className={styles.strategyEmpty}>Run the offline deterministic scenario to inspect the shared ledger, causal fills, risk rejections, and portfolio-level metrics.</p> : <>
-      <div className={styles.portfolioExports}><button type="button" onClick={() => exportResult("openkline-portfolio-result.json", serializePortfolioBacktestResult(result), "application/json")}>Export JSON</button><button type="button" onClick={() => exportResult("openkline-portfolio-orders.csv", serializePortfolioOrdersCsv(result), "text/csv")}>Orders CSV</button><button type="button" onClick={() => exportResult("openkline-portfolio-trades.csv", serializePortfolioTradesCsv(result), "text/csv")}>Trades CSV</button><button type="button" onClick={() => exportResult("openkline-portfolio-equity.csv", serializePortfolioEquityCsv(result), "text/csv")}>Equity CSV</button></div>
+    {displayedResult === null ? <p className={styles.strategyEmpty}>Run the offline deterministic scenario to inspect the shared ledger, causal fills, risk rejections, and portfolio-level metrics.</p> : <>
+      <div className={styles.portfolioExports}><button type="button" onClick={() => exportResult("openkline-portfolio-result.json", serializePortfolioBacktestResult(displayedResult), "application/json")}>Export JSON</button><button type="button" onClick={() => exportResult("openkline-portfolio-orders.csv", serializePortfolioOrdersCsv(displayedResult), "text/csv")}>Orders CSV</button><button type="button" onClick={() => exportResult("openkline-portfolio-trades.csv", serializePortfolioTradesCsv(displayedResult), "text/csv")}>Trades CSV</button><button type="button" onClick={() => exportResult("openkline-portfolio-equity.csv", serializePortfolioEquityCsv(displayedResult), "text/csv")}>Equity CSV</button></div>
+      <div className={styles.strategyFootnote}>Portfolio report timeline is independent from chart replay. Replay does not silently alter these results.</div>
+      <div className={styles.portfolioControls}><fieldset><legend>Result presentation</legend><label>As-of UTC timestamp<input aria-label="Portfolio as-of timestamp" type="number" min={firstResultTime ?? undefined} max={lastResultTime ?? undefined} step="1" value={asOfTime} placeholder={firstResultTime === null ? "timestamp" : String(firstResultTime)} onChange={(event) => setAsOfTime(event.target.value)} /></label><button type="button" onClick={viewAsOf} disabled={asOfTime.length === 0}>View causal as-of</button><button type="button" onClick={() => setResultView("full")} disabled={resultView === "full"}>View full run</button><span>{resultView === "as-of" && asOfResult !== null ? `Causal through ${new Date(asOfResult.asOfTime).toISOString()}` : "Complete run"}</span></fieldset></div>
       <div className={styles.strategyMetricGrid} data-portfolio-metrics><div><small>Net profit</small><strong>{formatNumber(metrics?.netProfit)}</strong></div><div><small>Return</small><strong>{formatPercent(metrics?.totalReturn)}</strong></div><div><small>Max drawdown</small><strong>{formatPercent(metrics?.maxDrawdownPercent)}</strong></div><div><small>Trades</small><strong>{metrics?.completedTradeCount ?? 0}</strong></div><div><small>Win rate</small><strong>{formatPercent(metrics?.winRate)}</strong></div><div><small>Fees</small><strong>{formatNumber(metrics?.totalCommissions)}</strong></div></div>
-      <PortfolioEquityCurve result={result} />
-      <div className={styles.portfolioTabs} role="tablist" aria-label="Portfolio results"><button type="button" role="tab" aria-selected={tab === "overview"} onClick={() => setTab("overview")}>Overview</button><button type="button" role="tab" aria-selected={tab === "orders"} onClick={() => setTab("orders")}>Orders ({result.orders.length})</button><button type="button" role="tab" aria-selected={tab === "trades"} onClick={() => setTab("trades")}>Trades ({result.trades.length})</button><button type="button" role="tab" aria-selected={tab === "equity"} onClick={() => setTab("equity")}>Equity ({result.equityCurve.length})</button></div>
-      {tab === "overview" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Per-instrument contribution</caption><thead><tr><th>Instrument</th><th>Realized</th><th>Unrealized</th><th>Fees</th><th>Trades</th><th>Allocation return</th></tr></thead><tbody>{result.metrics.perInstrument.map((item) => <tr key={item.instrumentId}><td>{item.instrumentId}</td><td>{formatNumber(item.realizedPnl)}</td><td>{formatNumber(item.unrealizedPnl)}</td><td>{formatNumber(item.fees)}</td><td>{item.tradeCount}</td><td>{formatPercent(item.returnOnAllocatedCapital)}</td></tr>)}</tbody></table><p className={styles.strategyFootnote}>Final account: {formatNumber(result.finalAccount.equity)} {result.accountCurrency} · {result.finalAccount.valuationStatus} valuation · fingerprint <code>{result.inputFingerprint}</code></p></div> : null}
-      {tab === "orders" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Deterministic order ledger</caption><thead><tr><th>Instrument</th><th>Action</th><th>Status</th><th>Quantity</th><th>Fill</th><th>Reason</th></tr></thead><tbody>{result.orders.slice(0, 100).map((order) => <tr key={order.id}><td>{order.instrumentId}</td><td>{order.action}</td><td>{order.status}</td><td>{formatNumber(order.quantity, 6)}</td><td>{formatNumber(order.executionPrice)}</td><td>{order.reason ?? "—"}</td></tr>)}</tbody></table></div> : null}
-      {tab === "trades" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Completed trade ledger</caption><thead><tr><th>Instrument</th><th>Entry</th><th>Exit</th><th>Quantity</th><th>Net P&amp;L</th><th>Fees</th></tr></thead><tbody>{result.trades.slice(0, 100).map((trade) => <tr key={trade.id}><td>{trade.instrumentId}</td><td>{formatNumber(trade.entryPrice)}</td><td>{formatNumber(trade.exitPrice)}</td><td>{formatNumber(trade.quantity, 6)}</td><td>{formatNumber(trade.netPnl)}</td><td>{formatNumber(trade.fees)}</td></tr>)}</tbody></table></div> : null}
-      {tab === "equity" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Shared account equity snapshots</caption><thead><tr><th>Time</th><th>Cash</th><th>Equity</th><th>Gross</th><th>Positions</th><th>Status</th></tr></thead><tbody>{result.equityCurve.slice(-100).map((point, index) => <tr key={`${point.time ?? "end"}-${index}`}><td>{point.time === null ? "end" : new Date(point.time).toISOString()}</td><td>{formatNumber(point.cash)}</td><td>{formatNumber(point.equity)}</td><td>{formatNumber(point.grossExposure)}</td><td>{point.activePositionCount}</td><td>{point.valuationStatus}</td></tr>)}</tbody></table></div> : null}
+      <PortfolioEquityCurve result={displayedResult} />
+      <div className={styles.portfolioTabs} role="tablist" aria-label="Portfolio results"><button type="button" role="tab" aria-selected={tab === "overview"} onClick={() => setTab("overview")}>Overview</button><button type="button" role="tab" aria-selected={tab === "orders"} onClick={() => setTab("orders")}>Orders ({displayedResult.orders.length})</button><button type="button" role="tab" aria-selected={tab === "trades"} onClick={() => setTab("trades")}>Trades ({displayedResult.trades.length})</button><button type="button" role="tab" aria-selected={tab === "equity"} onClick={() => setTab("equity")}>Equity ({displayedResult.equityCurve.length})</button></div>
+      {tab === "overview" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Per-instrument contribution</caption><thead><tr><th>Instrument</th><th>Realized</th><th>Unrealized</th><th>Fees</th><th>Trades</th><th>Allocation return</th></tr></thead><tbody>{displayedResult.metrics.perInstrument.map((item) => <tr key={item.instrumentId}><td>{item.instrumentId}</td><td>{formatNumber(item.realizedPnl)}</td><td>{formatNumber(item.unrealizedPnl)}</td><td>{formatNumber(item.fees)}</td><td>{item.tradeCount}</td><td>{formatPercent(item.returnOnAllocatedCapital)}</td></tr>)}</tbody></table><p className={styles.strategyFootnote}>Final account: {formatNumber(displayedResult.finalAccount.equity)} {displayedResult.accountCurrency} · {displayedResult.finalAccount.valuationStatus} valuation · fingerprint <code>{displayedResult.inputFingerprint}</code></p></div> : null}
+      {tab === "orders" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Deterministic order ledger (showing at most 100 rows)</caption><thead><tr><th>Instrument</th><th>Action</th><th>Status</th><th>Quantity</th><th>Fill</th><th>Reason</th></tr></thead><tbody>{displayedResult.orders.slice(0, 100).map((order) => <tr key={order.id}><td>{order.instrumentId}</td><td>{order.action}</td><td>{order.status}</td><td>{formatNumber(order.quantity, 6)}</td><td>{formatNumber(order.executionPrice)}</td><td>{order.reason ?? "—"}</td></tr>)}</tbody></table></div> : null}
+      {tab === "trades" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Completed trade ledger (showing at most 100 rows)</caption><thead><tr><th>Instrument</th><th>Entry</th><th>Exit</th><th>Quantity</th><th>Net P&amp;L</th><th>Fees</th></tr></thead><tbody>{displayedResult.trades.slice(0, 100).map((trade) => <tr key={trade.id}><td>{trade.instrumentId}</td><td>{formatNumber(trade.entryPrice)}</td><td>{formatNumber(trade.exitPrice)}</td><td>{formatNumber(trade.quantity, 6)}</td><td>{formatNumber(trade.netPnl)}</td><td>{formatNumber(trade.fees)}</td></tr>)}</tbody></table></div> : null}
+      {tab === "equity" ? <div className={styles.portfolioTableWrap}><table className={styles.strategyTable}><caption>Shared account equity snapshots (showing the latest 100 rows)</caption><thead><tr><th>Time</th><th>Cash</th><th>Equity</th><th>Gross</th><th>Positions</th><th>Status</th></tr></thead><tbody>{displayedResult.equityCurve.slice(-100).map((point, index) => <tr key={`${point.time ?? "end"}-${index}`}><td>{point.time === null ? "end" : new Date(point.time).toISOString()}</td><td>{formatNumber(point.cash)}</td><td>{formatNumber(point.equity)}</td><td>{formatNumber(point.grossExposure)}</td><td>{point.activePositionCount}</td><td>{point.valuationStatus}</td></tr>)}</tbody></table></div> : null}
     </>}
   </section>;
 }

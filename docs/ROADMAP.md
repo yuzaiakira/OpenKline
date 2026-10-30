@@ -1264,15 +1264,16 @@ compatibility decision packet, package evidence, and remaining gates.
 - [Implemented / Chromium-verified — 12.3 Studio] Added the deterministic
   offline Portfolio Backtesting panel with multi-instrument strategy
   assignments, shared-capital/risk controls, result tabs, exports, bounded
-  workspace persistence, and an explicit main-thread fallback when a host
-  cannot serve the module Worker artifact.
-- [Implemented / locally verified — 12.4–12.6] Focused Node and Chromium
-  regression coverage, the 1k/10k/100k portfolio and Worker benchmarks, API/
-  package/distribution checks, and the final acceptance matrix are complete for
-  this cloud environment. Firefox, WebKit, mobile Safari, physical-device,
-  formal accessibility/visual approval, provider-specific, package-portability,
-  and protected historical API gates remain open or separately blocked as
-  recorded in the final report.
+  workspace persistence, a host-owned bundled Worker entry, and an explicit
+  small-demo-only fallback when a host cannot serve the Worker artifact.
+- [In progress / Phase 12.5] Runtime hardening is addressing package
+  portability, host-owned Next.js Worker bundling, bounded Studio fallback,
+  causal as-of presentation, deep result-import validation, and large-result
+  visualization/export behavior. Provider-neutral package portability and a
+  real Chromium Next.js Worker smoke test are verified; the remaining Phase
+  12.5 gates are tracked in `docs/reports/phase-12-5-runtime-hardening.md`.
+  Firefox, WebKit, mobile Safari, physical-device, formal accessibility/visual
+  approval, and protected historical API gates remain separate and open.
 
 See `docs/api/portfolio-backtesting.md`,
 `docs/architecture/portfolio-execution.md`,

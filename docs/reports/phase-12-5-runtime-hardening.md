@@ -36,13 +36,29 @@ Verified:
 
 The focused Chromium test instrumented the browser `Worker` constructor and passed after observing a real Worker construction. The result remained deterministic and the existing portfolio assertions passed.
 
+### Causal as-of result presentation and import hardening
+
+The public `projectPortfolioBacktestAsOf()` projection now gives Studio and
+other consumers an explicit historical presentation boundary. Signals are
+limited by availability, future fills remain pending, completed trades require
+an exit at or before the boundary, and open positions/metrics use the causal
+account snapshot. Deep result import validation rejects non-finite values,
+duplicate ledger identities, unknown instrument references, unsupported enums,
+and arrays beyond the documented import bound.
+
+Verified:
+
+- `npm run build`
+- `./node_modules/.bin/tsc -p tsconfig.test.json`
+- `node --test test-dist/tests/portfolio-backtesting.test.js` (7 passed)
+- `npm --prefix examples/nextjs-app-router run build`
+- focused Chromium Studio test (1 passed, including full/as-of/full switching)
+
 ## Open work
 
 The following Phase 12.5 requirements are not yet marked complete:
 
-- deep result validation and malformed/oversized import tests;
-- causal replay/as-of result projection and Studio presentation;
-- bounded large-result visualization and serialization/import benchmarks;
+- bounded large-result serialization/import benchmarks;
 - full lifecycle, cancellation, supersession, unmount, production-start, and package-consumer Worker tests;
 - complete local verification matrix and performance evidence;
 - external Firefox/WebKit/mobile/physical-device/accessibility/visual gates.

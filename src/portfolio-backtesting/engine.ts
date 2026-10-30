@@ -646,8 +646,6 @@ function calculatePortfolioMetrics(
   const grossProfit = trades.reduce((sum, trade) => sum + Math.max(0, trade.grossPnl), 0);
   const grossLoss = trades.reduce((sum, trade) => sum + Math.max(0, -trade.grossPnl), 0);
   const netProfit = finalAccount.equity === null ? null : finalAccount.equity - initialCapital;
-  const drawdowns = equityCurve.map((point) => point.drawdown).filter((value): value is number => value !== null);
-  const drawdownPercents = equityCurve.map((point) => point.drawdownPercent).filter((value): value is number => value !== null);
   const notionalTurnover = orders.filter((order) => order.status === "filled" && order.executionPrice !== undefined).reduce((sum, order) => sum + order.executionPrice! * order.quantity, 0);
   const perInstrument = instruments.map((instrument): PortfolioInstrumentContribution => {
     const instrumentTrades = trades.filter((trade) => trade.instrumentId === instrument.input.id);
@@ -672,13 +670,13 @@ function calculatePortfolioMetrics(
     netProfit,
     grossProfit,
     grossLoss,
-    maxDrawdown: drawdowns.length === 0 ? null : Math.max(...drawdowns),
-    maxDrawdownPercent: drawdownPercents.length === 0 ? null : Math.max(...drawdownPercents),
+    maxDrawdown: maximumSnapshotValue(equityCurve, (point) => point.drawdown),
+    maxDrawdownPercent: maximumSnapshotValue(equityCurve, (point) => point.drawdownPercent),
     realizedPnl: finalAccount.realizedPnl,
     unrealizedPnl: finalAccount.unrealizedPnl,
     totalCommissions: orders.reduce((sum, order) => sum + order.commission, 0),
-    grossExposure: equityCurve.length === 0 ? null : Math.max(...equityCurve.map((point) => point.grossExposure)),
-    netExposure: equityCurve.length === 0 ? null : Math.max(...equityCurve.map((point) => point.netExposure)),
+    grossExposure: maximumSnapshotValue(equityCurve, (point) => point.grossExposure),
+    netExposure: maximumSnapshotValue(equityCurve, (point) => point.netExposure),
     portfolioTurnover: initialCapital > 0 ? notionalTurnover / initialCapital : null,
     completedTradeCount: trades.length,
     winningTradeCount: winning.length,
@@ -686,6 +684,15 @@ function calculatePortfolioMetrics(
     winRate: trades.length === 0 ? null : winning.length / trades.length,
     perInstrument,
   };
+}
+
+function maximumSnapshotValue(points: readonly PortfolioAccountSnapshot[], select: (point: PortfolioAccountSnapshot) => number | null): number | null {
+  let maximum: number | null = null;
+  for (const point of points) {
+    const value = select(point);
+    if (value !== null && (maximum === null || value > maximum)) maximum = value;
+  }
+  return maximum;
 }
 
 function latestCompletedOrFallback(completed: CompletedMark | undefined, fallback: CompletedMark | undefined): CompletedMark | undefined {

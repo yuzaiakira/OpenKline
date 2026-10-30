@@ -5,6 +5,7 @@ import {
   createPortfolioBacktestWorker,
   createPortfolioBacktestWorkerHandler,
   parsePortfolioBacktestResult,
+  projectPortfolioBacktestAsOf,
   serializePortfolioBacktestResult,
   serializePortfolioEquityCsv,
   serializePortfolioOrdersCsv,
@@ -124,6 +125,48 @@ test("portfolio risk limits, stale valuation, duplicate policy, and exports are 
   assert.throws(() => createPortfolioBacktest({ ...options([{ id: "AAA", candles: [{ ...fixtureCandles(10, [10])[0]!, time: 3 }, { ...fixtureCandles(10, [10])[0]!, time: 3 }] }]), duplicateTimestampPolicy: "reject" }), /duplicate timestamp/);
   const corrected = createPortfolioBacktest({ ...options([{ id: "AAA", candles: [{ ...fixtureCandles(10, [10])[0]!, time: 3 }, { ...fixtureCandles(10, [11])[0]!, time: 3 }] }]), duplicateTimestampPolicy: "last-write-wins" }).run();
   assert.equal(corrected.instruments[0]?.candleCount, 1);
+});
+
+test("portfolio as-of projections keep causal boundaries and are seekable", () => {
+  const start = 1_800_000_000_000;
+  const result = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles: fixtureCandles(10, [10, 11, 12]), strategy: "PORTFOLIO_FIXTURE" }]),
+    initialCapital: 1_000,
+    positionSizing: { type: "fixed-quantity", quantity: 1 },
+  }).run();
+  const beforeEntry = projectPortfolioBacktestAsOf(result, start + 30_000);
+  const afterEntry = projectPortfolioBacktestAsOf(result, start + 60_000);
+  const afterExit = projectPortfolioBacktestAsOf(result, start + 120_000);
+  assert.equal(beforeEntry.orders.length, 0);
+  assert.equal(beforeEntry.trades.length, 0);
+  assert.equal(beforeEntry.finalAccount.equity, 1_000);
+  assert.equal(afterEntry.orders.some((order) => order.status === "filled"), true);
+  assert.equal(afterEntry.trades.length, 0, "the exit is not available before its fill timestamp");
+  assert.equal(afterEntry.positions.length, 1);
+  assert.equal(afterEntry.finalAccount.equity, 1_000);
+  assert.equal(afterExit.trades.length, 1);
+  assert.equal(afterExit.positions.length, 0);
+  assert.equal(afterExit.metrics.completedTradeCount, 1);
+  assert.equal(afterExit.sourceFinalAccount.equity, result.finalAccount.equity);
+  assert.equal(result.trades.length, 1, "projection must not mutate the complete result");
+  assert.deepEqual(projectPortfolioBacktestAsOf(result, start + 60_000), afterEntry);
+  assert.throws(() => projectPortfolioBacktestAsOf(result, Number.NaN), /safe integer/);
+});
+
+test("portfolio result import rejects malformed, duplicate, and oversized documents", () => {
+  const result = createPortfolioBacktest({ ...options([{ id: "AAA", candles: fixtureCandles(10, [10, 11, 12]) }]), initialCapital: 1_000, positionSizing: { type: "fixed-quantity", quantity: 1 } }).run();
+  const document = JSON.parse(serializePortfolioBacktestResult(result)) as Record<string, unknown>;
+  assert.deepEqual(parsePortfolioBacktestResult(document).finalAccount, result.finalAccount);
+  const duplicateOrders = JSON.parse(JSON.stringify(document)) as Record<string, unknown>;
+  (duplicateOrders.orders as Array<Record<string, unknown>>).push({ ...(duplicateOrders.orders as Array<Record<string, unknown>>)[0] });
+  assert.throws(() => parsePortfolioBacktestResult(duplicateOrders), /Duplicate order id/);
+  const invalidMetric = JSON.parse(JSON.stringify(document)) as Record<string, unknown>;
+  (invalidMetric.metrics as Record<string, unknown>).grossProfit = Number.NaN;
+  assert.throws(() => parsePortfolioBacktestResult(invalidMetric), /gross profit/);
+  assert.throws(() => parsePortfolioBacktestResult({ ...document, schemaVersion: 99 }), /Unsupported portfolio backtest result schema/);
+  const oversized = JSON.parse(JSON.stringify(document)) as Record<string, unknown>;
+  oversized.signals = new Array(2_000_001);
+  assert.throws(() => parsePortfolioBacktestResult(oversized), /import limit/);
 });
 
 class HandlerWorker implements PortfolioBacktestWorkerLike {
