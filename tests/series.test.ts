@@ -4,6 +4,8 @@ import { ChartModel } from "../src/core/chart-model.js";
 import { toHeikinAshi } from "../src/core/candle-series.js";
 import { PointStore, PointValidationError } from "../src/core/point-store.js";
 import { getPaneBounds, getPaneScaleRange } from "../src/renderer/canvas-renderer.js";
+import { prepareCandleRenderPoints } from "../src/renderer/candle-lod.js";
+import { TimeScale } from "../src/core/scales.js";
 
 test("ChartModel shares one viewport across candle, line, area, and volume series", () => {
   const model = new ChartModel();
@@ -73,6 +75,34 @@ test("professional candle types retain raw data while deriving visible Heikin-As
 
   const baselineRange = getPaneScaleRange([{ id: "baseline", type: "baseline", paneId: "main", style: { baseline: 0 }, data: [{ time: 1, value: 100 }] }]);
   assert.deepEqual(baselineRange, { min: 0, max: 100 }, "baseline value participates in autoscale");
+});
+
+test("dense candle display aggregation preserves extrema and exact source detail returns", () => {
+  const candles = Array.from({ length: 1_000 }, (_, index) => ({
+    time: index,
+    open: index,
+    high: 1_000 + index,
+    low: -index,
+    close: index + 0.25,
+    volume: index + 1,
+  }));
+  const denseScale = new TimeScale(candles.map((candle) => candle.time), { start: 0, end: 100 });
+  const dense = prepareCandleRenderPoints(candles, denseScale, { left: 0, right: 100 });
+  assert.ok(dense.length <= 100);
+  assert.deepEqual(dense[0]?.candle, { time: 0, open: 0, high: 1_009, low: -9, close: 9.25, volume: 55 });
+  assert.deepEqual(dense.at(-1)?.candle, { time: 990, open: 990, high: 1_999, low: -999, close: 999.25, volume: 9_955 });
+  assert.equal(dense[0]?.x, 0.5);
+  assert.equal(dense.at(-1)?.x, 99.5);
+
+  const rtlScale = new TimeScale(candles.map((candle) => candle.time), { start: 0, end: 100 }, "rtl");
+  const rtl = prepareCandleRenderPoints(candles, rtlScale, { left: 0, right: 100 });
+  assert.ok((rtl[0]?.x ?? 0) > (rtl.at(-1)?.x ?? 0), "RTL reverses display columns without changing chronological aggregation");
+
+  const exactScale = new TimeScale(candles.map((candle) => candle.time), { start: 0, end: 1_000 });
+  const exact = prepareCandleRenderPoints(candles, exactScale, { left: 0, right: 1_000 });
+  assert.equal(exact.length, candles.length);
+  assert.equal(exact[0]?.candle, candles[0], "high-zoom rendering retains the original candle object");
+  assert.equal(exact.at(-1)?.candle, candles.at(-1));
 });
 
 test("ChartModel replay cutoff masks every series while retaining protected source data", () => {
