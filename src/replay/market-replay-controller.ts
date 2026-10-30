@@ -85,6 +85,10 @@ export interface MarketReplayFormingCandle {
   readonly status: "opening" | "forming";
 }
 
+export interface MarketReplayCompletedCandle extends Candle {
+  readonly instrumentId: string;
+}
+
 export interface MarketReplayOrderBookState {
   readonly key: string;
   readonly state: OrderBookState;
@@ -107,7 +111,7 @@ export interface MarketReplaySnapshot {
   readonly clockPolicy: MarketReplayClockPolicy;
   readonly knowledgePolicy: MarketReplayKnowledgePolicy;
   /** Only completed candles contain final OHLCV. */
-  readonly completedCandles: readonly Candle[];
+  readonly completedCandles: readonly MarketReplayCompletedCandle[];
   /** Opening/forming events intentionally expose only the opening price. */
   readonly formingCandles: readonly MarketReplayFormingCandle[];
   readonly trades: readonly MarketTrade[];
@@ -341,9 +345,9 @@ export class MarketReplayController {
 
   public getSnapshot(): MarketReplaySnapshot {
     const current = this.projectedEvents[this.currentIndex];
-    const completedCandles = [...this.runtime.completedCandles.values()]
-      .sort((left, right) => left.candle.time - right.candle.time || left.candle.open - right.candle.open)
-      .map((item) => ({ ...item.candle }));
+    const completedCandles = [...this.runtime.completedCandles.entries()]
+      .sort(([, left], [, right]) => left.candle.time - right.candle.time || left.candle.open - right.candle.open)
+      .map(([key, item]) => ({ instrumentId: key.split("\u0000")[0] ?? key, ...item.candle }));
     const formingCandles = [...this.runtime.formingCandles.entries()]
       .map(([key, item]) => ({ instrumentId: key.split("\u0000")[0] ?? key, time: Number(key.split("\u0000")[1] ?? 0), open: item.open, ...(item.intervalMs === undefined ? {} : { intervalMs: item.intervalMs }), status: item.status } as MarketReplayFormingCandle))
       .sort((left, right) => left.time - right.time || left.instrumentId.localeCompare(right.instrumentId));
@@ -995,7 +999,7 @@ function snapshotFromCheckpoint(checkpoint: RuntimeCheckpoint, tape: MarketRepla
     speed: 1,
     clockPolicy,
     knowledgePolicy,
-    completedCandles: checkpoint.completedCandles.map(([, value]) => ({ ...value.candle })),
+    completedCandles: checkpoint.completedCandles.map(([key, value]) => ({ instrumentId: key.split("\u0000")[0] ?? key, ...value.candle })),
     formingCandles: checkpoint.formingCandles.map(([key, value]) => ({ instrumentId: key.split("\u0000")[0] ?? key, time: Number(key.split("\u0000")[1] ?? 0), open: value.open, ...(value.intervalMs === undefined ? {} : { intervalMs: value.intervalMs }), status: value.status })),
     trades: checkpoint.trades.map(([, value]) => cloneTrade(value)),
     tradeSummary: summarizeTrades(new Map(checkpoint.trades)),

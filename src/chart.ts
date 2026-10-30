@@ -16,6 +16,7 @@ import type {
 } from "./alerts/types.js";
 import { ReplayController, type ReplayControllerHost } from "./replay/controller.js";
 import type { ReplayApi, ReplayCursor, ReplayOptions, ReplayStatus } from "./replay/types.js";
+import { MarketReplayController, type MarketReplayControllerOptions, type MarketReplaySnapshot, type MarketReplayState } from "./replay/market-replay-controller.js";
 import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
 import type {
   InstalledPluginMetadata,
@@ -248,6 +249,11 @@ interface FootprintRenderCache {
   readonly error?: string;
 }
 
+export interface ChartMarketReplayOptions extends MarketReplayControllerOptions {
+  /** Instrument whose completed candles should be attached to this chart. */
+  readonly instrumentId?: string;
+}
+
 const DEFAULT_FOOTPRINT_DISPLAY: Required<FootprintDisplayOptions> = {
   visible: false,
   intervalMs: 60_000,
@@ -415,6 +421,13 @@ export class Chart {
   private replayRawSource: Candle[] | null = null;
   private replayCursorIndex: number | null = null;
   private replayRestoring = false;
+  private marketReplayController: MarketReplayController | null = null;
+  private marketReplayUnsubscribe: (() => void) | null = null;
+  private marketReplayBaseCandles: Candle[] | null = null;
+  private marketReplayBaseTrades: MarketTrade[] | null = null;
+  private marketReplayBaseOrderBook: OrderBookSnapshot | null = null;
+  private marketReplayInstrumentId: string | null = null;
+  private marketReplayApplying = false;
   private destroyed = false;
 
   public constructor(private readonly container: HTMLElement, options: ChartOptions = {}) {
@@ -582,7 +595,7 @@ export class Chart {
           instrumentId: query.instrumentId,
           ...(query.venueId === undefined ? {} : { venueId: query.venueId }),
           onTrade: (trade) => {
-            if (this.destroyed || requestId !== this.marketTradeRequestId || this.isReplayActive()) return;
+            if (this.destroyed || requestId !== this.marketTradeRequestId || this.isAnyReplayActive()) return;
             const update = this.ingestMarketTrade(trade);
             if (!update.changed) return;
             this.orderFlowRevision += 1;
@@ -658,10 +671,10 @@ export class Chart {
           instrumentId: query.instrumentId,
           ...(query.venueId === undefined ? {} : { venueId: query.venueId }),
           onSnapshot: (snapshot) => {
-            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isReplayActive()) this.applyOrderBookSnapshot(snapshot);
+            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isAnyReplayActive()) this.applyOrderBookSnapshot(snapshot);
           },
           onDelta: (delta) => {
-            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isReplayActive()) this.applyOrderBookDeltaInternal(delta);
+            if (!this.destroyed && requestId === this.orderBookRequestId && !this.isAnyReplayActive()) this.applyOrderBookDeltaInternal(delta);
           },
           onError: (error) => {
             if (!this.destroyed && requestId === this.orderBookRequestId) this.emit("datafeedError", error);
@@ -2038,6 +2051,34 @@ export class Chart {
     return controller;
   }
 
+  /**
+   * Attach the additive multi-stream historical replay controller to this
+   * chart. The chart displays completed candles and eligible trade-derived
+   * order flow for one selected instrument; the controller remains the
+   * authoritative multi-instrument research snapshot.
+   */
+  public createMarketReplay(options: ChartMarketReplayOptions): MarketReplayController {
+    this.assertAlive();
+    if (this.isReplayActive()) throw new Error("Exit the legacy candle replay before creating a unified market replay");
+    if (this.marketReplayController !== null && this.marketReplayController.getState().state !== "disposed") {
+      throw new Error("A unified market replay already exists; exit or dispose it before creating another");
+    }
+    this.marketReplayBaseCandles = this.rawCandles.map((candle) => ({ ...candle }));
+    this.marketReplayBaseTrades = this.marketTradeStore.getAll();
+    this.marketReplayBaseOrderBook = this.orderBookController?.getSnapshot() ?? null;
+    this.marketReplayInstrumentId = options.instrumentId ?? options.tape.instrumentIds[0] ?? null;
+    const controller = new MarketReplayController(options);
+    this.marketReplayController = controller;
+    this.marketReplayUnsubscribe = controller.subscribe((state) => this.handleMarketReplayState(state));
+    return controller;
+  }
+
+  /** Return the currently attached unified replay controller, if any. */
+  public getMarketReplay(): MarketReplayController | null {
+    this.assertAlive();
+    return this.marketReplayController;
+  }
+
   /** Load historical bars and optionally subscribe to future bar updates. */
   public async setDatafeed(datafeed: Datafeed, query: GetBarsQuery): Promise<void> {
     this.assertAlive();
@@ -2065,7 +2106,7 @@ export class Chart {
           symbol: query.symbol,
           timeframe: query.timeframe,
           onBar: (bar) => {
-            if (!this.isReplayActive()) this.update(bar);
+            if (!this.isAnyReplayActive()) this.update(bar);
           },
           onError: (error) => this.emit("datafeedError", error),
         });
@@ -2669,6 +2710,8 @@ export class Chart {
       return;
     }
     this.emit("chartDestroy", { timestamp: Date.now() });
+    this.marketReplayController?.dispose();
+    if (this.marketReplayController !== null) this.restoreMarketReplay();
     this.replayController?.dispose();
     this.replayController = null;
     this.alertEngine.dispose();
@@ -4603,6 +4646,101 @@ export class Chart {
     });
   }
 
+  private handleMarketReplayState(state: MarketReplayState): void {
+    if (state.state === "idle" || state.state === "disposed") {
+      this.restoreMarketReplay();
+      return;
+    }
+    if (state.state === "error") {
+      this.emit("replayError", new Error(state.error ?? "Unified market replay failed"));
+      return;
+    }
+    const controller = this.marketReplayController;
+    if (controller === null || this.destroyed) return;
+    this.applyMarketReplaySnapshot(controller.getSnapshot());
+  }
+
+  private applyMarketReplaySnapshot(snapshot: MarketReplaySnapshot): void {
+    if (this.marketReplayApplying) return;
+    this.marketReplayApplying = true;
+    try {
+      const instrumentId = this.marketReplayInstrumentId;
+      const candles = instrumentId === null
+        ? snapshot.completedCandles.map(({ instrumentId: _instrumentId, ...candle }) => candle)
+        : snapshot.completedCandles.filter((candle) => candle.instrumentId === instrumentId).map(({ instrumentId: _instrumentId, ...candle }) => candle);
+      this.rawCandles = candles.map((candle) => ({ ...candle }));
+      this.model.setData(this.rawCandles);
+      this.chartDataRevision += 1;
+      this.invalidateVolumeAnalytics();
+      this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
+      this.refreshWorkerIndicatorsFromInput();
+
+      const trades = instrumentId === null ? snapshot.trades : snapshot.trades.filter((trade) => trade.instrumentId === instrumentId);
+      this.replaceMarketTrades(trades);
+      this.orderFlowRevision += 1;
+      this.refreshOrderFlowPresentation();
+
+      const book = instrumentId === null
+        ? snapshot.orderBooks[0]
+        : snapshot.orderBooks.find((candidate) => candidate.state.instrumentId === instrumentId);
+      if (book?.state.status === "live" && book.state.source !== null && book.state.instrumentId !== null) {
+        const state = book.state;
+        const venueId = state.venueId;
+        const source = state.source;
+        const instrumentId = state.instrumentId;
+        if (source === null || instrumentId === null) return;
+        this.orderBookController?.dispose();
+        this.orderBookController = new OrderBookController({ instrumentId, ...(venueId === null ? {} : { venueId }), maxDepth: this.depthDisplay.maxLevels, source });
+        this.applyOrderBookSnapshot(orderBookSnapshotFromState(state));
+      } else if (this.orderBookController !== null) {
+        this.orderBookController.dispose();
+        this.orderBookController = null;
+      }
+      this.render();
+    } finally {
+      this.marketReplayApplying = false;
+    }
+  }
+
+  private restoreMarketReplay(): void {
+    const candles = this.marketReplayBaseCandles;
+    const trades = this.marketReplayBaseTrades;
+    const orderBook = this.marketReplayBaseOrderBook;
+    this.marketReplayUnsubscribe?.();
+    this.marketReplayUnsubscribe = null;
+    this.marketReplayController = null;
+    this.marketReplayBaseCandles = null;
+    this.marketReplayBaseTrades = null;
+    this.marketReplayBaseOrderBook = null;
+    this.marketReplayInstrumentId = null;
+    if (candles === null || this.destroyed) return;
+    this.marketReplayApplying = true;
+    try {
+      this.rawCandles = candles.map((candle) => ({ ...candle }));
+      this.model.setData(this.rawCandles);
+      this.chartDataRevision += 1;
+      this.invalidateVolumeAnalytics();
+      this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
+      this.refreshWorkerIndicatorsFromInput();
+      this.replaceMarketTrades(trades ?? []);
+      this.orderFlowRevision += 1;
+      this.refreshOrderFlowPresentation();
+      this.orderBookController?.dispose();
+      this.orderBookController = null;
+      if (orderBook !== null) {
+        this.orderBookController = new OrderBookController({ instrumentId: orderBook.instrumentId, ...(orderBook.venueId === undefined ? {} : { venueId: orderBook.venueId }), ...(orderBook.tickSize === undefined ? {} : { defaultTickSize: orderBook.tickSize }), source: orderBook.source });
+        this.applyOrderBookSnapshot(orderBook);
+      }
+      this.render();
+    } finally {
+      this.marketReplayApplying = false;
+    }
+  }
+
   private beginReplay(source: readonly Candle[]): void {
     if (this.isReplayActive()) throw new Error("Replay is already active");
     this.replayBaseWorkspace = this.serializeWorkspace();
@@ -4727,14 +4865,23 @@ export class Chart {
       && state !== "disposed";
   }
 
+  private isUnifiedReplayActive(): boolean {
+    const state = this.marketReplayController?.getState().state;
+    return state !== undefined && state !== "idle" && state !== "disposed";
+  }
+
+  private isAnyReplayActive(): boolean {
+    return this.isReplayActive() || this.isUnifiedReplayActive();
+  }
+
   private assertReplayDataMutationAllowed(): void {
-    if (this.isReplayActive() && !this.replayRestoring) {
+    if (this.isAnyReplayActive() && !this.replayRestoring && !this.marketReplayApplying) {
       throw new Error("Chart data is read-only during replay; exit replay before changing the source");
     }
   }
 
   private assertReplayStructureMutationAllowed(): void {
-    if (this.isReplayActive() && !this.replayRestoring) {
+    if (this.isAnyReplayActive() && !this.replayRestoring && !this.marketReplayApplying) {
       throw new Error("Chart structure is read-only during replay; exit replay before changing series, indicators, panes, or drawings");
     }
   }
@@ -4744,6 +4891,21 @@ export class Chart {
     this.datafeedCleanup?.();
     this.datafeedCleanup = null;
   }
+}
+
+function orderBookSnapshotFromState(state: OrderBookState): OrderBookSnapshot {
+  if (state.instrumentId === null || state.source === null) throw new Error("Cannot attach an order-book state without instrument and source identity");
+  return {
+    version: 1,
+    instrumentId: state.instrumentId,
+    ...(state.venueId === null ? {} : { venueId: state.venueId }),
+    time: state.lastEventTime ?? 0,
+    ...(state.lastSequence === null ? {} : { sequence: state.lastSequence }),
+    bids: state.bids.map((level) => ({ ...level })),
+    asks: state.asks.map((level) => ({ ...level })),
+    ...(state.tickSize === null ? {} : { tickSize: state.tickSize }),
+    source: { ...state.source },
+  };
 }
 
 function normalizePricePrecision(value: number): number {

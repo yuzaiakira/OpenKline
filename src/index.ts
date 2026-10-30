@@ -1,4 +1,5 @@
 export { Chart, createChart } from "./chart.js";
+export type { ChartMarketReplayOptions } from "./chart.js";
 export {
   AnchoredVwapCalculator,
   VolumeAnalyticsValidationError,
@@ -475,6 +476,7 @@ export {
 } from "./replay/index.js";
 export type {
   MarketReplayCheckpoint,
+  MarketReplayCompletedCandle,
   MarketReplayControllerOptions,
   MarketReplayCvdState,
   MarketReplayCursor,
@@ -490,6 +492,12 @@ export type {
   MarketReplayState,
   MarketReplayStateListener,
   MarketReplayTradeSummary,
+} from "./replay/index.js";
+export { MarketReplayCoordinator } from "./replay/index.js";
+export type {
+  MarketReplayPanelListener,
+  MarketReplayPanelRegistration,
+  MarketReplayPanelSnapshot,
 } from "./replay/index.js";
 export type {
   RestBarPayload,

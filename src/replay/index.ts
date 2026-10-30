@@ -56,6 +56,7 @@ export {
 } from "./market-replay-controller.js";
 export type {
   MarketReplayCheckpoint,
+  MarketReplayCompletedCandle,
   MarketReplayControllerOptions,
   MarketReplayCvdState,
   MarketReplayCursor,
@@ -72,3 +73,9 @@ export type {
   MarketReplayStateListener,
   MarketReplayTradeSummary,
 } from "./market-replay-controller.js";
+export { MarketReplayCoordinator } from "./market-replay-coordinator.js";
+export type {
+  MarketReplayPanelListener,
+  MarketReplayPanelRegistration,
+  MarketReplayPanelSnapshot,
+} from "./market-replay-coordinator.js";

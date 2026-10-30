@@ -262,7 +262,8 @@ function normalizeEvent(value: unknown, label: string): MarketReplayEvent {
     case "candle-open":
     case "candle-complete": {
       const candle = normalizeCandle(value.candle, `${label}.candle`);
-      if (candle.time !== time) throw new MarketReplayTapeValidationError(`${label}.candle.time must equal event time`);
+      if (kind === "candle-open" && candle.time !== time) throw new MarketReplayTapeValidationError(`${label}.candle.time must equal its opening event time`);
+      if (kind === "candle-complete" && candle.time > time) throw new MarketReplayTapeValidationError(`${label}.candle.time cannot be after its completion event time`);
       const finality = value.finality;
       if (kind === "candle-complete" && finality !== "completed") throw new MarketReplayTapeValidationError(`${label} completed candles require completed finality`);
       if (kind === "candle-open" && finality !== "opening" && finality !== "forming") throw new MarketReplayTapeValidationError(`${label} opening candles require opening or forming finality`);

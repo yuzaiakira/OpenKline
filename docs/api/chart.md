@@ -339,3 +339,32 @@ understanding these additions. The pane-bounds helper is also additive.
 The strict historical API checker remains the release gate. Run
 `npm run api:diagnostics` to review an intentional additive delta before
 requesting approval to update the stored baseline.
+## Unified market replay attachment
+
+The legacy `createReplay()` bar API remains unchanged. For research fixtures,
+`Chart.createMarketReplay()` attaches the additive multi-stream controller:
+
+```ts
+const replay = chart.createMarketReplay({
+  tape,
+  instrumentId: "BTC-USD",
+  clockPolicy: "event-time",
+  knowledgePolicy: "strict-causal",
+});
+
+replay.start();
+replay.stepNextEvent();
+const state = replay.getSnapshot();
+replay.exit(); // restores the chart candles, trade source, and depth source
+```
+
+The selected instrument's completed candle prefix and eligible trade-derived
+order-flow are attached to the chart. The controller remains the source of
+truth for multiple instruments and strict historical diagnostics. A live
+datafeed callback is ignored while the unified controller is active and the
+pre-replay chart data is restored on exit/disposal. Displayed Level-2 state is
+observational; this API does not provide broker execution or fill simulation.
+
+For two or more panels, use `MarketReplayCoordinator` with one controller.
+Panel registration is explicit and panel removal is isolated; removing one
+panel does not dispose another panel's source or the shared replay cursor.
