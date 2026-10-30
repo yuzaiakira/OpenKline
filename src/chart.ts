@@ -92,6 +92,19 @@ import {
   type VolumeProfileOptions,
   type VolumeProfileOptionsPatch,
 } from "./volume-analytics.js";
+import {
+  calculateMultiTimeframeIndicator,
+  calculatePreviousTimeframeLevels,
+  mapMultiTimeframeIndicatorToSourceTimes,
+  mapMultiTimeframeReferenceToSourceTimes,
+  type MultiTimeframeIndicatorApi,
+  type MultiTimeframeIndicatorOptions,
+  type MultiTimeframeIndicatorResult,
+  type MultiTimeframeReferenceApi,
+  type MultiTimeframeReferenceOptions,
+  type MultiTimeframeReferenceResult,
+  type MultiTimeframeReferenceStyle,
+} from "./multi-timeframe.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -122,6 +135,24 @@ interface ManagedVolumeProfile {
   options: ResolvedVolumeProfileOptions;
   cache: { readonly key: string; readonly result: EstimatedVolumeProfileResult } | undefined;
   api?: VolumeProfileApi;
+}
+
+interface ManagedMultiTimeframeIndicator {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  options: MultiTimeframeIndicatorOptions & { readonly id: string };
+  outputSeriesIds: string[];
+  outputStyles: Record<string, import("./types.js").SeriesStyle>;
+  visible: boolean;
+  result: MultiTimeframeIndicatorResult;
+}
+
+interface ManagedMultiTimeframeReference {
+  readonly id: string;
+  options: MultiTimeframeReferenceOptions & { readonly id: string };
+  visible: boolean;
+  result: MultiTimeframeReferenceResult;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -171,6 +202,9 @@ export class Chart {
   private readonly volumeProfiles = new Map<string, ManagedVolumeProfile>();
   private nextVolumeProfileId = 1;
   private volumeAnalyticsRevision = 0;
+  private readonly multiTimeframeIndicators = new Map<string, ManagedMultiTimeframeIndicator>();
+  private readonly multiTimeframeReferences = new Map<string, ManagedMultiTimeframeReference>();
+  private nextMultiTimeframeId = 1;
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
   private strategyMarkers: StrategyMarker[] = [];
@@ -278,6 +312,7 @@ export class Chart {
     this.model.setData(candles);
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromInput();
+    this.refreshMultiTimeframe();
     this.refreshWorkerIndicatorsFromInput();
     this.resetLiveAlerts(candles.at(-1));
     this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
@@ -292,6 +327,7 @@ export class Chart {
     this.model.update(candle);
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
+    this.refreshMultiTimeframe();
     this.refreshWorkerIndicatorsFromUpdate(candle);
     this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
@@ -526,7 +562,10 @@ export class Chart {
   public serializeWorkspace(metadata?: WorkspaceMetadata): WorkspaceDocument {
     this.assertAlive();
     const indicatorSeriesIds = new Set(
-      [...this.indicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
+      [
+        ...[...this.indicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
+        ...[...this.multiTimeframeIndicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
+      ],
     );
     const panes = this.model.getPaneConfigs().map((pane) => ({
       id: pane.id,
@@ -553,6 +592,32 @@ export class Chart {
         Object.entries(indicator.outputStyles).map(([outputId, style]) => [outputId, { ...style }]),
       ),
       ...(indicator.script === undefined ? {} : { script: { ...indicator.script } }),
+    }));
+    const multiTimeframeIndicators = [...this.multiTimeframeIndicators.values()].map((indicator) => ({
+      id: indicator.id,
+      indicatorId: indicator.indicatorId,
+      paneId: indicator.paneId,
+      sourceTimeframe: indicator.options.sourceTimeframe,
+      targetTimeframe: indicator.options.targetTimeframe,
+      parameters: toJsonObject(indicator.options.parameters ?? {}, `multi-timeframe indicator ${indicator.id} parameters`),
+      coveragePolicy: indicator.options.coveragePolicy ?? "unknown",
+      missingVolumePolicy: indicator.options.missingVolumePolicy ?? "ignore",
+      finalityPolicy: indicator.options.finalityPolicy ?? "time-closed",
+      outputStyles: cloneSeriesStyles(indicator.outputStyles),
+      visible: indicator.visible,
+    }));
+    const multiTimeframeReferences = [...this.multiTimeframeReferences.values()].map((reference) => ({
+      id: reference.id,
+      sourceTimeframe: reference.options.sourceTimeframe,
+      targetTimeframe: reference.options.targetTimeframe,
+      levels: [...(reference.options.levels ?? ["open", "high", "low", "close"])],
+      coveragePolicy: reference.options.coveragePolicy ?? "unknown",
+      missingVolumePolicy: reference.options.missingVolumePolicy ?? "ignore",
+      finalityPolicy: reference.options.finalityPolicy ?? "time-closed",
+      visible: reference.visible,
+      labels: reference.options.labels ?? true,
+      labelPrefix: reference.options.labelPrefix ?? "Previous",
+      style: { ...(reference.options.style ?? {}) },
     }));
     const plugins = this.pluginRegistry.list().map((plugin) => ({
       id: plugin.id,
@@ -589,6 +654,9 @@ export class Chart {
             ...(profile.options.range === undefined ? {} : { range: { ...profile.options.range } }),
           })),
         },
+      }),
+      ...(multiTimeframeIndicators.length === 0 && multiTimeframeReferences.length === 0 ? {} : {
+        multiTimeframe: { indicators: multiTimeframeIndicators, references: multiTimeframeReferences },
       }),
       ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
@@ -645,6 +713,7 @@ export class Chart {
     this.clearVolumeProfiles();
     this.anchoredVwaps.clear();
     this.pendingAnchoredVwapId = null;
+    this.clearMultiTimeframe();
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     this.nextIndicatorId = 1;
@@ -704,6 +773,37 @@ export class Chart {
           ? this.addIndicator(indicator.indicatorId, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } })
           : this.addScriptIndicator(script, { id: indicator.id, pane: indicator.paneId, parameters: { ...indicator.parameters } });
       for (const [outputId, style] of Object.entries(indicator.outputStyles)) api.setOutputStyle(outputId, style);
+    }
+    for (const indicator of parsed.multiTimeframe?.indicators ?? []) {
+      const api = this.addMultiTimeframeIndicator({
+        id: indicator.id,
+        indicatorId: indicator.indicatorId,
+        pane: indicator.paneId,
+        sourceTimeframe: indicator.sourceTimeframe,
+        targetTimeframe: indicator.targetTimeframe,
+        parameters: { ...indicator.parameters },
+        coveragePolicy: indicator.coveragePolicy,
+        missingVolumePolicy: indicator.missingVolumePolicy,
+        finalityPolicy: indicator.finalityPolicy,
+        outputStyles: indicator.outputStyles,
+        visible: indicator.visible,
+      });
+      api.setVisible(indicator.visible);
+    }
+    for (const reference of parsed.multiTimeframe?.references ?? []) {
+      this.addMultiTimeframeReference({
+        id: reference.id,
+        sourceTimeframe: reference.sourceTimeframe,
+        targetTimeframe: reference.targetTimeframe,
+        levels: reference.levels,
+        coveragePolicy: reference.coveragePolicy,
+        missingVolumePolicy: reference.missingVolumePolicy,
+        finalityPolicy: reference.finalityPolicy,
+        visible: reference.visible,
+        labels: reference.labels,
+        labelPrefix: reference.labelPrefix,
+        style: reference.style,
+      });
     }
     this.drawingEngine.restore(parsed.drawings);
     this.model.setViewportState(parsed.viewport);
@@ -893,6 +993,91 @@ export class Chart {
   public getVolumeProfiles(): VolumeProfileApi[] {
     this.assertAlive();
     return [...this.volumeProfiles.values()].map((state) => state.api!).filter((api): api is VolumeProfileApi => api !== undefined);
+  }
+
+  /** Add a causal higher-timeframe indicator backed by the existing registry. */
+  public addMultiTimeframeIndicator(options: MultiTimeframeIndicatorOptions): MultiTimeframeIndicatorApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const id = options.id ?? `multi-timeframe-${this.nextMultiTimeframeId++}`;
+    if (this.multiTimeframeIndicators.has(id) || this.multiTimeframeReferences.has(id) || this.indicators.has(id)) throw new Error(`Indicator id already exists: ${id}`);
+    const paneId = options.pane === "new" ? this.model.addPane({ height: 180 }) : options.pane ?? "main";
+    if (!this.model.getPaneIds().includes(paneId)) throw new Error(`Unknown pane id: ${paneId}`);
+    const normalizedOptions: MultiTimeframeIndicatorOptions & { readonly id: string } = {
+      ...options,
+      id,
+      pane: paneId,
+      parameters: options.parameters === undefined ? {} : { ...options.parameters },
+      outputStyles: options.outputStyles === undefined ? {} : cloneSeriesStyles(options.outputStyles),
+      visible: options.visible ?? true,
+    };
+    const result = calculateMultiTimeframeIndicator(this.model.allCandles, normalizedOptions, this.indicatorRegistry);
+    const state: ManagedMultiTimeframeIndicator = {
+      id,
+      indicatorId: result.indicatorId,
+      paneId,
+      options: normalizedOptions,
+      outputSeriesIds: [],
+      outputStyles: cloneSeriesStyles(options.outputStyles ?? {}),
+      visible: normalizedOptions.visible ?? true,
+      result,
+    };
+    for (const output of result.outputs) {
+      const seriesId = `${id}:${output.id}`;
+      const band = output.kind === "band" ? { group: id, role: output.bandRole ?? "upper" } : undefined;
+      this.model.addSeries(output.kind === "histogram" ? "histogram" : "line", {
+        id: seriesId,
+        title: `${options.indicatorId} ${output.title} (${options.targetTimeframe})`,
+        pane: paneId,
+        ...(band === undefined ? {} : { band }),
+        style: { ...(state.outputStyles[output.id] ?? {}), visible: state.visible },
+      });
+      state.outputSeriesIds.push(seriesId);
+    }
+    this.multiTimeframeIndicators.set(id, state);
+    this.syncMultiTimeframeIndicator(state);
+    this.emit("indicatorChange", { action: "add", id, indicatorId: state.indicatorId });
+    this.render();
+    return this.wrapMultiTimeframeIndicatorApi(state);
+  }
+
+  /** Return defensive APIs for chart-owned higher-timeframe indicators. */
+  public getMultiTimeframeIndicators(): MultiTimeframeIndicatorApi[] {
+    this.assertAlive();
+    return [...this.multiTimeframeIndicators.values()].map((state) => this.wrapMultiTimeframeIndicatorApi(state));
+  }
+
+  /** Add previous completed higher-timeframe OHLC reference levels. */
+  public addMultiTimeframeReference(options: MultiTimeframeReferenceOptions): MultiTimeframeReferenceApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const id = options.id ?? `multi-timeframe-reference-${this.nextMultiTimeframeId++}`;
+    if (this.multiTimeframeReferences.has(id) || this.multiTimeframeIndicators.has(id) || this.indicators.has(id)) throw new Error(`Reference id already exists: ${id}`);
+    const normalizedOptions: MultiTimeframeReferenceOptions & { readonly id: string } = {
+      ...options,
+      id,
+      levels: options.levels === undefined ? ["open", "high", "low", "close"] : [...options.levels],
+      visible: options.visible ?? true,
+      labels: options.labels ?? true,
+      labelPrefix: options.labelPrefix ?? "Previous",
+      style: { color: "#f59e0b", lineWidth: 1.5, lineStyle: "dashed", alpha: 0.9, ...(options.style ?? {}) },
+    };
+    const state: ManagedMultiTimeframeReference = {
+      id,
+      options: normalizedOptions,
+      visible: normalizedOptions.visible ?? true,
+      result: calculatePreviousTimeframeLevels(this.model.allCandles, normalizedOptions),
+    };
+    this.multiTimeframeReferences.set(id, state);
+    this.syncMultiTimeframeReference(state);
+    this.render();
+    return this.wrapMultiTimeframeReferenceApi(state);
+  }
+
+  /** Return defensive APIs for chart-owned higher-timeframe reference levels. */
+  public getMultiTimeframeReferences(): MultiTimeframeReferenceApi[] {
+    this.assertAlive();
+    return [...this.multiTimeframeReferences.values()].map((state) => this.wrapMultiTimeframeReferenceApi(state));
   }
 
   /** Add a validated KlineScript program through the existing indicator lifecycle. */
@@ -1116,7 +1301,10 @@ export class Chart {
     const wasPrimaryCandleSeries = this.model.isPrimaryCandleSeries(id);
     this.model.removeSeries(id);
     this.invalidateVolumeAnalytics();
-    if (wasPrimaryCandleSeries) this.refreshIndicatorsFromInput();
+    if (wasPrimaryCandleSeries) {
+      this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
+    }
     this.render();
   }
 
@@ -1462,6 +1650,7 @@ export class Chart {
     this.anchoredVwaps.clear();
     this.pendingAnchoredVwapId = null;
     this.clearVolumeProfiles();
+    this.clearMultiTimeframe();
     this.model.destroy();
     this.baseFrame = null;
     this.replayCursorIndex = null;
@@ -1898,6 +2087,7 @@ export class Chart {
     const paperTradingMarkers = this.getPaperTradingMarkerOverlay();
     if (paperTradingMarkers !== null) items.push(paperTradingMarkers);
     items.push(...this.getVolumeProfileOverlayItems());
+    items.push(...this.getMultiTimeframeReferenceOverlayItems());
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -1973,6 +2163,64 @@ export class Chart {
         }
       }
       return { id: `openkline.${profile.id}`, zIndex: 12, commands };
+    });
+  }
+
+  private getMultiTimeframeReferenceOverlayItems(): PluginOverlayRenderItem[] {
+    const visibleReferences = [...this.multiTimeframeReferences.values()].filter((reference) => reference.visible);
+    if (visibleReferences.length === 0) return [];
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    const visibleTimes = this.model.getVisibleData().times;
+    if (context === null || context === undefined || pane === undefined || visibleTimes.length === 0) return [];
+    const visibleFrom = visibleTimes[0]!;
+    const visibleTo = visibleTimes.at(-1)! + 1;
+    return visibleReferences.map((reference) => {
+      const options = reference.options;
+      const style = options.style ?? {};
+      const mapped = mapMultiTimeframeReferenceToSourceTimes(reference.result, visibleTimes);
+      const commands: PluginRenderCommand[] = [];
+      const points = reference.result.points.filter((point) => point.availableAt !== null && Object.keys(point.levels).length > 0);
+      points.forEach((point, index) => {
+        const start = Math.max(visibleFrom, point.bucketStart);
+        const end = Math.min(visibleTo, points[index + 1]?.bucketStart ?? visibleTo);
+        if (end <= start) return;
+        const fromX = context.xForTime(start);
+        const toX = context.xForTime(end);
+        for (const level of options.levels ?? ["open", "high", "low", "close"]) {
+          const value = point.levels[level];
+          if (value === undefined || !Number.isFinite(value)) continue;
+          const dash = lineStyleDash(style.lineStyle);
+          commands.push({
+            kind: "line",
+            from: { x: fromX, y: pane.yForPrice(value) },
+            to: { x: toX, y: pane.yForPrice(value) },
+            ...(style.color === undefined ? {} : { color: style.color }),
+            ...(style.lineWidth === undefined ? {} : { lineWidth: style.lineWidth }),
+            ...(style.alpha === undefined ? {} : { alpha: style.alpha }),
+            ...(dash === undefined ? {} : { dash }),
+          } as PluginRenderCommand);
+        }
+      });
+      if (options.labels !== false) {
+        const latest = mapped.at(-1);
+        if (latest !== undefined) {
+          for (const level of options.levels ?? ["open", "high", "low", "close"]) {
+            const value = latest.levels[level];
+            if (value === undefined || !Number.isFinite(value)) continue;
+            commands.push({
+              kind: "text",
+              x: pane.right - 74,
+              y: pane.yForPrice(value) - 7,
+              text: `${options.labelPrefix ?? "Previous"} ${level.toUpperCase()}`,
+              ...(style.color === undefined ? {} : { color: style.color }),
+              font: "10px system-ui, sans-serif",
+              ...(style.alpha === undefined ? {} : { alpha: style.alpha }),
+            });
+          }
+        }
+      }
+      return { id: `openkline.${reference.id}`, zIndex: 13, commands };
     });
   }
 
@@ -2184,6 +2432,7 @@ export class Chart {
         if (this.model.isPrimaryCandleSeries(id)) this.invalidateVolumeAnalytics();
         if (this.model.isPrimaryCandleSeries(id)) {
           this.refreshIndicatorsFromInput();
+          this.refreshMultiTimeframe();
           this.resetLiveAlerts((data.at(-1) as Candle | undefined));
         }
         this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
@@ -2199,6 +2448,7 @@ export class Chart {
         if (primaryCandleSeries) this.invalidateVolumeAnalytics();
         if (primaryCandleSeries) {
           this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+          this.refreshMultiTimeframe();
           this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
         }
         this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
@@ -2223,6 +2473,138 @@ export class Chart {
     let id = `indicator-${this.nextIndicatorId++}`;
     while (this.indicators.has(id)) id = `indicator-${this.nextIndicatorId++}`;
     return id;
+  }
+
+  private wrapMultiTimeframeIndicatorApi(state: ManagedMultiTimeframeIndicator): MultiTimeframeIndicatorApi {
+    return {
+      id: state.id,
+      indicatorId: state.indicatorId,
+      paneId: state.paneId,
+      getOptions: () => ({
+        ...state.options,
+        parameters: { ...(state.options.parameters ?? {}) },
+        outputStyles: cloneSeriesStyles(state.outputStyles),
+        visible: state.visible,
+      }),
+      getResult: () => cloneMultiTimeframeIndicatorResult(state.result),
+      setParameters: (parameters) => {
+        this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
+        state.options = { ...state.options, parameters: { ...parameters } };
+        this.syncMultiTimeframeIndicator(state);
+        this.emit("indicatorChange", { action: "update", id: state.id, indicatorId: state.indicatorId });
+        this.render();
+      },
+      setOutputStyle: (outputId, style) => {
+        this.assertAlive();
+        const outputIndex = state.result.outputs.findIndex((output) => output.id === outputId);
+        const seriesId = outputIndex < 0 ? undefined : state.outputSeriesIds[outputIndex];
+        if (seriesId === undefined) throw new Error(`Unknown multi-timeframe indicator output: ${state.indicatorId}:${outputId}`);
+        state.outputStyles[outputId] = { ...(state.outputStyles[outputId] ?? {}), ...style };
+        this.model.setSeriesStyle(seriesId, { ...state.outputStyles[outputId], visible: state.visible && (state.outputStyles[outputId]?.visible ?? true) });
+        this.render();
+      },
+      setVisible: (visible) => {
+        this.assertAlive();
+        state.visible = visible;
+        state.options = { ...state.options, visible };
+        for (const [index, seriesId] of state.outputSeriesIds.entries()) {
+          const output = state.result.outputs[index];
+          if (output !== undefined) this.model.setSeriesStyle(seriesId, { ...(state.outputStyles[output.id] ?? {}), visible: visible && (state.outputStyles[output.id]?.visible ?? true) });
+        }
+        this.render();
+      },
+      remove: () => {
+        this.assertAlive();
+        this.removeMultiTimeframeIndicator(state.id);
+      },
+    };
+  }
+
+  private wrapMultiTimeframeReferenceApi(state: ManagedMultiTimeframeReference): MultiTimeframeReferenceApi {
+    return {
+      id: state.id,
+      getOptions: () => ({
+        ...state.options,
+        levels: [...(state.options.levels ?? [])],
+        style: { ...(state.options.style ?? {}) },
+        visible: state.visible,
+      }),
+      getResult: () => cloneMultiTimeframeReferenceResult(state.result),
+      setOptions: (patch) => {
+        this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
+        state.options = { ...state.options, ...patch, id: state.id };
+        state.visible = state.options.visible ?? state.visible;
+        this.syncMultiTimeframeReference(state);
+        this.render();
+      },
+      setVisible: (visible) => {
+        this.assertAlive();
+        state.visible = visible;
+        state.options = { ...state.options, visible };
+        this.render();
+      },
+      remove: () => {
+        this.assertAlive();
+        this.removeMultiTimeframeReference(state.id);
+      },
+    };
+  }
+
+  private removeMultiTimeframeIndicator(id: string): void {
+    const state = this.multiTimeframeIndicators.get(id);
+    if (state === undefined) return;
+    for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    this.multiTimeframeIndicators.delete(id);
+    this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
+    this.render();
+  }
+
+  private removeMultiTimeframeReference(id: string): void {
+    if (!this.multiTimeframeReferences.delete(id)) return;
+    this.render();
+  }
+
+  private syncMultiTimeframeIndicator(state: ManagedMultiTimeframeIndicator): void {
+    const candles = this.model.allCandles;
+    const latestTime = candles.at(-1)?.time;
+    state.result = calculateMultiTimeframeIndicator(candles, {
+      ...state.options,
+      ...(latestTime === undefined ? {} : { asOfTime: latestTime }),
+    }, this.indicatorRegistry);
+    for (const [index, output] of state.result.outputs.entries()) {
+      const seriesId = state.outputSeriesIds[index];
+      if (seriesId === undefined) continue;
+      const points = mapMultiTimeframeIndicatorToSourceTimes(state.result, candles.map((candle) => candle.time), output.id)
+        .filter((point) => point.value !== null && point.availableAt !== null)
+        .map((point) => ({ time: point.time, value: point.value! }));
+      this.model.setSeriesData(seriesId, points);
+      this.model.setSeriesStyle(seriesId, { ...(state.outputStyles[output.id] ?? {}), visible: state.visible && (state.outputStyles[output.id]?.visible ?? true) });
+    }
+  }
+
+  private syncMultiTimeframeReference(state: ManagedMultiTimeframeReference): void {
+    const candles = this.model.allCandles;
+    const latestTime = candles.at(-1)?.time;
+    state.result = calculatePreviousTimeframeLevels(candles, {
+      ...state.options,
+      ...(latestTime === undefined ? {} : { asOfTime: latestTime }),
+    });
+  }
+
+  private refreshMultiTimeframe(): void {
+    for (const state of this.multiTimeframeIndicators.values()) this.syncMultiTimeframeIndicator(state);
+    for (const state of this.multiTimeframeReferences.values()) this.syncMultiTimeframeReference(state);
+  }
+
+  private clearMultiTimeframe(): void {
+    for (const state of this.multiTimeframeIndicators.values()) {
+      for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    }
+    this.multiTimeframeIndicators.clear();
+    this.multiTimeframeReferences.clear();
+    this.nextMultiTimeframeId = 1;
   }
 
   private assertAlive(): void {
@@ -2434,6 +2816,7 @@ export class Chart {
       this.replayCursorIndex = null;
       this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
       this.refreshWorkerIndicatorsFromInput();
       this.render();
     } catch (error) {
@@ -2455,12 +2838,14 @@ export class Chart {
     const visibleLastCandle = isSequentialAppend ? this.model.allCandles.at(-1) : undefined;
     if (visibleLastCandle === undefined) {
       this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
       this.refreshWorkerIndicatorsFromInput();
       this.alertEngine.reset("replay", true);
       const visibleCandles = this.model.allCandles;
       visibleCandles.forEach((candle, index) => this.evaluateReplayAlerts(candle, index === 0 ? "seed" : "append"));
     } else {
       this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
+      this.refreshMultiTimeframe();
       this.refreshWorkerIndicatorsFromUpdate(visibleLastCandle);
       this.evaluateReplayAlerts(visibleLastCandle, "append");
     }
@@ -2631,7 +3016,8 @@ function isPluginRenderCommand(value: unknown): value is PluginOverlayRenderItem
   const finite = (item: unknown): item is number => typeof item === "number" && Number.isFinite(item);
   const validAlpha = command.alpha === undefined || (finite(command.alpha) && command.alpha >= 0 && command.alpha <= 1);
   const validWidth = command.lineWidth === undefined || (finite(command.lineWidth) && command.lineWidth >= 0 && command.lineWidth <= 32);
-  if (!validAlpha || !validWidth) return false;
+  const validDash = command.dash === undefined || (Array.isArray(command.dash) && command.dash.length <= 8 && command.dash.every((item) => finite(item) && item >= 0 && item <= 100));
+  if (!validAlpha || !validWidth || !validDash) return false;
   if (command.kind === "line") {
     return isPoint(command.from) && isPoint(command.to)
       && (command.color === undefined || typeof command.color === "string");
@@ -2655,6 +3041,43 @@ function isPoint(value: unknown): value is { x: number; y: number } {
   const point = value as Record<string, unknown>;
   return typeof point.x === "number" && Number.isFinite(point.x)
     && typeof point.y === "number" && Number.isFinite(point.y);
+}
+
+function lineStyleDash(style: MultiTimeframeReferenceStyle["lineStyle"]): readonly number[] | undefined {
+  if (style === "dashed") return [6, 4];
+  if (style === "dotted") return [2, 3];
+  return undefined;
+}
+
+function cloneSeriesStyles(styles: Readonly<Record<string, import("./types.js").SeriesStyle>>): Record<string, import("./types.js").SeriesStyle> {
+  return Object.fromEntries(Object.entries(styles).map(([id, style]) => [id, { ...style }]));
+}
+
+function cloneMultiTimeframeIndicatorResult(result: MultiTimeframeIndicatorResult): MultiTimeframeIndicatorResult {
+  return {
+    ...result,
+    sourceTimeframe: { ...result.sourceTimeframe },
+    targetTimeframe: { ...result.targetTimeframe },
+    parameters: { ...result.parameters },
+    observations: result.observations.map((observation) => ({
+      ...observation,
+      candle: { ...observation.candle },
+      sourceTimes: [...observation.sourceTimes],
+    })),
+    outputs: result.outputs.map((output) => ({
+      ...output,
+      points: output.points.map((point) => ({ ...point, sourceTimes: [...point.sourceTimes] })),
+    })),
+  };
+}
+
+function cloneMultiTimeframeReferenceResult(result: MultiTimeframeReferenceResult): MultiTimeframeReferenceResult {
+  return {
+    ...result,
+    sourceTimeframe: { ...result.sourceTimeframe },
+    targetTimeframe: { ...result.targetTimeframe },
+    points: result.points.map((point) => ({ ...point, sourceTimes: [...point.sourceTimes], levels: { ...point.levels } })),
+  };
 }
 
 function findOutputPointAtTime(points: readonly { readonly time: number; readonly value: number | null }[], time: number): { readonly time: number; readonly value: number | null } | undefined {

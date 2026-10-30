@@ -25,6 +25,14 @@ its UTC anchor, price source, and output style therefore use the same version-1
 indicator persistence path. Older version-1 documents that omit
 `volumeAnalytics` remain valid.
 
+The optional Phase 10 `multiTimeframe` member stores only indicator and
+previous-level configuration: source/target fixed durations, registry
+indicator parameters, coverage/finality/volume policies, pane IDs, styles,
+visibility, selected OHLC reference levels, and labels. Aggregated candles,
+derived points, caches, and application calendar callbacks are runtime state
+and are not serialized. The version remains `1`; legacy documents omit this
+member safely.
+
 The private Studio document (`StudioWorkspaceDocument`) is a separate
 version-1 envelope around chart workspaces. Its optional `comparison` member
 stores active state, normalization mode, UTC baseline, maximum baseline age,

@@ -118,6 +118,46 @@ test("workspace parser preserves professional chart series and appearance settin
   }), WorkspaceValidationError);
 });
 
+test("workspace parser round-trips additive multi-timeframe configuration without derived data", () => {
+  const input = workspace();
+  const parsed = parseWorkspace({
+    ...input,
+    multiTimeframe: {
+      indicators: [{
+        id: "mtf-sma",
+        indicatorId: "SMA",
+        paneId: "main",
+        sourceTimeframe: "1m",
+        targetTimeframe: "5m",
+        parameters: { period: 3 },
+        coveragePolicy: "fixed-duration",
+        missingVolumePolicy: "ignore",
+        finalityPolicy: "complete-only",
+        outputStyles: { value: { color: "#60a5fa" } },
+        visible: true,
+      }],
+      references: [{
+        id: "previous-5m",
+        sourceTimeframe: "1m",
+        targetTimeframe: "5m",
+        levels: ["open", "high", "low", "close"],
+        coveragePolicy: "fixed-duration",
+        missingVolumePolicy: "ignore",
+        finalityPolicy: "complete-only",
+        visible: true,
+        labels: true,
+        labelPrefix: "Previous",
+        style: { color: "#f59e0b", lineStyle: "dashed", lineWidth: 1.5, alpha: 0.8 },
+      }],
+    },
+  });
+  assert.equal(parsed.multiTimeframe?.indicators[0]?.targetTimeframe, "5m");
+  assert.equal(parsed.multiTimeframe?.references[0]?.style.lineStyle, "dashed");
+  assert.throws(() => parseWorkspace({ ...input, multiTimeframe: { indicators: [{
+    id: "bad", indicatorId: "SMA", paneId: "main", sourceTimeframe: "1m", targetTimeframe: "1W", parameters: {}, coveragePolicy: "unknown", missingVolumePolicy: "ignore", finalityPolicy: "time-closed", outputStyles: {}, visible: true,
+  }], references: [] } }), WorkspaceValidationError);
+});
+
 test("workspace parser rejects invalid references, ordering, and JSON state", () => {
   assert.throws(() => parseWorkspace({ ...workspace(), version: 2 }), WorkspaceValidationError);
   assert.throws(() => parseWorkspace({

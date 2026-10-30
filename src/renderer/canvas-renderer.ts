@@ -511,6 +511,7 @@ export class CanvasRenderer {
       for (const command of overlay.commands) {
         context.globalAlpha = normalizeOpacity(command.alpha ?? 1);
         if (command.kind === "line") {
+          context.setLineDash(command.dash === undefined ? [] : [...command.dash]);
           context.strokeStyle = command.color ?? theme.crosshair;
           context.lineWidth = normalizeLineWidth(command.lineWidth ?? 1.5);
           context.beginPath();
@@ -518,12 +519,14 @@ export class CanvasRenderer {
           context.lineTo(command.to.x, command.to.y);
           context.stroke();
         } else if (command.kind === "rectangle") {
+          context.setLineDash([]);
           context.strokeStyle = command.color ?? theme.crosshair;
           context.fillStyle = command.fillColor ?? "transparent";
           context.lineWidth = normalizeLineWidth(command.lineWidth ?? 1.5);
           if (command.fillColor !== undefined) context.fillRect(command.left, command.top, command.width, command.height);
           context.strokeRect(command.left, command.top, command.width, command.height);
         } else {
+          context.setLineDash([]);
           context.fillStyle = command.color ?? theme.text;
           context.font = command.font ?? "12px system-ui, sans-serif";
           context.textAlign = "left";
@@ -533,6 +536,7 @@ export class CanvasRenderer {
       }
     }
     context.globalAlpha = 1;
+    context.setLineDash([]);
     context.restore();
   }
 

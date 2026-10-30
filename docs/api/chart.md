@@ -236,6 +236,30 @@ Indicator outputs can be assigned to `pane: "new"`, `pane: "main"`, or a
 named pane. RSI, MACD, and Stochastic therefore use independent scales while
 remaining synchronized with price and volume.
 
+## Multi-timeframe overlays
+
+`chart.addMultiTimeframeIndicator({ sourceTimeframe, targetTimeframe,
+indicatorId, ... })` adds a derived indicator series while reusing the chart's
+existing panes, time scale, renderer, replay lifecycle, and disposal path. The
+source and target are fixed UTC durations with an integer ratio. Higher-timeframe
+SMA, EMA, and RSI calculations use the public `IndicatorRegistry`; custom
+registered indicator definitions can be used as well. The returned API exposes
+`getResult()`, `setParameters()`, `setOutputStyle()`, `setVisible()`, and
+`remove()`.
+
+The chart maps a derived output onto source timestamps only after the output's
+`availableAt` frontier. Forming or warm-up values are omitted from the drawn
+series, while their metadata remains available in `getResult()`. `setData`,
+corrections, realtime updates, datafeed replacement, replay cursors, resize,
+and destruction all use the same managed lifecycle.
+
+`chart.addMultiTimeframeReference()` draws previous completed target-period
+OHLC levels through the existing Canvas overlay path. It supports configurable
+level selection, labels, color, opacity, width, and solid/dashed/dotted line
+styles. It never uses the current forming period as its own reference. Both
+multi-timeframe APIs are additive; version-1 workspaces without them remain
+valid. See [multi-timeframe analysis](multi-timeframe.md).
+
 Drawing anchors use UTC millisecond timestamps and prices in the main pane.
 Built-in tools are horizontal/vertical lines, trend lines, rectangles,
 Fibonacci retracements, and text. Drawing styles support color, fill, line

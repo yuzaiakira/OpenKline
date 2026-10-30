@@ -5,6 +5,7 @@ import { isCandleSeriesType } from "./core/candle-series.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
 import { resolveVolumeProfileOptions, type ResolvedVolumeProfileOptions, type VolumeProfileOptions } from "./volume-analytics.js";
+import { validateTimeframePair, type MultiTimeframeFinalityPolicy, type MultiTimeframeMissingVolumePolicy, type MultiTimeframeReferenceStyle, type PreviousTimeframeLevel } from "./multi-timeframe.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -62,6 +63,39 @@ export interface WorkspaceVolumeAnalytics {
   readonly volumeProfiles: readonly WorkspaceVolumeProfile[];
 }
 
+export interface WorkspaceMultiTimeframeIndicator {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  readonly sourceTimeframe: string;
+  readonly targetTimeframe: string;
+  readonly parameters: Readonly<Record<string, JsonValue>>;
+  readonly coveragePolicy: "unknown" | "fixed-duration";
+  readonly missingVolumePolicy: MultiTimeframeMissingVolumePolicy;
+  readonly finalityPolicy: MultiTimeframeFinalityPolicy;
+  readonly outputStyles: Readonly<Record<string, SeriesStyle>>;
+  readonly visible: boolean;
+}
+
+export interface WorkspaceMultiTimeframeReference {
+  readonly id: string;
+  readonly sourceTimeframe: string;
+  readonly targetTimeframe: string;
+  readonly levels: readonly PreviousTimeframeLevel[];
+  readonly coveragePolicy: "unknown" | "fixed-duration";
+  readonly missingVolumePolicy: MultiTimeframeMissingVolumePolicy;
+  readonly finalityPolicy: MultiTimeframeFinalityPolicy;
+  readonly visible: boolean;
+  readonly labels: boolean;
+  readonly labelPrefix: string;
+  readonly style: MultiTimeframeReferenceStyle;
+}
+
+export interface WorkspaceMultiTimeframeAnalysis {
+  readonly indicators: readonly WorkspaceMultiTimeframeIndicator[];
+  readonly references: readonly WorkspaceMultiTimeframeReference[];
+}
+
 /** A replay export marker; it is descriptive and is not a replay source. */
 export interface WorkspaceReplayState {
   readonly active: true;
@@ -84,6 +118,8 @@ export interface WorkspaceDocument {
   readonly alerts?: AlertDefinitionDocument;
   /** Optional chart-owned volume analytics configuration; legacy version-1 documents omit it. */
   readonly volumeAnalytics?: WorkspaceVolumeAnalytics;
+  /** Optional additive Phase 10 multi-timeframe configuration. Derived data is never persisted. */
+  readonly multiTimeframe?: WorkspaceMultiTimeframeAnalysis;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -126,6 +162,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const replay = value.replay === undefined ? undefined : parseReplay(value.replay);
   const alerts = value.alerts === undefined ? undefined : parseWorkspaceAlerts(value.alerts);
   const volumeAnalytics = value.volumeAnalytics === undefined ? undefined : parseVolumeAnalytics(value.volumeAnalytics);
+  const multiTimeframe = value.multiTimeframe === undefined ? undefined : parseMultiTimeframe(value.multiTimeframe, panes.map((pane) => pane.id));
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -147,6 +184,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     plugins,
     ...(alerts === undefined ? {} : { alerts }),
     ...(volumeAnalytics === undefined ? {} : { volumeAnalytics }),
+    ...(multiTimeframe === undefined ? {} : { multiTimeframe }),
     ...(replay === undefined ? {} : { replay }),
   };
 }
@@ -172,6 +210,114 @@ function parseVolumeAnalytics(value: unknown): WorkspaceVolumeAnalytics {
     }
   });
   return { volumeProfiles };
+}
+
+function parseMultiTimeframe(value: unknown, paneIds: readonly string[]): WorkspaceMultiTimeframeAnalysis {
+  if (!isPlainObject(value) || !Array.isArray(value.indicators) || !Array.isArray(value.references)) {
+    throw new WorkspaceValidationError("Invalid workspace multi-timeframe analysis");
+  }
+  const indicatorIds = new Set<string>();
+  const indicators = value.indicators.map((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || item.id.length === 0 || indicatorIds.has(item.id)
+      || typeof item.indicatorId !== "string" || typeof item.paneId !== "string" || !paneIds.includes(item.paneId)
+      || typeof item.sourceTimeframe !== "string" || typeof item.targetTimeframe !== "string"
+      || !isJsonObject(item.parameters) || !isPlainObject(item.outputStyles) || typeof item.visible !== "boolean") {
+      throw new WorkspaceValidationError("Invalid or duplicate workspace multi-timeframe indicator");
+    }
+    validateWorkspaceTimeframePair(item.sourceTimeframe, item.targetTimeframe, item.id);
+    const outputStyles: Record<string, SeriesStyle> = {};
+    for (const [outputId, style] of Object.entries(item.outputStyles)) outputStyles[outputId] = parseSeriesStyle(style);
+    const coveragePolicy = parseCoveragePolicy(item.coveragePolicy, item.id);
+    const missingVolumePolicy = parseMissingVolumePolicy(item.missingVolumePolicy, item.id);
+    const finalityPolicy = parseFinalityPolicy(item.finalityPolicy, item.id);
+    indicatorIds.add(item.id);
+    return {
+      id: item.id,
+      indicatorId: item.indicatorId,
+      paneId: item.paneId,
+      sourceTimeframe: item.sourceTimeframe,
+      targetTimeframe: item.targetTimeframe,
+      parameters: cloneJsonObject(item.parameters),
+      coveragePolicy,
+      missingVolumePolicy,
+      finalityPolicy,
+      outputStyles,
+      visible: item.visible,
+    };
+  });
+  const referenceIds = new Set<string>();
+  const references = value.references.map((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || item.id.length === 0 || referenceIds.has(item.id)
+      || typeof item.sourceTimeframe !== "string" || typeof item.targetTimeframe !== "string" || !Array.isArray(item.levels)
+      || typeof item.visible !== "boolean" || typeof item.labels !== "boolean" || typeof item.labelPrefix !== "string"
+      || !isPlainObject(item.style)) {
+      throw new WorkspaceValidationError("Invalid or duplicate workspace multi-timeframe reference");
+    }
+    validateWorkspaceTimeframePair(item.sourceTimeframe, item.targetTimeframe, item.id);
+    const levels = item.levels.map((level) => {
+      if (level !== "open" && level !== "high" && level !== "low" && level !== "close") throw new WorkspaceValidationError(`Invalid multi-timeframe reference level: ${item.id}`);
+      return level;
+    });
+    if (levels.length === 0 || new Set(levels).size !== levels.length) throw new WorkspaceValidationError(`Invalid multi-timeframe reference levels: ${item.id}`);
+    const style = parseMultiTimeframeReferenceStyle(item.style, item.id);
+    const coveragePolicy = parseCoveragePolicy(item.coveragePolicy, item.id);
+    const missingVolumePolicy = parseMissingVolumePolicy(item.missingVolumePolicy, item.id);
+    const finalityPolicy = parseFinalityPolicy(item.finalityPolicy, item.id);
+    referenceIds.add(item.id);
+    return {
+      id: item.id,
+      sourceTimeframe: item.sourceTimeframe,
+      targetTimeframe: item.targetTimeframe,
+      levels,
+      coveragePolicy,
+      missingVolumePolicy,
+      finalityPolicy,
+      visible: item.visible,
+      labels: item.labels,
+      labelPrefix: item.labelPrefix,
+      style,
+    };
+  });
+  return { indicators, references };
+}
+
+function validateWorkspaceTimeframePair(source: string, target: string, id: string): void {
+  try {
+    validateTimeframePair(source, target);
+  } catch (error) {
+    throw new WorkspaceValidationError(`Invalid multi-timeframe interval for ${id}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function parseCoveragePolicy(value: unknown, id: string): "unknown" | "fixed-duration" {
+  if (value !== "unknown" && value !== "fixed-duration") throw new WorkspaceValidationError(`Invalid multi-timeframe coverage policy: ${id}`);
+  return value;
+}
+
+function parseMissingVolumePolicy(value: unknown, id: string): MultiTimeframeMissingVolumePolicy {
+  if (value !== "ignore" && value !== "zero" && value !== "unknown") throw new WorkspaceValidationError(`Invalid multi-timeframe volume policy: ${id}`);
+  return value;
+}
+
+function parseFinalityPolicy(value: unknown, id: string): MultiTimeframeFinalityPolicy {
+  if (value !== "time-closed" && value !== "complete-only") throw new WorkspaceValidationError(`Invalid multi-timeframe finality policy: ${id}`);
+  return value;
+}
+
+function parseMultiTimeframeReferenceStyle(value: unknown, id: string): MultiTimeframeReferenceStyle {
+  if (!isPlainObject(value)
+    || (value.color !== undefined && typeof value.color !== "string")
+    || (value.lineWidth !== undefined && (!isFiniteNumber(value.lineWidth) || value.lineWidth < 0 || value.lineWidth > 8))
+    || (value.lineStyle !== undefined && value.lineStyle !== "solid" && value.lineStyle !== "dashed" && value.lineStyle !== "dotted")
+    || (value.alpha !== undefined && (!isFiniteNumber(value.alpha) || value.alpha < 0 || value.alpha > 1))) {
+    throw new WorkspaceValidationError(`Invalid multi-timeframe reference style: ${id}`);
+  }
+  return {
+    ...(value.color === undefined ? {} : { color: value.color }),
+    ...(value.lineWidth === undefined ? {} : { lineWidth: value.lineWidth }),
+    ...(value.lineStyle === undefined ? {} : { lineStyle: value.lineStyle }),
+    ...(value.alpha === undefined ? {} : { alpha: value.alpha }),
+  };
 }
 
 function parseWorkspaceAlerts(value: unknown): AlertDefinitionDocument {

@@ -123,3 +123,19 @@ Missing and zero volume remain unavailable observations and do not contribute
 to the denominator. For a pure calculation with richer result metadata, use
 `calculateAnchoredVwap` from the package root; see
 [`Anchored VWAP API`](anchored-vwap.md).
+
+## Higher-timeframe calculations
+
+Phase 10 higher-timeframe indicators aggregate explicit fixed UTC source
+durations before invoking the same registry definitions documented above. The
+calculation result preserves null warm-up values and adds bucket metadata:
+`bucketStart`, `bucketEnd`, `availableAt`, coverage, source count, and finality
+status. `availableAt` is an availability frontier, not a display timestamp;
+consumers must not use a point before that source time.
+
+Use `calculateMultiTimeframeIndicator()` for framework-neutral calculations or
+`Chart.addMultiTimeframeIndicator()` for managed chart series. The mapping
+helper `mapMultiTimeframeIndicatorToSourceTimes()` is explicitly as-of and
+cannot expose a future higher-timeframe value during replay. Missing sessions
+are never inferred; use `coveragePolicy: "fixed-duration"` only for a known
+fixed-slot market or provide an application-owned calendar.

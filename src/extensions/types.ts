@@ -142,6 +142,8 @@ export type PluginRenderCommand =
       readonly color?: string;
       readonly lineWidth?: number;
       readonly alpha?: number;
+      /** Optional Canvas2D dash pattern for reusable reference overlays. */
+      readonly dash?: readonly number[];
     }
   | {
       readonly kind: "rectangle";
