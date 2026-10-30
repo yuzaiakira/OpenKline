@@ -17,6 +17,37 @@ export function serializePortfolioBacktestResult(result: PortfolioBacktestResult
 }
 
 /**
+ * Emits a result document in bounded JSON chunks. Consumers that can write to
+ * a stream can avoid creating a second monolithic JSON string for large runs;
+ * `serializePortfolioBacktestResult()` remains the compatibility helper.
+ */
+export function* serializePortfolioBacktestResultChunks(result: PortfolioBacktestResult): IterableIterator<string> {
+  yield `{"schemaVersion":${OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION}`;
+  yield `,"engineVersion":${json(result.engineVersion)}`;
+  yield `,"accountCurrency":${json(result.accountCurrency)}`;
+  yield `,"assumptions":${json(result.assumptions)}`;
+  yield `,"instruments":`;
+  yield* jsonArray(result.instruments);
+  yield `,"strategyInputs":`;
+  yield* jsonArray(result.strategyInputs);
+  yield `,"signals":`;
+  yield* jsonArray(result.signals);
+  yield `,"timeline":`;
+  yield* jsonArray(result.timeline);
+  yield `,"orders":`;
+  yield* jsonArray(result.orders);
+  yield `,"trades":`;
+  yield* jsonArray(result.trades);
+  yield `,"positions":`;
+  yield* jsonArray(result.positions);
+  yield `,"equityCurve":`;
+  yield* jsonArray(result.equityCurve);
+  yield `,"finalAccount":${json(result.finalAccount)}`;
+  yield `,"metrics":${json(result.metrics)}`;
+  yield `,"inputFingerprint":${json(result.inputFingerprint)}}`;
+}
+
+/**
  * Parses a complete result document and validates all financial ledgers before
  * returning a defensive copy. Bounds are intentionally high enough for the
  * supported large-result workloads but prevent unbounded import allocation.
@@ -376,6 +407,21 @@ function fail(message: string): never {
 function csvCell(value: unknown): string {
   const text = String(value ?? "");
   return /[",\n\r]/u.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function* jsonArray(values: readonly unknown[]): IterableIterator<string> {
+  yield "[";
+  for (let index = 0; index < values.length; index += 1) {
+    if (index > 0) yield ",";
+    yield json(values[index]);
+  }
+  yield "]";
+}
+
+function json(value: unknown): string {
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) throw new TypeError("Portfolio result contains a value that cannot be serialized");
+  return serialized;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

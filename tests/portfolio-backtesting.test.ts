@@ -6,7 +6,9 @@ import {
   createPortfolioBacktestWorkerHandler,
   parsePortfolioBacktestResult,
   projectPortfolioBacktestAsOf,
+  PortfolioBacktestWorkerError,
   serializePortfolioBacktestResult,
+  serializePortfolioBacktestResultChunks,
   serializePortfolioEquityCsv,
   serializePortfolioOrdersCsv,
   serializePortfolioTradesCsv,
@@ -121,6 +123,7 @@ test("portfolio risk limits, stale valuation, duplicate policy, and exports are 
   assert.match(serializePortfolioOrdersCsv(result), /orderId,instrumentId/);
   assert.match(serializePortfolioTradesCsv(result), /tradeId,instrumentId/);
   assert.match(serializePortfolioEquityCsv(result), /time,cash/);
+  assert.equal([...serializePortfolioBacktestResultChunks(result)].join(""), serializePortfolioBacktestResult(result));
   assert.deepEqual(parsePortfolioBacktestResult(JSON.parse(serializePortfolioBacktestResult(result))).finalAccount, result.finalAccount);
   assert.throws(() => createPortfolioBacktest({ ...options([{ id: "AAA", candles: [{ ...fixtureCandles(10, [10])[0]!, time: 3 }, { ...fixtureCandles(10, [10])[0]!, time: 3 }] }]), duplicateTimestampPolicy: "reject" }), /duplicate timestamp/);
   const corrected = createPortfolioBacktest({ ...options([{ id: "AAA", candles: [{ ...fixtureCandles(10, [10])[0]!, time: 3 }, { ...fixtureCandles(10, [11])[0]!, time: 3 }] }]), duplicateTimestampPolicy: "last-write-wins" }).run();
@@ -173,10 +176,16 @@ class HandlerWorker implements PortfolioBacktestWorkerLike {
   public onmessage: ((event: { readonly data: unknown }) => void) | null = null;
   public onerror: ((event: unknown) => void) | null = null;
   public onmessageerror: ((event: unknown) => void) | null = null;
-  private terminated = false;
+  protected terminated = false;
   private readonly handle = createPortfolioBacktestWorkerHandler((response: PortfolioBacktestWorkerResponse) => queueMicrotask(() => this.onmessage?.({ data: response })));
   public postMessage(message: unknown): void { if (this.terminated) throw new Error("Worker terminated"); queueMicrotask(() => { if (!this.terminated) this.handle(message); }); }
   public terminate(): void { this.terminated = true; }
+}
+
+class HangingPortfolioWorker extends HandlerWorker {
+  public override postMessage(_message: unknown): void {
+    if (this.terminated) throw new Error("Worker is terminated");
+  }
 }
 
 test("portfolio Worker matches synchronous results and disposes cleanly", async () => {
@@ -186,6 +195,25 @@ test("portfolio Worker matches synchronous results and disposes cleanly", async 
   const asynchronous = await worker.run();
   assert.equal(serializePortfolioBacktestResult(asynchronous), serializePortfolioBacktestResult(synchronous));
   assert.equal(worker.getStatus().state, "completed");
+  worker.dispose();
+  assert.equal(worker.getStatus().state, "disposed");
+});
+
+test("portfolio Worker cancellation, supersession, and disposal reject stale runs", async () => {
+  const input = {
+    ...options([{ id: "AAA", candles: fixtureCandles(10, [10, 11, 12]), strategy: "EMA_TREND" }]),
+    strategyRegistry: undefined,
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles: fixtureCandles(10, [10, 11, 12]), strategy: { strategy: "EMA_TREND", parameters: { period: 2 } } }],
+  };
+  let created = 0;
+  const worker = createPortfolioBacktestWorker(input, { factory: () => created++ === 0 ? new HangingPortfolioWorker() : new HandlerWorker(), timeoutMs: 100 });
+  const cancelled = worker.run();
+  worker.cancel();
+  await assert.rejects(cancelled, (error: unknown) => error instanceof PortfolioBacktestWorkerError && error.code === "CANCELLED");
+  const first = worker.run();
+  const second = worker.run();
+  await assert.rejects(first, (error: unknown) => error instanceof PortfolioBacktestWorkerError && error.code === "SUPERSEDED");
+  await second;
   worker.dispose();
   assert.equal(worker.getStatus().state, "disposed");
 });

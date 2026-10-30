@@ -1,5 +1,5 @@
 import { isPortfolioBacktestWorkerResponse, OPENKLINE_PORTFOLIO_BACKTEST_WORKER_PROTOCOL_VERSION, type PortfolioBacktestWorkerErrorCode, type PortfolioBacktestWorkerRequest, type PortfolioBacktestWorkerRunOptions } from "./worker-protocol.js";
-import type { PortfolioBacktestProgress, PortfolioBacktestResult } from "./types.js";
+import { clonePortfolioPositionSizing, type PortfolioBacktestProgress, type PortfolioBacktestResult } from "./types.js";
 export type { PortfolioBacktestWorkerRunOptions } from "./worker-protocol.js";
 
 export interface PortfolioBacktestWorkerLike { onmessage: ((event: { readonly data: unknown }) => void) | null; onerror: ((event: unknown) => void) | null; onmessageerror: ((event: unknown) => void) | null; postMessage(message: unknown): void; terminate(): void; }
@@ -69,7 +69,38 @@ export class PortfolioBacktestWorkerSession implements PortfolioBacktestWorkerAp
 }
 
 export function defaultPortfolioBacktestWorkerFactory(): PortfolioBacktestWorkerLike { const WorkerConstructor = globalThis.Worker; if (WorkerConstructor === undefined) throw new Error("No Worker implementation is available"); return new WorkerConstructor(new URL("./worker.js", import.meta.url), { type: "module" }) as unknown as PortfolioBacktestWorkerLike; }
-function cloneOptions(options: PortfolioBacktestWorkerRunOptions): PortfolioBacktestWorkerRunOptions { return JSON.parse(JSON.stringify(options)) as PortfolioBacktestWorkerRunOptions; }
+function cloneOptions(options: PortfolioBacktestWorkerRunOptions): PortfolioBacktestWorkerRunOptions {
+  return {
+    ...options,
+    instruments: options.instruments.map((instrument) => ({
+      ...instrument,
+      candles: instrument.candles.map((candle) => ({ ...candle })),
+      strategy: { strategy: instrument.strategy.strategy, parameters: cloneRecord(instrument.strategy.parameters) },
+      ...(instrument.calendar === undefined ? {} : { calendar: { ...instrument.calendar } }),
+      ...(instrument.execution === undefined ? {} : {
+        execution: {
+          ...instrument.execution,
+          ...(instrument.execution.positionSizing === undefined ? {} : { positionSizing: clonePortfolioPositionSizing(instrument.execution.positionSizing) }),
+        },
+      }),
+    })),
+    positionSizing: clonePortfolioPositionSizing(options.positionSizing),
+    commission: { ...options.commission },
+    slippage: { ...options.slippage },
+    ...(options.risk === undefined ? {} : { risk: { ...options.risk } }),
+    ...(options.valuation === undefined ? {} : { valuation: { ...options.valuation } }),
+  };
+}
+
+function cloneRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneValue(entry)]));
+}
+
+function cloneValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneValue);
+  if (typeof value === "object" && value !== null) return cloneRecord(value as Readonly<Record<string, unknown>>);
+  return value;
+}
 function workerEventMessage(value: unknown, fallback: string): string {
   if (typeof value === "object" && value !== null) {
     const message = (value as { readonly message?: unknown }).message;

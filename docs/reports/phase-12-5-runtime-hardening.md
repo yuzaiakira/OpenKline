@@ -54,12 +54,49 @@ Verified:
 - `npm --prefix examples/nextjs-app-router run build`
 - focused Chromium Studio test (1 passed, including full/as-of/full switching)
 
+### Scalable result transport and production/package consumers
+
+Large-result handling now has a public JSON chunk iterator that preserves the
+compatibility serializer's bytes without requiring stream-capable consumers to
+create a second monolithic string. The Worker runtime clones structured options
+field-by-field rather than creating a temporary JSON document. Studio equity
+visualization samples at most 800 points while keeping the complete result
+available for export; tabular views remain bounded to 100 rows.
+
+Verified:
+
+- `npm run benchmark:portfolio-result`
+- `npm run package:smoke` (packed package installed offline; public Worker
+  handler consumer completed a run)
+- `npm run test:react:production` (Next 16.4.3 production build and one real
+  Chromium Worker E2E test passed)
+
+Observed result transport benchmark on Node v24.19.0:
+
+| Candles × instruments | JSON bytes | Serialize ms | Parse/validate ms | Chunk count | Heap delta MB |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 × 2 | 1,141,844 | 4.559 | 9.109 | 12,231 | 1.55 |
+| 10,000 × 3 | 15,304,453 | 53.476 | 88.088 | 162,943 | 17.75 |
+| 100,000 × 1 | 82,196,144 | 359.934 | 471.791 | 809,719 | 119.91 |
+
+These are reproducible cloud observations, not browser-wide memory or capacity
+guarantees.
+
+The existing synchronous portfolio benchmark was also rerun with the prior
+1,000/10,000/100,000-candle workloads. On Node v24.19.0 its median/p95 run
+times were `42.468/54.191 ms`, `369.227/414.640 ms`, and
+`6051.472/6637.138 ms`; median export times were `4.338 ms`, `48.069 ms`, and
+`1091.502 ms`. The corresponding observed heap deltas were `0.46 MB`, `0.17
+MB`, and `0.22 MB`. The 100,000 × 5 result was `226,583,453` bytes. The
+protocol-handler benchmark measured `64.172 ms` for 1,000 × 2 and `405.296 ms`
+for 10,000 × 3, with disposal acknowledgements under `0.15 ms`. These are
+Node/handler measurements, not browser Worker or Canvas2D claims.
+
 ## Open work
 
 The following Phase 12.5 requirements are not yet marked complete:
 
-- bounded large-result serialization/import benchmarks;
-- full lifecycle, cancellation, supersession, unmount, production-start, and package-consumer Worker tests;
+- full lifecycle, cancellation, supersession, and unmount Worker tests;
 - complete local verification matrix and performance evidence;
 - external Firefox/WebKit/mobile/physical-device/accessibility/visual gates.
 

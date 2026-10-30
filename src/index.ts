@@ -719,6 +719,7 @@ export {
   projectPortfolioBacktestAsOf,
   parsePortfolioBacktestWorkspace,
   serializePortfolioBacktestResult,
+  serializePortfolioBacktestResultChunks,
   serializePortfolioOrdersCsv,
   serializePortfolioTradesCsv,
   serializePortfolioEquityCsv,

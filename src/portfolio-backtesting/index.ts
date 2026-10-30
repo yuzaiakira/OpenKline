@@ -1,6 +1,6 @@
 export { createPortfolioBacktest, PortfolioBacktestSession } from "./engine.js";
 export { projectPortfolioBacktestAsOf } from "./as-of.js";
-export { OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION, parsePortfolioBacktestResult, serializePortfolioBacktestResult, serializePortfolioOrdersCsv, serializePortfolioTradesCsv, serializePortfolioEquityCsv } from "./export.js";
+export { OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION, parsePortfolioBacktestResult, serializePortfolioBacktestResult, serializePortfolioBacktestResultChunks, serializePortfolioOrdersCsv, serializePortfolioTradesCsv, serializePortfolioEquityCsv } from "./export.js";
 export { createPortfolioBacktestWorker, defaultPortfolioBacktestWorkerFactory, PortfolioBacktestWorkerError, PortfolioBacktestWorkerSession } from "./worker-runtime.js";
 export { createPortfolioBacktestWorkerHandler } from "./worker-handler.js";
 export { createPortfolioBacktestWorkspace, parsePortfolioBacktestWorkspace, PortfolioBacktestWorkspaceValidationError, OPENKLINE_PORTFOLIO_WORKSPACE_VERSION } from "./workspace.js";
