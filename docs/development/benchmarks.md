@@ -13,6 +13,8 @@ npm run profile:browser
 npm run benchmark:plugins
 npm run benchmark:klinescript
 npm run benchmark:studio
+npm run benchmark:comparison
+npm run benchmark:comparison-datafeed
 npm run benchmark:strategies
 npm run benchmark:strategy-worker
 ```

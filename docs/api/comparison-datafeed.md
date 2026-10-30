@@ -6,6 +6,31 @@ instances. It does not know exchange protocols, credentials, React, or chart
 objects. Use one controller per comparison view or per independently owned
 data lifecycle.
 
+## Historical and realtime window semantics
+
+`window` is the historical acquisition/display request and retains its
+exclusive `[from, to)` meaning. The default `realtimeWindowMode: "fixed"`
+keeps normalized output inside that range, even when a provider delivers a
+newer realtime candle; the newer candle remains available through raw
+acquisition state. Opt into `realtimeWindowMode: "follow"` for a live view:
+accepted realtime and recovered candles at or after the original `to` extend
+normalized output for that asset without reloading historical data or changing
+the original request window.
+
+```ts
+const liveComparison = new ComparisonDatafeedController({
+  window: { from, to },
+  mode: "percentage",
+  realtimeWindowMode: "follow",
+});
+```
+
+Follow mode tracks a monotonic recovery frontier per asset. An older
+out-of-order correction can replace its timestamp but cannot move that frontier
+backward. `setReplayCutoff()` is applied after the window policy, so raw data
+can continue arriving while replay hides every point newer than the inclusive
+cursor. Exiting replay restores the current follow view.
+
 ## Register and load several assets
 
 Each asset supplies its own `Datafeed`, symbol, and timeframe. Timeframes may
@@ -148,9 +173,14 @@ the corresponding asset and cannot corrupt its stored candles.
 The additive `DatafeedRealtimeSubscriptionArgs.onStatus` callback is optional.
 Providers such as `WebSocketDatafeed` report `connecting`, `connected`,
 `reconnected`, `disconnected`, `error`, and `stopped`. When a reconnect is
-observable, the controller performs bounded recovery for the affected
-historical interval. A provider that cannot expose lifecycle events remains
-safe; the application can call `backfill()` explicitly.
+observable, a follow-mode controller requests `[frontier, target)` recovery
+instead of stopping at the original historical upper bound. `target` comes
+from `recoveryNow()` (default `Date.now()`), and the automatic request is
+bounded by `maxRecoveryRangeMs` (default seven days). A bounded recovery is
+reported as incomplete in the per-asset error/recovery state; callers can use
+manual `backfill()` for an older interval. A provider that cannot expose
+lifecycle events remains safe; the application can call `backfill()`
+explicitly.
 
 ```ts
 const abort = new AbortController();
@@ -174,6 +204,13 @@ comparison.dispose();
 coordinator. Removing or replacing an asset invalidates its callback token,
 so late provider events cannot recreate or update obsolete state. `dispose()`
 is idempotent and releases all active subscriptions and retained engine data.
+
+Recovery merges preserve the conflict policy: a timestamp received from the
+live subscription is authoritative over an older historical response. Request
+generations and abort signals prevent cancelled, replaced, or disposed
+controllers from mutating current state. Recovery uses a valid exclusive upper
+bound and does not issue a request when the target is not ahead of the known
+frontier.
 
 ## Baselines, missing data, and replay
 

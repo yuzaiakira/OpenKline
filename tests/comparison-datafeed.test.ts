@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ComparisonDatafeedController } from "../src/index.js";
+import type { ComparisonDatafeedControllerOptions } from "../src/index.js";
 import type { Candle, Datafeed, DatafeedRealtimeStatus, DatafeedRealtimeSubscriptionArgs, GetBarsQuery, SubscribeBarsArgs, SymbolInfo } from "../src/types.js";
 
 const info = (symbol: string): SymbolInfo => ({ symbol, timezone: "UTC", pricePrecision: 2 });
@@ -94,6 +95,166 @@ test("ComparisonDatafeedController loads different assets and preserves exclusiv
   await controller.setWindow({ from: 1_000, to: 3_500 });
   assert.equal(first.queries.at(-1)?.from, 800, "baseline freshness history is requested before the visible window");
   assert.equal(controller.getAssetStatuses().every((asset) => asset.state === "ready"), true);
+  controller.dispose();
+});
+
+test("realtime-following comparison keeps displaying candles at and beyond the initial upper bound", async () => {
+  const feed = new CapturingFeed(info("LIVE"), [candle(1_000, 10)]);
+  const options: ComparisonDatafeedControllerOptions = {
+    window: { from: 1_000, to: 2_000 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+    realtimeWindowMode: "follow",
+  };
+  const controller = new ComparisonDatafeedController(options);
+  controller.registerAsset({ id: "live", symbol: "LIVE", timeframe: "1s", datafeed: feed });
+  await controller.load();
+
+  feed.emit(candle(1_900, 19));
+  feed.emit(candle(2_000, 20));
+  feed.emit(candle(2_100, 21));
+
+  assert.deepEqual(controller.getRawCandles("live").map((bar) => bar.time), [1_000, 1_900, 2_000, 2_100]);
+  assert.deepEqual(controller.getNormalizedData()[0]?.data.map((point) => point.time), [1_000, 1_900, 2_000, 2_100]);
+  controller.dispose();
+});
+
+test("reconnect recovery follows the live frontier beyond the initial historical window", async () => {
+  const feed = new CapturingFeed(info("RECOVER"), [candle(1_000, 10)]);
+  const options: ComparisonDatafeedControllerOptions = {
+    window: { from: 1_000, to: 1_100 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+    recoveryNow: () => 1_500,
+    realtimeWindowMode: "follow",
+  };
+  const controller = new ComparisonDatafeedController(options);
+  controller.registerAsset({ id: "recover", symbol: "RECOVER", timeframe: "100ms", datafeed: feed });
+  await controller.load();
+
+  feed.emit(candle(1_100, 11));
+  feed.emit(candle(1_200, 12));
+  feed.append(candle(1_300, 13), candle(1_400, 14));
+  feed.emitStatus("disconnected");
+  feed.emitStatus("reconnected");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(feed.queries.at(-1) && [feed.queries.at(-1)!.from, feed.queries.at(-1)!.to], [1_200, 1_500]);
+  assert.deepEqual(controller.getNormalizedData()[0]?.data.map((point) => point.time), [1_000, 1_100, 1_200, 1_300, 1_400]);
+  controller.dispose();
+});
+
+test("fixed historical mode keeps the explicit display bound while retaining future raw realtime data", async () => {
+  const feed = new CapturingFeed(info("FIXED"), [candle(1_000, 10)]);
+  const controller = new ComparisonDatafeedController({
+    window: { from: 1_000, to: 2_000 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+  });
+  controller.registerAsset({ id: "fixed", symbol: "FIXED", timeframe: "1s", datafeed: feed });
+  await controller.load();
+  feed.emit(candle(2_000, 20));
+
+  assert.deepEqual(controller.getRawCandles("fixed").map((bar) => bar.time), [1_000, 2_000]);
+  assert.deepEqual(controller.getNormalizedData()[0]?.data.map((point) => point.time), [1_000]);
+  controller.dispose();
+});
+
+test("out-of-order realtime corrections never regress the reconnect frontier", async () => {
+  const feed = new CapturingFeed(info("ORDERED"), [candle(1_000, 10)]);
+  const controller = new ComparisonDatafeedController({
+    window: { from: 1_000, to: 1_100 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+    recoveryNow: () => 1_500,
+    realtimeWindowMode: "follow",
+  });
+  controller.registerAsset({ id: "ordered", symbol: "ORDERED", timeframe: "100ms", datafeed: feed });
+  await controller.load();
+  feed.emit(candle(1_100, 11));
+  feed.emit(candle(1_300, 13));
+  feed.emit(candle(1_100, 11.5));
+  feed.append(candle(1_400, 14));
+  feed.emitStatus("disconnected");
+  feed.emitStatus("reconnected");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(feed.queries.at(-1) && [feed.queries.at(-1)!.from, feed.queries.at(-1)!.to], [1_300, 1_500]);
+  assert.equal(controller.getRawCandles("ordered").find((bar) => bar.time === 1_100)?.close, 11.5);
+  controller.dispose();
+});
+
+test("repeated reconnects recover independently without duplicate subscriptions", async () => {
+  let target = 1_300;
+  const feed = new CapturingFeed(info("CYCLES"), [candle(1_000, 10)]);
+  const controller = new ComparisonDatafeedController({
+    window: { from: 1_000, to: 1_100 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+    recoveryNow: () => target,
+    realtimeWindowMode: "follow",
+  });
+  controller.registerAsset({ id: "cycles", symbol: "CYCLES", timeframe: "100ms", datafeed: feed });
+  await controller.load();
+  feed.emit(candle(1_100, 11));
+  feed.append(candle(1_200, 12));
+  feed.emitStatus("disconnected");
+  feed.emitStatus("reconnected");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  target = 1_500;
+  feed.append(candle(1_300, 13), candle(1_400, 14));
+  feed.emitStatus("disconnected");
+  feed.emitStatus("reconnected");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(feed.queries.slice(-2).map((query) => [query.from, query.to]), [[1_100, 1_300], [1_200, 1_500]]);
+  assert.equal(feed.subscriptions.length, 1);
+  assert.deepEqual(controller.getNormalizedData()[0]?.data.map((point) => point.time), [1_000, 1_100, 1_200, 1_300, 1_400]);
+  controller.dispose();
+  assert.equal(feed.unsubscribeCount, 1);
+});
+
+test("automatic recovery reports a bounded target instead of claiming an old outage is complete", async () => {
+  const feed = new CapturingFeed(info("BOUNDED"), [candle(1_000, 10)]);
+  const controller = new ComparisonDatafeedController({
+    window: { from: 1_000, to: 1_100 },
+    baseline: { time: 1_000, maxAgeMs: 0 },
+    recoveryNow: () => 10_000,
+    maxRecoveryRangeMs: 100,
+    realtimeWindowMode: "follow",
+  });
+  controller.registerAsset({ id: "bounded", symbol: "BOUNDED", timeframe: "100ms", datafeed: feed });
+  await controller.load();
+  feed.emit(candle(1_100, 11));
+  feed.emitStatus("disconnected");
+  feed.emitStatus("reconnected");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  const status = controller.getAssetStatuses()[0];
+  assert.equal(status?.recovery.state, "failed");
+  assert.match(status?.recovery.lastError ?? "", /bounded/);
+  assert.deepEqual(feed.queries.at(-1) && [feed.queries.at(-1)!.from, feed.queries.at(-1)!.to], [1_100, 1_200]);
+  controller.dispose();
+});
+
+test("asset replacement invalidates a pending recovery response", async () => {
+  let recoveryResolver: ((bars: readonly Candle[]) => void) | null = null;
+  let calls = 0;
+  const oldFeed: Datafeed = {
+    resolveSymbol: async () => info("OLD"),
+    getBars: async () => {
+      calls += 1;
+      if (calls === 1) return [candle(1_000, 10)];
+      return new Promise<readonly Candle[]>((resolve) => { recoveryResolver = resolve; });
+    },
+  };
+  const freshFeed = new CapturingFeed(info("NEW"), [candle(1_000, 20), candle(1_100, 21)]);
+  const controller = new ComparisonDatafeedController({ window: { from: 1_000, to: 1_200 }, baseline: { time: 1_000, maxAgeMs: 0 } });
+  controller.registerAsset({ id: "asset", symbol: "OLD", timeframe: "100ms", datafeed: oldFeed });
+  await controller.load();
+  const pending = controller.backfill({ ranges: { asset: [{ from: 1_100, to: 1_200 }] }, retryBackoffMs: 0 });
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  const replacement = controller.replaceAsset("asset", { symbol: "NEW", timeframe: "100ms", datafeed: freshFeed });
+  const lateResolver = (recoveryResolver as unknown) as ((bars: readonly Candle[]) => void) | null;
+  if (lateResolver !== null) lateResolver([candle(1_100, 99)]);
+  assert.equal((await pending).status, "cancelled");
+  assert.equal((await replacement).status, "ready");
+  assert.deepEqual(controller.getRawCandles("asset").map((bar) => [bar.time, bar.close]), [[1_000, 20], [1_100, 21]]);
   controller.dispose();
 });
 

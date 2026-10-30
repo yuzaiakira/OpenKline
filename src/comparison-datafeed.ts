@@ -99,6 +99,12 @@ export interface ComparisonDatafeedControllerOptions {
   readonly window: ComparisonDatafeedWindow;
   readonly mode?: ComparisonNormalizationMode;
   readonly baseline?: ComparisonBaseline | null;
+  /** Keep the original historical upper bound or follow accepted live/recovered observations. */
+  readonly realtimeWindowMode?: "fixed" | "follow";
+  /** Injectable UTC clock for deterministic reconnect recovery; defaults to Date.now. */
+  readonly recoveryNow?: () => number;
+  /** Maximum automatic reconnect range. Manual backfill remains available for older gaps. */
+  readonly maxRecoveryRangeMs?: number;
 }
 
 export type ComparisonDatafeedAssetState = "registered" | "loading" | "ready" | "empty" | "error";
@@ -186,6 +192,8 @@ interface AssetRecord {
   recovery: ComparisonDatafeedRecoveryState;
   liveByTime: Map<number, Candle>;
   lastRealtimeTime: number | null;
+  /** Highest timestamp known from realtime or recovered observations. */
+  recoveryFrontier: number | null;
 }
 
 interface ActiveLoad {
@@ -221,6 +229,14 @@ interface NormalizedBackfillOptions {
   readonly retryBackoffMs: number;
 }
 
+interface RealtimeRecoveryRange {
+  readonly range: ComparisonDatafeedInterval;
+  readonly target: number;
+  readonly bounded: boolean;
+}
+
+const DEFAULT_MAX_RECOVERY_RANGE_MS = 7 * 24 * 60 * 60 * 1_000;
+
 /**
  * Provider-neutral coordinator for loading and streaming several comparison
  * assets into one existing `ComparisonEngine`.
@@ -236,6 +252,9 @@ export class ComparisonDatafeedController {
   private window: ComparisonDatafeedWindow;
   private mode: ComparisonNormalizationMode;
   private baseline: ComparisonBaseline | null;
+  private readonly realtimeWindowMode: "fixed" | "follow";
+  private readonly recoveryNow: () => number;
+  private readonly maxRecoveryRangeMs: number;
   private replayCutoff: number | null = null;
   private activeLoad: ActiveLoad | null = null;
   private activeBackfill: ActiveBackfill | null = null;
@@ -246,6 +265,15 @@ export class ComparisonDatafeedController {
   public constructor(options: ComparisonDatafeedControllerOptions) {
     this.window = normalizeWindow(options.window);
     this.mode = options.mode ?? "percentage";
+    this.realtimeWindowMode = options.realtimeWindowMode ?? "fixed";
+    if (this.realtimeWindowMode !== "fixed" && this.realtimeWindowMode !== "follow") {
+      throw new Error(`Unsupported realtime window mode: ${String(options.realtimeWindowMode)}`);
+    }
+    this.recoveryNow = options.recoveryNow ?? (() => Date.now());
+    if (typeof this.recoveryNow !== "function") throw new Error("Comparison recoveryNow must be a function");
+    this.maxRecoveryRangeMs = options.maxRecoveryRangeMs === undefined
+      ? DEFAULT_MAX_RECOVERY_RANGE_MS
+      : normalizePositiveInteger(options.maxRecoveryRangeMs, "Comparison maxRecoveryRangeMs");
     this.baseline = options.baseline === undefined || options.baseline === null
       ? null
       : normalizeBaseline(options.baseline);
@@ -275,6 +303,7 @@ export class ComparisonDatafeedController {
       recovery: { state: "idle", attempts: 0, lastError: null },
       liveByTime: new Map(),
       lastRealtimeTime: null,
+      recoveryFrontier: null,
     };
     this.assets.set(config.id, record);
     this.engine.addAsset({
@@ -533,9 +562,16 @@ export class ComparisonDatafeedController {
     const normalized = this.engine.getNormalizedData();
     return normalized.map((asset) => ({
       ...asset,
-      data: asset.data.filter((point) => point.time >= this.window.from
-        && point.time < this.window.to
-        && (this.replayCutoff === null || point.time <= this.replayCutoff)),
+      data: asset.data.filter((point) => {
+        const record = this.assets.get(asset.id);
+        const frontier = record?.recoveryFrontier ?? null;
+        const followsRealtime = this.realtimeWindowMode === "follow" && frontier !== null;
+        const insideHistoricalWindow = point.time < this.window.to;
+        const insideFollowWindow = followsRealtime && point.time <= frontier;
+        return point.time >= this.window.from
+          && (insideHistoricalWindow || insideFollowWindow)
+          && (this.replayCutoff === null || point.time <= this.replayCutoff);
+      }),
     }));
   }
 
@@ -678,6 +714,7 @@ export class ComparisonDatafeedController {
     record.recovery = { state: "idle", attempts: 0, lastError: null };
     record.liveByTime.clear();
     record.lastRealtimeTime = null;
+    record.recoveryFrontier = null;
   }
 
   private startSubscription(record: AssetRecord): void {
@@ -723,7 +760,8 @@ export class ComparisonDatafeedController {
       record.candles.update(normalized);
       record.rawByTime.set(normalized.time, normalized);
       record.liveByTime.set(normalized.time, normalized);
-      record.lastRealtimeTime = normalized.time;
+      record.lastRealtimeTime = maxTime(record.lastRealtimeTime, normalized.time);
+      record.recoveryFrontier = maxTime(record.recoveryFrontier, normalized.time);
       record.state = "ready";
       record.error = null;
       record.coverage = previous === undefined
@@ -764,13 +802,19 @@ export class ComparisonDatafeedController {
     if (status === "reconnected") {
       record.realtime = "recovering";
       this.emit({ kind: "realtime-status", assetId: id });
-      const from = this.recoveryFrom(record);
-      if (from === null) {
+      let recovery: RealtimeRecoveryRange | null;
+      try {
+        recovery = this.recoveryFrom(record);
+      } catch (error) {
+        this.handleRealtimeError(id, token, error);
+        return;
+      }
+      if (recovery === null) {
         record.realtime = "subscribed";
         record.recovery = { state: "complete", attempts: record.recovery.attempts, lastError: null };
         return;
       }
-      void this.backfill({ assetIds: [id], ranges: { [id]: [from] } }).then((result) => {
+      void this.backfill({ assetIds: [id], ranges: { [id]: [recovery.range] } }).then((result) => {
         if (!this.isCurrentRecord(record, token)) return;
         const asset = result.assets[0];
         if (asset?.status === "failed") {
@@ -778,6 +822,12 @@ export class ComparisonDatafeedController {
           record.error = asset.error;
         } else if (asset?.status === "cancelled") {
           record.realtime = "disconnected";
+        } else if (recovery.bounded) {
+          const error = `Automatic recovery was bounded at ${new Date(recovery.range.to).toISOString()}; target ${new Date(recovery.target).toISOString()} remains unverified`;
+          record.realtime = "recovering";
+          record.error = error;
+          record.recovery = { state: "failed", attempts: asset?.attempts ?? record.recovery.attempts, lastError: error };
+          record.coverage = updateCoverageRecovery(record.coverage, true, "failed", error);
         } else {
           record.realtime = "subscribed";
         }
@@ -850,10 +900,21 @@ export class ComparisonDatafeedController {
     return [...this.assets.values()].some((record) => record.candles.getAll()[0]?.time === undefined || (record.candles.getAll()[0]?.time ?? requestFrom) > requestFrom);
   }
 
-  private recoveryFrom(record: AssetRecord): ComparisonDatafeedInterval | null {
-    const from = Math.max(this.window.from, record.lastRealtimeTime ?? this.window.from);
-    if (from >= this.window.to) return null;
-    return { from, to: this.window.to };
+  private recoveryFrom(record: AssetRecord): RealtimeRecoveryRange | null {
+    if (this.realtimeWindowMode === "fixed") {
+      const from = Math.max(this.window.from, record.lastRealtimeTime ?? this.window.from);
+      if (from >= this.window.to) return null;
+      return { range: { from, to: this.window.to }, target: this.window.to, bounded: false };
+    }
+    const from = Math.max(this.window.from, record.recoveryFrontier ?? this.window.to);
+    const target = normalizeTime(this.recoveryNow());
+    if (target <= from) return null;
+    const maximumTo = from > Number.MAX_SAFE_INTEGER - this.maxRecoveryRangeMs
+      ? Number.MAX_SAFE_INTEGER
+      : from + this.maxRecoveryRangeMs;
+    const to = Math.min(target, maximumTo);
+    if (to <= from) return null;
+    return { range: { from, to }, target, bounded: to < target };
   }
 
   private async recoverRange(
@@ -898,6 +959,7 @@ export class ComparisonDatafeedController {
       record.rawByTime.set(candle.time, { ...candle });
       changed += 1;
     }
+    for (const candle of candles) record.recoveryFrontier = maxTime(record.recoveryFrontier, candle.time);
     if (changed > 0) {
       this.engine.replaceAssetData(record.config.id, record.candles.getAll().map(toComparisonPoint));
       record.state = "ready";
@@ -1151,6 +1213,10 @@ function normalizeAge(value: number): number {
 function normalizeTime(value: number): number {
   if (!Number.isSafeInteger(value) || value < 0) throw new Error("Comparison datafeed times must be non-negative UTC millisecond integers");
   return value;
+}
+
+function maxTime(previous: number | null, next: number): number {
+  return previous === null ? next : Math.max(previous, next);
 }
 
 function validateSymbolInfo(info: SymbolInfo): void {

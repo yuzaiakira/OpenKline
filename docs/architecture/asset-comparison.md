@@ -19,6 +19,14 @@ coverage policies describe continuous slots or session-aware expected slots.
 Without a policy, the state is `uncertain` rather than treating weekends,
 holidays, or sparse observations as missing data.
 
+The historical request window and live display policy are deliberately
+separate. Fixed mode is the compatibility default. Follow mode allows the
+display to advance beyond the initial exclusive upper bound as realtime or
+recovered observations arrive, while preserving the original acquisition
+range for diagnostics and avoiding a full reload per tick. Each asset owns a
+monotonic recovery frontier; same-time corrections update data without making
+an older event the new frontier.
+
 Confirmed missing intervals can be passed through bounded `backfill()`
 recovery. The coordinator limits ranges, attempts, and concurrency, merges
 equal timestamps deterministically, and gives a realtime candle received while
@@ -26,6 +34,12 @@ recovery is pending precedence over an older historical response. A
 `WebSocketDatafeed` lifecycle signal can trigger this recovery after a
 reconnect; providers without lifecycle visibility retain an explicit manual
 recovery path.
+
+Follow-mode reconnect recovery uses the last authoritative frontier and an
+injected/current target clock. The target interval is finite and bounded;
+longer outages remain visible as incomplete recovery rather than being
+silently treated as complete. Recovery data cannot overwrite live corrections,
+and replay masking is applied only to the derived display output.
 
 `ComparisonEngine` owns validated, ordered observations per asset, explicit
 baseline and freshness policy, deterministic normalization, change
