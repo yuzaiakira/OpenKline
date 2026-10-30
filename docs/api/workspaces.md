@@ -39,6 +39,30 @@ stores active state, normalization mode, UTC baseline, maximum baseline age,
 and ordered asset IDs. Older documents omit this member and remain valid;
 unknown or duplicate asset IDs are rejected by `parseStudioWorkspace`.
 
+## Trading calendars and session analysis
+
+The optional Phase 11 `tradingCalendar` member stores the stable calendar ID,
+version, and display controls for boundaries, breaks, labels, colors, opacity,
+and visible-session bounds. It never stores executable calendar definitions,
+timezone conversion caches, or market data. The optional `sessionAnalysis`
+member stores session/week/month indicator and previous-level configuration,
+including its calendar ID/version, source timeframe, policies, pane, styles,
+and visibility. Derived observations and series points are intentionally
+recomputed.
+
+Restore runtime calendars explicitly:
+
+```ts
+chart.restoreWorkspace(document, {
+  tradingCalendarResolver: (id, version) => calendarRegistry.get(id, version),
+});
+```
+
+If a persisted calendar is not available, the chart restores the rest of the
+workspace and leaves calendar overlays/session analyses detached. This is a
+safe compatibility outcome: no unverified schedule is substituted and no
+future market data is synthesized.
+
 ## Compatibility and validation
 
 The `volumeAnalytics` property is optional so a version-1 document written

@@ -260,6 +260,41 @@ styles. It never uses the current forming period as its own reference. Both
 multi-timeframe APIs are additive; version-1 workspaces without them remain
 valid. See [multi-timeframe analysis](multi-timeframe.md).
 
+## Trading-calendar visualization and session analysis
+
+Attach a resolved `TradingCalendarEngine` to render schedule-aware boundaries,
+break shading, and localized session labels over the existing Canvas2D chart:
+
+```ts
+const calendarView = chart.setTradingCalendar(calendar, {
+  showBoundaries: true,
+  showBreaks: true,
+  showLabels: true,
+});
+calendarView.setVisible(false);
+```
+
+The overlay enumerates only the bounded visible UTC range. It does not invent
+bars for closed dates or breaks, and it uses the calendar's IANA timezone and
+versioned schedule. `getTradingCalendar()` returns the current view API and
+`removeTradingCalendar()` removes it without changing chart data.
+
+`addSessionIndicator({ sourceTimeframe, targetPeriod, calendar, indicatorId,
+... })` and `addSessionReference({ sourceTimeframe, targetPeriod, calendar,
+... })` reuse the session aggregation engine, the existing Indicator Registry,
+series store, pane layout, replay as-of boundary, and overlay renderer. Target
+periods are `"session"`, `"week"`, and `"month"`; they are not guessed UTC
+durations. Session outputs remain unavailable until their causal period
+frontier, including early closes and holidays. The returned APIs mirror the
+fixed multi-timeframe lifecycle with `getResult`, visibility/style controls,
+parameter updates, and `remove`.
+
+Workspace serialization stores only calendar ID/version, display settings, and
+session analysis configuration. Resolved calendars and executable schedule
+objects are runtime-only. Pass `tradingCalendarResolver(id, version)` to
+`restoreWorkspace` to rehydrate them; without a resolver the serialized
+configuration is validated and safely skipped.
+
 Drawing anchors use UTC millisecond timestamps and prices in the main pane.
 Built-in tools are horizontal/vertical lines, trend lines, rectangles,
 Fibonacci retracements, and text. Drawing styles support color, fill, line

@@ -120,6 +120,19 @@ export type {
   TimeframeCalendar,
 } from "./multi-timeframe.js";
 export {
+  defaultTradingCalendarDisplayOptions,
+  isTradingCalendarEngine,
+  renderTradingCalendarOverlay,
+  resolveTradingCalendarDisplayOptions,
+  toWorkspaceTradingCalendar,
+} from "./session-visualization.js";
+export type {
+  ResolvedTradingCalendarDisplayOptions,
+  TradingCalendarApi,
+  TradingCalendarDisplayOptions,
+  WorkspaceTradingCalendar,
+} from "./session-visualization.js";
+export {
   TradingCalendarEngine,
   TradingCalendarRegistry,
   createIllustrativeWeekdayCalendar,
@@ -162,9 +175,13 @@ export type {
   SessionAggregationResult,
   SessionCandleObservation,
   SessionIndicatorOptions,
+  SessionIndicatorApi,
+  SessionIndicatorChartOptions,
   SessionIndicatorOutput,
   SessionIndicatorPoint,
   SessionIndicatorResult,
+  SessionReferenceApi,
+  SessionReferenceChartOptions,
   SessionReferenceOptions,
   SessionReferencePoint,
   SessionReferenceResult,
@@ -190,6 +207,9 @@ export type {
   WorkspaceRestoreOptions,
   WorkspaceRestoreResult,
   WorkspaceSeries,
+  WorkspaceSessionAnalysis,
+  WorkspaceSessionIndicator,
+  WorkspaceSessionReference,
   WorkspaceVolumeAnalytics,
   WorkspaceVolumeProfile,
 } from "./workspace.js";

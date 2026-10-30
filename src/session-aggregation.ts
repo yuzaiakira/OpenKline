@@ -12,6 +12,7 @@ import {
   type MultiTimeframeFinalityPolicy,
   type MultiTimeframeMissingVolumePolicy,
   type PreviousTimeframeLevel,
+  type MultiTimeframeReferenceStyle,
 } from "./multi-timeframe.js";
 import { tradingDateForTimestamp, TradingCalendarEngine, type TradingCalendarSnapshot, type TradingSession } from "./trading-calendar.js";
 import type { Candle, SeriesStyle } from "./types.js";
@@ -64,6 +65,26 @@ export interface SessionIndicatorOptions extends SessionAggregationOptions {
   readonly outputStyles?: Readonly<Record<string, SeriesStyle>>;
 }
 
+/** Chart-owned session indicator configuration; derived values are not persisted. */
+export interface SessionIndicatorChartOptions extends SessionIndicatorOptions {
+  readonly id?: string;
+  readonly pane?: string | "new";
+  readonly visible?: boolean;
+  readonly outputStyles?: Readonly<Record<string, SeriesStyle>>;
+}
+
+export interface SessionIndicatorApi {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  getOptions(): SessionIndicatorChartOptions & { readonly id: string };
+  getResult(): SessionIndicatorResult;
+  setParameters(parameters: Readonly<Record<string, unknown>>): void;
+  setOutputStyle(outputId: string, style: SeriesStyle): void;
+  setVisible(visible: boolean): void;
+  remove(): void;
+}
+
 export interface SessionIndicatorPoint extends IndicatorPoint, SessionAggregationMetadata {
   readonly time: number;
 }
@@ -91,6 +112,24 @@ export interface SessionIndicatorResult {
 
 export interface SessionReferenceOptions extends SessionAggregationOptions {
   readonly levels?: readonly PreviousTimeframeLevel[];
+}
+
+/** Chart-owned previous-session level configuration. */
+export interface SessionReferenceChartOptions extends SessionReferenceOptions {
+  readonly id?: string;
+  readonly visible?: boolean;
+  readonly labels?: boolean;
+  readonly labelPrefix?: string;
+  readonly style?: MultiTimeframeReferenceStyle;
+}
+
+export interface SessionReferenceApi {
+  readonly id: string;
+  getOptions(): SessionReferenceChartOptions & { readonly id: string };
+  getResult(): SessionReferenceResult;
+  setOptions(patch: Partial<Omit<SessionReferenceChartOptions, "id" | "calendar">>): void;
+  setVisible(visible: boolean): void;
+  remove(): void;
 }
 
 export interface SessionReferencePoint extends SessionAggregationMetadata {

@@ -1211,6 +1211,11 @@ compatibility decision packet, package evidence, and remaining gates.
   intervals from breaks, holidays, and early closes while preserving bounded
   backfill, correction, stale-response, and disposal behavior. See
   `docs/api/datafeed.md` and `docs/architecture/market-sessions.md`.
-- [Open] Chart overlays, Studio controls, workspace persistence, benchmarks,
-  and full Phase 11 verification remain to be implemented. No Phase 12 work
-  has started.
+- [Implemented / Node- and Chromium-verified — 11.3 chart integration] Added
+  calendar boundary/break/label overlays, session/week/month indicator and
+  previous-level APIs, causal replay-aware output mapping, and explicit
+  calendar ID/version workspace restoration through a host resolver. Existing
+  Canvas2D, pane, series, plugin, and disposal paths are reused. See
+  `docs/api/chart.md` and `docs/api/workspaces.md`.
+- [Open] Studio controls, calendar benchmarks, and full Phase 11 verification
+  remain to be implemented. No Phase 12 work has started.

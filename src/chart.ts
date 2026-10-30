@@ -106,6 +106,29 @@ import {
   type MultiTimeframeReferenceResult,
   type MultiTimeframeReferenceStyle,
 } from "./multi-timeframe.js";
+import {
+  defaultTradingCalendarDisplayOptions,
+  isTradingCalendarEngine,
+  renderTradingCalendarOverlay,
+  resolveTradingCalendarDisplayOptions,
+  toWorkspaceTradingCalendar,
+  type ResolvedTradingCalendarDisplayOptions,
+  type TradingCalendarApi,
+  type TradingCalendarDisplayOptions,
+} from "./session-visualization.js";
+import type { TradingCalendarEngine } from "./trading-calendar.js";
+import {
+  calculatePreviousSessionLevels,
+  calculateSessionIndicator,
+  mapSessionIndicatorToSourceTimes,
+  mapSessionReferenceToSourceTimes,
+  type SessionIndicatorApi,
+  type SessionIndicatorChartOptions,
+  type SessionIndicatorResult,
+  type SessionReferenceApi,
+  type SessionReferenceChartOptions,
+  type SessionReferenceResult,
+} from "./session-aggregation.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -138,6 +161,11 @@ interface ManagedVolumeProfile {
   api?: VolumeProfileApi;
 }
 
+interface ManagedTradingCalendar {
+  readonly calendar: TradingCalendarEngine;
+  display: ResolvedTradingCalendarDisplayOptions;
+}
+
 interface ManagedMultiTimeframeIndicator {
   readonly id: string;
   readonly indicatorId: string;
@@ -154,6 +182,24 @@ interface ManagedMultiTimeframeReference {
   options: MultiTimeframeReferenceOptions & { readonly id: string };
   visible: boolean;
   result: MultiTimeframeReferenceResult;
+}
+
+interface ManagedSessionIndicator {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  options: SessionIndicatorChartOptions & { readonly id: string };
+  outputSeriesIds: string[];
+  outputStyles: Record<string, import("./types.js").SeriesStyle>;
+  visible: boolean;
+  result: SessionIndicatorResult;
+}
+
+interface ManagedSessionReference {
+  readonly id: string;
+  options: SessionReferenceChartOptions & { readonly id: string };
+  visible: boolean;
+  result: SessionReferenceResult;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -206,6 +252,10 @@ export class Chart {
   private readonly multiTimeframeIndicators = new Map<string, ManagedMultiTimeframeIndicator>();
   private readonly multiTimeframeReferences = new Map<string, ManagedMultiTimeframeReference>();
   private nextMultiTimeframeId = 1;
+  private readonly sessionIndicators = new Map<string, ManagedSessionIndicator>();
+  private readonly sessionReferences = new Map<string, ManagedSessionReference>();
+  private nextSessionAnalysisId = 1;
+  private tradingCalendar: ManagedTradingCalendar | null = null;
   private readonly drawingEngine = new DrawingEngine();
   private readonly overlays = new Map<string, PluginOverlayDefinition>();
   private strategyMarkers: StrategyMarker[] = [];
@@ -566,6 +616,7 @@ export class Chart {
       [
         ...[...this.indicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
         ...[...this.multiTimeframeIndicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
+        ...[...this.sessionIndicators.values()].flatMap((indicator) => indicator.outputSeriesIds),
       ],
     );
     const panes = this.model.getPaneConfigs().map((pane) => ({
@@ -620,6 +671,33 @@ export class Chart {
       labelPrefix: reference.options.labelPrefix ?? "Previous",
       style: { ...(reference.options.style ?? {}) },
     }));
+    const sessionIndicators = [...this.sessionIndicators.values()].map((indicator) => ({
+      id: indicator.id,
+      indicatorId: indicator.indicatorId,
+      paneId: indicator.paneId,
+      sourceTimeframe: indicator.options.sourceTimeframe,
+      targetPeriod: indicator.options.targetPeriod,
+      calendarId: indicator.options.calendar.definition.id,
+      calendarVersion: indicator.options.calendar.definition.version,
+      parameters: toJsonObject(indicator.options.parameters ?? {}, `session indicator ${indicator.id} parameters`),
+      coveragePolicy: indicator.options.coveragePolicy ?? "unknown",
+      missingVolumePolicy: indicator.options.missingVolumePolicy ?? "ignore",
+      finalityPolicy: indicator.options.finalityPolicy ?? "time-closed",
+      outputStyles: cloneSeriesStyles(indicator.outputStyles),
+      visible: indicator.visible,
+    }));
+    const sessionReferences = [...this.sessionReferences.values()].map((reference) => ({
+      id: reference.id,
+      sourceTimeframe: reference.options.sourceTimeframe,
+      targetPeriod: reference.options.targetPeriod,
+      calendarId: reference.options.calendar.definition.id,
+      calendarVersion: reference.options.calendar.definition.version,
+      levels: [...(reference.options.levels ?? ["open", "high", "low", "close"])],
+      visible: reference.visible,
+      labels: reference.options.labels ?? true,
+      labelPrefix: reference.options.labelPrefix ?? "Previous",
+      style: { ...(reference.options.style ?? {}) },
+    }));
     const plugins = this.pluginRegistry.list().map((plugin) => ({
       id: plugin.id,
       version: plugin.version,
@@ -658,6 +736,12 @@ export class Chart {
       }),
       ...(multiTimeframeIndicators.length === 0 && multiTimeframeReferences.length === 0 ? {} : {
         multiTimeframe: { indicators: multiTimeframeIndicators, references: multiTimeframeReferences },
+      }),
+      ...(this.tradingCalendar === null ? {} : {
+        tradingCalendar: toWorkspaceTradingCalendar(this.tradingCalendar.calendar, this.tradingCalendar.display),
+      }),
+      ...(sessionIndicators.length === 0 && sessionReferences.length === 0 ? {} : {
+        sessionAnalysis: { indicators: sessionIndicators, references: sessionReferences },
       }),
       ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
@@ -712,9 +796,11 @@ export class Chart {
 
     this.stopDatafeed();
     this.clearVolumeProfiles();
+    this.tradingCalendar = null;
     this.anchoredVwaps.clear();
     this.pendingAnchoredVwapId = null;
     this.clearMultiTimeframe();
+    this.clearSessionAnalysis();
     for (const indicator of this.indicators.values()) indicator.instance.dispose();
     this.indicators.clear();
     this.nextIndicatorId = 1;
@@ -809,6 +895,43 @@ export class Chart {
     this.drawingEngine.restore(parsed.drawings);
     this.model.setViewportState(parsed.viewport);
     for (const profile of parsed.volumeAnalytics?.volumeProfiles ?? []) this.addVolumeProfile(profile);
+    if (parsed.tradingCalendar !== undefined) {
+      const calendar = options.tradingCalendarResolver?.(parsed.tradingCalendar.calendarId, parsed.tradingCalendar.version);
+      if (calendar !== undefined) this.setTradingCalendar(calendar, parsed.tradingCalendar.display);
+    }
+    for (const indicator of parsed.sessionAnalysis?.indicators ?? []) {
+      const calendar = options.tradingCalendarResolver?.(indicator.calendarId, indicator.calendarVersion);
+      if (calendar === undefined) continue;
+      this.addSessionIndicator({
+        id: indicator.id,
+        indicatorId: indicator.indicatorId,
+        pane: indicator.paneId,
+        sourceTimeframe: indicator.sourceTimeframe,
+        targetPeriod: indicator.targetPeriod,
+        calendar,
+        parameters: { ...indicator.parameters },
+        coveragePolicy: indicator.coveragePolicy,
+        missingVolumePolicy: indicator.missingVolumePolicy,
+        finalityPolicy: indicator.finalityPolicy,
+        outputStyles: indicator.outputStyles,
+        visible: indicator.visible,
+      });
+    }
+    for (const reference of parsed.sessionAnalysis?.references ?? []) {
+      const calendar = options.tradingCalendarResolver?.(reference.calendarId, reference.calendarVersion);
+      if (calendar === undefined) continue;
+      this.addSessionReference({
+        id: reference.id,
+        sourceTimeframe: reference.sourceTimeframe,
+        targetPeriod: reference.targetPeriod,
+        calendar,
+        levels: reference.levels,
+        visible: reference.visible,
+        labels: reference.labels,
+        labelPrefix: reference.labelPrefix,
+        style: reference.style,
+      });
+    }
     for (const plugin of parsed.plugins) {
       if (!missingPlugins.includes(plugin.id)) this.pluginRegistry.restoreState(plugin.id, plugin.state);
     }
@@ -994,6 +1117,119 @@ export class Chart {
   public getVolumeProfiles(): VolumeProfileApi[] {
     this.assertAlive();
     return [...this.volumeProfiles.values()].map((state) => state.api!).filter((api): api is VolumeProfileApi => api !== undefined);
+  }
+
+  /** Attach a resolved IANA trading calendar to the chart's shared viewport. */
+  public setTradingCalendar(calendar: TradingCalendarEngine, options: TradingCalendarDisplayOptions = {}): TradingCalendarApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (!isTradingCalendarEngine(calendar)) throw new TypeError("setTradingCalendar requires a TradingCalendarEngine");
+    const previous = this.tradingCalendar;
+    this.tradingCalendar = {
+      calendar,
+      display: resolveTradingCalendarDisplayOptions({ ...(previous?.display ?? defaultTradingCalendarDisplayOptions()), ...options }),
+    };
+    this.render();
+    return this.wrapTradingCalendarApi(this.tradingCalendar);
+  }
+
+  /** Return the resolved calendar and display controls currently attached to this chart. */
+  public getTradingCalendar(): TradingCalendarApi | null {
+    this.assertAlive();
+    return this.tradingCalendar === null ? null : this.wrapTradingCalendarApi(this.tradingCalendar);
+  }
+
+  public removeTradingCalendar(): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (this.tradingCalendar === null) return;
+    this.tradingCalendar = null;
+    this.render();
+  }
+
+  /** Add a causal session/week/month indicator using the selected calendar. */
+  public addSessionIndicator(options: SessionIndicatorChartOptions): SessionIndicatorApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (!isTradingCalendarEngine(options.calendar)) throw new TypeError("Session indicators require a TradingCalendarEngine");
+    const id = options.id ?? `session-indicator-${this.nextSessionAnalysisId++}`;
+    if (this.sessionIndicators.has(id) || this.sessionReferences.has(id) || this.multiTimeframeIndicators.has(id) || this.indicators.has(id)) throw new Error(`Indicator id already exists: ${id}`);
+    const paneId = options.pane === "new" ? this.model.addPane({ height: 180 }) : options.pane ?? "main";
+    if (!this.model.getPaneIds().includes(paneId)) throw new Error(`Unknown pane id: ${paneId}`);
+    const normalizedOptions: SessionIndicatorChartOptions & { readonly id: string } = {
+      ...options,
+      id,
+      pane: paneId,
+      parameters: options.parameters === undefined ? {} : { ...options.parameters },
+      outputStyles: options.outputStyles === undefined ? {} : cloneSeriesStyles(options.outputStyles),
+      visible: options.visible ?? true,
+    };
+    const result = calculateSessionIndicator(this.model.allCandles, normalizedOptions, this.indicatorRegistry);
+    const state: ManagedSessionIndicator = {
+      id,
+      indicatorId: result.indicatorId,
+      paneId,
+      options: normalizedOptions,
+      outputSeriesIds: [],
+      outputStyles: cloneSeriesStyles(options.outputStyles ?? {}),
+      visible: normalizedOptions.visible ?? true,
+      result,
+    };
+    for (const output of result.outputs) {
+      const seriesId = `${id}:${output.id}`;
+      const band = output.kind === "band" ? { group: id, role: output.bandRole ?? "upper" } : undefined;
+      this.model.addSeries(output.kind === "histogram" ? "histogram" : "line", {
+        id: seriesId,
+        title: `${options.indicatorId} ${output.title} (${options.targetPeriod})`,
+        pane: paneId,
+        ...(band === undefined ? {} : { band }),
+        style: { ...(state.outputStyles[output.id] ?? {}), visible: state.visible },
+      });
+      state.outputSeriesIds.push(seriesId);
+    }
+    this.sessionIndicators.set(id, state);
+    this.syncSessionIndicator(state);
+    this.emit("indicatorChange", { action: "add", id, indicatorId: state.indicatorId });
+    this.render();
+    return this.wrapSessionIndicatorApi(state);
+  }
+
+  public getSessionIndicators(): SessionIndicatorApi[] {
+    this.assertAlive();
+    return [...this.sessionIndicators.values()].map((state) => this.wrapSessionIndicatorApi(state));
+  }
+
+  /** Add previous completed session/week/month OHLC reference levels. */
+  public addSessionReference(options: SessionReferenceChartOptions): SessionReferenceApi {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (!isTradingCalendarEngine(options.calendar)) throw new TypeError("Session references require a TradingCalendarEngine");
+    const id = options.id ?? `session-reference-${this.nextSessionAnalysisId++}`;
+    if (this.sessionReferences.has(id) || this.sessionIndicators.has(id) || this.multiTimeframeReferences.has(id) || this.indicators.has(id)) throw new Error(`Reference id already exists: ${id}`);
+    const normalizedOptions: SessionReferenceChartOptions & { readonly id: string } = {
+      ...options,
+      id,
+      levels: options.levels === undefined ? ["open", "high", "low", "close"] : [...options.levels],
+      visible: options.visible ?? true,
+      labels: options.labels ?? true,
+      labelPrefix: options.labelPrefix ?? "Previous",
+      style: { color: "#f59e0b", lineWidth: 1.5, lineStyle: "dashed", alpha: 0.9, ...(options.style ?? {}) },
+    };
+    const state: ManagedSessionReference = {
+      id,
+      options: normalizedOptions,
+      visible: normalizedOptions.visible ?? true,
+      result: calculatePreviousSessionLevels(this.model.allCandles, normalizedOptions),
+    };
+    this.sessionReferences.set(id, state);
+    this.syncSessionReference(state);
+    this.render();
+    return this.wrapSessionReferenceApi(state);
+  }
+
+  public getSessionReferences(): SessionReferenceApi[] {
+    this.assertAlive();
+    return [...this.sessionReferences.values()].map((state) => this.wrapSessionReferenceApi(state));
   }
 
   /** Add a causal higher-timeframe indicator backed by the existing registry. */
@@ -1651,7 +1887,9 @@ export class Chart {
     this.anchoredVwaps.clear();
     this.pendingAnchoredVwapId = null;
     this.clearVolumeProfiles();
+    this.tradingCalendar = null;
     this.clearMultiTimeframe();
+    this.clearSessionAnalysis();
     this.model.destroy();
     this.baseFrame = null;
     this.replayCursorIndex = null;
@@ -2087,8 +2325,11 @@ export class Chart {
     if (strategyMarkers !== null) items.push(strategyMarkers);
     const paperTradingMarkers = this.getPaperTradingMarkerOverlay();
     if (paperTradingMarkers !== null) items.push(paperTradingMarkers);
+    const tradingCalendar = this.getTradingCalendarOverlayItem();
+    if (tradingCalendar !== null) items.push(tradingCalendar);
     items.push(...this.getVolumeProfileOverlayItems());
     items.push(...this.getMultiTimeframeReferenceOverlayItems());
+    items.push(...this.getSessionReferenceOverlayItems());
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -2109,6 +2350,13 @@ export class Chart {
         }
       }));
     return items;
+  }
+
+  private getTradingCalendarOverlayItem(): PluginOverlayRenderItem | null {
+    if (this.tradingCalendar === null) return null;
+    const context = this.getPluginRenderContext();
+    if (context === null) return null;
+    return renderTradingCalendarOverlay(this.tradingCalendar.calendar, this.tradingCalendar.display, context, this.locale);
   }
 
   private getVolumeProfileOverlayItems(): PluginOverlayRenderItem[] {
@@ -2222,6 +2470,64 @@ export class Chart {
         }
       }
       return { id: `openkline.${reference.id}`, zIndex: 13, commands };
+    });
+  }
+
+  private getSessionReferenceOverlayItems(): PluginOverlayRenderItem[] {
+    const visibleReferences = [...this.sessionReferences.values()].filter((reference) => reference.visible);
+    if (visibleReferences.length === 0) return [];
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    const visibleTimes = this.model.getVisibleData().times;
+    if (context === null || context === undefined || pane === undefined || visibleTimes.length === 0) return [];
+    const visibleFrom = visibleTimes[0]!;
+    const visibleTo = visibleTimes.at(-1)! + 1;
+    return visibleReferences.map((reference) => {
+      const options = reference.options;
+      const style = options.style ?? {};
+      const mapped = mapSessionReferenceToSourceTimes(reference.result, visibleTimes);
+      const commands: PluginRenderCommand[] = [];
+      const points = reference.result.points.filter((point) => point.availableAt !== null && Object.keys(point.levels).length > 0);
+      points.forEach((point, index) => {
+        const start = Math.max(visibleFrom, point.periodStart);
+        const end = Math.min(visibleTo, points[index + 1]?.periodStart ?? visibleTo);
+        if (end <= start) return;
+        const fromX = context.xForTime(start);
+        const toX = context.xForTime(end);
+        for (const level of options.levels ?? ["open", "high", "low", "close"]) {
+          const value = point.levels[level];
+          if (value === undefined || !Number.isFinite(value)) continue;
+          const dash = lineStyleDash(style.lineStyle);
+          commands.push({
+            kind: "line",
+            from: { x: fromX, y: pane.yForPrice(value) },
+            to: { x: toX, y: pane.yForPrice(value) },
+            ...(style.color === undefined ? {} : { color: style.color }),
+            ...(style.lineWidth === undefined ? {} : { lineWidth: style.lineWidth }),
+            ...(style.alpha === undefined ? {} : { alpha: style.alpha }),
+            ...(dash === undefined ? {} : { dash }),
+          } as PluginRenderCommand);
+        }
+      });
+      if (options.labels !== false) {
+        const latest = mapped.at(-1);
+        if (latest !== undefined) {
+          for (const level of options.levels ?? ["open", "high", "low", "close"]) {
+            const value = latest.levels[level];
+            if (value === undefined || !Number.isFinite(value)) continue;
+            commands.push({
+              kind: "text",
+              x: pane.right - 74,
+              y: pane.yForPrice(value) - 7,
+              text: `${options.labelPrefix ?? "Previous"} ${level.toUpperCase()}`,
+              ...(style.color === undefined ? {} : { color: style.color }),
+              font: "10px system-ui, sans-serif",
+              ...(style.alpha === undefined ? {} : { alpha: style.alpha }),
+            });
+          }
+        }
+      }
+      return { id: `openkline.${reference.id}`, zIndex: 14, commands };
     });
   }
 
@@ -2522,6 +2828,109 @@ export class Chart {
     };
   }
 
+  private wrapTradingCalendarApi(state: ManagedTradingCalendar): TradingCalendarApi {
+    return {
+      calendarId: state.calendar.definition.id,
+      version: state.calendar.definition.version,
+      timeZone: state.calendar.timeZone,
+      getSnapshot: () => ({ ...state.calendar.snapshot() }),
+      getDisplayOptions: () => ({ ...state.display }),
+      setDisplayOptions: (patch) => {
+        this.assertAlive();
+        if (this.tradingCalendar !== state) return;
+        state.display = resolveTradingCalendarDisplayOptions({ ...state.display, ...patch });
+        this.render();
+      },
+      setVisible: (visible) => {
+        this.assertAlive();
+        if (this.tradingCalendar !== state) return;
+        state.display = resolveTradingCalendarDisplayOptions({ ...state.display, visible });
+        this.render();
+      },
+      remove: () => {
+        this.assertAlive();
+        if (this.tradingCalendar === state) this.removeTradingCalendar();
+      },
+    };
+  }
+
+  private wrapSessionIndicatorApi(state: ManagedSessionIndicator): SessionIndicatorApi {
+    return {
+      id: state.id,
+      indicatorId: state.indicatorId,
+      paneId: state.paneId,
+      getOptions: () => ({
+        ...state.options,
+        parameters: { ...(state.options.parameters ?? {}) },
+        outputStyles: cloneSeriesStyles(state.outputStyles),
+        visible: state.visible,
+      }),
+      getResult: () => cloneSessionIndicatorResult(state.result),
+      setParameters: (parameters) => {
+        this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
+        state.options = { ...state.options, parameters: { ...parameters } };
+        this.syncSessionIndicator(state);
+        this.emit("indicatorChange", { action: "update", id: state.id, indicatorId: state.indicatorId });
+        this.render();
+      },
+      setOutputStyle: (outputId, style) => {
+        this.assertAlive();
+        const outputIndex = state.result.outputs.findIndex((output) => output.id === outputId);
+        const seriesId = outputIndex < 0 ? undefined : state.outputSeriesIds[outputIndex];
+        if (seriesId === undefined) throw new Error(`Unknown session indicator output: ${state.indicatorId}:${outputId}`);
+        state.outputStyles[outputId] = { ...(state.outputStyles[outputId] ?? {}), ...style };
+        this.model.setSeriesStyle(seriesId, { ...state.outputStyles[outputId], visible: state.visible && (state.outputStyles[outputId]?.visible ?? true) });
+        this.render();
+      },
+      setVisible: (visible) => {
+        this.assertAlive();
+        state.visible = visible;
+        state.options = { ...state.options, visible };
+        for (const [index, seriesId] of state.outputSeriesIds.entries()) {
+          const output = state.result.outputs[index];
+          if (output !== undefined) this.model.setSeriesStyle(seriesId, { ...(state.outputStyles[output.id] ?? {}), visible: visible && (state.outputStyles[output.id]?.visible ?? true) });
+        }
+        this.render();
+      },
+      remove: () => {
+        this.assertAlive();
+        this.removeSessionIndicator(state.id);
+      },
+    };
+  }
+
+  private wrapSessionReferenceApi(state: ManagedSessionReference): SessionReferenceApi {
+    return {
+      id: state.id,
+      getOptions: () => ({
+        ...state.options,
+        levels: [...(state.options.levels ?? [])],
+        style: { ...(state.options.style ?? {}) },
+        visible: state.visible,
+      }),
+      getResult: () => cloneSessionReferenceResult(state.result),
+      setOptions: (patch) => {
+        this.assertAlive();
+        this.assertReplayStructureMutationAllowed();
+        state.options = { ...state.options, ...patch, id: state.id };
+        state.visible = state.options.visible ?? state.visible;
+        this.syncSessionReference(state);
+        this.render();
+      },
+      setVisible: (visible) => {
+        this.assertAlive();
+        state.visible = visible;
+        state.options = { ...state.options, visible };
+        this.render();
+      },
+      remove: () => {
+        this.assertAlive();
+        this.removeSessionReference(state.id);
+      },
+    };
+  }
+
   private wrapMultiTimeframeReferenceApi(state: ManagedMultiTimeframeReference): MultiTimeframeReferenceApi {
     return {
       id: state.id,
@@ -2567,6 +2976,20 @@ export class Chart {
     this.render();
   }
 
+  private removeSessionIndicator(id: string): void {
+    const state = this.sessionIndicators.get(id);
+    if (state === undefined) return;
+    for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    this.sessionIndicators.delete(id);
+    this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
+    this.render();
+  }
+
+  private removeSessionReference(id: string): void {
+    if (!this.sessionReferences.delete(id)) return;
+    this.render();
+  }
+
   private syncMultiTimeframeIndicator(state: ManagedMultiTimeframeIndicator): void {
     const candles = this.model.allCandles;
     const asOfTime = this.resolveMultiTimeframeAsOf(state.options, candles);
@@ -2585,10 +3008,37 @@ export class Chart {
     }
   }
 
+  private syncSessionIndicator(state: ManagedSessionIndicator): void {
+    const candles = this.model.allCandles;
+    const asOfTime = this.resolveSessionAsOf(state.options, candles);
+    state.result = calculateSessionIndicator(candles, {
+      ...state.options,
+      ...(asOfTime === undefined ? {} : { asOfTime }),
+    }, this.indicatorRegistry);
+    for (const [index, output] of state.result.outputs.entries()) {
+      const seriesId = state.outputSeriesIds[index];
+      if (seriesId === undefined) continue;
+      const points = mapSessionIndicatorToSourceTimes(state.result, candles.map((candle) => candle.time), output.id)
+        .filter((point) => point.value !== null && point.availableAt !== null)
+        .map((point) => ({ time: point.time, value: point.value! }));
+      this.model.setSeriesData(seriesId, points);
+      this.model.setSeriesStyle(seriesId, { ...(state.outputStyles[output.id] ?? {}), visible: state.visible && (state.outputStyles[output.id]?.visible ?? true) });
+    }
+  }
+
   private syncMultiTimeframeReference(state: ManagedMultiTimeframeReference): void {
     const candles = this.model.allCandles;
     const asOfTime = this.resolveMultiTimeframeAsOf(state.options, candles);
     state.result = calculatePreviousTimeframeLevels(candles, {
+      ...state.options,
+      ...(asOfTime === undefined ? {} : { asOfTime }),
+    });
+  }
+
+  private syncSessionReference(state: ManagedSessionReference): void {
+    const candles = this.model.allCandles;
+    const asOfTime = this.resolveSessionAsOf(state.options, candles);
+    state.result = calculatePreviousSessionLevels(candles, {
       ...state.options,
       ...(asOfTime === undefined ? {} : { asOfTime }),
     });
@@ -2604,9 +3054,21 @@ export class Chart {
     return requested ?? latestTime;
   }
 
+  /** Resolve a safe session-analysis frontier without allowing replay lookahead. */
+  private resolveSessionAsOf(options: { readonly asOfTime?: number }, candles: readonly Candle[]): number | undefined {
+    const requested = options.asOfTime;
+    const latestTime = candles.at(-1)?.time;
+    if (this.model.getReplayCutoff() !== null && latestTime !== undefined) {
+      return requested === undefined ? latestTime : Math.min(requested, latestTime);
+    }
+    return requested ?? latestTime;
+  }
+
   private refreshMultiTimeframe(): void {
     for (const state of this.multiTimeframeIndicators.values()) this.syncMultiTimeframeIndicator(state);
     for (const state of this.multiTimeframeReferences.values()) this.syncMultiTimeframeReference(state);
+    for (const state of this.sessionIndicators.values()) this.syncSessionIndicator(state);
+    for (const state of this.sessionReferences.values()) this.syncSessionReference(state);
   }
 
   private clearMultiTimeframe(): void {
@@ -2616,6 +3078,15 @@ export class Chart {
     this.multiTimeframeIndicators.clear();
     this.multiTimeframeReferences.clear();
     this.nextMultiTimeframeId = 1;
+  }
+
+  private clearSessionAnalysis(): void {
+    for (const state of this.sessionIndicators.values()) {
+      for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    }
+    this.sessionIndicators.clear();
+    this.sessionReferences.clear();
+    this.nextSessionAnalysisId = 1;
   }
 
   private assertAlive(): void {
@@ -2984,6 +3455,46 @@ function validateStrategyMarkers(markers: readonly StrategyMarker[]): StrategyMa
     ids.add(marker.id);
     return { ...marker };
   });
+}
+
+function cloneSessionIndicatorResult(result: SessionIndicatorResult): SessionIndicatorResult {
+  return {
+    ...result,
+    sourceTimeframe: { ...result.sourceTimeframe },
+    calendar: { ...result.calendar, validity: { ...result.calendar.validity } },
+    parameters: { ...result.parameters },
+    observations: result.observations.map((observation) => ({
+      ...observation,
+      sessionIds: [...observation.sessionIds],
+      tradingDates: [...observation.tradingDates],
+      sourceTimes: [...observation.sourceTimes],
+      candle: { ...observation.candle },
+    })),
+    outputs: result.outputs.map((output) => ({
+      ...output,
+      points: output.points.map((point) => ({
+        ...point,
+        sessionIds: [...point.sessionIds],
+        tradingDates: [...point.tradingDates],
+        sourceTimes: [...point.sourceTimes],
+      })),
+    })),
+  };
+}
+
+function cloneSessionReferenceResult(result: SessionReferenceResult): SessionReferenceResult {
+  return {
+    ...result,
+    sourceTimeframe: { ...result.sourceTimeframe },
+    calendar: { ...result.calendar, validity: { ...result.calendar.validity } },
+    points: result.points.map((point) => ({
+      ...point,
+      sessionIds: [...point.sessionIds],
+      tradingDates: [...point.tradingDates],
+      sourceTimes: [...point.sourceTimes],
+      levels: { ...point.levels },
+    })),
+  };
 }
 
 function nearestTime(times: readonly number[], target: number): number | null {

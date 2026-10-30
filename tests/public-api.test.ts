@@ -13,6 +13,8 @@ test("root public API exposes the documented framework-independent contracts", a
     "PluginRegistry", "compileKlineScript", "ReplayEngine", "createBacktest",
     "createOptimizationWorker", "createScreenerWorker", "createPaperTradingAccount", "aggregateCandlesByTimeframe",
     "calculateMultiTimeframeIndicator", "calculatePreviousTimeframeLevels", "parseFixedTimeframe",
+    "TradingCalendarEngine", "TradingCalendarRegistry", "aggregateCandlesByTradingPeriod",
+    "calculateSessionIndicator", "createComparisonDatafeedCalendarCoverage",
   ]) assert.equal(typeof api[name as keyof typeof api], "function", `${name} must remain a runtime export`);
 
   const store = new api.CandleStore();
@@ -115,4 +117,39 @@ test("Phase 10 multi-timeframe public calculation APIs are consumable", () => {
   assert.equal(indicator.outputs[0]?.points.length, 2);
   const levels = api.calculatePreviousTimeframeLevels(input, { sourceTimeframe: "1m", targetTimeframe: "5m", coveragePolicy: "fixed-duration", asOfTime: 10 * 60_000 });
   assert.deepEqual(levels.points[1]?.levels, { open: 1, high: 6, low: 0, close: 5.5 });
+});
+
+test("Phase 11 calendar and session APIs are consumable without provider coupling", () => {
+  const calendar = new api.TradingCalendarEngine({
+    id: "public-session-market",
+    version: "1",
+    timeZone: "UTC",
+    weeklySchedule: [{ weekday: 1, segments: [{ start: "09:00", end: "12:00" }] }],
+  });
+  const from = Date.parse("2024-01-01T09:00:00.000Z");
+  const input = Array.from({ length: 3 }, (_, index) => ({
+    time: from + index * 60 * 60 * 1000,
+    open: 10 + index,
+    high: 11 + index,
+    low: 9 + index,
+    close: 10.5 + index,
+    volume: 10,
+  }));
+  const session = api.aggregateCandlesByTradingPeriod(input, {
+    sourceTimeframe: "1h",
+    targetPeriod: "session",
+    calendar,
+    asOfTime: from + 4 * 60 * 60 * 1000,
+  });
+  assert.equal(session.observations.length, 1);
+  assert.equal(api.calculateSessionIndicator(input, {
+    sourceTimeframe: "1h",
+    targetPeriod: "session",
+    calendar,
+    indicatorId: "SMA",
+    parameters: { period: 1 },
+    asOfTime: from + 4 * 60 * 60 * 1000,
+  }).outputs.length, 1);
+  const coverage = api.createComparisonDatafeedCalendarCoverage(calendar, 60 * 60 * 1000);
+  assert.equal(coverage.isExpectedTime?.(from), true);
 });

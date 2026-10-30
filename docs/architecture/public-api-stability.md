@@ -38,3 +38,10 @@ for overlay lines. These are additive declarations; the historical baseline is
 not rewritten automatically. Run `npm run api:diagnostics` and review the
 reported additive delta before any owner-approved baseline update. Version-1
 workspaces without `multiTimeframe` remain valid.
+
+Phase 11 extends the same additive model with provider-neutral trading calendar
+visualization, session-aware chart analysis, calendar-aware comparison
+coverage, and optional workspace `tradingCalendar`/`sessionAnalysis` members.
+Calendar engines are supplied by the host and are restored through an explicit
+ID/version resolver; the package never silently substitutes a schedule. Legacy
+version-1 workspaces without these optional members remain valid.

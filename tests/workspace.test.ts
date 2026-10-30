@@ -158,6 +158,38 @@ test("workspace parser round-trips additive multi-timeframe configuration withou
   }], references: [] } }), WorkspaceValidationError);
 });
 
+test("workspace parser validates serializable trading calendar identity and display settings", () => {
+  const input = workspace();
+  const parsed = parseWorkspace({
+    ...input,
+    tradingCalendar: {
+      calendarId: "nyse",
+      version: "2024.1",
+      display: {
+        visible: true,
+        showBoundaries: true,
+        showBreaks: true,
+        showLabels: false,
+        sessionColor: "#64748b",
+        breakColor: "#94a3b8",
+        labelColor: "#64748b",
+        opacity: 0.2,
+        maxSessions: 64,
+      },
+    },
+  });
+  assert.equal(parsed.tradingCalendar?.calendarId, "nyse");
+  assert.equal(parsed.tradingCalendar?.display.showLabels, false);
+  assert.throws(() => parseWorkspace({
+    ...input,
+    tradingCalendar: {
+      calendarId: "nyse",
+      version: "2024.1",
+      display: { opacity: 2 },
+    },
+  }), WorkspaceValidationError);
+});
+
 test("workspace parser rejects invalid references, ordering, and JSON state", () => {
   assert.throws(() => parseWorkspace({ ...workspace(), version: 2 }), WorkspaceValidationError);
   assert.throws(() => parseWorkspace({

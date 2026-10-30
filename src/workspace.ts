@@ -5,7 +5,9 @@ import { isCandleSeriesType } from "./core/candle-series.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { Candle, ChartDirection, ChartTheme, PriceScaleConfiguration, SeriesPoint, SeriesStyle, SeriesType } from "./types.js";
 import { resolveVolumeProfileOptions, type ResolvedVolumeProfileOptions, type VolumeProfileOptions } from "./volume-analytics.js";
-import { validateTimeframePair, type MultiTimeframeFinalityPolicy, type MultiTimeframeMissingVolumePolicy, type MultiTimeframeReferenceStyle, type PreviousTimeframeLevel } from "./multi-timeframe.js";
+import { parseFixedTimeframe, validateTimeframePair, type MultiTimeframeFinalityPolicy, type MultiTimeframeMissingVolumePolicy, type MultiTimeframeReferenceStyle, type PreviousTimeframeLevel } from "./multi-timeframe.js";
+import type { TradingCalendarEngine } from "./trading-calendar.js";
+import { resolveTradingCalendarDisplayOptions, type WorkspaceTradingCalendar } from "./session-visualization.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -96,6 +98,40 @@ export interface WorkspaceMultiTimeframeAnalysis {
   readonly references: readonly WorkspaceMultiTimeframeReference[];
 }
 
+export interface WorkspaceSessionIndicator {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  readonly sourceTimeframe: string;
+  readonly targetPeriod: "session" | "week" | "month";
+  readonly calendarId: string;
+  readonly calendarVersion: string;
+  readonly parameters: Readonly<Record<string, JsonValue>>;
+  readonly coveragePolicy: "unknown" | "fixed-duration";
+  readonly missingVolumePolicy: MultiTimeframeMissingVolumePolicy;
+  readonly finalityPolicy: MultiTimeframeFinalityPolicy;
+  readonly outputStyles: Readonly<Record<string, SeriesStyle>>;
+  readonly visible: boolean;
+}
+
+export interface WorkspaceSessionReference {
+  readonly id: string;
+  readonly sourceTimeframe: string;
+  readonly targetPeriod: "session" | "week" | "month";
+  readonly calendarId: string;
+  readonly calendarVersion: string;
+  readonly levels: readonly PreviousTimeframeLevel[];
+  readonly visible: boolean;
+  readonly labels: boolean;
+  readonly labelPrefix: string;
+  readonly style: MultiTimeframeReferenceStyle;
+}
+
+export interface WorkspaceSessionAnalysis {
+  readonly indicators: readonly WorkspaceSessionIndicator[];
+  readonly references: readonly WorkspaceSessionReference[];
+}
+
 /** A replay export marker; it is descriptive and is not a replay source. */
 export interface WorkspaceReplayState {
   readonly active: true;
@@ -120,6 +156,10 @@ export interface WorkspaceDocument {
   readonly volumeAnalytics?: WorkspaceVolumeAnalytics;
   /** Optional additive Phase 10 multi-timeframe configuration. Derived data is never persisted. */
   readonly multiTimeframe?: WorkspaceMultiTimeframeAnalysis;
+  /** Optional Phase 11 session-aware indicator/reference configuration. */
+  readonly sessionAnalysis?: WorkspaceSessionAnalysis;
+  /** Optional Phase 11 calendar identity and display settings; runtime schedule is resolved by the host. */
+  readonly tradingCalendar?: WorkspaceTradingCalendar;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -127,6 +167,8 @@ export interface WorkspaceDocument {
 export interface WorkspaceRestoreOptions {
   readonly missingPlugins?: "skip" | "error";
   readonly missingIndicators?: "skip" | "error";
+  /** Resolve a persisted calendar ID/version without serializing executable schedule state. */
+  readonly tradingCalendarResolver?: (calendarId: string, version: string) => TradingCalendarEngine | undefined;
 }
 
 export interface WorkspaceRestoreResult {
@@ -163,6 +205,8 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const alerts = value.alerts === undefined ? undefined : parseWorkspaceAlerts(value.alerts);
   const volumeAnalytics = value.volumeAnalytics === undefined ? undefined : parseVolumeAnalytics(value.volumeAnalytics);
   const multiTimeframe = value.multiTimeframe === undefined ? undefined : parseMultiTimeframe(value.multiTimeframe, panes.map((pane) => pane.id));
+  const sessionAnalysis = value.sessionAnalysis === undefined ? undefined : parseSessionAnalysis(value.sessionAnalysis, panes.map((pane) => pane.id));
+  const tradingCalendar = value.tradingCalendar === undefined ? undefined : parseTradingCalendar(value.tradingCalendar);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -185,8 +229,28 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     ...(alerts === undefined ? {} : { alerts }),
     ...(volumeAnalytics === undefined ? {} : { volumeAnalytics }),
     ...(multiTimeframe === undefined ? {} : { multiTimeframe }),
+    ...(sessionAnalysis === undefined ? {} : { sessionAnalysis }),
+    ...(tradingCalendar === undefined ? {} : { tradingCalendar }),
     ...(replay === undefined ? {} : { replay }),
   };
+}
+
+function parseTradingCalendar(value: unknown): WorkspaceTradingCalendar {
+  if (!isPlainObject(value)
+    || typeof value.calendarId !== "string" || value.calendarId.trim().length === 0
+    || typeof value.version !== "string" || value.version.trim().length === 0
+    || !isPlainObject(value.display)) {
+    throw new WorkspaceValidationError("Invalid workspace trading calendar");
+  }
+  try {
+    return {
+      calendarId: value.calendarId,
+      version: value.version,
+      display: resolveTradingCalendarDisplayOptions(value.display),
+    };
+  } catch (error) {
+    throw new WorkspaceValidationError(error instanceof Error ? error.message : "Invalid workspace trading calendar display");
+  }
 }
 
 function parseVolumeAnalytics(value: unknown): WorkspaceVolumeAnalytics {
@@ -279,6 +343,89 @@ function parseMultiTimeframe(value: unknown, paneIds: readonly string[]): Worksp
     };
   });
   return { indicators, references };
+}
+
+function parseSessionAnalysis(value: unknown, paneIds: readonly string[]): WorkspaceSessionAnalysis {
+  if (!isPlainObject(value) || !Array.isArray(value.indicators) || !Array.isArray(value.references)) {
+    throw new WorkspaceValidationError("Invalid workspace session analysis");
+  }
+  const ids = new Set<string>();
+  const indicators = value.indicators.map((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || item.id.length === 0 || ids.has(item.id)
+      || typeof item.indicatorId !== "string" || typeof item.paneId !== "string" || !paneIds.includes(item.paneId)
+      || typeof item.sourceTimeframe !== "string" || typeof item.targetPeriod !== "string"
+      || !isJsonObject(item.parameters) || !isPlainObject(item.outputStyles) || typeof item.visible !== "boolean"
+      || typeof item.calendarId !== "string" || item.calendarId.length === 0
+      || typeof item.calendarVersion !== "string" || item.calendarVersion.length === 0) {
+      throw new WorkspaceValidationError("Invalid or duplicate workspace session indicator");
+    }
+    validateSessionSourceTimeframe(item.sourceTimeframe, item.id);
+    validateSessionPeriod(item.targetPeriod, item.id);
+    const outputStyles: Record<string, SeriesStyle> = {};
+    for (const [outputId, style] of Object.entries(item.outputStyles)) outputStyles[outputId] = parseSeriesStyle(style);
+    const coveragePolicy = parseCoveragePolicy(item.coveragePolicy, item.id);
+    const missingVolumePolicy = parseMissingVolumePolicy(item.missingVolumePolicy, item.id);
+    const finalityPolicy = parseFinalityPolicy(item.finalityPolicy, item.id);
+    ids.add(item.id);
+    return {
+      id: item.id,
+      indicatorId: item.indicatorId,
+      paneId: item.paneId,
+      sourceTimeframe: item.sourceTimeframe,
+      targetPeriod: item.targetPeriod,
+      calendarId: item.calendarId,
+      calendarVersion: item.calendarVersion,
+      parameters: cloneJsonObject(item.parameters),
+      coveragePolicy,
+      missingVolumePolicy,
+      finalityPolicy,
+      outputStyles,
+      visible: item.visible,
+    };
+  });
+  const references = value.references.map((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || item.id.length === 0 || ids.has(item.id)
+      || typeof item.sourceTimeframe !== "string" || typeof item.targetPeriod !== "string"
+      || !Array.isArray(item.levels) || typeof item.visible !== "boolean"
+      || typeof item.labels !== "boolean" || typeof item.labelPrefix !== "string" || !isPlainObject(item.style)
+      || typeof item.calendarId !== "string" || item.calendarId.length === 0
+      || typeof item.calendarVersion !== "string" || item.calendarVersion.length === 0) {
+      throw new WorkspaceValidationError("Invalid or duplicate workspace session reference");
+    }
+    validateSessionSourceTimeframe(item.sourceTimeframe, item.id);
+    validateSessionPeriod(item.targetPeriod, item.id);
+    const levels = item.levels.map((level) => {
+      if (level !== "open" && level !== "high" && level !== "low" && level !== "close") throw new WorkspaceValidationError(`Invalid session reference level: ${item.id}`);
+      return level;
+    });
+    if (levels.length === 0 || new Set(levels).size !== levels.length) throw new WorkspaceValidationError(`Invalid session reference levels: ${item.id}`);
+    ids.add(item.id);
+    return {
+      id: item.id,
+      sourceTimeframe: item.sourceTimeframe,
+      targetPeriod: item.targetPeriod,
+      calendarId: item.calendarId,
+      calendarVersion: item.calendarVersion,
+      levels,
+      visible: item.visible,
+      labels: item.labels,
+      labelPrefix: item.labelPrefix,
+      style: parseMultiTimeframeReferenceStyle(item.style, item.id),
+    };
+  });
+  return { indicators, references };
+}
+
+function validateSessionSourceTimeframe(source: string, id: string): void {
+  try {
+    parseFixedTimeframe(source);
+  } catch (error) {
+    throw new WorkspaceValidationError(`Invalid session source timeframe for ${id}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function validateSessionPeriod(period: unknown, id: string): asserts period is "session" | "week" | "month" {
+  if (period !== "session" && period !== "week" && period !== "month") throw new WorkspaceValidationError(`Invalid session period: ${id}`);
 }
 
 function validateWorkspaceTimeframePair(source: string, target: string, id: string): void {
