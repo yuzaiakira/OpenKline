@@ -58,6 +58,11 @@ never edits the canonical action dataset. Workspace documents persist only
 source references and presentation policy; an unavailable source is retained as
 an unresolved reference with a warning.
 
+Split-adjusted single-candle updates apply the indexed split factor directly
+to the changed candle and update the displayed store without rebuilding the
+entire OHLCV projection. Total-return and other paths whose values depend on a
+historical prefix retain a correct full rebuild when required.
+
 Portfolio accounting consumes the same raw action contract inside the existing
 merged timeline. Effective split events adjust held quantity and per-share
 cost basis while keeping aggregate cost basis; pending orders crossing a split
