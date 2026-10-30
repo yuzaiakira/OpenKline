@@ -870,7 +870,7 @@ export default function MultiChartStudioClient() {
     setComparisonFeedState(null);
     if (!comparisonSettings.active) return undefined;
 
-    const source: StudioComparisonSource = comparisonSettings.dataSource ?? "demo";
+    const source: StudioComparisonSource = comparisonSettings.dataSource === "binance" ? "binance" : "demo";
     const interval = intervalFor(activePanel.timeframe);
     const primaryCandles = buildCandles(activePanel.symbol, activePanel.timeframe);
     const firstCandle = primaryCandles[0];

@@ -15,6 +15,7 @@ import type {
   Candle,
   PortfolioBacktestResult,
   PortfolioBacktestWorkerApi,
+  PortfolioBacktestWorkerLike,
   PortfolioBacktestWorkerRunOptions,
   PortfolioBacktestWorkerStatus,
   PortfolioBacktestWorkspaceDocument,
@@ -108,6 +109,13 @@ function downloadText(name: string, text: string, type: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+const MAX_SYNCHRONOUS_FALLBACK_BARS = 3_000;
+
+function createNextPortfolioBacktestWorker(): PortfolioBacktestWorkerLike {
+  if (typeof Worker === "undefined") throw new Error("This browser does not provide Web Workers");
+  return new Worker(new URL("./portfolio-backtest-worker.ts", import.meta.url), { type: "module" }) as unknown as PortfolioBacktestWorkerLike;
+}
+
 function PortfolioEquityCurve({ result }: { readonly result: PortfolioBacktestResult }): ReactElement {
   const width = 640;
   const height = 150;
@@ -151,6 +159,7 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
   const [workerStatus, setWorkerStatus] = useState<PortfolioBacktestWorkerStatus | null>(null);
   const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [execution, setExecution] = useState<"idle" | "worker" | "fallback">("idle");
   const [tab, setTab] = useState<"overview" | "orders" | "trades" | "equity">("overview");
   const [fractional, setFractional] = useState(false);
 
@@ -219,13 +228,14 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
   const run = (): void => {
     if (options === null) { setError("Choose at least two instruments and enter valid positive values before running."); return; }
     unsubscribeRef.current?.(); sessionRef.current?.dispose();
-    const session = createPortfolioBacktestWorker(options);
+    const session = createPortfolioBacktestWorker(options, { factory: createNextPortfolioBacktestWorker });
     sessionRef.current = session;
     unsubscribeRef.current = session.subscribe((next) => { setWorkerStatus(next); setStatus(next.state); });
-    setError(null); setResult(null);
+    setError(null); setResult(null); setExecution("worker");
     void session.run().then((next) => { setResult(next); setStatus("completed"); onNotice(`Portfolio backtest completed: ${next.trades.length} trades across ${next.instruments.length} instruments.`); }).catch((reason: unknown) => {
       const code = typeof reason === "object" && reason !== null && "code" in reason ? String((reason as { readonly code?: unknown }).code) : "";
-      if ((code === "WORKER_CRASHED" || code === "WORKER_UNAVAILABLE" || code === "TIMEOUT") && sessionRef.current === session) {
+      const totalBars = options.instruments.reduce((total, instrument) => total + instrument.candles.length, 0);
+      if ((code === "WORKER_CRASHED" || code === "WORKER_UNAVAILABLE" || code === "TIMEOUT") && totalBars <= MAX_SYNCHRONOUS_FALLBACK_BARS && sessionRef.current === session) {
         try {
           setStatus("running");
           const fallback = createPortfolioBacktest(options);
@@ -233,12 +243,16 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
           fallback.dispose();
           setResult(next);
           setError(null);
+          setExecution("fallback");
           setStatus("completed");
-          onNotice(`Portfolio Worker was unavailable; completed the deterministic run on the main thread (${next.trades.length} trades across ${next.instruments.length} instruments).`);
+          onNotice(`Portfolio Worker was unavailable; completed this small deterministic demo on the main thread (${next.trades.length} trades across ${next.instruments.length} instruments).`);
           return;
         } catch (fallbackReason) {
           reason = fallbackReason;
         }
+      }
+      if ((code === "WORKER_CRASHED" || code === "WORKER_UNAVAILABLE" || code === "TIMEOUT") && totalBars > MAX_SYNCHRONOUS_FALLBACK_BARS) {
+        reason = new Error(`Portfolio Worker is unavailable; synchronous fallback is disabled for runs larger than ${MAX_SYNCHRONOUS_FALLBACK_BARS.toLocaleString()} bars`);
       }
       const message = reason instanceof Error ? reason.message : String(reason);
       if (sessionRef.current === session) { setError(message); setStatus(session.getStatus().state); onNotice(`Portfolio backtest failed: ${message}`); }
@@ -251,7 +265,7 @@ export function PortfolioBacktestingPanel({ initialConfiguration, onConfiguratio
   const isRunning = status === "running";
   const metrics = result?.metrics;
 
-  return <section className={styles.portfolioBacktestingPanel} aria-label="Portfolio Backtesting" data-portfolio-status={status} data-portfolio-instruments={selectedCount} data-portfolio-accepted-orders={result === null ? undefined : result.orders.filter((order) => order.status === "filled").length} data-portfolio-rejected-orders={result === null ? undefined : result.orders.filter((order) => order.status === "rejected").length} data-portfolio-final-equity={result?.finalAccount.equity ?? undefined}>
+  return <section className={styles.portfolioBacktestingPanel} aria-label="Portfolio Backtesting" data-portfolio-status={status} data-portfolio-execution={execution} data-portfolio-instruments={selectedCount} data-portfolio-accepted-orders={result === null ? undefined : result.orders.filter((order) => order.status === "filled").length} data-portfolio-rejected-orders={result === null ? undefined : result.orders.filter((order) => order.status === "rejected").length} data-portfolio-final-equity={result?.finalAccount.equity ?? undefined}>
     <div className={styles.paperTradingHeader}><div><h2>Portfolio Backtesting</h2><p>Deterministic shared-capital simulation across multiple instruments. Historical data never leaves this browser.</p></div><span className={styles.portfolioBadge}>LONG-ONLY · NO LEVERAGE</span></div>
     <div className={styles.portfolioControls}>
       <fieldset><legend>Instruments ({selectedCount}/5)</legend>{INSTRUMENTS.map((instrument) => <label className={styles.check} key={instrument.id}><input aria-label={`Portfolio instrument ${instrument.id}`} type="checkbox" checked={selectedIds.includes(instrument.id)} onChange={() => toggleInstrument(instrument.id)} disabled={isRunning || (selectedIds.includes(instrument.id) && selectedCount <= 2)} />{instrument.label}</label>)}</fieldset>

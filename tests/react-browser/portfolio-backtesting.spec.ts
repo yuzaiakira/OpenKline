@@ -3,6 +3,21 @@ import { expect, test } from "./studio-test.js";
 test("Studio runs a deterministic multi-instrument portfolio backtest and persists its bounded configuration", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    const target = window.Worker;
+    const state = window as unknown as { __openklinePortfolioWorkerUrls?: string[] };
+    state.__openklinePortfolioWorkerUrls = [];
+    Object.defineProperty(window, "Worker", {
+      configurable: true,
+      writable: true,
+      value: new Proxy(target, {
+        construct(constructor, args) {
+          state.__openklinePortfolioWorkerUrls?.push(String(args[0]));
+          return Reflect.construct(constructor, args);
+        },
+      }),
+    });
+  });
   await page.goto("/");
 
   const panel = page.getByRole("region", { name: "Portfolio Backtesting" });
@@ -18,6 +33,8 @@ test("Studio runs a deterministic multi-instrument portfolio backtest and persis
   await panel.getByRole("button", { name: "Run portfolio backtest", exact: true }).click();
 
   await expect(panel).toHaveAttribute("data-portfolio-status", "completed", { timeout: 15_000 });
+  await expect(panel).toHaveAttribute("data-portfolio-execution", "worker");
+  expect(await page.evaluate(() => (window as unknown as { __openklinePortfolioWorkerUrls?: string[] }).__openklinePortfolioWorkerUrls?.length ?? 0)).toBeGreaterThan(0);
   await expect(panel.locator("[data-portfolio-metrics]")).toBeVisible();
   await expect(panel.getByText(/Final account:/)).toBeVisible();
   expect(await panel.getAttribute("data-portfolio-accepted-orders")).toBe("11");
