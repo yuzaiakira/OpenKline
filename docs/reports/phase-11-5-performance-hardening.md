@@ -10,7 +10,7 @@ device, accessibility, visual, or protected API-baseline gates.
 
 - Starting SHA: `3394176c073f257f11ae6c40462d7f5d130cd0ab`
 - Implementation commits: `b4735cf` and `8ee8620`
-- Final documentation SHA: pending the final evidence commit
+- Final implementation/evidence SHA: `e8a23d0c88d017321ee0e554eec3d75cd53c5a6a`
 - Branch: `main` (the requested Phase 11.5 workflow does not create a feature
   branch)
 - Git identity: `Akira Yuzai <yuzai.akira@gmail.com>`
