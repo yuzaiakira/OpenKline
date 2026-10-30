@@ -40,6 +40,43 @@ export { isCandleSeriesType, toHeikinAshi } from "./core/candle-series.js";
 export { ChartModel } from "./core/chart-model.js";
 export { PriceScale, TimeScale, formatTimeTick, getCandlePriceRange } from "./core/scales.js";
 export type { TimeAxisTick, TimeAxisTickOptions } from "./core/scales.js";
+export {
+  CorporateActionLifecycleError,
+  CorporateActionStore,
+  CorporateActionValidationError,
+  InMemoryCorporateActionDatafeed,
+  RestCorporateActionDatafeed,
+  OPENKLINE_CORPORATE_ACTIONS_VERSION,
+  adjustCorporateActionData,
+  calculateTotalReturnIndex,
+  normalizeCorporateActionDataset,
+  validateCorporateActionDataset,
+} from "./corporate-actions.js";
+export type {
+  CashDividendAction,
+  CorporateAction,
+  CorporateActionAdjustmentContext,
+  CorporateActionAdjustmentMode,
+  CorporateActionAdjustmentOptions,
+  CorporateActionAdjustmentProvenance,
+  CorporateActionAdjustmentResult,
+  CorporateActionBase,
+  CorporateActionChange,
+  CorporateActionDatafeed,
+  CorporateActionDataset,
+  CorporateActionKind,
+  CorporateActionKnowledgeCoverage,
+  CorporateActionQuery,
+  CorporateActionSource,
+  CorporateActionStoreOptions,
+  CorporateActionVolumePolicy,
+  InMemoryCorporateActionDatafeed as InMemoryCorporateActionDatafeedType,
+  RestCorporateActionDatafeedOptions,
+  RestCorporateActionPage,
+  RestCorporateActionPayload,
+  StockSplitAction,
+  TotalReturnPoint,
+} from "./corporate-actions.js";
 export { ComparisonEngine } from "./comparison.js";
 export type {
   ComparisonAssetInput,
