@@ -103,6 +103,7 @@ export interface MultiTimeframeIndicatorResult {
   readonly parameters: Readonly<Record<string, unknown>>;
   readonly sourceTimeframe: FixedTimeframe;
   readonly targetTimeframe: FixedTimeframe;
+  readonly asOfTime: number;
   readonly coveragePolicy: MultiTimeframeCoveragePolicy;
   readonly finalityPolicy: MultiTimeframeFinalityPolicy;
   readonly outputs: readonly MultiTimeframeIndicatorOutput[];
@@ -151,6 +152,7 @@ export interface MultiTimeframeReferencePoint extends MultiTimeframeAggregationM
 export interface MultiTimeframeReferenceResult {
   readonly sourceTimeframe: FixedTimeframe;
   readonly targetTimeframe: FixedTimeframe;
+  readonly asOfTime: number;
   readonly points: readonly MultiTimeframeReferencePoint[];
 }
 
@@ -243,7 +245,11 @@ export class CausalTimeframeAggregator {
   public getResult(asOfTime: number | undefined = this.asOfTime): MultiTimeframeAggregationResult {
     this.assertAlive();
     const frontier = normalizeAsOf(asOfTime);
-    const observations = [...this.buckets.keys()].sort((left, right) => left - right).map((bucketStart) => this.buildObservation(bucketStart, frontier));
+    const observations: MultiTimeframeCandleObservation[] = [];
+    for (const bucketStart of [...this.buckets.keys()].sort((left, right) => left - right)) {
+      const observation = this.buildObservation(bucketStart, frontier);
+      if (observation !== undefined) observations.push(observation);
+    }
     return {
       sourceTimeframe: { ...this.source },
       targetTimeframe: { ...this.target },
@@ -274,10 +280,18 @@ export class CausalTimeframeAggregator {
     this.buckets.set(bucketStart, bucket);
   }
 
-  private buildObservation(bucketStart: number, asOfTime: number): MultiTimeframeCandleObservation {
+  private buildObservation(bucketStart: number, asOfTime: number): MultiTimeframeCandleObservation | undefined {
     const bucketEnd = bucketStart + this.target.durationMs;
     const bucket = this.buckets.get(bucketStart) ?? new Map<number, Candle>();
-    const sourceTimes = [...bucket.keys()].sort((left, right) => left - right);
+    // A source candle is not final at its opening timestamp. Without provider
+    // finality metadata, its OHLCV becomes eligible only after the source
+    // interval has ended. Keeping the full bucket in `this.buckets` lets the
+    // caller seek forward again; filtering here prevents historical snapshots
+    // from disclosing future values or metadata.
+    const sourceTimes = [...bucket.keys()]
+      .filter((time) => isSourceCandleEligible(time, this.source.durationMs, asOfTime))
+      .sort((left, right) => left - right);
+    if (sourceTimes.length === 0) return undefined;
     const sourceCandles = sourceTimes.map((time) => bucket.get(time)!).filter((candle): candle is Candle => candle !== undefined);
     const coverage = this.resolveCoverage(bucketStart, sourceTimes);
     const expectedSourceCount = coverage.expected;
@@ -338,6 +352,7 @@ export function calculateMultiTimeframeIndicator(candles: readonly Candle[], opt
       parameters: { ...result.parameters },
       sourceTimeframe: aggregation.sourceTimeframe,
       targetTimeframe: aggregation.targetTimeframe,
+      asOfTime: aggregation.asOfTime,
       coveragePolicy: aggregation.coveragePolicy,
       finalityPolicy: aggregation.finalityPolicy,
       observations: aggregation.observations,
@@ -365,6 +380,9 @@ export function mapMultiTimeframeIndicatorToSourceTimes(result: MultiTimeframeIn
   let index = 0;
   let current: MultiTimeframeIndicatorPoint | undefined;
   return [...sourceTimes].sort((left, right) => left - right).map((time) => {
+    if (time > result.asOfTime) {
+      return { time, value: null, bucketStart: null, bucketEnd: null, availableAt: null };
+    }
     while (index < points.length && points[index]!.availableAt! <= time) current = points[index++];
     return {
       time,
@@ -391,7 +409,7 @@ export function calculatePreviousTimeframeLevels(candles: readonly Candle[], opt
     // which is the availability frontier for the current bucket's reference.
     return { ...observation, availableAt: currentPrevious?.availableAt ?? null, levels: outputLevels };
   });
-  return { sourceTimeframe: aggregation.sourceTimeframe, targetTimeframe: aggregation.targetTimeframe, points };
+  return { sourceTimeframe: aggregation.sourceTimeframe, targetTimeframe: aggregation.targetTimeframe, asOfTime: aggregation.asOfTime, points };
 }
 
 export function mapMultiTimeframeReferenceToSourceTimes(result: MultiTimeframeReferenceResult, sourceTimes: readonly number[]): MappedMultiTimeframeReferencePoint[] {
@@ -399,6 +417,9 @@ export function mapMultiTimeframeReferenceToSourceTimes(result: MultiTimeframeRe
   let index = 0;
   let current: MultiTimeframeReferencePoint | undefined;
   return [...sourceTimes].sort((left, right) => left - right).map((time) => {
+    if (time > result.asOfTime) {
+      return { time, levels: {}, bucketStart: null, bucketEnd: null, availableAt: null };
+    }
     while (index < points.length && points[index]!.availableAt! <= time) current = points[index++];
     return {
       time,
@@ -432,6 +453,10 @@ function aggregateBucket(candles: readonly Candle[], missingVolumePolicy: MultiT
 
 function bucketStartFor(time: number, durationMs: number): number {
   return Math.floor(time / durationMs) * durationMs;
+}
+
+function isSourceCandleEligible(time: number, sourceDurationMs: number, asOfTime: number): boolean {
+  return time + sourceDurationMs <= asOfTime;
 }
 
 function normalizeAsOf(value: number | undefined): number {

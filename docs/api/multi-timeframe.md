@@ -40,11 +40,23 @@ session was complete. `coveragePolicy: "fixed-duration"` checks all expected
 source slots for the fixed ratio. An application that owns a session calendar
 may provide a `TimeframeCalendar` and must document that calendar itself.
 
-`asOfTime` is the source-data availability frontier. A bucket cannot be
+`asOfTime` is the source-data availability frontier. A source candle opening at
+`t` is considered finalized by the core only when
+`t + sourceDurationMs <= asOfTime`; a candle at its opening timestamp is still
+forming. This is deliberately conservative because the provider-neutral core
+does not invent exchange finality metadata. A target bucket cannot be
 available before its target end. `finalityPolicy: "time-closed"` allows a
 closed partial/uncertain observation with its status preserved. Use
 `"complete-only"` when downstream logic must wait for complete coverage.
 Forming observations have `availableAt: null`.
+
+As-of results contain only buckets with at least one eligible source candle.
+Within a forming bucket, `candle`, `sourceTimes`, `sourceCount`, volume, and
+coverage are calculated from eligible source candles only. Future stored source
+candles remain in the aggregator for later forward seeking, but cannot change
+an earlier snapshot. The indicator and reference results carry the same
+`asOfTime`, and their source-time mapping returns unavailable values after that
+frontier.
 
 `CausalTimeframeAggregator` supports `setData`, append/correction/out-of-order
 `update`, `setAsOfTime`, and disposal. `update` only replaces the affected

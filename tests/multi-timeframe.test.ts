@@ -76,6 +76,8 @@ test("incremental aggregation handles append, out-of-order input, and correction
   assert.equal(aggregator.getResult().observations[0]?.candle.close, 14);
   assert.equal(aggregator.getResult().observations[0]?.candle.high, 31);
   aggregator.update({ ...source([9], 5 * minute)[0]! });
+  assert.equal(aggregator.getResult().observations.length, 1);
+  aggregator.setAsOfTime(6 * minute);
   assert.equal(aggregator.getResult().observations.length, 2);
   aggregator.dispose();
   assert.throws(() => aggregator.getResult(), /disposed/);
@@ -98,7 +100,7 @@ test("causal SMA uses existing registry math and never maps future output values
   const mapped = mapMultiTimeframeIndicatorToSourceTimes(result, input.map((candle) => candle.time), output.id);
   assert.equal(mapped[9]?.value, null);
   assert.equal(mapped[10]?.value, 7.5);
-  assert.equal(mapped[14]?.value, 7.5);
+  assert.equal(mapped[14]?.value, null);
 });
 
 test("previous timeframe levels expose only the previous completed period", () => {

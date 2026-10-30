@@ -13,10 +13,19 @@ source candles
 
 The aggregator stores source timestamps by value, so duplicate timestamps are
 corrections and out-of-order events are normalized before aggregation. It does
-not create bars for missing slots. A target bucket is `forming` until its end
-is at or before the `asOfTime` frontier. The default unknown coverage policy
+not create bars for missing slots. A source candle is eligible at an as-of
+frontier only after its source interval has ended (`sourceTime + sourceDuration
+<= asOfTime`). A target bucket is `forming` until its end is at or before the
+`asOfTime` frontier. The default unknown coverage policy
 deliberately reports closed buckets as uncertain unless the application
 provides fixed-duration or explicit calendar semantics.
+
+The aggregator keeps complete source history separately from the eligible
+historical view. `getResult(asOfTime)` filters source timestamps before OHLCV,
+coverage, source counts, missing counts, or availability metadata are built.
+Buckets with no eligible source observation are omitted rather than represented
+by fabricated non-finite candles. This makes repeated backward and forward
+seeking deterministic without reloading or mutating the source store.
 
 Chart integration must recalculate from the replay-visible primary candle set.
 That makes replay a strict no-lookahead boundary: future source candles are not
