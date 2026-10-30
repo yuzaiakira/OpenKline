@@ -100,3 +100,17 @@ test("duplicate timestamps use the latest correction without changing causal ord
   assert.deepEqual(result.points.map((point) => point.time), [1_000, 2_000]);
   assert.equal(result.currentValue, (10 * 10 + 24 * 20) / 30);
 });
+
+test("Volume Profile uses an exclusive upper timestamp and does not mutate input candles", () => {
+  const input = [candles[2]!, candles[1]!].map((candle) => ({ ...candle }));
+  const before = input.map((candle) => ({ ...candle }));
+  const result = calculateEstimatedVolumeProfile(input, {
+    from: 2_000,
+    to: 3_000,
+    binCount: 4,
+    allocation: "close",
+  });
+  assert.equal(result.eligibleCandleCount, 1);
+  assert.equal(result.volumeCandleCount, 1);
+  assert.deepEqual(input, before);
+});

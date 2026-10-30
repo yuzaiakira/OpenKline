@@ -97,3 +97,57 @@ test("renders Anchored VWAP and an estimated Volume Profile through public chart
   await page.evaluate(() => (globalThis as unknown as { __openklineChart: { destroy(): void } }).__openklineChart.destroy());
   await expect.poll(() => page.locator("canvas").count()).toBe(0);
 });
+
+test("estimated Volume Profile follows replay cutoffs and releases its chart resources", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/examples/vanilla/index.html");
+  await page.waitForFunction(() => Boolean((globalThis as { __openklineChart?: unknown }).__openklineChart));
+
+  const result = await page.evaluate(() => {
+    const chart = (globalThis as unknown as {
+      __openklineChart: {
+        getData(): Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }>;
+        addVolumeProfile(options: object): { getResult(): { status: string; eligibleCandleCount: number; pointOfControl: { price: number } | null; valueArea: { low: number; high: number } | null } };
+        getVolumeProfiles(): Array<{ getResult(): { status: string; eligibleCandleCount: number; pointOfControl: { price: number } | null; valueArea: { low: number; high: number } | null } }>;
+        createReplay(options: object): { start(): void; stepBackward(): void; stepForward(): void; exit(): void; dispose(): void };
+        destroy(): void;
+      };
+    }).__openklineChart;
+    const source = chart.getData();
+    const first = source[0];
+    const last = source.at(-1);
+    if (first === undefined || last === undefined) throw new Error("Vanilla chart fixture has no candles");
+    const profile = chart.addVolumeProfile({ id: "replay-volume-profile", mode: "fixed", range: { from: first.time, to: last.time + 1 }, binCount: 16, allocation: "range-uniform" });
+    const before = profile.getResult();
+    const replay = chart.createReplay({ source, startAt: source[Math.floor(source.length * 0.5)]!.time, speed: 100 });
+    replay.start();
+    const atStart = chart.getVolumeProfiles()[0]!.getResult();
+    replay.stepBackward();
+    const afterBackward = chart.getVolumeProfiles()[0]!.getResult();
+    replay.stepForward();
+    const afterForward = chart.getVolumeProfiles()[0]!.getResult();
+    replay.exit();
+    const afterExit = chart.getVolumeProfiles()[0]!.getResult();
+    const readyGeometry = [atStart, afterBackward, afterForward, afterExit].every((item) => item.status === "ready" && item.pointOfControl !== null && item.valueArea !== null && item.valueArea.low <= item.pointOfControl.price && item.pointOfControl.price <= item.valueArea.high);
+    replay.dispose();
+    chart.destroy();
+    return {
+      beforeEligible: before.eligibleCandleCount,
+      atStartEligible: atStart.eligibleCandleCount,
+      afterBackwardEligible: afterBackward.eligibleCandleCount,
+      afterForwardEligible: afterForward.eligibleCandleCount,
+      afterExitEligible: afterExit.eligibleCandleCount,
+      readyGeometry,
+      remainingCanvases: document.querySelectorAll("canvas").length,
+    };
+  });
+
+  expect(result.beforeEligible).toBeGreaterThan(result.atStartEligible);
+  expect(result.afterBackwardEligible).toBe(result.atStartEligible - 1);
+  expect(result.afterForwardEligible).toBe(result.atStartEligible);
+  expect(result.afterExitEligible).toBe(result.beforeEligible);
+  expect(result.readyGeometry).toBe(true);
+  expect(result.remainingCanvases).toBe(0);
+  expect(pageErrors).toEqual([]);
+});
