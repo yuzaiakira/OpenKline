@@ -16,7 +16,14 @@ function heapMb() {
 
 function percentile(values, fraction) {
   const ordered = [...values].sort((left, right) => left - right);
-  return Number((ordered[Math.min(ordered.length - 1, Math.floor(ordered.length * fraction))] ?? 0).toFixed(3));
+  if (ordered.length === 0) return 0;
+  const position = Math.min(ordered.length - 1, Math.max(0, (ordered.length - 1) * fraction));
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  const lowerValue = ordered[lower] ?? 0;
+  const upperValue = ordered[upper] ?? lowerValue;
+  const value = lowerValue + (upperValue - lowerValue) * (position - lower);
+  return Number(value.toFixed(3));
 }
 
 function candles(size, instrumentIndex) {

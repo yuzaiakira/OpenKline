@@ -1266,12 +1266,13 @@ compatibility decision packet, package evidence, and remaining gates.
   assignments, shared-capital/risk controls, result tabs, exports, bounded
   workspace persistence, and an explicit main-thread fallback when a host
   cannot serve the module Worker artifact.
-- [Implemented / Local verification in progress — 12.4–12.6] Focused Node
-  and Chromium regression coverage, the 1k/10k/100k portfolio benchmark, API/
-  package/distribution checks, and the final acceptance matrix are being run
-  sequentially. Firefox, WebKit, mobile Safari, physical-device,
-  accessibility/visual, provider-specific, and protected historical API gates
-  remain open unless independently evidenced.
+- [Implemented / locally verified — 12.4–12.6] Focused Node and Chromium
+  regression coverage, the 1k/10k/100k portfolio and Worker benchmarks, API/
+  package/distribution checks, and the final acceptance matrix are complete for
+  this cloud environment. Firefox, WebKit, mobile Safari, physical-device,
+  formal accessibility/visual approval, provider-specific, package-portability,
+  and protected historical API gates remain open or separately blocked as
+  recorded in the final report.
 
 See `docs/api/portfolio-backtesting.md`,
 `docs/architecture/portfolio-execution.md`,

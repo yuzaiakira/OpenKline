@@ -56,6 +56,7 @@ try {
     const host = document.createElement("div");
     host.style.cssText = "width: 1200px; height: 640px";
     document.body.append(host);
+    const baselineCanvasCount = document.querySelectorAll("canvas").length;
     const chart = createChart(host, { autoSize: false, width: 1200, height: 640, timeZone: "America/New_York" });
     const loadStart = performance.now();
     chart.setData(candles);
@@ -120,7 +121,9 @@ try {
       referencePoints: referenceSnapshot.points.length,
       memoryBeforeDestroy,
       memoryAfterDestroy: performance.memory?.usedJSHeapSize ?? null,
+      baselineCanvasCount,
       remainingCanvasCount: document.querySelectorAll("canvas").length,
+      remainingCreatedCanvasCount: Math.max(0, document.querySelectorAll("canvas").length - baselineCanvasCount),
     };
   });
   console.log(JSON.stringify(report, null, 2));

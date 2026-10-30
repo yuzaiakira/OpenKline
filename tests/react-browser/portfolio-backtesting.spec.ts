@@ -30,6 +30,13 @@ test("Studio runs a deterministic multi-instrument portfolio backtest and persis
 
   await page.getByRole("button", { name: "Enter replay", exact: true }).click();
   await expect(page.getByText("Replay: ready", { exact: true })).toBeVisible();
+  const activeChart = page.locator('[data-panel-id="chart-1"]');
+  await expect.poll(() => activeChart.getAttribute("data-replay-cutoff")).not.toBe("");
+  const replayCutoff = Number(await activeChart.getAttribute("data-replay-cutoff"));
+  const replayVisibleLatest = Number(await activeChart.getAttribute("data-replay-visible-latest"));
+  expect(Number.isFinite(replayCutoff)).toBe(true);
+  expect(Number.isFinite(replayVisibleLatest)).toBe(true);
+  expect(replayVisibleLatest).toBeLessThanOrEqual(replayCutoff);
   await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
   await expect(page.getByText("Replay: paused", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Exit replay", exact: true }).click();

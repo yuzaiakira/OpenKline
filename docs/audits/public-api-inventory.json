@@ -1253,6 +1253,34 @@
     },
     {
       "package": "openkline",
+      "name": "createPortfolioBacktest",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "085f910258338b6d04991102870ccc8e740dfee2c4d3546a86ba34d0d8c031c0"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorker",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3dea7798152fd55052320a6e221d21385c5851baa74c7dc258d7c035bfc2e34c"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorkerHandler",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "429417a9d1094eaa44275c46af425ebd3ee52bddbcf1f0668be5207c9891ac2e"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorkspace",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "04ae63a9f1069f2ed97823156440c9b88e16c4ad922b2dc46909c74cad8ed0db"
+    },
+    {
+      "package": "openkline",
       "name": "createScreenerUniverse",
       "kind": "runtime",
       "module": "./screener/index.js",
@@ -1355,6 +1383,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "75e1a10359d5a23d85c74134bdea7781555ccbfa071518863b28c0b9a702d27b"
+    },
+    {
+      "package": "openkline",
+      "name": "defaultPortfolioBacktestWorkerFactory",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "29894ab4729736e4fd924e12b6e0ace83d9b7c0018d1ba9f72eee0f5e92ea79e"
     },
     {
       "package": "openkline",
@@ -1901,6 +1936,20 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "abe956f77f1ff3ba831b5472c694fe774997b5f5456428a8558daea58336e37d"
+    },
+    {
+      "package": "openkline",
+      "name": "isPortfolioBacktestWorkerRequest",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f1cd77dffac57556af91b9c2652a4393a65f6e87e0eb4f0affd42df874c02b69"
+    },
+    {
+      "package": "openkline",
+      "name": "isPortfolioBacktestWorkerResponse",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e33fe5bca8de9791bcbfee1eca13617a5881242c6715d15a874fe51cb9a39143"
     },
     {
       "package": "openkline",
@@ -2566,6 +2615,34 @@
       "kind": "runtime",
       "module": "./extensions/index.js",
       "signatureHash": "c8082c7f6116266492628ff4bcdb4929b89767af97e5e4790ae5eea6c1eb7c50"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "fe083fbedb4aa698e30ec8d20a22e70a5fe794e3260b48602d17409880a63166"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "682fa3801a6bd091c93a8cd7e06513e5cf60c5221b337862c601fb1c9024e81e"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_WORKER_PROTOCOL_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "9b1660f1cebe5c568e82c6266e05270f2b188b913de0aa954170ac2f97f7505a"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_WORKSPACE_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f5cc0f71f7ce61ace6f4a274c6d6b2e095c399335385ec3c35d7e8a7ef509d02"
     },
     {
       "package": "openkline",
@@ -3276,6 +3353,20 @@
     },
     {
       "package": "openkline",
+      "name": "parsePortfolioBacktestResult",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e6592043c880ff7cdc32edd12fa1fa3020640f5a2311d96dbf3e7934bb6b0807"
+    },
+    {
+      "package": "openkline",
+      "name": "parsePortfolioBacktestWorkspace",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "75b992f2e4edd612344982c4a31cfd45b38268b96a6855efc9c00cce8a85273e"
+    },
+    {
+      "package": "openkline",
       "name": "parseStudioWorkspace",
       "kind": "runtime",
       "module": "./studio/index.js",
@@ -3497,6 +3588,391 @@
       "kind": "runtime",
       "module": "./core/point-store.js",
       "signatureHash": "3a317cf77d7fd965226b6b5780ba5cfec2f77c81164ecc940a5aabd148da2914"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioAccountSnapshot",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "083ca74dd5ad60151d4adb0a5c037c6d577cbb5bb3d4d93f1eadefbca26e0a36"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestApi",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "950348003d63a049ff08aba56235027a554608bef05b3aff0e9f1fcf4d45b8b7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestAssumptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "eb647876de81032a7e7aa975504e0aa2505b6902f6809a504b7f4fd873870e8e"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestCancellationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "55d006fddf7c7941d3343912f6d7621f1b3c626068aebb647c806cb75dc3e541"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestLifecycleError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "22239c24e72deffa3ff32323720b25652b3bba7360260476d4fb3b72668362bc"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "65817cc3f29153a9ffa986d1655ed20966ff1deb1a27d11973d2534c826f765f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestPhase",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "41fe4829ec30ce6967a97e97829aef7962605f40827d1d79cf99949060188b48"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestProgress",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7e24bbae3af81229901756658d7d17319c0c42e48472b8e6b56beb27a60381b7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestResult",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "82fdb51700456b294cbae54ee6c2e6b874c96738458ed47897a883c4c3bd8c6b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestSession",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "876cc54ed7479b9b30896a23e408baa11024da5006287c6dcb69e2d742d0b8bc"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6424048f8e52a74f333dfeeeea53ef37f30148b1446f800b32e5310a4b2b09ac"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestStatusState",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7759850e4a544c5650bffb96052ddcb0ff1001b200a482642d943090a07a190c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestValidationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "645d26b72f3284603470991a638028928018d0bb588d66e2ecb9e77634437595"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerAckResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2c27af372dce1f5506d8b038698be42494f5c36cb55ac3cf659053dceb3c378b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerApi",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "5887a6b642581ecde0bd321010f6ffc549b672add7feacf84694fe7b1e351478"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerCancelRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "afd4021430edf5efa2ec5a51cee8c903a555a63fdbdf8ca92aabf54e0ae6c1b0"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerCompleteResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "291109651f6417830e1ebcbc5b07557dbd8e05b86bd70b02c6ac537ba75c6f2f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerDisposeRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e178d5cb5a29231ec899dfe04e6505726368658bf7b476748a9127ed4ffc76a1"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "60ad495f71aaf2acb5f81d29090559d8ac409b33424c775773e0635e31e3cc8c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerErrorCode",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f0c1ceb63441d585f2ca9d0020211b3b0e0b2144a265487a4e42d64887e7878f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerErrorResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f413894fa7beac3f176318bab18583cd5dbb2162ae51776a2e3332e043740c56"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerFactory",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "59a471fbb75d6aeba1bf5660b7bb10ad0720c141ead76070e50b79eed8263f52"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerLike",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3861dff96ee263e5f71aa623de16343c371fe7860c6e40a663a4bccd125fd4eb"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerProgressResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "293bb63a82b7e472e04e4c03eed19bdd9cc0e3345c6f3847caf1a805346dfe2a"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b305024c69de37a62cbe7ee9032a7b424e41d52edf16145b76982043499a0aca"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3d0a1968e59ba0efd6bb969d3d0a8ad059fa90177ec228a2b1b466999c186394"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRunOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7d5fc9054c34a481b2dda3e9480588087e7f42e2acc515e7643feb9ea70265ee"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRunRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3ee72852de575e9830e70dde7901af1ce8eea50971e750018ad836a456c1ff82"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRuntimeOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e62bd8f92229445ced23ca32b2221fb9dd0ec96b6db0dbab697b908c1a5be244"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerSession",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "c89f8fe75a1d10aa74c29c043a132f9cedca422b35c221e9f7a7b6700eafb397"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a2d6404af254dc0c3835109b271f7a98051595c5274fb498fd771496b64ca09c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerStatusState",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "4817f804853dddd94776a9c22e0a3b874b091be9d388bb67d47f0948b4e78fa9"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceDocument",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e9e873e30dbc2e359792d5774192b2a379f0b5cec1497bc3cf16a6f86dc93fa1"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceInstrument",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b3e0bcda3987e3a01bb5820c2d8e7175ac958bbd31d1772fae2b49a41264af0b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceValidationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "488c4740e9ac69c83f79b24ed49e1e9e13cf830708ce6f8fc03e53ba5ceb7472"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCalendarIdentity",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b79d5faecc1bac0ec1f4338495d7bdbdd337daceafa3f9497c61e151b58e7c5f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDuplicateTimestampPolicy",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "17123f282c803bb86424973a75e159e571b77ff017e794641447568047a5eb8c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentContribution",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "eaf91cef8797155f20efc25a63e8bcdb6e3a5e3dc27e875788fb8b99f9f2fadf"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentExecutionOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "1cfc1bedbb915aacc0a5f66cfe064479f8f02aa6f7f0d55f49e14d916efe5e66"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentInput",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "aa9d752a39ba2f79fc285a68d383d34d33e52f6de9f4915340748fec1af16a3a"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentSummary",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ffccb26b9403b8b688ca3fe25999c6cf66c3a1b6d749ba7fdf16466375d8f7b4"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioMark",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "69effdbbcfa39885743600b9ba3dbd82f7b1338499dd0d39ed81b9fc8cb9cc8b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioOrder",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "199e7d5fd045907e5da6f670cf9f93be2f02d31ceb4b7e32f93f12d7d968a475"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioOrderStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "08ebf32fd91a75fdcb7903db8abd0d97784d0ddfbead57f90bfb8bbd8727f76c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPerformanceMetrics",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "115a4aab7653e45ad8d23c13fe67be4500d153eb5b6757b98fd7e7a735afe661"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPosition",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2a88fbb536d8cda39b06c598be676919984fa10c804802558275d85a49827c16"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPositionDirection",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "36a2a146da4f25d95db8e68e1224aa9217addef8093754dc0e9201455d18a5dd"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPositionSizing",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ecfff1459892aa8991d858133f51fb98222f018d262ab486af2888ad57a57545"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPriceQuality",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "53dcce820926004127f865fe7095595e5635852c1fa2c8dbd34f18800ebc442b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioRiskOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "1c6d48f2972f8a18da4612daa72d2fd7fc3883697f4a593539532fac53096799"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioSignal",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "bfeb070b972ec2a854467006920926f1c01a24d5adf545a8a22a76d24fa382de"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioStrategyAssignment",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6daf7797e9248a02ee6c896e971198c3d4ebadc39f55fac4544448e790b8fcd5"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioTimelineEvent",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "cd4aa47d5f3209e2d66a8be9fe51c14c671be7b5c18a0f3ed448d29b220e80f5"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioTrade",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "bf42dea9569dc5f6933d0099acf63fc11edf4c08c0d25951caccbcc179015845"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioValuationOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2259261e3678cd8253eb8120a597ce4533a32db92345a4569ccbe3ace8f0f71c"
     },
     {
       "package": "openkline",
@@ -4393,6 +4869,34 @@
       "kind": "runtime",
       "module": "./paper-trading/index.js",
       "signatureHash": "181c141c889ccba1893727812950361cd4f2ea409c6abeab0400a6a97bf8ff53"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioBacktestResult",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ff52886274c32fb743991f27bc440784fd8652c8fd81084ce60e8ea70014e8ff"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioEquityCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "69df9e070bf782d6ec078bbc4cb3dac2841d18e1c834b0478dd3a4096b90b562"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioOrdersCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "77ab5b9e7155ec5b043cad65511011d714aaa542732440bb78a1c1ada4632dc9"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioTradesCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6a0ac24ffc5ebfb9e0eaaa1e8edd6c4ed232f2ab069902be69fd5eaa97998fad"
     },
     {
       "package": "openkline",
@@ -5952,6 +6456,34 @@
     },
     {
       "package": "openkline",
+      "name": "createPortfolioBacktest",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "085f910258338b6d04991102870ccc8e740dfee2c4d3546a86ba34d0d8c031c0"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorker",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3dea7798152fd55052320a6e221d21385c5851baa74c7dc258d7c035bfc2e34c"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorkerHandler",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "429417a9d1094eaa44275c46af425ebd3ee52bddbcf1f0668be5207c9891ac2e"
+    },
+    {
+      "package": "openkline",
+      "name": "createPortfolioBacktestWorkspace",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "04ae63a9f1069f2ed97823156440c9b88e16c4ad922b2dc46909c74cad8ed0db"
+    },
+    {
+      "package": "openkline",
       "name": "createScreenerUniverse",
       "kind": "runtime",
       "module": "./screener/index.js",
@@ -6019,6 +6551,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "75e1a10359d5a23d85c74134bdea7781555ccbfa071518863b28c0b9a702d27b"
+    },
+    {
+      "package": "openkline",
+      "name": "defaultPortfolioBacktestWorkerFactory",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "29894ab4729736e4fd924e12b6e0ace83d9b7c0018d1ba9f72eee0f5e92ea79e"
     },
     {
       "package": "openkline",
@@ -6236,6 +6775,20 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "abe956f77f1ff3ba831b5472c694fe774997b5f5456428a8558daea58336e37d"
+    },
+    {
+      "package": "openkline",
+      "name": "isPortfolioBacktestWorkerRequest",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f1cd77dffac57556af91b9c2652a4393a65f6e87e0eb4f0affd42df874c02b69"
+    },
+    {
+      "package": "openkline",
+      "name": "isPortfolioBacktestWorkerResponse",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e33fe5bca8de9791bcbfee1eca13617a5881242c6715d15a874fe51cb9a39143"
     },
     {
       "package": "openkline",
@@ -6470,6 +7023,34 @@
     },
     {
       "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "fe083fbedb4aa698e30ec8d20a22e70a5fe794e3260b48602d17409880a63166"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "682fa3801a6bd091c93a8cd7e06513e5cf60c5221b337862c601fb1c9024e81e"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_BACKTEST_WORKER_PROTOCOL_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "9b1660f1cebe5c568e82c6266e05270f2b188b913de0aa954170ac2f97f7505a"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_PORTFOLIO_WORKSPACE_VERSION",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f5cc0f71f7ce61ace6f4a274c6d6b2e095c399335385ec3c35d7e8a7ef509d02"
+    },
+    {
+      "package": "openkline",
       "name": "OPENKLINE_SCREENER_RULE_VERSION",
       "kind": "runtime",
       "module": "./screener/index.js",
@@ -6659,6 +7240,20 @@
     },
     {
       "package": "openkline",
+      "name": "parsePortfolioBacktestResult",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e6592043c880ff7cdc32edd12fa1fa3020640f5a2311d96dbf3e7934bb6b0807"
+    },
+    {
+      "package": "openkline",
+      "name": "parsePortfolioBacktestWorkspace",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "75b992f2e4edd612344982c4a31cfd45b38268b96a6855efc9c00cce8a85273e"
+    },
+    {
+      "package": "openkline",
       "name": "parseStudioWorkspace",
       "kind": "runtime",
       "module": "./studio/index.js",
@@ -6719,6 +7314,55 @@
       "kind": "runtime",
       "module": "./core/point-store.js",
       "signatureHash": "3a317cf77d7fd965226b6b5780ba5cfec2f77c81164ecc940a5aabd148da2914"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestCancellationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "55d006fddf7c7941d3343912f6d7621f1b3c626068aebb647c806cb75dc3e541"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestLifecycleError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "22239c24e72deffa3ff32323720b25652b3bba7360260476d4fb3b72668362bc"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestSession",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "876cc54ed7479b9b30896a23e408baa11024da5006287c6dcb69e2d742d0b8bc"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestValidationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "645d26b72f3284603470991a638028928018d0bb588d66e2ecb9e77634437595"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "60ad495f71aaf2acb5f81d29090559d8ac409b33424c775773e0635e31e3cc8c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerSession",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "c89f8fe75a1d10aa74c29c043a132f9cedca422b35c221e9f7a7b6700eafb397"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceValidationError",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "488c4740e9ac69c83f79b24ed49e1e9e13cf830708ce6f8fc03e53ba5ceb7472"
     },
     {
       "package": "openkline",
@@ -6971,6 +7615,34 @@
       "kind": "runtime",
       "module": "./paper-trading/index.js",
       "signatureHash": "181c141c889ccba1893727812950361cd4f2ea409c6abeab0400a6a97bf8ff53"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioBacktestResult",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ff52886274c32fb743991f27bc440784fd8652c8fd81084ce60e8ea70014e8ff"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioEquityCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "69df9e070bf782d6ec078bbc4cb3dac2841d18e1c834b0478dd3a4096b90b562"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioOrdersCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "77ab5b9e7155ec5b043cad65511011d714aaa542732440bb78a1c1ada4632dc9"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioTradesCsv",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6a0ac24ffc5ebfb9e0eaaa1e8edd6c4ed232f2ab069902be69fd5eaa97998fad"
     },
     {
       "package": "openkline",
@@ -9545,6 +10217,342 @@
     },
     {
       "package": "openkline",
+      "name": "PortfolioAccountSnapshot",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "083ca74dd5ad60151d4adb0a5c037c6d577cbb5bb3d4d93f1eadefbca26e0a36"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestApi",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "950348003d63a049ff08aba56235027a554608bef05b3aff0e9f1fcf4d45b8b7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestAssumptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "eb647876de81032a7e7aa975504e0aa2505b6902f6809a504b7f4fd873870e8e"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "65817cc3f29153a9ffa986d1655ed20966ff1deb1a27d11973d2534c826f765f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestPhase",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "41fe4829ec30ce6967a97e97829aef7962605f40827d1d79cf99949060188b48"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestProgress",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7e24bbae3af81229901756658d7d17319c0c42e48472b8e6b56beb27a60381b7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestResult",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "82fdb51700456b294cbae54ee6c2e6b874c96738458ed47897a883c4c3bd8c6b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6424048f8e52a74f333dfeeeea53ef37f30148b1446f800b32e5310a4b2b09ac"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestStatusState",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7759850e4a544c5650bffb96052ddcb0ff1001b200a482642d943090a07a190c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerAckResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2c27af372dce1f5506d8b038698be42494f5c36cb55ac3cf659053dceb3c378b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerApi",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "5887a6b642581ecde0bd321010f6ffc549b672add7feacf84694fe7b1e351478"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerCancelRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "afd4021430edf5efa2ec5a51cee8c903a555a63fdbdf8ca92aabf54e0ae6c1b0"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerCompleteResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "291109651f6417830e1ebcbc5b07557dbd8e05b86bd70b02c6ac537ba75c6f2f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerDisposeRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e178d5cb5a29231ec899dfe04e6505726368658bf7b476748a9127ed4ffc76a1"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerErrorCode",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f0c1ceb63441d585f2ca9d0020211b3b0e0b2144a265487a4e42d64887e7878f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerErrorResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f413894fa7beac3f176318bab18583cd5dbb2162ae51776a2e3332e043740c56"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerFactory",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "59a471fbb75d6aeba1bf5660b7bb10ad0720c141ead76070e50b79eed8263f52"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerLike",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3861dff96ee263e5f71aa623de16343c371fe7860c6e40a663a4bccd125fd4eb"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerProgressResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "293bb63a82b7e472e04e4c03eed19bdd9cc0e3345c6f3847caf1a805346dfe2a"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b305024c69de37a62cbe7ee9032a7b424e41d52edf16145b76982043499a0aca"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerResponse",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3d0a1968e59ba0efd6bb969d3d0a8ad059fa90177ec228a2b1b466999c186394"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRunOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "7d5fc9054c34a481b2dda3e9480588087e7f42e2acc515e7643feb9ea70265ee"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRunRequest",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "3ee72852de575e9830e70dde7901af1ce8eea50971e750018ad836a456c1ff82"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerRuntimeOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e62bd8f92229445ced23ca32b2221fb9dd0ec96b6db0dbab697b908c1a5be244"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a2d6404af254dc0c3835109b271f7a98051595c5274fb498fd771496b64ca09c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkerStatusState",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "4817f804853dddd94776a9c22e0a3b874b091be9d388bb67d47f0948b4e78fa9"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceDocument",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "e9e873e30dbc2e359792d5774192b2a379f0b5cec1497bc3cf16a6f86dc93fa1"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioBacktestWorkspaceInstrument",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b3e0bcda3987e3a01bb5820c2d8e7175ac958bbd31d1772fae2b49a41264af0b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCalendarIdentity",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "b79d5faecc1bac0ec1f4338495d7bdbdd337daceafa3f9497c61e151b58e7c5f"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDuplicateTimestampPolicy",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "17123f282c803bb86424973a75e159e571b77ff017e794641447568047a5eb8c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentContribution",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "eaf91cef8797155f20efc25a63e8bcdb6e3a5e3dc27e875788fb8b99f9f2fadf"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentExecutionOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "1cfc1bedbb915aacc0a5f66cfe064479f8f02aa6f7f0d55f49e14d916efe5e66"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentInput",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "aa9d752a39ba2f79fc285a68d383d34d33e52f6de9f4915340748fec1af16a3a"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioInstrumentSummary",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ffccb26b9403b8b688ca3fe25999c6cf66c3a1b6d749ba7fdf16466375d8f7b4"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioMark",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "69effdbbcfa39885743600b9ba3dbd82f7b1338499dd0d39ed81b9fc8cb9cc8b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioOrder",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "199e7d5fd045907e5da6f670cf9f93be2f02d31ceb4b7e32f93f12d7d968a475"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioOrderStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "08ebf32fd91a75fdcb7903db8abd0d97784d0ddfbead57f90bfb8bbd8727f76c"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPerformanceMetrics",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "115a4aab7653e45ad8d23c13fe67be4500d153eb5b6757b98fd7e7a735afe661"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPosition",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2a88fbb536d8cda39b06c598be676919984fa10c804802558275d85a49827c16"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPositionDirection",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "36a2a146da4f25d95db8e68e1224aa9217addef8093754dc0e9201455d18a5dd"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPositionSizing",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "ecfff1459892aa8991d858133f51fb98222f018d262ab486af2888ad57a57545"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioPriceQuality",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "53dcce820926004127f865fe7095595e5635852c1fa2c8dbd34f18800ebc442b"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioRiskOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "1c6d48f2972f8a18da4612daa72d2fd7fc3883697f4a593539532fac53096799"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioSignal",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "bfeb070b972ec2a854467006920926f1c01a24d5adf545a8a22a76d24fa382de"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioStrategyAssignment",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "6daf7797e9248a02ee6c896e971198c3d4ebadc39f55fac4544448e790b8fcd5"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioTimelineEvent",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "cd4aa47d5f3209e2d66a8be9fe51c14c671be7b5c18a0f3ed448d29b220e80f5"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioTrade",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "bf42dea9569dc5f6933d0099acf63fc11edf4c08c0d25951caccbcc179015845"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioValuationOptions",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "2259261e3678cd8253eb8120a597ce4533a32db92345a4569ccbe3ace8f0f71c"
+    },
+    {
+      "package": "openkline",
       "name": "PositionSizing",
       "kind": "type",
       "module": "./backtesting/index.js",
@@ -11089,5 +12097,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "8ee862010eec47f474dcab8ef1eb2fa0dc56f655"
+  "generatedFrom": "582c7748d602904872ce99750c833be837413614"
 }

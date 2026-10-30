@@ -79,6 +79,7 @@ interface PanelSnapshot {
   readonly replayStatus: ReplayStatus;
   readonly replaySourceLength: number;
   readonly replayStartIndex: number;
+  readonly replayVisibleLatest: number | null;
   readonly anchoredVwaps: ReadonlyArray<{ readonly id: string; readonly anchorTime: number; readonly priceSource: AnchoredVwapPriceSource }>;
   readonly volumeProfiles: readonly ResolvedVolumeProfileOptions[];
   readonly multiTimeframeIndicators: ReadonlyArray<{ readonly id: string; readonly indicatorId: string; readonly targetTimeframe: string; readonly visible?: boolean }>;
@@ -347,7 +348,7 @@ function parseUtcInput(value: string): number | null {
 }
 
 function emptySnapshot(): PanelSnapshot {
-  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [] };
+  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, replayVisibleLatest: null, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [] };
 }
 
 function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
@@ -407,10 +408,14 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     if (target === null) return;
     const workspace = withoutComparisonSeries(target.serializeWorkspace());
     if (!comparisonActiveRef.current) canonicalWorkspaceRef.current = workspace;
+    const replayVisibleLatest = workspace.series.reduce<number | null>((latest, series) => {
+      const candidate = series.data.at(-1)?.time;
+      return candidate === undefined || (latest !== null && candidate <= latest) ? latest : candidate;
+    }, null);
     const next: PanelSnapshot = {
       series: target.getSeriesInfo(),
       indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
-      drawings: target.getDrawings(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex,
+      drawings: target.getDrawings(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex, replayVisibleLatest,
       anchoredVwaps: target.getAnchoredVwaps().map((item) => ({ id: item.id, ...item.getOptions() })),
       volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
       multiTimeframeIndicators: target.getMultiTimeframeIndicators().map((item) => ({ id: item.id, indicatorId: item.indicatorId, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
@@ -682,7 +687,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   useEffect(() => () => { replayUnsubscribeRef.current?.(); replayRef.current?.dispose(); replayRef.current = null; }, []);
 
   const visibleRangeLabel = visibleTimeRange === null || visibleTimeRange.from === null || visibleTimeRange.to === null ? "empty" : `${visibleTimeRange.from}:${visibleTimeRange.to}`;
-  return <article ref={rootRef} className={`${styles.multiChartPanel} ${active ? styles.multiChartPanelActive : ""}`} onPointerDown={() => onActivate(panel.panelId)} data-panel-id={panel.panelId} data-crosshair-time={crosshairTime === null ? "" : String(crosshairTime)} data-visible-time-range={visibleRangeLabel}>
+  return <article ref={rootRef} className={`${styles.multiChartPanel} ${active ? styles.multiChartPanelActive : ""}`} onPointerDown={() => onActivate(panel.panelId)} data-panel-id={panel.panelId} data-crosshair-time={crosshairTime === null ? "" : String(crosshairTime)} data-visible-time-range={visibleRangeLabel} data-replay-cutoff={snapshot.replayStatus.currentTimestamp === null ? "" : String(snapshot.replayStatus.currentTimestamp)} data-replay-visible-latest={snapshot.replayVisibleLatest === null ? "" : String(snapshot.replayVisibleLatest)}>
     <header className={styles.multiPanelHeader}><button type="button" className={styles.panelSelect} aria-label={`Activate ${panel.panelId}`} aria-pressed={active} onClick={() => onActivate(panel.panelId)}>{panel.panelId} · {panel.symbol} · {panel.timeframe}</button><span>{snapshot.indicators.length} indicators</span><span>{snapshot.drawings.length} drawings</span><span aria-label={`UTC crosshair for ${panel.panelId}`}>{crosshairTime === null ? "Crosshair —" : `Crosshair ${new Date(crosshairTime).toISOString()}`}</span></header>
     <div className={styles.multiChartCanvas}><FinancialChart ref={chartHandle} autoSize theme="dark" locale="en-US" timeZone="UTC" pricePrecision={2} onChartReady={attachChart} style={{ height: "100%" }} /></div>
   </article>;
