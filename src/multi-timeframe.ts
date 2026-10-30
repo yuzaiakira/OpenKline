@@ -71,6 +71,19 @@ export interface MultiTimeframeIndicatorOptions extends MultiTimeframeAggregatio
   readonly parameters?: Readonly<Record<string, unknown>>;
   readonly pane?: string | "new";
   readonly outputStyles?: Readonly<Record<string, SeriesStyle>>;
+  readonly visible?: boolean;
+}
+
+export interface MultiTimeframeIndicatorApi {
+  readonly id: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  getOptions(): MultiTimeframeIndicatorOptions & { readonly id: string };
+  getResult(): MultiTimeframeIndicatorResult;
+  setParameters(parameters: Readonly<Record<string, unknown>>): void;
+  setOutputStyle(outputId: string, style: SeriesStyle): void;
+  setVisible(visible: boolean): void;
+  remove(): void;
 }
 
 export interface MultiTimeframeIndicatorPoint extends IndicatorPoint, MultiTimeframeAggregationMetadata {
@@ -107,7 +120,28 @@ export interface MappedMultiTimeframePoint {
 export type PreviousTimeframeLevel = "open" | "high" | "low" | "close";
 
 export interface MultiTimeframeReferenceOptions extends MultiTimeframeAggregationOptions {
+  readonly id?: string;
   readonly levels?: readonly PreviousTimeframeLevel[];
+  readonly visible?: boolean;
+  readonly labels?: boolean;
+  readonly labelPrefix?: string;
+  readonly style?: MultiTimeframeReferenceStyle;
+}
+
+export interface MultiTimeframeReferenceStyle {
+  readonly color?: string;
+  readonly lineWidth?: number;
+  readonly lineStyle?: "solid" | "dashed" | "dotted";
+  readonly alpha?: number;
+}
+
+export interface MultiTimeframeReferenceApi {
+  readonly id: string;
+  getOptions(): MultiTimeframeReferenceOptions & { readonly id: string };
+  getResult(): MultiTimeframeReferenceResult;
+  setOptions(patch: Partial<Omit<MultiTimeframeReferenceOptions, "id" | "calendar">>): void;
+  setVisible(visible: boolean): void;
+  remove(): void;
 }
 
 export interface MultiTimeframeReferencePoint extends MultiTimeframeAggregationMetadata {
