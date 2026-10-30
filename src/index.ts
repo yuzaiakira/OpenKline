@@ -122,6 +122,28 @@ export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";
 export {
+  InMemoryMarketTradeDatafeed,
+  MarketTradeDatafeedError,
+  MarketTradeStore,
+  MarketTradeValidationError,
+  OPENKLINE_MARKET_TRADES_VERSION,
+  normalizeMarketTrade,
+} from "./market-trades.js";
+export type {
+  MarketTrade,
+  MarketTradeAggressorSide,
+  MarketTradeCoverage,
+  MarketTradeDatafeed,
+  MarketTradeDataset,
+  MarketTradeInput,
+  MarketTradeQuery,
+  MarketTradeRealtimeStatus,
+  MarketTradeSideQuality,
+  MarketTradeSource,
+  MarketTradeStoreOptions,
+  MarketTradeSubscriptionArgs,
+} from "./market-trades.js";
+export {
   CausalTimeframeAggregator,
   aggregateCandlesByTimeframe,
   calculateMultiTimeframeIndicator,
