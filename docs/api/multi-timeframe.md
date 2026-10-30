@@ -83,3 +83,44 @@ availability rule to source timestamps.
 The chart and workspace integrations build on these contracts. They persist
 configuration, not derived buckets or calendar callbacks. See
 `docs/architecture/multi-timeframe-analysis.md` for lifecycle details.
+
+## Trading-session periods
+
+When fixed UTC `1D` semantics are not appropriate, select an explicit
+`TradingCalendarEngine` and use session-based aggregation:
+
+```ts
+import {
+  TradingCalendarEngine,
+  aggregateCandlesByTradingPeriod,
+} from "openkline";
+
+const result = aggregateCandlesByTradingPeriod(candles, {
+  sourceTimeframe: "30m",
+  targetPeriod: "session", // "session", "week", or "month"
+  calendar,
+  coveragePolicy: "fixed-duration",
+  finalityPolicy: "complete-only",
+  asOfTime,
+});
+```
+
+Session periods use the calendar's resolved UTC sessions and local trading-date
+convention. A day is one scheduled session, a week is the calendar's week
+grouping, and a month is the local calendar month; none is implemented by
+adding a guessed number of milliseconds. Holidays create no observation,
+scheduled breaks create no missing-slot expectation, and early closes use the
+actual resolved session end. Session observations expose `periodKey`,
+`periodStart`, `periodEnd`, session IDs, source slots, coverage, status, and
+`availableAt` metadata.
+
+`calculateSessionIndicator` reuses the existing Indicator Registry for SMA,
+EMA, RSI, and registered definitions. `calculatePreviousSessionLevels`
+provides causal previous session/week/month OHLC levels, and the mapping helpers
+apply the same as-of frontier. Calendar configuration is runtime state; persist
+only its stable ID/version and analysis options in a workspace.
+
+The fixed-duration APIs above remain unchanged. A calendar must be selected
+explicitly, and a demonstration calendar is not an authoritative exchange
+schedule. See `docs/api/trading-calendars.md` and
+`docs/architecture/market-sessions.md`.

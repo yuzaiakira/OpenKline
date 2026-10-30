@@ -431,7 +431,8 @@ export function mapMultiTimeframeReferenceToSourceTimes(result: MultiTimeframeRe
   });
 }
 
-function aggregateBucket(candles: readonly Candle[], missingVolumePolicy: MultiTimeframeMissingVolumePolicy, bucketStart: number): Candle {
+/** Shared OHLCV reducer used by fixed-duration and session-aware aggregation. */
+export function aggregateCandleValues(candles: readonly Candle[], missingVolumePolicy: MultiTimeframeMissingVolumePolicy, bucketStart: number): Candle {
   const first = candles[0];
   if (first === undefined) return { time: bucketStart, open: Number.NaN, high: Number.NaN, low: Number.NaN, close: Number.NaN };
   const volumeValues = candles.map((candle) => candle.volume);
@@ -450,6 +451,8 @@ function aggregateBucket(candles: readonly Candle[], missingVolumePolicy: MultiT
     ...(volume === undefined ? {} : { volume }),
   };
 }
+
+const aggregateBucket = aggregateCandleValues;
 
 function bucketStartFor(time: number, durationMs: number): number {
   return Math.floor(time / durationMs) * durationMs;

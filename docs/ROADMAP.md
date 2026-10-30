@@ -1198,6 +1198,13 @@ compatibility decision packet, package evidence, and remaining gates.
   and an adapter for the existing `TimeframeCalendar` contract. The fixed UTC
   Phase 10 engine remains unchanged. See `docs/api/trading-calendars.md` and
   `docs/architecture/market-sessions.md`.
-- [Open] Session-based OHLCV aggregation, calendar-aware Datafeed recovery,
-  Chart overlays, Studio controls, workspace persistence, and full Phase 11
-  verification remain to be implemented. No Phase 12 work has started.
+- [Implemented / Node-verified — 11.1 aggregation] Added explicit session,
+  trading-week, and trading-month aggregation on top of the existing OHLCV
+  reducer. The result preserves IANA-resolved boundaries, early closes,
+  breaks, holidays, expected-slot coverage, causal as-of finality, corrections,
+  calendar replacement, previous-period levels, and Indicator Registry
+  calculations. See the session section in
+  `docs/api/multi-timeframe.md`.
+- [Open] Calendar-aware Datafeed recovery, Chart overlays, Studio controls,
+  workspace persistence, and full Phase 11 verification remain to be
+  implemented. No Phase 12 work has started.

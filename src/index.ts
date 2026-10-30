@@ -148,6 +148,29 @@ export type {
   TradingSessionTemplate,
 } from "./trading-calendar.js";
 export {
+  SessionAwareCandleAggregator,
+  aggregateCandlesByTradingPeriod,
+  calculatePreviousSessionLevels,
+  calculateSessionIndicator,
+  mapSessionIndicatorToSourceTimes,
+  mapSessionReferenceToSourceTimes,
+} from "./session-aggregation.js";
+export type {
+  MappedSessionReferencePoint,
+  SessionAggregationMetadata,
+  SessionAggregationOptions,
+  SessionAggregationResult,
+  SessionCandleObservation,
+  SessionIndicatorOptions,
+  SessionIndicatorOutput,
+  SessionIndicatorPoint,
+  SessionIndicatorResult,
+  SessionReferenceOptions,
+  SessionReferencePoint,
+  SessionReferenceResult,
+  TradingAggregationPeriod,
+} from "./session-aggregation.js";
+export {
   OPENKLINE_WORKSPACE_VERSION,
   WorkspaceCompatibilityError,
   WorkspaceValidationError,

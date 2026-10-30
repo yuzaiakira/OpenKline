@@ -45,16 +45,21 @@ known closure, an unsupported validity range, and an actually missing provider
 observation. Unknown schedule coverage remains uncertainty, not a provider
 outage claim.
 
-## Integration boundary
+## Session-aware aggregation boundary
 
-The next calendar-aware aggregation layer will consume resolved session units
-and reuse the current OHLCV reducer, missing-volume policies, indicator
-registry, as-of eligibility, replay masking, and disposal contracts. Datafeed
-recovery should use `isExpectedSourceInterval` instead of duplicating local
-timezone calculations. Chart overlays can enumerate only the bounded visible
-range and render UTC coordinates with localized labels. Calendar configuration
-is serializable by ID/version; executable callbacks and resolved caches are
-runtime-only.
+`SessionAwareCandleAggregator` consumes resolved session units and reuses the
+current OHLCV reducer, missing-volume policies, Indicator Registry, as-of
+eligibility, and disposal contracts. It groups explicit session, trading-week,
+or trading-month observations and retains the complete source store so
+backward/forward seeking and corrections remain deterministic. A calendar
+replacement clears resolved-session and expected-slot caches before rebuilding
+dependent output.
+
+Datafeed recovery should use `isExpectedSourceInterval` instead of duplicating
+local timezone calculations. Chart overlays can enumerate only the bounded
+visible range and render UTC coordinates with localized labels. Calendar
+configuration is serializable by ID/version; executable callbacks and resolved
+caches are runtime-only.
 
 The illustrative calendar is intentionally labelled as a demo fixture. Hosts
 remain responsible for supplying a verified market schedule, its source, and
