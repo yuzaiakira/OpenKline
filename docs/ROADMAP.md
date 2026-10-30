@@ -1082,6 +1082,13 @@ converted into universal compatibility certification.
   numerical POC/VAH/VAL output, replay causality, workspace round-trip, panel
   isolation, and comparison restoration. Non-Chromium and physical-device
   gates remain open.
+- [Implemented / Verified locally — 9.4 engineering scope] Added deterministic
+  replay/lifecycle browser coverage, an exclusive-range/input-immutability
+  numerical regression, and the `benchmark:volume-analytics` Node benchmark
+  for 1k, 10k, and 100k candles. The benchmark reports median/p95 calculation
+  and lifecycle timings with explicit conservation and geometry invariants;
+  it does not claim Canvas2D FPS. Official Firefox/WebKit, mobile Safari, and
+  physical-device gates remain open for the final Phase 9 report.
 
 ## Phase 8.13.1 comparison workspace persistence hardening
 
