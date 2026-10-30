@@ -3605,6 +3605,13 @@
     },
     {
       "package": "openkline",
+      "name": "PortfolioBacktestAsOfResult",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "db2b1e840f5913833f7280fb2e8ace8f4a6ce925425f49fe365c1e4854d70d37"
+    },
+    {
+      "package": "openkline",
       "name": "PortfolioBacktestAssumptions",
       "kind": "type",
       "module": "./portfolio-backtesting/index.js",
@@ -4043,6 +4050,13 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "f96564e3764e0b9658dbb52545a7c601b7aea77ba6264e3aa195234b7651b410"
+    },
+    {
+      "package": "openkline",
+      "name": "projectPortfolioBacktestAsOf",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "dbb6dbbe0984d0c5f9e7b8979c39d32f5efc2d61d41c07df7b4f2fb3ce6acb79"
     },
     {
       "package": "openkline",
@@ -4876,6 +4890,13 @@
       "kind": "runtime",
       "module": "./portfolio-backtesting/index.js",
       "signatureHash": "ff52886274c32fb743991f27bc440784fd8652c8fd81084ce60e8ea70014e8ff"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioBacktestResultChunks",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "9c61be15d6e6c837f04bb183325d36cf0b5a619643c5a7f1dc76b94d5272e1ed"
     },
     {
       "package": "openkline",
@@ -7380,6 +7401,13 @@
     },
     {
       "package": "openkline",
+      "name": "projectPortfolioBacktestAsOf",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "dbb6dbbe0984d0c5f9e7b8979c39d32f5efc2d61d41c07df7b4f2fb3ce6acb79"
+    },
+    {
+      "package": "openkline",
       "name": "rateOfChangeDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -7622,6 +7650,13 @@
       "kind": "runtime",
       "module": "./portfolio-backtesting/index.js",
       "signatureHash": "ff52886274c32fb743991f27bc440784fd8652c8fd81084ce60e8ea70014e8ff"
+    },
+    {
+      "package": "openkline",
+      "name": "serializePortfolioBacktestResultChunks",
+      "kind": "runtime",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "9c61be15d6e6c837f04bb183325d36cf0b5a619643c5a7f1dc76b94d5272e1ed"
     },
     {
       "package": "openkline",
@@ -10231,6 +10266,13 @@
     },
     {
       "package": "openkline",
+      "name": "PortfolioBacktestAsOfResult",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "db2b1e840f5913833f7280fb2e8ace8f4a6ce925425f49fe365c1e4854d70d37"
+    },
+    {
+      "package": "openkline",
       "name": "PortfolioBacktestAssumptions",
       "kind": "type",
       "module": "./portfolio-backtesting/index.js",
@@ -12097,5 +12139,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "582c7748d602904872ce99750c833be837413614"
+  "generatedFrom": "7d66c1a7d5fb1f1d04c3e5d2c1263b186a8d8306"
 }

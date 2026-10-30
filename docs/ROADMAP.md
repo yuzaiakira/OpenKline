@@ -1266,14 +1266,15 @@ compatibility decision packet, package evidence, and remaining gates.
   assignments, shared-capital/risk controls, result tabs, exports, bounded
   workspace persistence, a host-owned bundled Worker entry, and an explicit
   small-demo-only fallback when a host cannot serve the Worker artifact.
-- [In progress / Phase 12.5] Runtime hardening is addressing package
-  portability, host-owned Next.js Worker bundling, bounded Studio fallback,
-  causal as-of presentation, deep result-import validation, and large-result
-  visualization/export behavior. Provider-neutral package portability and a
-  real Chromium Next.js Worker smoke test are verified; the remaining Phase
-  12.5 gates are tracked in `docs/reports/phase-12-5-runtime-hardening.md`.
-  Firefox, WebKit, mobile Safari, physical-device, formal accessibility/visual
-  approval, and protected historical API gates remain separate and open.
+- [In progress / Phase 12.5] Runtime hardening now covers package portability,
+  host-owned Next.js Worker bundling, bounded Studio fallback, causal as-of
+  presentation, deep result-import validation, chunked large-result transport,
+  field-by-field Worker option cloning, and bounded result visualization.
+  Local Node, package, production Next/Chromium Worker, full Chromium browser,
+  benchmark, and stress checks are verified. External Firefox/WebKit/mobile,
+  physical-device, formal accessibility/visual approval, and the protected
+  historical API baseline remain open; see
+  `docs/reports/phase-12-5-runtime-hardening.md`.
 
 See `docs/api/portfolio-backtesting.md`,
 `docs/architecture/portfolio-execution.md`,
