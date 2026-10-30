@@ -63,6 +63,17 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
     const after = chart.getOrderFlowState().tradeCount;
     replay.exit();
     const restored = chart.getOrderFlowState().tradeCount;
+    chart.updateMarketTrade({ id: "t-5", instrumentId: "TEST", time: start + 150_000, price: 102, quantity: 2, aggressorSide: "buy", source: { id: "fixture-trades", version: "1" } });
+    chart.updateMarketTrade({ id: "t-6", instrumentId: "TEST", time: start + 180_000, price: 102, quantity: 3, aggressorSide: "sell", source: { id: "fixture-trades", version: "1" } });
+    chart.updateMarketTrade({ id: "t-4", instrumentId: "TEST", time: start + 120_000, price: 102, quantity: 1, aggressorSide: "sell", revision: 1, source: { id: "fixture-trades", version: "1" } });
+    const { calculateCumulativeVolumeDelta } = await import(moduleUrl);
+    const liveCvd = chart.getCvdResult();
+    const expectedCvd = calculateCumulativeVolumeDelta(chart.getMarketTrades(), {
+      from: start,
+      to: start + 5 * 60_000 + 1,
+      intervalMs: 60_000,
+      sourceCoverage: "unknown",
+    });
     const asOfTrades = chart.getMarketTrades({ asOfTime: start + 30_000 });
     const visible = chart.getVisibleTimeRange();
     chart.destroy();
@@ -81,6 +92,7 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
       workspace: { hasOrderFlow: workspace.orderFlow !== undefined, hasDerivedCvdSeries: (workspace.series as Array<{ id: string }>).some((item: { id: string }) => item.id === "openkline.cvd") },
       seriesBeforeReplay,
       replayCounts: { before, after, restored },
+      liveCvdParity: JSON.stringify(liveCvd) === JSON.stringify(expectedCvd),
       asOfTradeCount: asOfTrades.length,
       remainingCanvases,
     };
@@ -92,6 +104,7 @@ test("renders provider-neutral order flow, preserves replay causality, and clean
   expect(result.replayCounts.before).toBe(1);
   expect(result.replayCounts.after).toBe(2);
   expect(result.replayCounts.restored).toBe(4);
+  expect(result.liveCvdParity).toBe(true);
   expect(result.asOfTradeCount).toBe(2);
   expect(result.remainingCanvases).toBe(0);
 });

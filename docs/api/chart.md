@@ -182,7 +182,9 @@ chart.destroy();
   `setFootprintOptions()`, `setCvdOptions()`, and `setDepthOptions()` enable
   bounded Canvas2D Footprint, trade-derived CVD, and depth/heatmap overlays;
   `getOrderFlowState()` reports numeric results and coverage. CVD is a normal
-  chart line series at runtime, but derived data, callbacks, live book history,
+  chart line series at runtime. Chronological live trades update only the
+  affected CVD bucket in the derived series; corrections and out-of-order
+  trades rebuild the exact series. Derived data, callbacks, live book history,
   and trade history are excluded from workspace persistence.
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, analytics overlays, and stored series data. Other

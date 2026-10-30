@@ -147,6 +147,40 @@ test("CVD calculator appends chronologically and falls back for corrections", ()
   calculator.dispose();
 });
 
+test("CVD calculator keeps an unbounded live frontier and exposes a defensive latest observation", () => {
+  const initial = [
+    makeTrade("a", 1_000, 100, 2, "buy"),
+    makeTrade("b", 1_500, 100, 1, "sell"),
+  ];
+  const options = { from: 0, to: Number.MAX_SAFE_INTEGER, intervalMs: 1_000, sourceCoverage: "complete" as const };
+  const calculator = new CumulativeVolumeDeltaCalculator(options, initial);
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(initial, options));
+
+  const sameBucket = makeTrade("c", 1_800, 100, 3, "buy");
+  calculator.update(sameBucket);
+  const afterSameBucket = [...initial, sameBucket];
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterSameBucket, options));
+
+  const nextBucket = makeTrade("d", 2_500, 100, 4, "sell");
+  calculator.update(nextBucket);
+  const afterAppend = [...afterSameBucket, nextBucket];
+  const expected = calculateCumulativeVolumeDelta(afterAppend, options);
+  assert.deepEqual(calculator.getResult(), expected);
+  assert.deepEqual(calculator.getLatestObservation(), expected.observations.at(-1));
+
+  const latest = calculator.getLatestObservation();
+  assert.ok(latest !== null);
+  const mutableLatest = latest as unknown as { value: number };
+  mutableLatest.value = 999;
+  assert.deepEqual(calculator.getLatestObservation(), expected.observations.at(-1));
+
+  const correction = makeTrade("a", 1_000, 100, 5, "sell", 1);
+  calculator.update(correction);
+  const afterCorrection = [...afterAppend, correction];
+  assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterCorrection, options));
+  calculator.dispose();
+});
+
 test("Footprint calculator incrementally matches reference aggregation and falls back for corrections", () => {
   const initial = [
     makeTrade("a", 1_000, 100, 2, "buy"),

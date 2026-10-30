@@ -55,9 +55,22 @@ unchanged.
 `CumulativeVolumeDeltaCalculator` keeps a cached result, applies strictly
 chronological appends to the affected bucket, and falls back to a full
 deterministic rebuild for corrections, out-of-order events, option changes, or
-as-of boundaries. `CvdResult` remains the complete analytical result. Canvas
-line rendering may apply a first/min/max/last per-pixel-column visual LOD while
-retaining the complete series for queries and tooltips. High-frequency chart
+as-of boundaries. `getLatestObservation()` returns one defensive latest point
+for high-frequency consumers without exposing the calculator's mutable cache.
+`CvdResult` remains the complete analytical result. A chart's live calculator
+uses a stable aggregation configuration with an open internal frontier; the
+public chart result still reports the current candle/trade range and clips the
+last bucket end to that range. The derived CVD line uses the stable bucket start
+as its internal series timestamp, so a same-bucket trade replaces one point and
+a new bucket appends one point. Corrections and out-of-order events use the
+exact full-series replacement path.
+
+Canvas line rendering may apply a first/min/max/last per-pixel-column visual
+LOD while retaining the complete series for queries and tooltips. Dense
+candlestick, OHLC, and hollow-candlestick rendering similarly aggregates only
+the display commands per pixel column, preserving first open, last close, and
+the high/low envelope. Heikin-Ashi keeps its exact derived presentation rather
+than applying an incompatible aggregate-open formula. High-frequency chart
 trade and depth mutations update state synchronously but coalesce their visual
 commit to one animation frame; destruction cancels that pending frame.
 

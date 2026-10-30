@@ -438,7 +438,7 @@ export function getTimeAndSales(values: readonly MarketTrade[] | MarketTradeData
 export class CumulativeVolumeDeltaCalculator {
   private readonly store: MarketTradeStore;
   private options: CvdOptions;
-  private cachedResult: CvdResult | null = null;
+  private cachedResult: MutableCvdResult | null = null;
   private lastTrade: MarketTrade | null = null;
   private disposed = false;
 
@@ -461,9 +461,7 @@ export class CumulativeVolumeDeltaCalculator {
     if (status === "duplicate") return;
     const normalized = this.store.get(value.id);
     if (this.cachedResult !== null && normalized !== undefined && status === "inserted" && this.lastTrade !== null && compareCanonicalTrades(this.lastTrade, normalized) < 0) {
-      const next = appendCvdTrade(this.cachedResult, normalized, this.options);
-      if (next !== null) {
-        this.cachedResult = next;
+      if (appendCvdTrade(this.cachedResult, normalized, this.options)) {
         this.lastTrade = normalized;
         return;
       }
@@ -481,12 +479,20 @@ export class CumulativeVolumeDeltaCalculator {
 
   public getResult(): CvdResult {
     this.assertAlive();
-    if (this.cachedResult === null) {
-      const trades = this.store.getAll();
-      this.cachedResult = calculateCumulativeVolumeDelta(trades, this.options);
-      this.lastTrade = trades.at(-1) ?? null;
-    }
-    return cloneCvdResult(this.cachedResult);
+    this.ensureCachedResult();
+    const result = this.cachedResult;
+    if (result === null) throw new OrderFlowValidationError("CVD result is unavailable");
+    return cloneCvdResult(result);
+  }
+
+  /** Return one defensive observation for incremental chart consumers. */
+  public getLatestObservation(): CvdObservation | null {
+    this.assertAlive();
+    this.ensureCachedResult();
+    const result = this.cachedResult;
+    if (result === null) throw new OrderFlowValidationError("CVD result is unavailable");
+    const observation = result.observations.at(-1);
+    return observation === undefined ? null : { ...observation };
   }
 
   public dispose(): void {
@@ -500,7 +506,21 @@ export class CumulativeVolumeDeltaCalculator {
   private assertAlive(): void {
     if (this.disposed) throw new OrderFlowValidationError("CumulativeVolumeDeltaCalculator is disposed");
   }
+
+  private ensureCachedResult(): void {
+    if (this.cachedResult !== null) return;
+    const trades = this.store.getAll();
+    this.cachedResult = toMutableCvdResult(calculateCumulativeVolumeDelta(trades, this.options));
+    this.lastTrade = trades.at(-1) ?? null;
+  }
 }
+
+type MutableCvdResult = {
+  -readonly [Key in keyof CvdResult]: CvdResult[Key]
+} & {
+  observations: CvdObservation[];
+  sessionIds: string[];
+};
 
 interface IncrementalCvdFlow {
   readonly buyVolume: number;
@@ -540,18 +560,18 @@ function mergeTradeFlowCoverage(left: TradeFlowCoverage, right: TradeFlowCoverag
   return "complete-known-side";
 }
 
-function appendCvdTrade(result: CvdResult, trade: MarketTrade, options: CvdOptions): CvdResult | null {
-  if (trade.time < result.from || trade.time > result.to) return null;
-  if (options.asOfTime !== undefined && trade.time > options.asOfTime) return null;
+function appendCvdTrade(result: MutableCvdResult, trade: MarketTrade, options: CvdOptions): boolean {
+  if (trade.time < result.from || trade.time > result.to) return false;
+  if (options.asOfTime !== undefined && trade.time > options.asOfTime) return false;
   const intervalMs = positiveInteger(options.intervalMs, 60_000, "intervalMs", 86_400_000);
   const bucketStart = result.from + Math.floor((trade.time - result.from) / intervalMs) * intervalMs;
   const flow = incrementalTradeFlow(trade, options);
-  const observations = [...result.observations];
+  const observations = result.observations;
   const last = observations.at(-1);
   const sameBucket = last !== undefined && last.bucketStart === bucketStart;
   const session = options.reset === "session" ? options.calendar?.findSessionContaining(trade.time) : undefined;
   const sessionId = session?.id ?? null;
-  if (options.reset === "session" && options.calendar === undefined) return null;
+  if (options.reset === "session" && options.calendar === undefined) return false;
   const nextCoverage = sameBucket && last !== undefined ? mergeTradeFlowCoverage(last.coverage, flow.coverage) : flow.coverage;
   if (sameBucket && last !== undefined) {
     observations[observations.length - 1] = {
@@ -584,21 +604,26 @@ function appendCvdTrade(result: CvdResult, trade: MarketTrade, options: CvdOptio
   }
   const sessionIds = new Set(result.sessionIds);
   if (sessionId !== null) sessionIds.add(sessionId);
+  result.currentValue = observations.at(-1)?.value ?? null;
+  result.totalDelta += flow.delta;
+  result.buyVolume += flow.buyVolume;
+  result.sellVolume += flow.sellVolume;
+  result.unknownSideVolume += flow.unknownSideVolume;
+  result.tradeCount += 1;
+  result.coverage = mergeTradeFlowCoverage(result.coverage, flow.coverage);
+  result.sessionIds = [...sessionIds];
+  return true;
+}
+
+function toMutableCvdResult(result: CvdResult): MutableCvdResult {
   return {
     ...result,
-    observations,
-    currentValue: observations.at(-1)?.value ?? null,
-    totalDelta: result.totalDelta + flow.delta,
-    buyVolume: result.buyVolume + flow.buyVolume,
-    sellVolume: result.sellVolume + flow.sellVolume,
-    unknownSideVolume: result.unknownSideVolume + flow.unknownSideVolume,
-    tradeCount: result.tradeCount + 1,
-    coverage: mergeTradeFlowCoverage(result.coverage, flow.coverage),
-    sessionIds: [...sessionIds],
+    observations: result.observations.map((observation) => ({ ...observation })),
+    sessionIds: [...result.sessionIds],
   };
 }
 
-function cloneCvdResult(result: CvdResult): CvdResult {
+function cloneCvdResult(result: CvdResult | MutableCvdResult): CvdResult {
   return {
     ...result,
     observations: result.observations.map((observation) => ({ ...observation })),

@@ -341,6 +341,7 @@ export class Chart {
   private orderBookAbortController: AbortController | null = null;
   private orderBookRequestId = 0;
   private orderBookHeatmap: OrderBookHeatmapStore | null = null;
+  private latestMarketTrade: MarketTrade | null = null;
   private footprintDisplay: Required<FootprintDisplayOptions> = { ...DEFAULT_FOOTPRINT_DISPLAY };
   private cvdDisplay: Required<CvdDisplayOptions> = { ...DEFAULT_CVD_DISPLAY };
   private depthDisplay: Required<DepthDisplayOptions> = { ...DEFAULT_DEPTH_DISPLAY };
@@ -354,6 +355,8 @@ export class Chart {
   private cvdSeriesId: string | null = null;
   private cvdPaneId: string | null = null;
   private cvdPaneOwned = false;
+  private cvdSeriesLatestBucketStart: number | null = null;
+  private cvdSeriesStyleKey: string | null = null;
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
@@ -527,10 +530,10 @@ export class Chart {
   public updateMarketTrade(value: MarketTrade): void {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
-    this.marketTradeStore.update(value);
-    this.cvdCalculator?.update(value);
+    const update = this.ingestMarketTrade(value);
+    if (!update.changed) return;
     this.orderFlowRevision += 1;
-    this.refreshOrderFlowPresentation();
+    this.refreshOrderFlowPresentation(update.appendOnly);
     this.scheduleViewportRender();
   }
 
@@ -579,10 +582,10 @@ export class Chart {
           ...(query.venueId === undefined ? {} : { venueId: query.venueId }),
           onTrade: (trade) => {
             if (this.destroyed || requestId !== this.marketTradeRequestId || this.isReplayActive()) return;
-            this.marketTradeStore.update(trade);
-            this.cvdCalculator?.update(trade);
+            const update = this.ingestMarketTrade(trade);
+            if (!update.changed) return;
             this.orderFlowRevision += 1;
-            this.refreshOrderFlowPresentation();
+            this.refreshOrderFlowPresentation(update.appendOnly);
             this.scheduleViewportRender();
           },
           onError: (error) => {
@@ -768,6 +771,7 @@ export class Chart {
     this.stopOrderBookSource();
     this.marketTradeStore.dispose();
     this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+    this.latestMarketTrade = null;
     this.resetCvdCalculator();
     this.orderBookController?.dispose();
     this.orderBookController = null;
@@ -2087,6 +2091,7 @@ export class Chart {
     next.setData(values);
     this.marketTradeStore.dispose();
     this.marketTradeStore = next;
+    this.latestMarketTrade = next.getAll().at(-1) ?? null;
     this.resetCvdCalculator();
     this.updateOrderFlowWorkspaceReference();
   }
@@ -2096,6 +2101,23 @@ export class Chart {
     this.cvdCalculator = null;
     this.cvdCalculatorOptionsKey = null;
     this.cvdCalculatorCalendar = null;
+    this.cvdSeriesLatestBucketStart = null;
+    this.cvdSeriesStyleKey = null;
+  }
+
+  private ingestMarketTrade(value: MarketTrade): { readonly changed: boolean; readonly appendOnly: boolean } {
+    const previous = this.latestMarketTrade;
+    const status = this.marketTradeStore.update(value);
+    if (status === "duplicate") return { changed: false, appendOnly: false };
+    const normalized = this.marketTradeStore.get(value.id);
+    this.cvdCalculator?.update(value);
+    const appendOnly = status === "inserted"
+      && normalized !== undefined
+      && (previous === null || compareChartMarketTrades(previous, normalized) < 0);
+    this.latestMarketTrade = appendOnly
+      ? normalized ?? null
+      : this.marketTradeStore.getAll().at(-1) ?? null;
+    return { changed: true, appendOnly };
   }
 
   private stopMarketTradeSource(): void {
@@ -2137,10 +2159,10 @@ export class Chart {
     this.scheduleViewportRender();
   }
 
-  private refreshOrderFlowPresentation(): void {
+  private refreshOrderFlowPresentation(incremental = false): void {
     if (this.cvdDisplay.visible) this.ensureCvdSeries();
     else this.removeCvdSeries();
-    this.refreshCvdSeries();
+    if (!incremental || !this.refreshCvdSeriesIncremental()) this.refreshCvdSeries();
     this.updateOrderFlowWorkspaceReference();
   }
 
@@ -2162,6 +2184,8 @@ export class Chart {
       title: "Cumulative Volume Delta",
       style: { color: this.cvdDisplay.color, lineWidth: this.cvdDisplay.lineWidth, visible: this.cvdDisplay.visible },
     });
+    this.cvdSeriesLatestBucketStart = null;
+    this.cvdSeriesStyleKey = null;
   }
 
   private removeCvdSeries(): void {
@@ -2170,17 +2194,38 @@ export class Chart {
     this.cvdSeriesId = null;
     this.cvdPaneId = null;
     this.cvdPaneOwned = false;
+    this.cvdSeriesLatestBucketStart = null;
+    this.cvdSeriesStyleKey = null;
   }
 
   private refreshCvdSeries(): void {
     if (this.cvdSeriesId === null) return;
     const result = this.calculateCvdResult();
-    this.model.setSeriesData(this.cvdSeriesId, result?.observations.map((observation) => ({ time: observation.time, value: observation.value })) ?? []);
+    const points = result?.observations.map((observation) => ({ time: observation.bucketStart, value: observation.value })) ?? [];
+    this.model.setSeriesData(this.cvdSeriesId, points);
+    this.cvdSeriesLatestBucketStart = points.at(-1)?.time ?? null;
+    this.applyCvdSeriesStyle();
+  }
+
+  private refreshCvdSeriesIncremental(): boolean {
+    if (this.cvdSeriesId === null || this.cvdCalculator === null || this.model.getReplayCutoff() !== null || this.cvdSeriesLatestBucketStart === null) return false;
+    const observation = this.cvdCalculator.getLatestObservation();
+    if (observation === null || observation.bucketStart < this.cvdSeriesLatestBucketStart) return false;
+    this.model.updateSeries(this.cvdSeriesId, { time: observation.bucketStart, value: observation.value });
+    this.cvdSeriesLatestBucketStart = observation.bucketStart;
+    return true;
+  }
+
+  private applyCvdSeriesStyle(): void {
+    if (this.cvdSeriesId === null) return;
+    const key = [this.cvdDisplay.color, this.cvdDisplay.lineWidth, this.cvdDisplay.visible].join(":");
+    if (this.cvdSeriesStyleKey === key) return;
     this.model.setSeriesStyle(this.cvdSeriesId, {
       color: this.cvdDisplay.color,
       lineWidth: this.cvdDisplay.lineWidth,
       visible: this.cvdDisplay.visible,
     });
+    this.cvdSeriesStyleKey = key;
   }
 
   private calculateCvdResult(): CvdResult | null {
@@ -2196,18 +2241,28 @@ export class Chart {
       ...(this.tradingCalendar === null ? {} : { calendar: this.tradingCalendar.calendar }),
     } as const;
     if (cutoff === null) {
-      const key = [range.from, range.to, options.intervalMs, options.reset, options.sourceCoverage].join(":");
+      const key = [range.from, options.intervalMs, options.reset, options.sourceCoverage].join(":");
+      const liveOptions = { ...options, to: Number.MAX_SAFE_INTEGER } as const;
       if (this.cvdCalculator === null) {
-        this.cvdCalculator = new CumulativeVolumeDeltaCalculator(options, this.marketTradeStore.getAll());
+        this.cvdCalculator = new CumulativeVolumeDeltaCalculator(liveOptions, this.marketTradeStore.getAll());
         this.cvdCalculatorOptionsKey = key;
         this.cvdCalculatorCalendar = this.tradingCalendar?.calendar ?? null;
       } else if (this.cvdCalculatorOptionsKey !== key || this.cvdCalculatorCalendar !== (this.tradingCalendar?.calendar ?? null)) {
-        this.cvdCalculator.setOptions(options);
+        this.cvdCalculator.setOptions(liveOptions);
         this.cvdCalculatorOptionsKey = key;
         this.cvdCalculatorCalendar = this.tradingCalendar?.calendar ?? null;
       }
       try {
-        return this.cvdCalculator.getResult();
+        const result = this.cvdCalculator.getResult();
+        return {
+          ...result,
+          from: range.from,
+          to: range.to,
+          observations: result.observations.map((observation) => ({
+            ...observation,
+            bucketEnd: Math.min(range.to, observation.bucketStart + options.intervalMs),
+          })),
+        };
       } catch (error) {
         if (!(error instanceof Error) || !error.message.includes("trading calendar")) throw error;
         return null;
@@ -3800,6 +3855,7 @@ export class Chart {
       this.stopOrderBookSource();
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      this.latestMarketTrade = null;
       this.resetCvdCalculator();
       attachedOrderBook?.dispose();
       this.orderBookController = null;
@@ -3835,11 +3891,13 @@ export class Chart {
       next.setData(attachedTrades);
       this.marketTradeStore.dispose();
       this.marketTradeStore = next;
+      this.latestMarketTrade = next.getAll().at(-1) ?? null;
       this.resetCvdCalculator();
     } else {
       this.stopMarketTradeSource();
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
+      this.latestMarketTrade = null;
       this.resetCvdCalculator();
       if (persisted.tradeSource !== undefined && attachedReference?.tradeSource !== undefined) {
         console.warn(`OpenKline trade source is unresolved: ${persisted.tradeSource.sourceId}@${persisted.tradeSource.sourceVersion}`);
@@ -4811,6 +4869,13 @@ function normalizeDepthDisplay(value: DepthDisplayOptions): Required<DepthDispla
 function formatOrderFlowQuantity(value: number): string {
   if (!Number.isFinite(value)) return "—";
   return Math.abs(value) >= 1000 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(2).replace(/\.00$/, "");
+}
+
+function compareChartMarketTrades(left: MarketTrade, right: MarketTrade): number {
+  return left.time - right.time
+    || (left.sequence ?? Number.MAX_SAFE_INTEGER) - (right.sequence ?? Number.MAX_SAFE_INTEGER)
+    || left.id.localeCompare(right.id)
+    || left.revision - right.revision;
 }
 
 interface FootprintLodBin {

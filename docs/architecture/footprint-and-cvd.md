@@ -35,11 +35,22 @@ key, so resize, pan, scale, replay, and style changes cannot reuse stale
 coordinates.
 
 The stateful CVD calculator handles chronological appends in-place at the
-affected bucket. Corrections and out-of-order trades intentionally take the
-reference rebuild path because downstream cumulative values can change. The
-Canvas2D renderer independently reduces dense line paths to deterministic
-first/minimum/maximum/last samples per pixel column; this is a rendering
-optimization only and does not discard stored observations.
+affected bucket. In a live chart, its `from`, interval, reset, coverage, and
+calendar semantics are stable while the internal upper frontier remains open;
+the chart's public bounded result is projected back to the current
+candle/trade range. The chart line anchors derived points at `bucketStart`, not
+the mutable event timestamp, so a trade within the latest bucket is a point
+replacement rather than a full data replacement. Corrections and out-of-order
+trades intentionally take the reference rebuild path because downstream
+cumulative values can change. The public `getLatestObservation()` query is
+defensive and does not expose the mutable cache.
+
+The Canvas2D renderer independently reduces dense line paths and standard
+candlestick/OHLC/hollow-candlestick commands to deterministic per-pixel-column
+display samples. Candle aggregates preserve the first open, last close, and
+high/low envelope without modifying source series data. Heikin-Ashi remains
+exact because its derived open depends on prior bars; volume and histogram
+series keep their own point semantics rather than receiving candle LOD.
 
 The stateful Footprint calculator applies the same invalidation rule to the
 latest time bucket. A chronological append updates an existing price cell or
