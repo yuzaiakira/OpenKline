@@ -252,6 +252,69 @@
     },
     {
       "package": "openkline",
+      "name": "AnchoredVwapApi",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "01895ee6d2c14b635dde405190285ba623fba8aaedc182f1c430e0de0b741024"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapCalculator",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3183eeb111ddea0bfc7e5cfbe247156b10f5098e48685992fb04ad8ae1e922ee"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapChartOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "58780973497de6a0528a4cbc4065881d38196c61adafa566073d16151ec6ef59"
+    },
+    {
+      "package": "openkline",
+      "name": "anchoredVwapDefinition",
+      "kind": "runtime",
+      "module": "./indicators/index.js",
+      "signatureHash": "43254e9c416b7758d53327d7d8508770c8435850fb2ee0a238eb4ec69cc41e34"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "ea670840db95a220c72c6d2b8d7655829068ac1aef761a8e66a44aa3b31a1773"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapParameters",
+      "kind": "type",
+      "module": "./indicators/index.js",
+      "signatureHash": "a3128a558a907fb3fc6df185824c7305fd1378c4d73958ed704ec615fb285d88"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapPoint",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "df8488aa9e4aa4c938ac29e2ac84b229c6f63c75035e5a1761f4aa29eb7c971f"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapPriceSource",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "72d25640ad3812e4618a1fa5f4d0dbf97ac974c89448d394097a61a0b30bfd35"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapResult",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "bafda5a957bd4726e00a6a25e088f62282355ae6f4bd2f29ab82c2c53060b594"
+    },
+    {
+      "package": "openkline",
       "name": "AreaPoint",
       "kind": "type",
       "module": "./types.js",
@@ -581,6 +644,20 @@
     },
     {
       "package": "openkline",
+      "name": "calculateAnchoredVwap",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3c82f59835f4614873642d4fd10712f1b4ee7d7d200fc32e57afd1553b1027f6"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateEstimatedVolumeProfile",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "353e84de9a4853cdcf7684d8b66f85be1a08ff8b72b4f28103a1f229d1e82095"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePerformanceMetrics",
       "kind": "runtime",
       "module": "./backtesting/index.js",
@@ -647,7 +724,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "3bc2ff383acdcf266a3cddd810dd5f14f44ee4273fa4b703f98047097ca86a75"
+      "signatureHash": "c6ad693a10bc7ce501bed84a39a10dc618a4571ab03bf18c253278a426a74c82"
     },
     {
       "package": "openkline",
@@ -721,6 +798,48 @@
     },
     {
       "package": "openkline",
+      "name": "ChartSynchronizationController",
+      "kind": "runtime",
+      "module": "./synchronization.js",
+      "signatureHash": "ddc0f703d0623bab91059c9bc33c748d833782fafe7fd3dd8428c1b2d83c6dcd"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationCrosshairEvent",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "b663996c1ad6ee66fbd2d6670f5a59ebbf2f8a54e55f6ee6c2b693c693231ad8"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationOptions",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "c77e31221a78a5b4e3922108dabe317ca095a91a885eaaafadc216b9f242338d"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationRange",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "e693e395ed0789a902be8ea05ff43dc30c1ee09e382408141783fd4882512a83"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationResolvedOptions",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "6910dc21a598c6031f37e8195c3761dffe5669cff0b2e760840420bfeaf2d617"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationTarget",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "94f7f871759a237ef3472d587a1ae418af76a3cd1fb4db628821456fb385a7f6"
+    },
+    {
+      "package": "openkline",
       "name": "ChartTheme",
       "kind": "type",
       "module": "./types.js",
@@ -739,6 +858,244 @@
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "9a217e687d006a25178ce14ba1251a5e0cdf3f2f6aedb606f764f69ba218c2a4"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetInput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "a39336cf8aa0a699d598f9b71c2b9f9be7e3f9876faf94d80733f07336fe09b2"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetOutput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "9bd962ebe70f33d7871a13af2c9ce01b1d9e6b4b0f03be3634a5a61cd9c5ea48"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetSnapshot",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "6be60d9d187109eb2d1f15708f00a69c7677715691545992e15af2d915c9470d"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetStatus",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "1b75a6f391f1a3e37a3d27c685c7234566b6da718f1f51000338f482a978b7f1"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonBaseline",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "83cc96b989d4ac3a4cb349ff93b8eafef55e4a53d38bcb47f28474ae8fca7710"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonChange",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "dcd3c7538be3383477b7e8c72493bc847ef0480d735c74154bb3c739e8de7d95"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonChangeListener",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "c5e85c5041ea36ed9f89067760c422ae36a9831cbfb9b13b837948dd4d14fd4e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAsset",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "ef7bf14ae4643f510851c8ea48da0f471e7349a42e8bf71d7a80f1c4d0c4919e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAssetState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "d0f40370a7fd5c2993a87c1cbfca793ded2819352e62c66e09bbdf0f23f82385"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAssetStatus",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "00aa09dbb5cabfe3bf026439af956e191be35e26bc284103eaa4d75c4ea3797f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillAssetResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "86df6e0c187d50a804a25c956674ea5717a4082df074a5dc3603decec56044e1"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "fcdbc65fb4ae6a7155c9b7af7db07715d67469637d2e97793fe1256711b39c0f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "24371db960f2b40d3fc67edb6d5c9b18f651e6c597898df91198bdb24415dffe"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChange",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "f4d7b0985729b35633365635dbdfe7194c4f3891f52638f1a2ba2ba9b49ecddd"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChangeKind",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "86458460eb41bf92bf0e64c435a5edba2085c6bf2aef3af8337a030db0233181"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChangeListener",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "9da5fb8ceea61c32c1d79b72017f07c69393813e8125bc437f56b7cd57f63670"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedController",
+      "kind": "runtime",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "e7decb14615aa95ada86678629f9ea97a3e1d064a0ce872c5431659ac60692ca"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedControllerOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "45bc32994332e80dd55ee726d00479a1378b8aca9659af899b7f7068b637c257"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoverage",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "9d32fe9f7e811c68e00d4ddd9c0c0a240467cc4fe275cdd95b02661217d5fc6f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoverageCompleteness",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "a6038ca756e4cc2abb5c2aa74a211dca807188644370d23bf3a050abc53b6d33"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoveragePolicy",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "66cb99afb75dd7de2212cc859af2f024fc9f2cf151299800db83c323a3cdfba0"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedInterval",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "f86349cb072492a21b8ee0fa8ae19a98f6bd6be3d7a3f2329bb65c6f0f168841"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedLoadOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "30c58c824591fa8691881531e0aac01a581028a06c1cdf9cd281aba35a1e61ca"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedLoadResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "af20e842183f2d57ef35b58367d82d622d251d958eda8157312243fdd1473548"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedOverallState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "07d838cfebaa1b234815aa3ec04f12ea48b9ce22bcbe27bb37a2ec2b0d7fa32e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedRealtimeState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "eb924a9466af7a37d005d05aa8b59551527986f353a7bc9bde9dd37135dd9541"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedRecoveryState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "433ff128d2d8ec5c80ef25650a4f5445eb7881644737e2fed811cf2a163615d2"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "93117f5e81bfe56f53f0169ee457bb9c62379b17fa53ec14e97a40924fd705a3"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedWindow",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "4e6c014c57100ab377d4eddb6c860a931a27e266551ca065379c33534d509920"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonEngine",
+      "kind": "runtime",
+      "module": "./comparison.js",
+      "signatureHash": "4b2f7dfee535a66587f816c304e72cc76965808430bed1f88c9a52ac3e31ad5e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonEngineOptions",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "55e6caa8c762f406d0204fc2376c76fb6e1c3941aeb2c2a1bb28d55e30cab2db"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonNormalizationMode",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "5032f517e5e9ded669ea025540e36dc67c1e7bc0543705d32049d5687eee37b8"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonNormalizedPoint",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "60cd28ee1a1b9b497216995a583f4ad5be7483cdd9fb4eb97093602322851b98"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonPricePoint",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "6f09f8a9c9e55434530e3fd8e7baa24590c39634858f520928bd430c6eabec22"
     },
     {
       "package": "openkline",
@@ -893,6 +1250,20 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "28d240d90e1d565bcc4e806559af910b18adf19b0db8cae278641e7171a3ecd3"
+    },
+    {
+      "package": "openkline",
+      "name": "DatafeedRealtimeStatus",
+      "kind": "type",
+      "module": "./types.js",
+      "signatureHash": "692399667a292db5fb5352f8b509783f04cd824736a5df29e45a4e3c6e508563"
+    },
+    {
+      "package": "openkline",
+      "name": "DatafeedRealtimeSubscriptionArgs",
+      "kind": "type",
+      "module": "./types.js",
+      "signatureHash": "be6c72e6510c851e665a13031cbb02f8f4a2d44ac4a4a1ec47cf21786d449e7a"
     },
     {
       "package": "openkline",
@@ -1138,6 +1509,13 @@
       "kind": "type",
       "module": "./strategies/index.js",
       "signatureHash": "d47a1458e79ca96a01ee912683f243de754436326ad4129733151111701d2094"
+    },
+    {
+      "package": "openkline",
+      "name": "EstimatedVolumeProfileResult",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "973eb67f35e73b51d5fbae9484c25fc66609c7049216d6c7720a4c795fb6db13"
     },
     {
       "package": "openkline",
@@ -3010,6 +3388,20 @@
     },
     {
       "package": "openkline",
+      "name": "ResolvedVolumeProfileOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "5424ae7215b0733370472e7f57dcd44c1b4172f1028b569da61193c256c9b4c6"
+    },
+    {
+      "package": "openkline",
+      "name": "resolveVolumeProfileOptions",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "b3f29520ae5f0f4a92a17eb2362df2189cc377c15c6a1cce58b90cb21dc9a933"
+    },
+    {
+      "package": "openkline",
       "name": "RestBarPayload",
       "kind": "type",
       "module": "./datafeed-rest.js",
@@ -3941,6 +4333,13 @@
     },
     {
       "package": "openkline",
+      "name": "StudioComparisonDocument",
+      "kind": "type",
+      "module": "./studio/index.js",
+      "signatureHash": "719ece5f6fc9b37bd2d9e4b18d976eecd0793433e657f95dc1b7e0f13c875e84"
+    },
+    {
+      "package": "openkline",
       "name": "StudioLayout",
       "kind": "type",
       "module": "./studio/index.js",
@@ -4102,10 +4501,94 @@
     },
     {
       "package": "openkline",
+      "name": "VolumeAnalyticsValidationError",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "989e300835e0847b302dc93d36c5bd096a39b3909ad2fe104d4b536f95959014"
+    },
+    {
+      "package": "openkline",
       "name": "VolumePoint",
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "cc1d27d35506848f39d59daad1c583e154a4fd9871e3b0316af754785184fae2"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileAllocationMethod",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "dbd970452484a1473ac8f9445f77e9f722fae740573c5c21e5a56b9a6d859bff"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileApi",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3d82c9ccf55db7d69e5c420ab5921649b8ab3508f22f70e6ec2041b0785dcfcf"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileBin",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "c1c027ca11271124176205a28797689e934b32c7da4663ab50b8dc94662aff71"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileCalculationOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "2134bf81a2b96e58667af92de2fd6fc836a8b891131b6cb7811ef9e59bc96b34"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileDisplayOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "a027ba8eaedc4d056d86ee89ec1b19a7722a795e3132d934621426796aaf9856"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileMode",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "4329f28c838a15d59640888b76604f32ff7a919a38451ef5910d49907f199fc1"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "2e28deee7757824050235d1da61b31a8eeb7cace7e7aaaeed3ab754475ecf1a8"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileOptionsPatch",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "16bdd342ad8baa01fe96798d17a4d1d284c96b5fe21f0405b0616a42775c2134"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfilePosition",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "147e91c6fb75112d190b1a349a044f5d329ccebf28cefe5c51788a90385bcf80"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfilePriceBounds",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "5d44d1a8ffed69b1d61a8bcb080dce94a59bf863f5ead04383df32f7780631e0"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileStatus",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "e648495b482533ae8e84f9790039e0bd1303fd978503185a365daed1e9c73aee"
     },
     {
       "package": "openkline",
@@ -4301,7 +4784,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "6df247327aa5c6e1c6d207c3c443b070dbd8309879ddeb647a5ad59d2c158b4e"
+      "signatureHash": "8e1cde74a8df88d9f32c3c59159d9b30cd9adfc49751cc20761d3c2c7dc951d1"
     },
     {
       "package": "openkline",
@@ -4365,6 +4848,20 @@
       "kind": "runtime",
       "module": "./workspace.js",
       "signatureHash": "4912cbb48dd8107836d8d16e05ca2ad9b512588e5fff428b628f1275fd6f0e16"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceVolumeAnalytics",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "3491564b36030da566600a5ee7a5dc4d7de2d559b7f0bcc642018b034c864df6"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceVolumeProfile",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "b66f0426b6cad86bbf880a63f9a7e11133e4eb7fee19d24d082299c87ff1c30e"
     }
   ],
   "runtimeExports": [
@@ -4430,6 +4927,20 @@
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "907c34033642b5faee5bb835aed909e8e88d6e2510e488edc994cce71de39e8b"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapCalculator",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3183eeb111ddea0bfc7e5cfbe247156b10f5098e48685992fb04ad8ae1e922ee"
+    },
+    {
+      "package": "openkline",
+      "name": "anchoredVwapDefinition",
+      "kind": "runtime",
+      "module": "./indicators/index.js",
+      "signatureHash": "43254e9c416b7758d53327d7d8508770c8435850fb2ee0a238eb4ec69cc41e34"
     },
     {
       "package": "openkline",
@@ -4510,6 +5021,20 @@
     },
     {
       "package": "openkline",
+      "name": "calculateAnchoredVwap",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3c82f59835f4614873642d4fd10712f1b4ee7d7d200fc32e57afd1553b1027f6"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateEstimatedVolumeProfile",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "353e84de9a4853cdcf7684d8b66f85be1a08ff8b72b4f28103a1f229d1e82095"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePerformanceMetrics",
       "kind": "runtime",
       "module": "./backtesting/index.js",
@@ -4555,7 +5080,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "3bc2ff383acdcf266a3cddd810dd5f14f44ee4273fa4b703f98047097ca86a75"
+      "signatureHash": "c6ad693a10bc7ce501bed84a39a10dc618a4571ab03bf18c253278a426a74c82"
     },
     {
       "package": "openkline",
@@ -4573,10 +5098,31 @@
     },
     {
       "package": "openkline",
+      "name": "ChartSynchronizationController",
+      "kind": "runtime",
+      "module": "./synchronization.js",
+      "signatureHash": "ddc0f703d0623bab91059c9bc33c748d833782fafe7fd3dd8428c1b2d83c6dcd"
+    },
+    {
+      "package": "openkline",
       "name": "compareOptimizationScores",
       "kind": "runtime",
       "module": "./optimization/index.js",
       "signatureHash": "9a217e687d006a25178ce14ba1251a5e0cdf3f2f6aedb606f764f69ba218c2a4"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedController",
+      "kind": "runtime",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "e7decb14615aa95ada86678629f9ea97a3e1d064a0ce872c5431659ac60692ca"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonEngine",
+      "kind": "runtime",
+      "module": "./comparison.js",
+      "signatureHash": "4b2f7dfee535a66587f816c304e72cc76965808430bed1f88c9a52ac3e31ad5e"
     },
     {
       "package": "openkline",
@@ -5441,6 +5987,13 @@
     },
     {
       "package": "openkline",
+      "name": "resolveVolumeProfileOptions",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "b3f29520ae5f0f4a92a17eb2362df2189cc377c15c6a1cce58b90cb21dc9a933"
+    },
+    {
+      "package": "openkline",
       "name": "RestDatafeed",
       "kind": "runtime",
       "module": "./datafeed-rest.js",
@@ -5753,6 +6306,13 @@
       "kind": "runtime",
       "module": "./drawings/index.js",
       "signatureHash": "0977415191347bade735f51a6eddc7e6484023bfb1a48532ae41792c1499cca6"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeAnalyticsValidationError",
+      "kind": "runtime",
+      "module": "./volume-analytics.js",
+      "signatureHash": "989e300835e0847b302dc93d36c5bd096a39b3909ad2fe104d4b536f95959014"
     },
     {
       "package": "openkline",
@@ -5989,6 +6549,55 @@
     },
     {
       "package": "openkline",
+      "name": "AnchoredVwapApi",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "01895ee6d2c14b635dde405190285ba623fba8aaedc182f1c430e0de0b741024"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapChartOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "58780973497de6a0528a4cbc4065881d38196c61adafa566073d16151ec6ef59"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "ea670840db95a220c72c6d2b8d7655829068ac1aef761a8e66a44aa3b31a1773"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapParameters",
+      "kind": "type",
+      "module": "./indicators/index.js",
+      "signatureHash": "a3128a558a907fb3fc6df185824c7305fd1378c4d73958ed704ec615fb285d88"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapPoint",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "df8488aa9e4aa4c938ac29e2ac84b229c6f63c75035e5a1761f4aa29eb7c971f"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapPriceSource",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "72d25640ad3812e4618a1fa5f4d0dbf97ac974c89448d394097a61a0b30bfd35"
+    },
+    {
+      "package": "openkline",
+      "name": "AnchoredVwapResult",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "bafda5a957bd4726e00a6a25e088f62282355ae6f4bd2f29ab82c2c53060b594"
+    },
+    {
+      "package": "openkline",
       "name": "AreaPoint",
       "kind": "type",
       "module": "./types.js",
@@ -6318,6 +6927,41 @@
     },
     {
       "package": "openkline",
+      "name": "ChartSynchronizationCrosshairEvent",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "b663996c1ad6ee66fbd2d6670f5a59ebbf2f8a54e55f6ee6c2b693c693231ad8"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationOptions",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "c77e31221a78a5b4e3922108dabe317ca095a91a885eaaafadc216b9f242338d"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationRange",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "e693e395ed0789a902be8ea05ff43dc30c1ee09e382408141783fd4882512a83"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationResolvedOptions",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "6910dc21a598c6031f37e8195c3761dffe5669cff0b2e760840420bfeaf2d617"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartSynchronizationTarget",
+      "kind": "type",
+      "module": "./synchronization.js",
+      "signatureHash": "94f7f871759a237ef3472d587a1ae418af76a3cd1fb4db628821456fb385a7f6"
+    },
+    {
+      "package": "openkline",
       "name": "ChartTheme",
       "kind": "type",
       "module": "./types.js",
@@ -6329,6 +6973,230 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "8ab30cf737045d37c70543ae0c0f75fa32427f501afa84a120c1efa19b4099cd"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetInput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "a39336cf8aa0a699d598f9b71c2b9f9be7e3f9876faf94d80733f07336fe09b2"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetOutput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "9bd962ebe70f33d7871a13af2c9ce01b1d9e6b4b0f03be3634a5a61cd9c5ea48"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetSnapshot",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "6be60d9d187109eb2d1f15708f00a69c7677715691545992e15af2d915c9470d"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonAssetStatus",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "1b75a6f391f1a3e37a3d27c685c7234566b6da718f1f51000338f482a978b7f1"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonBaseline",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "83cc96b989d4ac3a4cb349ff93b8eafef55e4a53d38bcb47f28474ae8fca7710"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonChange",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "dcd3c7538be3383477b7e8c72493bc847ef0480d735c74154bb3c739e8de7d95"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonChangeListener",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "c5e85c5041ea36ed9f89067760c422ae36a9831cbfb9b13b837948dd4d14fd4e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAsset",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "ef7bf14ae4643f510851c8ea48da0f471e7349a42e8bf71d7a80f1c4d0c4919e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAssetState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "d0f40370a7fd5c2993a87c1cbfca793ded2819352e62c66e09bbdf0f23f82385"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedAssetStatus",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "00aa09dbb5cabfe3bf026439af956e191be35e26bc284103eaa4d75c4ea3797f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillAssetResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "86df6e0c187d50a804a25c956674ea5717a4082df074a5dc3603decec56044e1"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "fcdbc65fb4ae6a7155c9b7af7db07715d67469637d2e97793fe1256711b39c0f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedBackfillResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "24371db960f2b40d3fc67edb6d5c9b18f651e6c597898df91198bdb24415dffe"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChange",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "f4d7b0985729b35633365635dbdfe7194c4f3891f52638f1a2ba2ba9b49ecddd"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChangeKind",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "86458460eb41bf92bf0e64c435a5edba2085c6bf2aef3af8337a030db0233181"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedChangeListener",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "9da5fb8ceea61c32c1d79b72017f07c69393813e8125bc437f56b7cd57f63670"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedControllerOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "45bc32994332e80dd55ee726d00479a1378b8aca9659af899b7f7068b637c257"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoverage",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "9d32fe9f7e811c68e00d4ddd9c0c0a240467cc4fe275cdd95b02661217d5fc6f"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoverageCompleteness",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "a6038ca756e4cc2abb5c2aa74a211dca807188644370d23bf3a050abc53b6d33"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedCoveragePolicy",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "66cb99afb75dd7de2212cc859af2f024fc9f2cf151299800db83c323a3cdfba0"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedInterval",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "f86349cb072492a21b8ee0fa8ae19a98f6bd6be3d7a3f2329bb65c6f0f168841"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedLoadOptions",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "30c58c824591fa8691881531e0aac01a581028a06c1cdf9cd281aba35a1e61ca"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedLoadResult",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "af20e842183f2d57ef35b58367d82d622d251d958eda8157312243fdd1473548"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedOverallState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "07d838cfebaa1b234815aa3ec04f12ea48b9ce22bcbe27bb37a2ec2b0d7fa32e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedRealtimeState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "eb924a9466af7a37d005d05aa8b59551527986f353a7bc9bde9dd37135dd9541"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedRecoveryState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "433ff128d2d8ec5c80ef25650a4f5445eb7881644737e2fed811cf2a163615d2"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedState",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "93117f5e81bfe56f53f0169ee457bb9c62379b17fa53ec14e97a40924fd705a3"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDatafeedWindow",
+      "kind": "type",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "4e6c014c57100ab377d4eddb6c860a931a27e266551ca065379c33534d509920"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonEngineOptions",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "55e6caa8c762f406d0204fc2376c76fb6e1c3941aeb2c2a1bb28d55e30cab2db"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonNormalizationMode",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "5032f517e5e9ded669ea025540e36dc67c1e7bc0543705d32049d5687eee37b8"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonNormalizedPoint",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "60cd28ee1a1b9b497216995a583f4ad5be7483cdd9fb4eb97093602322851b98"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonPricePoint",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "6f09f8a9c9e55434530e3fd8e7baa24590c39634858f520928bd430c6eabec22"
     },
     {
       "package": "openkline",
@@ -6350,6 +7218,20 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "28d240d90e1d565bcc4e806559af910b18adf19b0db8cae278641e7171a3ecd3"
+    },
+    {
+      "package": "openkline",
+      "name": "DatafeedRealtimeStatus",
+      "kind": "type",
+      "module": "./types.js",
+      "signatureHash": "692399667a292db5fb5352f8b509783f04cd824736a5df29e45a4e3c6e508563"
+    },
+    {
+      "package": "openkline",
+      "name": "DatafeedRealtimeSubscriptionArgs",
+      "kind": "type",
+      "module": "./types.js",
+      "signatureHash": "be6c72e6510c851e665a13031cbb02f8f4a2d44ac4a4a1ec47cf21786d449e7a"
     },
     {
       "package": "openkline",
@@ -6490,6 +7372,13 @@
       "kind": "type",
       "module": "./strategies/index.js",
       "signatureHash": "d47a1458e79ca96a01ee912683f243de754436326ad4129733151111701d2094"
+    },
+    {
+      "package": "openkline",
+      "name": "EstimatedVolumeProfileResult",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "973eb67f35e73b51d5fbae9484c25fc66609c7049216d6c7720a4c795fb6db13"
     },
     {
       "package": "openkline",
@@ -7739,6 +8628,13 @@
     },
     {
       "package": "openkline",
+      "name": "ResolvedVolumeProfileOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "5424ae7215b0733370472e7f57dcd44c1b4172f1028b569da61193c256c9b4c6"
+    },
+    {
+      "package": "openkline",
       "name": "RestBarPayload",
       "kind": "type",
       "module": "./datafeed-rest.js",
@@ -8425,6 +9321,13 @@
     },
     {
       "package": "openkline",
+      "name": "StudioComparisonDocument",
+      "kind": "type",
+      "module": "./studio/index.js",
+      "signatureHash": "719ece5f6fc9b37bd2d9e4b18d976eecd0793433e657f95dc1b7e0f13c875e84"
+    },
+    {
+      "package": "openkline",
       "name": "StudioLayout",
       "kind": "type",
       "module": "./studio/index.js",
@@ -8520,6 +9423,83 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "cc1d27d35506848f39d59daad1c583e154a4fd9871e3b0316af754785184fae2"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileAllocationMethod",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "dbd970452484a1473ac8f9445f77e9f722fae740573c5c21e5a56b9a6d859bff"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileApi",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "3d82c9ccf55db7d69e5c420ab5921649b8ab3508f22f70e6ec2041b0785dcfcf"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileBin",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "c1c027ca11271124176205a28797689e934b32c7da4663ab50b8dc94662aff71"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileCalculationOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "2134bf81a2b96e58667af92de2fd6fc836a8b891131b6cb7811ef9e59bc96b34"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileDisplayOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "a027ba8eaedc4d056d86ee89ec1b19a7722a795e3132d934621426796aaf9856"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileMode",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "4329f28c838a15d59640888b76604f32ff7a919a38451ef5910d49907f199fc1"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileOptions",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "2e28deee7757824050235d1da61b31a8eeb7cace7e7aaaeed3ab754475ecf1a8"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileOptionsPatch",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "16bdd342ad8baa01fe96798d17a4d1d284c96b5fe21f0405b0616a42775c2134"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfilePosition",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "147e91c6fb75112d190b1a349a044f5d329ccebf28cefe5c51788a90385bcf80"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfilePriceBounds",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "5d44d1a8ffed69b1d61a8bcb080dce94a59bf863f5ead04383df32f7780631e0"
+    },
+    {
+      "package": "openkline",
+      "name": "VolumeProfileStatus",
+      "kind": "type",
+      "module": "./volume-analytics.js",
+      "signatureHash": "e648495b482533ae8e84f9790039e0bd1303fd978503185a365daed1e9c73aee"
     },
     {
       "package": "openkline",
@@ -8673,7 +9653,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "6df247327aa5c6e1c6d207c3c443b070dbd8309879ddeb647a5ad59d2c158b4e"
+      "signatureHash": "8e1cde74a8df88d9f32c3c59159d9b30cd9adfc49751cc20761d3c2c7dc951d1"
     },
     {
       "package": "openkline",
@@ -8730,6 +9710,20 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "2110afc7a9ec9da14cd363ac3a96298c1f847cc34b3ce8f48d7ad308193c6ba7"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceVolumeAnalytics",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "3491564b36030da566600a5ee7a5dc4d7de2d559b7f0bcc642018b034c864df6"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceVolumeProfile",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "b66f0426b6cad86bbf880a63f9a7e11133e4eb7fee19d24d082299c87ff1c30e"
     }
   ],
   "notes": [
@@ -8737,5 +9731,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "3e7a889a94c40255bbcce210a672856cfc98b32b"
+  "generatedFrom": "3c339a19ad154b98e4f89aa461568f3bfcbf8a07"
 }
