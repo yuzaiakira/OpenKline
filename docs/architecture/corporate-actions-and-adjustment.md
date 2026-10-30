@@ -38,7 +38,11 @@ missing. OHLC ordering is validated after every transformation. Cash dividends
 do not alter executable OHLC. The total-return calculation is a separate index
 whose documented convention reinvests cash at the ex-dividend boundary.
 
-Chart state stores raw candles separately from displayed candles. Indicators,
+Chart state stores raw candles separately from displayed candles. Realtime
+append and correction updates maintain that canonical raw source with a
+timestamp-indexed upsert; they do not rebuild a defensive full-history model
+snapshot on every tick. Full `setData()` replacement remains linear as
+expected. Indicators,
 multi-timeframe calculations, session analytics, and worker indicators are
 refreshed from the displayed domain after an adjusted-data correction. Replay
 rebuilds a split-adjusted source using causal eligibility at each cursor and

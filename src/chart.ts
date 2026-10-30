@@ -2912,22 +2912,25 @@ export class Chart {
 
   private replaceRawCandles(candles: readonly Candle[]): void {
     this.model.setData(candles);
-    this.rawCandles = this.model.allCandles.map((candle) => ({ ...candle }));
+    // Keep the executable source separate from the model snapshot, but do not
+    // read the model back here. `model.allCandles` is a defensive snapshot and
+    // would turn every full replacement into a second full-history clone.
+    this.rawCandles = candles.map((candle) => ({ ...candle }));
     this.applyCorporateActionDisplay(false);
   }
 
   private updateRawCandle(candle: Candle): void {
     if (this.corporateActionDataset === null || this.corporateActionMode === "raw") {
       this.model.update(candle);
-      this.rawCandles = this.model.allCandles.map((item) => ({ ...item }));
+      // CandleStore already performs the validated update. Update the
+      // canonical source with the same timestamp semantics instead of asking
+      // the model for an O(N) defensive snapshot on every realtime tick.
+      this.rawCandles = upsertRawCandle(this.rawCandles, candle);
       return;
     }
-    const next = [...this.rawCandles];
-    const index = lowerBoundCandleTime(next, candle.time);
-    if (next[index]?.time === candle.time) next[index] = { ...candle };
-    else next.splice(index, 0, { ...candle });
+    const next = upsertRawCandle(this.rawCandles, candle);
     this.model.setData(next);
-    this.rawCandles = this.model.allCandles.map((item) => ({ ...item }));
+    this.rawCandles = next;
     this.applyCorporateActionDisplay(false);
   }
 
@@ -3962,6 +3965,14 @@ function lowerBoundCandleTime(candles: readonly Candle[], time: number): number 
     else high = middle;
   }
   return low;
+}
+
+function upsertRawCandle(candles: readonly Candle[], candle: Candle): Candle[] {
+  const next = [...candles];
+  const index = lowerBoundCandleTime(next, candle.time);
+  if (next[index]?.time === candle.time) next[index] = { ...candle };
+  else next.splice(index, 0, { ...candle });
+  return next;
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {
