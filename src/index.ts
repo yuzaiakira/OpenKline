@@ -69,6 +69,7 @@ export type {
   CorporateActionKnowledgeCoverage,
   CorporateActionQuery,
   CorporateActionSource,
+  CorporateActionSourceAvailability,
   CorporateActionStoreOptions,
   CorporateActionVolumePolicy,
   RestCorporateActionDatafeedOptions,

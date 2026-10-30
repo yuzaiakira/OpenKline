@@ -141,6 +141,8 @@ export interface WorkspaceCorporateActions {
   readonly mode: CorporateActionAdjustmentMode;
   readonly context: CorporateActionAdjustmentContext;
   readonly asOfTime: number | null;
+  /** Optional fixed source duration for causal candle availability. */
+  readonly sourceDurationMs?: number;
   readonly volumePolicy: CorporateActionVolumePolicy;
   readonly markersVisible: boolean;
 }
@@ -260,6 +262,7 @@ function parseCorporateActions(value: unknown): WorkspaceCorporateActions {
     || (value.mode !== "raw" && value.mode !== "split-adjusted" && value.mode !== "total-return")
     || (value.context !== "retrospective" && value.context !== "causal-as-of")
     || (value.asOfTime !== null && !isFiniteInteger(value.asOfTime))
+    || (value.sourceDurationMs !== undefined && (!isFiniteInteger(value.sourceDurationMs) || value.sourceDurationMs <= 0))
     || (value.volumePolicy !== "equivalent-shares" && value.volumePolicy !== "preserve")
     || typeof value.markersVisible !== "boolean") {
     throw new WorkspaceValidationError("Invalid workspace corporate actions configuration");
@@ -272,6 +275,7 @@ function parseCorporateActions(value: unknown): WorkspaceCorporateActions {
     mode: value.mode,
     context: value.context,
     asOfTime: value.asOfTime,
+    ...(value.sourceDurationMs === undefined ? {} : { sourceDurationMs: value.sourceDurationMs }),
     volumePolicy: value.volumePolicy,
     markersVisible: value.markersVisible,
   };

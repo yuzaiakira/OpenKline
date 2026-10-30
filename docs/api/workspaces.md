@@ -50,7 +50,8 @@ without this optional member remain valid.
 
 The optional Phase 13 `corporateActions` member stores the instrument/source
 identity, display mode (`raw`, `split-adjusted`, or `total-return`), adjustment
-context, causal as-of boundary, volume policy, and marker visibility. It does
+context, causal as-of boundary, optional fixed source duration, volume policy,
+and marker visibility. It does
 not store the action dataset, derived adjusted candles, transport clients,
 credentials, or runtime subscriptions. Restore keeps a missing source as an
 unresolved reference and warns instead of substituting another instrument or

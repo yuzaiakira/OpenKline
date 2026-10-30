@@ -30,7 +30,15 @@ Historical adjustment has two explicit contexts:
 - Causal-as-of mode filters by the effective frontier and knowledge-time
   frontier, so replay and historical research do not use a future action or a
   later correction. Unknown knowledge coverage is surfaced as metadata rather
-  than fabricated into a historical timestamp.
+  than fabricated into a historical timestamp. Future excluded action IDs are
+  not exposed by the public causal result.
+
+Causal source-candle availability is a separate contract from action
+eligibility. `sourceDurationMs` enables the conservative completion rule
+`candle.time + sourceDurationMs <= asOfTime`. Without it, the additive
+backward-compatible policy is explicitly marked `opening-time-provisional`;
+the library never labels that observation as final. Retrospective mode remains
+an unrestricted present-day historical projection.
 
 For a split, pre-effective OHLC prices are multiplied by `oldShares/newShares`.
 Equivalent-share volume uses the reciprocal factor; missing volume stays

@@ -83,6 +83,8 @@ export interface ComparisonCorporateActionAssetInput {
   readonly mode: CorporateActionAdjustmentMode;
   readonly context?: CorporateActionAdjustmentContext;
   readonly asOfTime?: number;
+  /** Optional fixed source duration for causal candle availability. */
+  readonly sourceDurationMs?: number;
   readonly volumePolicy?: CorporateActionVolumePolicy;
   readonly totalReturnBase?: number;
 }
@@ -147,6 +149,7 @@ export class ComparisonEngine {
       mode: input.mode,
       ...(input.context === undefined ? {} : { context: input.context }),
       ...(input.asOfTime === undefined ? {} : { asOfTime: input.asOfTime }),
+      ...(input.sourceDurationMs === undefined ? {} : { sourceDurationMs: input.sourceDurationMs }),
       ...(input.volumePolicy === undefined ? {} : { volumePolicy: input.volumePolicy }),
       ...(input.totalReturnBase === undefined ? {} : { totalReturnBase: input.totalReturnBase }),
     });

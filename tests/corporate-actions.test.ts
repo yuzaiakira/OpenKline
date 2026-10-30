@@ -75,6 +75,56 @@ test("causal-as-of excludes future effective actions and future knowledge revisi
   assert.deepEqual(known.provenance.eligibleActionIds, ["future"]);
 });
 
+test("causal-as-of isolates future OHLCV and applies an explicit completion frontier", () => {
+  const futureCandle: Candle = {
+    time: start + 240_000,
+    open: 9_000_000,
+    high: 9_000_100,
+    low: 8_999_900,
+    close: 9_000_050,
+    volume: 9_000_000,
+  };
+  const source = [...candles, futureCandle];
+  const mutatedFuture = [...candles, { ...futureCandle, open: 1, high: 2, low: 0.5, close: 1.5, volume: 1 }];
+  const knownDividend = { ...dividend("known-dividend", start + 60_000, 10, start + 300_000), knowledgeTime: start + 60_000 };
+  const futureDividend = { ...dividend("future-dividend", start + 240_000, 10), knowledgeTime: start + 240_000 };
+  const actions = dataset([knownDividend, futureDividend]);
+  for (const mode of ["raw", "split-adjusted", "total-return"] as const) {
+    const result = adjustCorporateActionData(source, actions, { mode, context: "causal-as-of", asOfTime: start + 150_000 });
+    const changed = adjustCorporateActionData(mutatedFuture, actions, { mode, context: "causal-as-of", asOfTime: start + 150_000 });
+    const times = result.candles?.map((candle) => candle.time) ?? result.totalReturn?.map((point) => point.time) ?? [];
+    assert.deepEqual(times, [start, start + 60_000, start + 120_000]);
+    assert.deepEqual(changed.candles ?? changed.totalReturn, result.candles ?? result.totalReturn);
+    assert.equal(result.provenance.sourceAvailability, "opening-time-provisional");
+    assert.equal(result.provenance.sourceDurationMs, null);
+    assert.deepEqual(result.provenance.excludedActionIds, []);
+    assert.deepEqual(result.appliedActions.map((action) => action.id), ["known-dividend"]);
+    assert.equal((result.appliedActions[0] as { paymentTime?: number }).paymentTime, undefined);
+  }
+  const completeOnly = adjustCorporateActionData(source, actions, {
+    mode: "raw",
+    context: "causal-as-of",
+    asOfTime: start + 150_000,
+    sourceDurationMs: 60_000,
+  });
+  assert.deepEqual(completeOnly.candles?.map((candle) => candle.time), [start, start + 60_000]);
+  assert.equal(completeOnly.provenance.sourceAvailability, "fixed-duration");
+  assert.equal(completeOnly.provenance.sourceDurationMs, 60_000);
+});
+
+test("causal action metadata is bounded by the knowledge frontier", () => {
+  const action = { ...dividend("declared-later", start + 60_000, 1, start + 300_000), knowledgeTime: start + 60_000, announcementTime: start + 60_000, declarationTime: start + 60_000 };
+  const result = adjustCorporateActionData(candles, dataset([action]), {
+    mode: "total-return",
+    context: "causal-as-of",
+    asOfTime: start + 120_000,
+    knowledgeTime: start + 120_000,
+  });
+  assert.equal(result.appliedActions.length, 1);
+  assert.equal((result.appliedActions[0] as { paymentTime?: number }).paymentTime, undefined);
+  assert.equal((result.appliedActions[0] as { announcementTime?: number }).announcementTime, start + 60_000);
+});
+
 test("store enforces stable ids, monotonic revisions, deterministic order, and bounded queries", async () => {
   const store = new CorporateActionStore({ instrumentId: "ACME", source, knowledgeCoverage: "known", actions: [dividend("b", start + 120_000, 1), dividend("a", start + 60_000, 1)] });
   assert.deepEqual(store.getAll().map((action) => action.id), ["a", "b"]);

@@ -1311,6 +1311,9 @@ evidence.
 - [Implemented / Node-verified — 13.5 correctness/performance hardening]
   Independent split/dividend/as-of fixtures, synchronous/Worker parity,
   indexed split boundaries, monotonic dividend processing, and the dedicated
-  corporate-action benchmark are complete. The final report remains the
+  corporate-action benchmark are complete. Phase 13.5 additionally isolates
+  causal source OHLCV by frontier, supports explicit fixed-duration candle
+  availability, bounds causal action metadata, and removes full-history raw
+  clones from realtime chart updates. The final report remains the
   authoritative acceptance matrix; protected historical API approval and
   unavailable browser/device/accessibility gates remain open.

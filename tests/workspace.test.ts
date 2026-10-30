@@ -51,6 +51,7 @@ test("workspace parser preserves corporate-action presentation references withou
       mode: "split-adjusted" as const,
       context: "causal-as-of" as const,
       asOfTime: 2,
+      sourceDurationMs: 1,
       volumePolicy: "equivalent-shares" as const,
       markersVisible: true,
     },

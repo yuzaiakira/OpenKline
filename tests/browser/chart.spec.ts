@@ -561,8 +561,8 @@ test("keeps raw candles separate from split-adjusted and total-return chart view
       getDisplayedData(): Candle[];
       setCorporateActions(dataset: object, options?: object): void;
       setCorporateActionDisplayMode(mode: string, options?: object): void;
-      getCorporateActionAdjustment(): { mode: string; candles: Candle[] | null; totalReturn: Array<{ time: number; value: number }> | null; appliedActions: unknown[] } | null;
-      serializeWorkspace(): { corporateActions?: { sourceId: string; mode: string; context: string } };
+      getCorporateActionAdjustment(): { mode: string; candles: Candle[] | null; totalReturn: Array<{ time: number; value: number }> | null; appliedActions: unknown[]; provenance: { sourceAvailability: string } } | null;
+      serializeWorkspace(): { corporateActions?: { sourceId: string; mode: string; context: string; sourceDurationMs?: number } };
       clearCorporateActions(): void;
       destroy(): void;
     };
@@ -588,7 +588,10 @@ test("keeps raw candles separate from split-adjusted and total-return chart view
     const split = chart.getCorporateActionAdjustment();
     const displayed = chart.getDisplayedData();
     const workspace = chart.serializeWorkspace();
-    chart.setCorporateActionDisplayMode("total-return");
+    chart.setCorporateActionDisplayMode("split-adjusted", { context: "causal-as-of", asOfTime: rawBefore[50]!.time, sourceDurationMs: 60 * 60 * 1000 });
+    const causal = chart.getCorporateActionAdjustment();
+    const causalWorkspace = chart.serializeWorkspace();
+    chart.setCorporateActionDisplayMode("total-return", { context: "retrospective" });
     const totalReturn = chart.getCorporateActionAdjustment();
     const totalReturnDisplayed = chart.getDisplayedData();
     chart.clearCorporateActions();
@@ -601,6 +604,9 @@ test("keeps raw candles separate from split-adjusted and total-return chart view
       splitMode: split?.mode,
       splitCandleMode: split?.candles !== null,
       applied: split?.appliedActions.length,
+      causalSourceAvailability: causal?.provenance.sourceAvailability,
+      causalLastTime: causal?.candles?.at(-1)?.time,
+      causalWorkspace,
       totalReturnMode: totalReturn?.mode,
       totalReturnHasIndex: (totalReturn?.totalReturn?.length ?? 0) > 0,
       totalReturnHasCandles: totalReturn?.candles !== null,
@@ -614,9 +620,12 @@ test("keeps raw candles separate from split-adjusted and total-return chart view
   expect(result.splitMode).toBe("split-adjusted");
   expect(result.splitCandleMode).toBe(true);
   expect(result.applied).toBe(1);
+  expect(result.causalSourceAvailability).toBe("fixed-duration");
+  expect(result.causalLastTime).toBeLessThanOrEqual(Date.UTC(2026, 0, 1) + 51 * 60 * 60 * 1000);
   expect(result.totalReturnMode).toBe("total-return");
   expect(result.totalReturnHasIndex).toBe(true);
   expect(result.totalReturnHasCandles).toBe(false);
   expect(result.totalReturnDisplayedClose).toBe(result.rawClose);
   expect(result.workspace).toMatchObject({ corporateActions: { sourceId: "browser-fixture", mode: "split-adjusted", context: "retrospective" } });
+  expect(result.causalWorkspace).toMatchObject({ corporateActions: { mode: "split-adjusted", context: "causal-as-of", sourceDurationMs: 60 * 60 * 1000 } });
 });

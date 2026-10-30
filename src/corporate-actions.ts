@@ -8,6 +8,8 @@ export type CorporateActionAdjustmentMode = "raw" | "split-adjusted" | "total-re
 export type CorporateActionAdjustmentContext = "retrospective" | "causal-as-of";
 export type CorporateActionVolumePolicy = "equivalent-shares" | "preserve";
 export type CorporateActionKnowledgeCoverage = "known" | "unknown";
+/** How a causal result decides that source OHLCV was available. */
+export type CorporateActionSourceAvailability = "opening-time-provisional" | "fixed-duration";
 
 export interface CorporateActionSource {
   readonly id: string;
@@ -80,6 +82,13 @@ export interface CorporateActionAdjustmentOptions {
   readonly asOfTime?: number;
   /** Optional knowledge frontier; defaults to asOfTime in causal mode. */
   readonly knowledgeTime?: number;
+  /**
+   * Fixed source candle duration in milliseconds. In causal mode a candle is
+   * available only when `candle.time + sourceDurationMs <= asOfTime`.
+   * Omitting it preserves the legacy opening-time boundary and is reported as
+   * provisional because an opening timestamp does not prove OHLCV finality.
+   */
+  readonly sourceDurationMs?: number;
   readonly volumePolicy?: CorporateActionVolumePolicy;
   /** Total-return index starts at this value; defaults to 100. */
   readonly totalReturnBase?: number;
@@ -90,6 +99,8 @@ export interface CorporateActionDisplayOptions {
   readonly mode?: CorporateActionAdjustmentMode;
   readonly context?: CorporateActionAdjustmentContext;
   readonly asOfTime?: number;
+  /** See CorporateActionAdjustmentOptions.sourceDurationMs. */
+  readonly sourceDurationMs?: number;
   readonly volumePolicy?: CorporateActionVolumePolicy;
   readonly markersVisible?: boolean;
 }
@@ -100,6 +111,8 @@ export interface CorporateActionAdjustmentProvenance {
   readonly knowledgeCoverage: CorporateActionKnowledgeCoverage;
   readonly eligibleActionIds: readonly string[];
   readonly excludedActionIds: readonly string[];
+  readonly sourceAvailability: CorporateActionSourceAvailability;
+  readonly sourceDurationMs: number | null;
   readonly volumePolicy: CorporateActionVolumePolicy;
   readonly totalReturnConvention: "cash-dividend-reinvested-at-ex-date" | null;
   readonly rawDataUnchanged: true;
@@ -397,12 +410,18 @@ export function adjustCorporateActionData(
   options: CorporateActionAdjustmentOptions,
 ): CorporateActionAdjustmentResult {
   validateCorporateActionDataset(dataset);
-  const raw = cloneAndValidateCandles(candles);
   if (dataset.instrumentId.trim().length === 0) throw new CorporateActionValidationError("Corporate-action dataset instrument id is empty");
   const context = options.context ?? "retrospective";
   const asOfTime = context === "causal-as-of" ? normalizeTime(options.asOfTime, "causal corporate-action as-of time") : options.asOfTime === undefined ? null : normalizeTime(options.asOfTime, "corporate-action as-of time");
   if (context === "causal-as-of" && asOfTime === null) throw new CorporateActionValidationError("Causal corporate-action adjustment requires asOfTime");
   const knowledgeTime = context === "causal-as-of" ? normalizeTime(options.knowledgeTime ?? asOfTime ?? undefined, "corporate-action knowledge frontier") : Number.POSITIVE_INFINITY;
+  const sourceDurationMs = options.sourceDurationMs === undefined ? null : normalizeSourceDuration(options.sourceDurationMs);
+  const sourceAvailability: CorporateActionSourceAvailability = sourceDurationMs === null ? "opening-time-provisional" : "fixed-duration";
+  const sourceCutoff = context === "causal-as-of" ? (asOfTime as number) - (sourceDurationMs ?? 0) : undefined;
+  // Validate the complete ordered input, but retain only observations that
+  // were available at the requested causal frontier. Future OHLCV therefore
+  // cannot reach candles, totalReturn, or any displayed analytical domain.
+  const raw = cloneAndValidateCandles(candles, sourceCutoff);
   if (options.mode !== "raw" && options.mode !== "split-adjusted" && options.mode !== "total-return") throw new CorporateActionValidationError(`Unsupported corporate-action adjustment mode: ${String(options.mode)}`);
   const volumePolicy = options.volumePolicy ?? "equivalent-shares";
   if (volumePolicy !== "equivalent-shares" && volumePolicy !== "preserve") throw new CorporateActionValidationError("Unsupported corporate-action volume policy");
@@ -411,15 +430,15 @@ export function adjustCorporateActionData(
   const base = options.totalReturnBase ?? 100;
   if (!Number.isFinite(base) || base <= 0) throw new CorporateActionValidationError("Total-return base must be positive and finite");
   if (options.mode === "raw") {
-    return buildAdjustmentResult("raw", context, asOfTime, raw, null, eligible, excluded, dataset, volumePolicy);
+    return buildAdjustmentResult("raw", context, asOfTime, raw, null, eligible, excluded, dataset, volumePolicy, sourceAvailability, sourceDurationMs, knowledgeTime);
   }
   const splitIndex = createSplitAdjustmentIndex(eligible);
   const splitAdjusted = raw.map((candle) => adjustCandle(candle, splitIndex.factorAt(candle.time), volumePolicy));
   if (options.mode === "split-adjusted") {
-    return buildAdjustmentResult("split-adjusted", context, asOfTime, splitAdjusted, null, eligible, excluded, dataset, volumePolicy);
+    return buildAdjustmentResult("split-adjusted", context, asOfTime, splitAdjusted, null, eligible, excluded, dataset, volumePolicy, sourceAvailability, sourceDurationMs, knowledgeTime);
   }
   const totalReturn = calculateTotalReturnIndex(raw, eligible, base, volumePolicy);
-  return buildAdjustmentResult("total-return", context, asOfTime, null, totalReturn, eligible, excluded, dataset, volumePolicy);
+  return buildAdjustmentResult("total-return", context, asOfTime, null, totalReturn, eligible, excluded, dataset, volumePolicy, sourceAvailability, sourceDurationMs, knowledgeTime);
 }
 
 export function calculateTotalReturnIndex(
@@ -474,6 +493,9 @@ function buildAdjustmentResult(
   excludedActions: readonly CorporateAction[],
   dataset: CorporateActionDataset,
   volumePolicy: CorporateActionVolumePolicy,
+  sourceAvailability: CorporateActionSourceAvailability,
+  sourceDurationMs: number | null,
+  knowledgeTime: number,
 ): CorporateActionAdjustmentResult {
   return {
     mode,
@@ -481,13 +503,17 @@ function buildAdjustmentResult(
     asOfTime,
     candles: candles === null ? null : candles.map((candle) => ({ ...candle })),
     totalReturn: totalReturn === null ? null : totalReturn.map((point) => ({ ...point })),
-    appliedActions: appliedActions.map(cloneAction),
+    // A causal result is a historical view, not an audit dump. Future
+    // excluded IDs and future payment metadata are intentionally withheld.
+    appliedActions: appliedActions.map((action) => cloneActionForResult(action, context, knowledgeTime)),
     provenance: {
       source: { ...dataset.source },
       context,
       knowledgeCoverage: dataset.knowledgeCoverage,
       eligibleActionIds: appliedActions.map((action) => action.id),
-      excludedActionIds: excludedActions.map((action) => action.id),
+      excludedActionIds: context === "causal-as-of" ? [] : excludedActions.map((action) => action.id),
+      sourceAvailability,
+      sourceDurationMs,
       volumePolicy,
       totalReturnConvention: mode === "total-return" ? "cash-dividend-reinvested-at-ex-date" : null,
       rawDataUnchanged: true,
@@ -538,6 +564,8 @@ function isEligibleForAdjustment(action: CorporateAction, context: CorporateActi
   if (context === "retrospective") return true;
   if (action.effectiveTime > asOfTime) return false;
   if (action.knowledgeTime !== undefined && action.knowledgeTime > knowledgeTime) return false;
+  if (action.announcementTime !== undefined && action.announcementTime > knowledgeTime) return false;
+  if (isDividendAction(action) && action.declarationTime !== undefined && action.declarationTime > knowledgeTime) return false;
   return true;
 }
 
@@ -623,16 +651,29 @@ function parseRestCorporateActionPage(value: unknown, instrumentId: string): Res
   };
 }
 
-function cloneAndValidateCandles(candles: readonly Candle[]): Candle[] {
+function cloneAndValidateCandles(candles: readonly Candle[], maxTime?: number): Candle[] {
   if (!Array.isArray(candles)) throw new CorporateActionValidationError("Candles must be an array");
   let previous: number | undefined;
-  return candles.map((candle, index) => {
+  const result: Candle[] = [];
+  candles.forEach((candle, index) => {
     if (!isRecord(candle) || !Number.isSafeInteger(candle.time) || candle.time < 0 || !Number.isFinite(candle.open) || !Number.isFinite(candle.high) || !Number.isFinite(candle.low) || !Number.isFinite(candle.close) || (candle.volume !== undefined && (!Number.isFinite(candle.volume) || candle.volume < 0))) throw new CorporateActionValidationError(`Invalid candle at index ${index}`);
     if (previous !== undefined && candle.time <= previous) throw new CorporateActionValidationError("Candles must be strictly ascending for corporate-action adjustment");
     if (candle.high < Math.max(candle.open, candle.close) || candle.low > Math.min(candle.open, candle.close)) throw new CorporateActionValidationError(`Candle OHLC relationship is invalid at index ${index}`);
     previous = candle.time;
-    return { time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, ...(candle.volume === undefined ? {} : { volume: candle.volume }) };
+    if (maxTime === undefined || candle.time <= maxTime) result.push({ time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, ...(candle.volume === undefined ? {} : { volume: candle.volume }) });
   });
+  return result;
+}
+
+function cloneActionForResult(action: CorporateAction, context: CorporateActionAdjustmentContext, knowledgeTime: number): CorporateAction {
+  const cloned = cloneAction(action) as CorporateAction & { paymentTime?: number; announcementTime?: number; declarationTime?: number };
+  if (context !== "causal-as-of") return cloned;
+  if (cloned.announcementTime !== undefined && cloned.announcementTime > knowledgeTime) delete cloned.announcementTime;
+  if (cloned.kind === "cash-dividend") {
+    if (cloned.declarationTime !== undefined && cloned.declarationTime > knowledgeTime) delete cloned.declarationTime;
+    if (cloned.paymentTime !== undefined && cloned.paymentTime > knowledgeTime) delete cloned.paymentTime;
+  }
+  return cloned;
 }
 
 function compareActions(left: CorporateAction, right: CorporateAction): number {
@@ -701,6 +742,11 @@ function positiveFinite(value: number, label: string): number {
 
 function nonNegativeFinite(value: number, label: string): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new CorporateActionValidationError(`${label} must be finite and non-negative`);
+  return value;
+}
+
+function normalizeSourceDuration(value: number): number {
+  if (!Number.isSafeInteger(value) || value <= 0) throw new CorporateActionValidationError("sourceDurationMs must be a positive safe integer");
   return value;
 }
 

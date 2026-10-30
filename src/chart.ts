@@ -256,6 +256,7 @@ export class Chart {
   private corporateActionMode: NonNullable<CorporateActionDisplayOptions["mode"]> = "raw";
   private corporateActionContext: NonNullable<CorporateActionDisplayOptions["context"]> = "retrospective";
   private corporateActionAsOfTime: number | undefined;
+  private corporateActionSourceDurationMs: number | undefined;
   private corporateActionVolumePolicy: CorporateActionVolumePolicy = "equivalent-shares";
   private corporateActionMarkersVisible = true;
   private corporateActionWorkspaceReference: WorkspaceCorporateActions | null = null;
@@ -845,6 +846,7 @@ export class Chart {
     this.corporateActionMode = "raw";
     this.corporateActionContext = "retrospective";
     this.corporateActionAsOfTime = undefined;
+    this.corporateActionSourceDurationMs = undefined;
     this.corporateActionVolumePolicy = "equivalent-shares";
     this.corporateActionMarkersVisible = true;
     this.drawingEngine.restore({ version: 1, drawings: [] });
@@ -898,6 +900,7 @@ export class Chart {
       this.corporateActionMode = parsed.corporateActions.mode;
       this.corporateActionContext = parsed.corporateActions.context;
       this.corporateActionAsOfTime = parsed.corporateActions.asOfTime ?? undefined;
+      this.corporateActionSourceDurationMs = parsed.corporateActions.sourceDurationMs;
       this.corporateActionVolumePolicy = parsed.corporateActions.volumePolicy;
       this.corporateActionMarkersVisible = parsed.corporateActions.markersVisible;
       this.applyCorporateActionDisplay();
@@ -1911,6 +1914,7 @@ export class Chart {
     this.corporateActionMode = options.mode ?? this.corporateActionMode;
     this.corporateActionContext = options.context ?? this.corporateActionContext;
     this.corporateActionAsOfTime = options.asOfTime;
+    this.corporateActionSourceDurationMs = options.sourceDurationMs;
     this.corporateActionVolumePolicy = options.volumePolicy ?? this.corporateActionVolumePolicy;
     this.corporateActionMarkersVisible = options.markersVisible ?? this.corporateActionMarkersVisible;
     this.corporateActionWorkspaceReference = this.createCorporateActionWorkspaceReference(normalized);
@@ -1923,12 +1927,13 @@ export class Chart {
     return normalizeCorporateActionDataset(this.corporateActionDataset);
   }
 
-  public getCorporateActionDisplayOptions(): Required<Pick<CorporateActionDisplayOptions, "mode" | "context" | "volumePolicy" | "markersVisible">> & Pick<CorporateActionDisplayOptions, "asOfTime"> {
+  public getCorporateActionDisplayOptions(): Required<Pick<CorporateActionDisplayOptions, "mode" | "context" | "volumePolicy" | "markersVisible">> & Pick<CorporateActionDisplayOptions, "asOfTime" | "sourceDurationMs"> {
     this.assertAlive();
     return {
       mode: this.corporateActionMode,
       context: this.corporateActionContext,
       ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
       volumePolicy: this.corporateActionVolumePolicy,
       markersVisible: this.corporateActionMarkersVisible,
     };
@@ -1942,6 +1947,7 @@ export class Chart {
     this.corporateActionMode = mode;
     this.corporateActionContext = options.context ?? this.corporateActionContext;
     this.corporateActionAsOfTime = options.asOfTime;
+    this.corporateActionSourceDurationMs = options.sourceDurationMs;
     this.corporateActionVolumePolicy = options.volumePolicy ?? this.corporateActionVolumePolicy;
     this.corporateActionMarkersVisible = options.markersVisible ?? this.corporateActionMarkersVisible;
     this.updateCorporateActionWorkspaceReference();
@@ -1968,6 +1974,7 @@ export class Chart {
     this.corporateActionMode = "raw";
     this.corporateActionContext = "retrospective";
     this.corporateActionAsOfTime = undefined;
+    this.corporateActionSourceDurationMs = undefined;
     this.corporateActionVolumePolicy = "equivalent-shares";
     this.replaceRawCandles(this.rawCandles);
   }
@@ -2940,6 +2947,7 @@ export class Chart {
       mode: this.corporateActionMode,
       context: this.corporateActionContext,
       ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
       volumePolicy: this.corporateActionVolumePolicy,
     });
   }
@@ -2952,6 +2960,7 @@ export class Chart {
       mode: this.corporateActionMode,
       context: this.corporateActionContext,
       asOfTime: this.corporateActionAsOfTime ?? null,
+      ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
       volumePolicy: this.corporateActionVolumePolicy,
       markersVisible: this.corporateActionMarkersVisible,
     };
@@ -2959,7 +2968,15 @@ export class Chart {
 
   private updateCorporateActionWorkspaceReference(): void {
     if (this.corporateActionDataset !== null) this.corporateActionWorkspaceReference = this.createCorporateActionWorkspaceReference(this.corporateActionDataset);
-    else if (this.corporateActionWorkspaceReference !== null) this.corporateActionWorkspaceReference = { ...this.corporateActionWorkspaceReference, mode: this.corporateActionMode, context: this.corporateActionContext, asOfTime: this.corporateActionAsOfTime ?? null, volumePolicy: this.corporateActionVolumePolicy, markersVisible: this.corporateActionMarkersVisible };
+    else if (this.corporateActionWorkspaceReference !== null) this.corporateActionWorkspaceReference = {
+      ...this.corporateActionWorkspaceReference,
+      mode: this.corporateActionMode,
+      context: this.corporateActionContext,
+      asOfTime: this.corporateActionAsOfTime ?? null,
+      ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
+      volumePolicy: this.corporateActionVolumePolicy,
+      markersVisible: this.corporateActionMarkersVisible,
+    };
   }
 
   private getCorporateActionWorkspaceReference(): WorkspaceCorporateActions | null {
@@ -3641,6 +3658,7 @@ export class Chart {
         mode: "split-adjusted",
         context: "causal-as-of",
         asOfTime: cursor.timestamp,
+        ...(this.corporateActionSourceDurationMs === undefined ? {} : { sourceDurationMs: this.corporateActionSourceDurationMs }),
         volumePolicy: this.corporateActionVolumePolicy,
       });
       if (replayAdjustment.candles !== null) this.model.setReplaySource(replayAdjustment.candles);
