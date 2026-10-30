@@ -26,3 +26,9 @@ quota failures, unavailable storage, corrupted JSON, and concurrent-tab races
 as recoverable UI errors. Manual save is the initial source of truth; debounced
 autosave is a later host feature and must use a monotonic revision to prevent
 older asynchronous writes from winning.
+
+The Phase 12 portfolio tester is nested as optional configuration in the
+Studio envelope. Its bounded document is validated before application; market
+data is reacquired by the consumer and results remain runtime/export state.
+This keeps shared-capital simulations from silently becoming part of chart
+workspace accounting or from persisting sensitive provider material.

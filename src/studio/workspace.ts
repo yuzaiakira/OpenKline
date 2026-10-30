@@ -1,6 +1,7 @@
 import { parseWorkspace, type WorkspaceDocument } from "../workspace.js";
 import type { ComparisonNormalizationMode } from "../comparison.js";
 import type { WatchlistDocument } from "./watchlist.js";
+import { parsePortfolioBacktestWorkspace, type PortfolioBacktestWorkspaceDocument } from "../portfolio-backtesting/workspace.js";
 
 export const OPENKLINE_STUDIO_WORKSPACE_VERSION = 1 as const;
 
@@ -40,6 +41,8 @@ export interface StudioWorkspaceDocument {
   readonly watchlists: WatchlistDocument;
   /** Optional Phase 8.13 comparison state; omitted by older documents. */
   readonly comparison?: StudioComparisonDocument;
+  /** Optional Phase 12 portfolio tester configuration; data and runtime state are never persisted. */
+  readonly portfolioBacktest?: PortfolioBacktestWorkspaceDocument;
 }
 
 export interface LegacyWorkspaceMigrationOptions {
@@ -92,6 +95,11 @@ export function parseStudioWorkspace(value: unknown): StudioWorkspaceDocument {
   const synchronization = parseSynchronization(value.synchronization);
   const watchlists = parseWatchlists(value.watchlists);
   const comparison = value.comparison === undefined ? undefined : parseComparison(value.comparison);
+  let portfolioBacktest: PortfolioBacktestWorkspaceDocument | undefined;
+  if (value.portfolioBacktest !== undefined) {
+    try { portfolioBacktest = parsePortfolioBacktestWorkspace(value.portfolioBacktest); }
+    catch (error) { throw new StudioWorkspaceValidationError(`Invalid portfolio backtest configuration: ${error instanceof Error ? error.message : String(error)}`); }
+  }
   return {
     version: 1,
     id,
@@ -101,6 +109,7 @@ export function parseStudioWorkspace(value: unknown): StudioWorkspaceDocument {
     synchronization,
     watchlists,
     ...(comparison === undefined ? {} : { comparison }),
+    ...(portfolioBacktest === undefined ? {} : { portfolioBacktest }),
   };
 }
 

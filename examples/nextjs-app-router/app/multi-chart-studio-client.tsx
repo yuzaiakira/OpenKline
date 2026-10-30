@@ -33,6 +33,7 @@ import {
   type StudioLayout,
   type StudioComparisonDocument,
   type StudioWorkspaceDocument,
+  type PortfolioBacktestWorkspaceDocument,
   type WorkspaceMetadata,
   type WatchlistDocument,
   type WatchlistQuote,
@@ -58,6 +59,7 @@ import { StrategyTester } from "./strategy-tester";
 import { StrategyOptimizer } from "./strategy-optimizer";
 import { PaperTradingPanel } from "./paper-trading-panel";
 import { ScreenerPanel } from "./screener-panel";
+import { PortfolioBacktestingPanel } from "./portfolio-backtesting-panel";
 
 type Timeframe = "5m" | "1h" | "4h" | "1D";
 type Presentation = "candles" | "ohlc" | "hollow" | "heikin-ashi" | "line" | "area" | "baseline";
@@ -756,6 +758,7 @@ export default function MultiChartStudioClient() {
     assetIds: ["BTC-USD", "ETH-USD"],
     dataSource: "demo",
   }));
+  const [portfolioConfiguration, setPortfolioConfiguration] = useState<PortfolioBacktestWorkspaceDocument | null>(null);
   const [comparisonLines, setComparisonLines] = useState<ComparisonAssetOutput[]>([]);
   const comparisonDatafeedRef = useRef<ComparisonDatafeedController | null>(null);
   const comparisonFeedsRef = useRef(new Map<string, Datafeed>());
@@ -1002,10 +1005,10 @@ export default function MultiChartStudioClient() {
 
   const applyDocument = (document: StudioWorkspaceDocument): void => {
     const firstChart = document.charts[0]?.workspace;
-    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
+    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceIds((current) => current.includes(document.id) ? current : [...current, document.id]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setPortfolioConfiguration(document.portfolioBacktest ?? null); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
   };
 
-  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings }), [comparisonSettings, layout, panels, sync, watchlistModel, workspaceId, workspaceName]);
+  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings, ...(portfolioConfiguration === null ? {} : { portfolioBacktest: portfolioConfiguration }) }), [comparisonSettings, layout, panels, portfolioConfiguration, sync, watchlistModel, workspaceId, workspaceName]);
 
   const persist = useCallback((document: StudioWorkspaceDocument, all: readonly StudioWorkspaceDocument[]): void => {
     try { window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: document.id, workspaces: all })); const activeChart = document.charts[0]?.workspace; if (activeChart !== undefined) window.localStorage.setItem(LEGACY_WORKSPACE_KEY, JSON.stringify(activeChart)); setNotice(`Workspace “${document.name}” saved locally.`); }
@@ -1419,7 +1422,7 @@ export default function MultiChartStudioClient() {
 
   const importInputRef = useRef<HTMLInputElement>(null);
   const importWorkspace = (file: File): void => { void file.text().then((text) => { try { const document = parseStudioWorkspace(JSON.parse(text)); applyDocument(document); setNotice(`Imported workspace “${document.name}" after validation.`); } catch { setNotice("Import rejected; the current workspace was not changed."); } }); };
-  const newWorkspace = (): void => { const panelId = `chart-${serialRef.current++}`; archivedPanelsRef.current.clear(); pendingRestoreRef.current = null; setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]); setActivePanelId(panelId); setLayout("single"); setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`); setWorkspaceName("New workspace"); setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`)); setNotice("New empty Studio workspace started."); };
+  const newWorkspace = (): void => { const panelId = `chart-${serialRef.current++}`; archivedPanelsRef.current.clear(); pendingRestoreRef.current = null; setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]); setActivePanelId(panelId); setLayout("single"); setPortfolioConfiguration(null); setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`); setWorkspaceName("New workspace"); setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`)); setNotice("New empty Studio workspace started."); };
   const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
   const deleteWorkspaceNow = (): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const remaining = stored.workspaces.filter((item) => item.id !== workspaceId); if (remaining.length === 0) { newWorkspace(); window.localStorage.removeItem(WORKSPACES_KEY); } else { const next = remaining[0]!; window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: next.id, workspaces: remaining })); applyDocument(next); } } catch { setNotice("Could not delete the workspace collection safely."); } };
   const deleteWorkspace = (): void => { showConfirm(`Delete workspace “${workspaceName}"?`, "The saved workspace will be removed from this browser.", deleteWorkspaceNow); };
@@ -1490,6 +1493,7 @@ export default function MultiChartStudioClient() {
     <StrategyOptimizer key={`optimizer-${strategyScopeKey}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onApplyParameters={applyStrategyParameters} onNotice={setNotice} />
     <StrategyTester key={strategyScopeKey} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} initialResult={strategyResultsRef.current.get(strategyScopeKey) ?? null} appliedParameters={appliedStrategyParametersRef.current.get(strategyScopeKey) ?? null} onResult={(nextResult) => { if (nextResult === null) strategyResultsRef.current.delete(strategyScopeKey); else strategyResultsRef.current.set(strategyScopeKey, nextResult); }} onNotice={setNotice} />
     <PaperTradingPanel key={`paper-${activePanel.panelId}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onNotice={setNotice} />
+    <PortfolioBacktestingPanel initialConfiguration={portfolioConfiguration} onConfigurationChange={setPortfolioConfiguration} onNotice={setNotice} />
     {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation" data-studio-dialog-open="true" data-studio-dialog-kind={dialog.kind}><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby="studio-dialog-message" data-studio-dialog-title={dialog.title}><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}<div className={styles.dialogActions}><button type="button" onClick={() => setDialog(null)}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
   </main>;
 }

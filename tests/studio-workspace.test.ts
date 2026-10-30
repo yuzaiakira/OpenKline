@@ -8,6 +8,7 @@ import {
   parseStudioWorkspace,
   parseWatchlistDocument,
   StudioSynchronizationController,
+  createPortfolioBacktestWorkspace,
 } from "../src/index.js";
 import type { WorkspaceDocument } from "../src/workspace.js";
 
@@ -75,6 +76,22 @@ test("Studio comparison state is optional, validated, and round-trips without ch
   });
   assert.equal(providerComparison.comparison?.dataSource, "binance");
   assert.throws(() => parseStudioWorkspace({ ...legacy, comparison: { active: true, mode: "indexed", baselineTime: null, baselineMaxAgeMs: 0, assetIds: ["BTC-USD", "BTC-USD"] } }), /duplicate/);
+});
+
+test("Studio portfolio configuration is bounded, validated, and excludes market data", () => {
+  const portfolio = createPortfolioBacktestWorkspace({
+    accountCurrency: "USD",
+    initialCapital: 10_000,
+    instruments: [{ id: "BTC", symbol: "BTC-USD", quoteCurrency: "USD", timeframe: "1h", strategy: "EMA_TREND", parameters: { period: 5 }, calendar: { id: "UTC-24x7", version: "1" } }],
+    positionSizing: { type: "fixed-notional", amount: 1_000 },
+    commission: { type: "percent", value: 0.001 },
+    slippage: { type: "percent", value: 0 },
+  });
+  const legacy = createStudioWorkspace({ panelId: "chart-1", symbol: "BTC-USD", timeframe: "1h", workspace: legacyWorkspace() });
+  const restored = parseStudioWorkspace({ ...legacy, portfolioBacktest: portfolio });
+  assert.equal(restored.portfolioBacktest?.initialCapital, 10_000);
+  assert.equal("candles" in (restored.portfolioBacktest?.instruments[0] ?? {}), false);
+  assert.throws(() => parseStudioWorkspace({ ...legacy, portfolioBacktest: { ...portfolio, instruments: [{ ...portfolio.instruments[0]!, id: "" }] } }), /portfolio backtest configuration/);
 });
 
 test("WatchlistModel supports stable CRUD, ordering, favorites, and round trips", () => {

@@ -44,3 +44,16 @@ parity includes signals, deterministic IDs and timestamps, orders, fills,
 accounting, equity/drawdown, trades, metrics, input fingerprint, and exports.
 No partial result is published after cancellation, supersession, failure, or
 component disposal.
+
+## Portfolio Worker
+
+`createPortfolioBacktestWorker()` is the additive multi-instrument equivalent.
+Its `PortfolioBacktestWorkerRunOptions` accepts only structured-clone-safe
+instrument candles, built-in strategy assignments, shared capital, costs,
+sizing, valuation, and risk settings. It does not accept a custom registry,
+callbacks, signal, credentials, or arbitrary source. The result is the same
+domain result produced by `createPortfolioBacktest()` and includes the shared
+cash ledger, per-instrument contributions, risk rejections, and deterministic
+fingerprint. Request IDs and generations prevent stale completion from being
+applied after cancellation, supersession, timeout, crash, or disposal. See
+`docs/api/portfolio-backtesting.md` for execution and currency constraints.

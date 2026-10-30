@@ -49,7 +49,7 @@ export class PortfolioBacktestWorkerSession implements PortfolioBacktestWorkerAp
   }
   public cancel(): void { this.assertAlive(); if (this.active === null) return; const active = this.active; this.active = null; this.clearPending(); this.terminateWorker(); const error = new PortfolioBacktestWorkerError("CANCELLED", "Portfolio backtest Worker execution was cancelled"); this.update({ state: "cancelled", error: error.message }); active.reject(error); }
   public dispose(): void { if (this.disposed) return; const active = this.active; this.active = null; this.clearPending(); this.terminateWorker(); this.disposed = true; this.update({ state: "disposed", error: null }); active?.reject(new PortfolioBacktestWorkerError("WORKER_DISPOSED", "Portfolio backtest Worker runtime was disposed")); this.listeners.clear(); }
-  private ensureWorker(): PortfolioBacktestWorkerLike { if (this.worker !== null) return this.worker; this.worker = this.factory(); this.worker.onmessage = (event) => this.handle(event.data); this.worker.onerror = () => this.fail(new PortfolioBacktestWorkerError("WORKER_CRASHED", "Portfolio backtest Worker crashed")); this.worker.onmessageerror = () => this.fail(new PortfolioBacktestWorkerError("PROTOCOL", "Portfolio backtest Worker rejected a message")); return this.worker; }
+  private ensureWorker(): PortfolioBacktestWorkerLike { if (this.worker !== null) return this.worker; this.worker = this.factory(); this.worker.onmessage = (event) => this.handle(event.data); this.worker.onerror = (event) => this.fail(new PortfolioBacktestWorkerError("WORKER_CRASHED", workerEventMessage(event, "Portfolio backtest Worker crashed"))); this.worker.onmessageerror = (event) => this.fail(new PortfolioBacktestWorkerError("PROTOCOL", workerEventMessage(event, "Portfolio backtest Worker rejected a message"))); return this.worker; }
   private handle(value: unknown): void {
     const active = this.active;
     if (active === null || !isPortfolioBacktestWorkerResponse(value) || value.requestId !== active.requestId || value.generation !== active.generation) return;
@@ -70,3 +70,10 @@ export class PortfolioBacktestWorkerSession implements PortfolioBacktestWorkerAp
 
 export function defaultPortfolioBacktestWorkerFactory(): PortfolioBacktestWorkerLike { const WorkerConstructor = globalThis.Worker; if (WorkerConstructor === undefined) throw new Error("No Worker implementation is available"); return new WorkerConstructor(new URL("./worker.js", import.meta.url), { type: "module" }) as unknown as PortfolioBacktestWorkerLike; }
 function cloneOptions(options: PortfolioBacktestWorkerRunOptions): PortfolioBacktestWorkerRunOptions { return JSON.parse(JSON.stringify(options)) as PortfolioBacktestWorkerRunOptions; }
+function workerEventMessage(value: unknown, fallback: string): string {
+  if (typeof value === "object" && value !== null) {
+    const message = (value as { readonly message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) return `${fallback}: ${message}`;
+  }
+  return fallback;
+}

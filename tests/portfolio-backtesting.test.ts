@@ -39,11 +39,11 @@ function registry(): StrategyRegistry {
   return value;
 }
 
-function options(instruments: readonly { id: string; candles: readonly Candle[]; strategy?: string }[]) {
+function options(instruments: readonly { id: string; candles: readonly Candle[]; strategy?: string; timeframe?: string }[]) {
   return {
     accountCurrency: "USD",
     initialCapital: 100,
-    instruments: instruments.map((instrument) => ({ id: instrument.id, symbol: instrument.id, quoteCurrency: "USD", timeframe: "1m", candles: instrument.candles, strategy: { strategy: instrument.strategy ?? "PORTFOLIO_FIXTURE", parameters: {} } })),
+    instruments: instruments.map((instrument) => ({ id: instrument.id, symbol: instrument.id, quoteCurrency: "USD", timeframe: instrument.timeframe ?? "1m", candles: instrument.candles, strategy: { strategy: instrument.strategy ?? "PORTFOLIO_FIXTURE", parameters: {} } })),
     positionSizing: { type: "fixed-quantity" as const, quantity: 10 },
     commission: { type: "percent" as const, value: 0 },
     slippage: { type: "percent" as const, value: 0 },
@@ -80,6 +80,36 @@ test("portfolio signals become available only after completion and fill the next
   assert.equal(result.equityCurve[0]?.time, start);
   assert.equal(result.equityCurve[1]?.equity, 200, "the pre-fill snapshot cannot use the future execution price");
   assert.equal(result.equityCurve.some((point) => point.time === start + 30_000 && point.marks.some((mark) => mark.price === 12)), false);
+});
+
+test("portfolio timeline remains deterministic across heterogeneous intervals and input order", () => {
+  const start = 1_800_000_000_000;
+  const fast = fixtureCandles(10, [10, 11, 12], start);
+  const slow = [
+    { time: start, open: 20, high: 21, low: 19, close: 20 },
+    { time: start + 300_000, open: 21, high: 22, low: 20, close: 21 },
+    { time: start + 600_000, open: 22, high: 23, low: 21, close: 22 },
+  ];
+  const first = createPortfolioBacktest({
+    ...options([
+      { id: "FAST", candles: fast, strategy: "PORTFOLIO_ENTER_ONLY", timeframe: "1m" },
+      { id: "SLOW", candles: slow, strategy: "PORTFOLIO_ENTER_ONLY", timeframe: "5m" },
+    ]),
+    initialCapital: 1_000,
+    positionSizing: { type: "fixed-quantity", quantity: 1 },
+  }).run();
+  const reversed = createPortfolioBacktest({
+    ...options([
+      { id: "SLOW", candles: slow, strategy: "PORTFOLIO_ENTER_ONLY", timeframe: "5m" },
+      { id: "FAST", candles: fast, strategy: "PORTFOLIO_ENTER_ONLY", timeframe: "1m" },
+    ]),
+    initialCapital: 1_000,
+    positionSizing: { type: "fixed-quantity", quantity: 1 },
+  }).run();
+  assert.equal(first.orders.find((order) => order.instrumentId === "FAST")?.fillTime, start + 60_000);
+  assert.equal(first.orders.find((order) => order.instrumentId === "SLOW")?.fillTime, start + 300_000);
+  assert.equal(serializePortfolioBacktestResult(first), serializePortfolioBacktestResult(reversed));
+  assert.deepEqual(first.instruments.map((instrument) => instrument.id), ["FAST", "SLOW"]);
 });
 
 test("portfolio risk limits, stale valuation, duplicate policy, and exports are explicit", () => {

@@ -45,3 +45,10 @@ coverage, and optional workspace `tradingCalendar`/`sessionAnalysis` members.
 Calendar engines are supplied by the host and are restored through an explicit
 ID/version resolver; the package never silently substitutes a schedule. Legacy
 version-1 workspaces without these optional members remain valid.
+
+Phase 12 adds the portfolio backtesting API, versioned Worker protocol, result
+export helpers, and optional `StudioWorkspaceDocument.portfolioBacktest` field.
+These are additive declarations and are documented separately in
+`docs/api/portfolio-backtesting.md`. The historical API baseline remains
+protected; additive diagnostics must be reviewed and the strict compatibility
+gate remains independently reported.

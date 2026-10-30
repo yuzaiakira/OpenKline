@@ -1243,5 +1243,38 @@ compatibility decision packet, package evidence, and remaining gates.
   `docs/reports/phase-11-5-performance-hardening.md`.
 - [Open] Full Phase 11 verification remains open for unavailable official
   Firefox/WebKit/mobile browser engines, physical devices, accessibility and
-  visual review, and the protected historical API baseline. No Phase 12 work
-  has started.
+  visual review, and the protected historical API baseline.
+
+## Phase 12 multi-asset portfolio backtesting
+
+- [Implemented / Node-verified — 12.0 foundation] Added provider-neutral
+  multi-instrument inputs, canonical deterministic timeline ordering,
+  completed-bar signal availability, next-eligible-open execution, duplicate
+  timestamp policy, and explicit calendar identity metadata.
+- [Implemented / Node-verified — 12.1 shared capital] Added one shared cash
+  ledger with long-only/no-leverage initial semantics, fixed quantity/notional,
+  percent-equity and target-weight sizing, commission/slippage, exposure/cash/
+  drawdown/active-position limits, causal valuation, risk rejection reasons,
+  trade/order/equity ledgers, portfolio metrics, and per-instrument
+  contributions. Existing single-symbol backtesting is unchanged.
+- [Implemented / Node-verified — 12.2 Worker and exports] Added the versioned
+  serializable portfolio Worker protocol/runtime with progress, cancellation,
+  supersession, timeout/crash handling, generation guards, disposal cleanup,
+  synchronous parity, and JSON/orders/trades/equity exports.
+- [Implemented / Chromium-verified — 12.3 Studio] Added the deterministic
+  offline Portfolio Backtesting panel with multi-instrument strategy
+  assignments, shared-capital/risk controls, result tabs, exports, bounded
+  workspace persistence, and an explicit main-thread fallback when a host
+  cannot serve the module Worker artifact.
+- [Implemented / Local verification in progress — 12.4–12.6] Focused Node
+  and Chromium regression coverage, the 1k/10k/100k portfolio benchmark, API/
+  package/distribution checks, and the final acceptance matrix are being run
+  sequentially. Firefox, WebKit, mobile Safari, physical-device,
+  accessibility/visual, provider-specific, and protected historical API gates
+  remain open unless independently evidenced.
+
+See `docs/api/portfolio-backtesting.md`,
+`docs/architecture/portfolio-execution.md`,
+`docs/benchmarks/portfolio-backtesting.md`, and
+`docs/reports/phase-12-final-verification.md` for the current contract and
+evidence. Phase 13 work is intentionally not started.

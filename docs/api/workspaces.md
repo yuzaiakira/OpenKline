@@ -39,6 +39,15 @@ stores active state, normalization mode, UTC baseline, maximum baseline age,
 and ordered asset IDs. Older documents omit this member and remain valid;
 unknown or duplicate asset IDs are rejected by `parseStudioWorkspace`.
 
+The optional Phase 12 `portfolioBacktest` member stores only bounded portfolio
+tester configuration: account currency/capital, instrument IDs/symbols,
+timeframes, built-in strategy IDs and JSON parameters, calendar identities,
+sizing, costs, risk, and valuation policy. It does not store candle history,
+credentials, Worker handles, progress, subscriptions, or results. The parser
+limits the configured instrument count and rejects duplicate IDs, invalid
+numeric constraints, and malformed JSON parameters. Older Studio documents
+without this optional member remain valid.
+
 ## Trading calendars and session analysis
 
 The optional Phase 11 `tradingCalendar` member stores the stable calendar ID,

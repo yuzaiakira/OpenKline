@@ -89,3 +89,11 @@ chart.setStrategyMarkers(markers);
 // chart.getStrategyMarkers() is replay-aware and hides future markers.
 chart.clearStrategyMarkers();
 ```
+
+For multiple instruments and one shared cash ledger, use the additive
+`createPortfolioBacktest()` API. It preserves the same completed-bar causal
+strategy boundary but adds canonical multi-instrument ordering, next-eligible
+open fills, shared cash/exposure/risk controls, portfolio marks, per-instrument
+contributions, and versioned JSON/CSV exports. See
+`docs/api/portfolio-backtesting.md`; the single-symbol API above remains
+backward-compatible and is not silently converted to a portfolio run.
