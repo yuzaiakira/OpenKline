@@ -171,6 +171,14 @@ test("Footprint calculator incrementally matches reference aggregation and falls
   const afterCorrection = [...afterNewBucket, correction];
   assert.deepEqual(calculator.getResult(), calculateFootprint(afterCorrection, options));
   calculator.dispose();
+
+  const asOfOptions = { ...options, asOfTime: 1_500 };
+  const asOfCalculator = new FootprintCalculator(asOfOptions, initial);
+  assert.deepEqual(asOfCalculator.getResult(), calculateFootprint(initial, asOfOptions));
+  const futureTrade = makeTrade("future", 2_500, 101, 9, "buy");
+  asOfCalculator.update(futureTrade);
+  assert.deepEqual(asOfCalculator.getResult(), calculateFootprint([...initial, futureTrade], asOfOptions));
+  asOfCalculator.dispose();
 });
 
 test("Time and Sales is bounded, stable, and replay/as-of safe", () => {

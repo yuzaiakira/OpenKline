@@ -618,6 +618,7 @@ function appendFootprintTrade(
   cellCount: number,
 ): IncrementalFootprintResult | null {
   if (trade.time < result.from || trade.time > result.to) return null;
+  if (options.asOfTime !== undefined && trade.time > options.asOfTime) return null;
   const tickSize = options.tickSize;
   if (!Number.isFinite(tickSize) || tickSize <= 0) return null;
   const intervalMs = positiveInteger(options.intervalMs, 60_000, "intervalMs", 86_400_000);

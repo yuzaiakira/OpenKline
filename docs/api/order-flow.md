@@ -64,6 +64,7 @@ commit to one animation frame; destruction cancels that pending frame.
 cells. It incrementally updates the newest bucket for strictly chronological
 appends, including same-cell and new-cell prints, while preserving the exact
 bucket/cell totals. Corrections, out-of-order events, option changes, and
-bounded-result changes invalidate the cache and use the reference calculation.
-Returned results remain defensive snapshots, so callers cannot mutate the
-calculator's cached state.
+future-as-of events invalidate the cache and remain excluded by the causal
+reference calculation. Bounded-result changes also invalidate the cache and use
+the reference calculation. Returned results remain defensive snapshots, so
+callers cannot mutate the calculator's cached state.
