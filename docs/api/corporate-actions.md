@@ -62,7 +62,9 @@ rejects inconsistent source identities.
 Charts expose `setCorporateActions`, `setCorporateActionDisplayMode`,
 `getCorporateActionAdjustment`, `getDisplayedData`, and
 `setCorporateActionMarkersVisible`. `getData()` remains the defensive raw
-candle snapshot. Chart indicators consume the currently displayed OHLCV
+candle snapshot during normal operation; while replay is active it returns
+only the revealed raw prefix so consumers cannot observe future bars.
+Chart indicators consume the currently displayed OHLCV
 domain; total-return mode remains an explicit analytical result instead of
 being passed off as executable candles. Workspace persistence stores only the
 mode, policy, source identity, instrument association, as-of boundary, and

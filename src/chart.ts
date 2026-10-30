@@ -664,7 +664,7 @@ export class Chart {
         style: { ...item.style },
         ...(item.band === undefined ? {} : { band: { ...item.band } }),
         data: this.model.isPrimaryCandleSeries(item.id)
-          ? this.rawCandles.map((candle) => ({ ...candle }))
+          ? this.getData().map((candle) => ({ ...candle }))
           : item.data.map((point) => ({ ...point })),
       }));
     const indicators = [...this.indicators.values()].map((indicator) => ({
@@ -1877,9 +1877,22 @@ export class Chart {
     this.scheduleViewportRender();
   }
 
-  /** Return a defensive copy of the currently stored candles. */
+  /**
+   * Return a defensive copy of the source candles.
+   *
+   * Replay is intentionally the exception to the normal raw-source contract:
+   * while a replay is active callers receive the revealed raw prefix. This
+   * preserves the long-standing diagnostic behavior without exposing future
+   * bars to integrations that consume getData() during playback.
+   */
   public getData(): Candle[] {
     this.assertAlive();
+    if (this.isReplayActive() && this.replayRawSource !== null) {
+      const cutoff = this.model.getReplayCutoff();
+      return this.replayRawSource
+        .filter((candle) => cutoff === null || cutoff === Number.NEGATIVE_INFINITY || candle.time <= cutoff)
+        .map((candle) => ({ ...candle }));
+    }
     return this.rawCandles.map((candle) => ({ ...candle }));
   }
 

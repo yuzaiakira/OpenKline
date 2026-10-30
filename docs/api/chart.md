@@ -163,8 +163,9 @@ chart.destroy();
   separate series rather than replacing raw price data.
 - Corporate-action presentation is explicit. `setCorporateActions()` attaches
   a versioned source; `setCorporateActionDisplayMode()` selects `raw`,
-  `split-adjusted`, or analytical `total-return`; `getData()` always returns
-  raw candles while `getDisplayedData()` returns the current rendered OHLCV
+  `split-adjusted`, or analytical `total-return`; `getData()` returns raw
+  candles during normal operation and the revealed raw prefix while replay is
+  active, while `getDisplayedData()` returns the current rendered OHLCV
   domain. `getCorporateActionAdjustment()` exposes provenance and the explicit
   total-return index. Split/dividend markers use the existing overlay path.
   See [Corporate actions API](corporate-actions.md).
