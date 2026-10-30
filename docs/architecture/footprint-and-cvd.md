@@ -37,3 +37,10 @@ reference rebuild path because downstream cumulative values can change. The
 Canvas2D renderer independently reduces dense line paths to deterministic
 first/minimum/maximum/last samples per pixel column; this is a rendering
 optimization only and does not discard stored observations.
+
+The stateful Footprint calculator applies the same invalidation rule to the
+latest time bucket. A chronological append updates an existing price cell or
+adds a bounded new cell/bucket; any event that could alter an earlier bucket
+rebuilds from the canonical trade store. This keeps the public Footprint result
+bit-for-bit aligned with `calculateFootprint` while avoiding repeated full
+aggregation during a live append stream.

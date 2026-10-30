@@ -58,3 +58,11 @@ line rendering may apply a first/min/max/last per-pixel-column visual LOD while
 retaining the complete series for queries and tooltips. High-frequency chart
 trade and depth mutations update state synchronously but coalesce their visual
 commit to one animation frame; destruction cancels that pending frame.
+
+`FootprintCalculator` provides the equivalent stateful contract for trade-price
+cells. It incrementally updates the newest bucket for strictly chronological
+appends, including same-cell and new-cell prints, while preserving the exact
+bucket/cell totals. Corrections, out-of-order events, option changes, and
+bounded-result changes invalidate the cache and use the reference calculation.
+Returned results remain defensive snapshots, so callers cannot mutate the
+calculator's cached state.

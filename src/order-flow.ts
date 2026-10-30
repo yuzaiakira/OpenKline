@@ -482,8 +482,9 @@ export class CumulativeVolumeDeltaCalculator {
   public getResult(): CvdResult {
     this.assertAlive();
     if (this.cachedResult === null) {
-      this.cachedResult = calculateCumulativeVolumeDelta(this.store.getAll(), this.options);
-      this.lastTrade = this.store.getAll().at(-1) ?? null;
+      const trades = this.store.getAll();
+      this.cachedResult = calculateCumulativeVolumeDelta(trades, this.options);
+      this.lastTrade = trades.at(-1) ?? null;
     }
     return cloneCvdResult(this.cachedResult);
   }
@@ -605,9 +606,130 @@ function cloneCvdResult(result: CvdResult): CvdResult {
   };
 }
 
+interface IncrementalFootprintResult {
+  readonly result: FootprintResult;
+  readonly addedCell: boolean;
+}
+
+function appendFootprintTrade(
+  result: FootprintResult,
+  trade: MarketTrade,
+  options: FootprintOptions,
+  cellCount: number,
+): IncrementalFootprintResult | null {
+  if (trade.time < result.from || trade.time > result.to) return null;
+  const tickSize = options.tickSize;
+  if (!Number.isFinite(tickSize) || tickSize <= 0) return null;
+  const intervalMs = positiveInteger(options.intervalMs, 60_000, "intervalMs", 86_400_000);
+  const maxBuckets = positiveInteger(options.maxBuckets, 10_000, "maxBuckets", 100_000);
+  const maxCells = positiveInteger(options.maxCells, 100_000, "maxCells", 1_000_000);
+  const offTickPolicy = options.offTickPolicy ?? "reject";
+  const rawIndex = trade.price / tickSize;
+  const tickIndex = Math.round(rawIndex);
+  const normalized = tickIndex * tickSize;
+  const tolerance = Math.max(Number.EPSILON * Math.max(1, Math.abs(trade.price)), tickSize * 1e-9);
+  if (Math.abs(normalized - trade.price) > tolerance && offTickPolicy === "reject") return null;
+  const price = offTickPolicy === "round" ? normalized : trade.price;
+  const index = offTickPolicy === "allow" ? null : tickIndex;
+  const cellKey = index === null ? price.toPrecision(15) : String(index);
+  const bucketStart = result.from + Math.floor((trade.time - result.from) / intervalMs) * intervalMs;
+  const bucketEnd = Math.min(result.to, bucketStart + intervalMs);
+  const flow = calculateTradeFlowFromCanonical([trade], childFlowOptions(options, bucketStart, bucketEnd));
+  const nextBuckets = [...result.buckets];
+  const lastIndex = nextBuckets.length - 1;
+  const lastBucket = nextBuckets.at(-1);
+  let addedCell = false;
+  if (lastBucket !== undefined && bucketStart < lastBucket.start) return null;
+  if (lastBucket === undefined || bucketStart > lastBucket.start) {
+    if (nextBuckets.length >= maxBuckets || cellCount >= maxCells) return null;
+    const cell = createFootprintCell(bucketStart, bucketEnd, price, index, flow);
+    nextBuckets.push({ start: bucketStart, end: bucketEnd, buyVolume: flow.buyVolume, sellVolume: flow.sellVolume, unknownSideVolume: flow.unknownSideVolume, totalVolume: flow.totalVolume, delta: flow.delta, tradeCount: flow.tradeCount, coverage: flow.coverage, cells: [cell] });
+    addedCell = true;
+  } else {
+    const cells = [...lastBucket.cells];
+    const cellIndex = cells.findIndex((cell) => (index === null ? cell.tickIndex === null && cell.price.toPrecision(15) === cellKey : cell.tickIndex === index));
+    if (cellIndex < 0) {
+      if (cellCount >= maxCells) return null;
+      cells.push(createFootprintCell(bucketStart, bucketEnd, price, index, flow));
+      cells.sort((left, right) => left.price - right.price);
+      addedCell = true;
+    } else {
+      const current = cells[cellIndex]!;
+      cells[cellIndex] = updateFootprintCell(current, flow);
+    }
+    nextBuckets[lastIndex] = {
+      ...lastBucket,
+      buyVolume: lastBucket.buyVolume + flow.buyVolume,
+      sellVolume: lastBucket.sellVolume + flow.sellVolume,
+      unknownSideVolume: lastBucket.unknownSideVolume + flow.unknownSideVolume,
+      totalVolume: lastBucket.totalVolume + flow.totalVolume,
+      delta: lastBucket.delta + flow.delta,
+      tradeCount: lastBucket.tradeCount + flow.tradeCount,
+      coverage: mergeTradeFlowCoverage(lastBucket.coverage, flow.coverage),
+      cells,
+    };
+  }
+  return {
+    addedCell,
+    result: {
+      ...result,
+      buckets: nextBuckets,
+      totalBuyVolume: result.totalBuyVolume + flow.buyVolume,
+      totalSellVolume: result.totalSellVolume + flow.sellVolume,
+      totalUnknownSideVolume: result.totalUnknownSideVolume + flow.unknownSideVolume,
+      totalDelta: result.totalDelta + flow.delta,
+      tradeCount: result.tradeCount + flow.tradeCount,
+      coverage: mergeTradeFlowCoverage(result.coverage, flow.coverage),
+    },
+  };
+}
+
+function createFootprintCell(bucketStart: number, bucketEnd: number, price: number, tickIndex: number | null, flow: TradeFlowResult): FootprintCell {
+  const denominator = flow.buyVolume + flow.sellVolume;
+  return {
+    bucketStart,
+    bucketEnd,
+    price,
+    tickIndex,
+    buyVolume: flow.buyVolume,
+    sellVolume: flow.sellVolume,
+    unknownSideVolume: flow.unknownSideVolume,
+    totalVolume: flow.totalVolume,
+    delta: flow.delta,
+    tradeCount: flow.tradeCount,
+    imbalance: denominator === 0 ? null : flow.delta / denominator,
+  };
+}
+
+function updateFootprintCell(cell: FootprintCell, flow: TradeFlowResult): FootprintCell {
+  const buyVolume = cell.buyVolume + flow.buyVolume;
+  const sellVolume = cell.sellVolume + flow.sellVolume;
+  const denominator = buyVolume + sellVolume;
+  return {
+    ...cell,
+    buyVolume,
+    sellVolume,
+    unknownSideVolume: cell.unknownSideVolume + flow.unknownSideVolume,
+    totalVolume: cell.totalVolume + flow.totalVolume,
+    delta: cell.delta + flow.delta,
+    tradeCount: cell.tradeCount + flow.tradeCount,
+    imbalance: denominator === 0 ? null : (buyVolume - sellVolume) / denominator,
+  };
+}
+
+function cloneFootprintResult(result: FootprintResult): FootprintResult {
+  return {
+    ...result,
+    buckets: result.buckets.map((bucket) => ({ ...bucket, cells: bucket.cells.map((cell) => ({ ...cell })) })),
+  };
+}
+
 export class FootprintCalculator {
   private readonly store: MarketTradeStore;
   private options: FootprintOptions;
+  private cachedResult: FootprintResult | null = null;
+  private cachedCellCount = 0;
+  private lastTrade: MarketTrade | null = null;
   private disposed = false;
 
   public constructor(options: FootprintOptions, values: readonly MarketTrade[] | MarketTradeDataset = []) {
@@ -619,27 +741,56 @@ export class FootprintCalculator {
   public setData(values: readonly MarketTrade[] | MarketTradeDataset): void {
     this.assertAlive();
     this.store.setData(values);
+    this.cachedResult = null;
+    this.cachedCellCount = 0;
+    this.lastTrade = null;
   }
 
   public update(value: MarketTrade): void {
     this.assertAlive();
-    this.store.update(value);
+    const status = this.store.update(value);
+    if (status === "duplicate") return;
+    const normalized = this.store.get(value.id);
+    if (this.cachedResult !== null && normalized !== undefined && status === "inserted" && this.lastTrade !== null && compareCanonicalTrades(this.lastTrade, normalized) < 0) {
+      const next = appendFootprintTrade(this.cachedResult, normalized, this.options, this.cachedCellCount);
+      if (next !== null) {
+        this.cachedResult = next.result;
+        this.cachedCellCount += next.addedCell ? 1 : 0;
+        this.lastTrade = normalized;
+        return;
+      }
+    }
+    this.cachedResult = null;
+    this.cachedCellCount = 0;
+    this.lastTrade = null;
   }
 
   public setOptions(options: FootprintOptions): void {
     this.assertAlive();
     this.options = { ...options };
+    this.cachedResult = null;
+    this.cachedCellCount = 0;
+    this.lastTrade = null;
   }
 
   public getResult(): FootprintResult {
     this.assertAlive();
-    return calculateFootprint(this.store.getAll(), this.options);
+    if (this.cachedResult === null) {
+      const trades = this.store.getAll();
+      this.cachedResult = calculateFootprint(trades, this.options);
+      this.cachedCellCount = this.cachedResult.buckets.reduce((sum, bucket) => sum + bucket.cells.length, 0);
+      this.lastTrade = trades.at(-1) ?? null;
+    }
+    return cloneFootprintResult(this.cachedResult);
   }
 
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.store.dispose();
+    this.cachedResult = null;
+    this.cachedCellCount = 0;
+    this.lastTrade = null;
   }
 
   private assertAlive(): void {

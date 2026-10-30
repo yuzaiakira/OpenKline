@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CumulativeVolumeDeltaCalculator,
+  FootprintCalculator,
   MarketTradeStore,
   OrderFlowValidationError,
   TradingCalendarEngine,
@@ -143,6 +144,32 @@ test("CVD calculator appends chronologically and falls back for corrections", ()
   calculator.update(makeTrade("a", 1_000, 100, 5, "sell", 1));
   const afterCorrection = [...afterAppend, makeTrade("a", 1_000, 100, 5, "sell", 1)];
   assert.deepEqual(calculator.getResult(), calculateCumulativeVolumeDelta(afterCorrection, options));
+  calculator.dispose();
+});
+
+test("Footprint calculator incrementally matches reference aggregation and falls back for corrections", () => {
+  const initial = [
+    makeTrade("a", 1_000, 100, 2, "buy"),
+    makeTrade("b", 1_500, 100, 1, "sell"),
+  ];
+  const options = { from: 0, to: 5_000, intervalMs: 1_000, tickSize: 0.5, sourceCoverage: "complete" as const };
+  const calculator = new FootprintCalculator(options, initial);
+  assert.deepEqual(calculator.getResult(), calculateFootprint(initial, options));
+
+  const sameBucketNewCell = makeTrade("c", 1_800, 100.5, 3, "buy");
+  calculator.update(sameBucketNewCell);
+  const afterNewCell = [...initial, sameBucketNewCell];
+  assert.deepEqual(calculator.getResult(), calculateFootprint(afterNewCell, options));
+
+  const newBucket = makeTrade("d", 2_500, 100, 4, "sell");
+  calculator.update(newBucket);
+  const afterNewBucket = [...afterNewCell, newBucket];
+  assert.deepEqual(calculator.getResult(), calculateFootprint(afterNewBucket, options));
+
+  const correction = makeTrade("a", 1_000, 100, 5, "sell", 1);
+  calculator.update(correction);
+  const afterCorrection = [...afterNewBucket, correction];
+  assert.deepEqual(calculator.getResult(), calculateFootprint(afterCorrection, options));
   calculator.dispose();
 });
 
