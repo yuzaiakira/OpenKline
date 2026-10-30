@@ -1073,6 +1073,15 @@ converted into universal compatibility certification.
   Legacy workspaces remain valid; derived bins, canvas geometry, and temporary
   pointer state are excluded. Studio controls and integrated replay workflows
   remain in the 9.3/9.4 verification increments.
+- [Implemented / Chromium-verified — 9.3] Added the private Studio Volume
+  Analytics panel. It exposes accessible Anchored VWAP placement/source
+  controls and estimated Volume Profile mode, UTC range, allocation, bins,
+  value-area, marker, and label controls. Panels keep independent analytics
+  state; replay masks future candles; and normalized comparison mode suppresses
+  raw-price overlays until exit. The integrated Chromium workflow verifies
+  numerical POC/VAH/VAL output, replay causality, workspace round-trip, panel
+  isolation, and comparison restoration. Non-Chromium and physical-device
+  gates remain open.
 
 ## Phase 8.13.1 comparison workspace persistence hardening
 

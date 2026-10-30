@@ -20,6 +20,23 @@ It uses the public chart handle plus `getSeriesInfo()` and
 `setSeriesStyle()` for its object tree. This makes workspace restore safe: the
 tree is rebuilt from public snapshots rather than stale `SeriesApi` handles.
 
+## Volume analytics ownership
+
+The private Studio's Volume Analytics panel is a consumer of the public
+`addAnchoredVwap`, `addVolumeProfile`, `getAnchoredVwaps`, and
+`getVolumeProfiles` APIs. A `ChartPanel` owns its chart-native objects and
+publishes defensive options to React; it does not calculate bins or draw
+Canvas2D primitives itself. Anchored VWAP remains the built-in indicator, while
+Volume Profile rendering remains in the core overlay path. This keeps replay
+masking, price-scale conversion, viewport invalidation, and disposal in one
+place.
+
+The panel serializes only canonical UTC options and indicator parameters. It
+does not serialize profile bins, caches, canvas coordinates, sockets, or
+one-shot placement state. Normalized comparison mode hides raw-price analytics
+and restores their prior visibility after comparison exits; the canonical
+workspace is kept separate from temporary comparison series.
+
 ## Data and workspace flow
 
 The Studio starts with a deterministic 240-bar fixture for the selected symbol

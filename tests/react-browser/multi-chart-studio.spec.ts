@@ -298,6 +298,120 @@ test("Studio reload restores canonical presentation after saving while compariso
   expect(errors).toEqual([]);
 });
 
+test("Studio volume analytics remain causal, persistent, isolated, and comparison-safe", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  const analytics = page.locator('details[aria-label="Volume Analytics"]');
+  const anchoredVwap = page.getByLabel("Enable Anchored VWAP");
+  const volumeProfile = page.getByLabel("Enable Estimated Volume Profile");
+  const profileResult = page.getByLabel("Volume Profile result");
+  const readProfile = async (): Promise<{ status: string; eligible: number; poc: number; vah: number; val: number }> => page.evaluate(() => {
+    const output = document.querySelector<HTMLOutputElement>('[aria-label="Volume Profile result"]');
+    if (output === null) throw new Error("Volume Profile result is missing");
+    return {
+      status: output.dataset.volumeProfileStatus ?? "",
+      eligible: Number(output.dataset.volumeProfileEligibleCandles ?? "NaN"),
+      poc: Number(output.dataset.volumeProfilePoc ?? "NaN"),
+      vah: Number(output.dataset.volumeProfileVah ?? "NaN"),
+      val: Number(output.dataset.volumeProfileVal ?? "NaN"),
+    };
+  });
+
+  await expect(analytics).toBeVisible();
+  await anchoredVwap.check();
+  await expect(anchoredVwap).toBeChecked();
+  const initialAnchor = await page.getByLabel("Anchored VWAP anchor UTC").inputValue();
+  await page.getByLabel("Anchored VWAP price source").selectOption("close");
+  await page.getByLabel("Anchored VWAP anchor UTC").fill("2025-12-30T00:00");
+  await page.getByRole("button", { name: "Select candle anchor", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.62, 0.42);
+  await expect.poll(() => page.getByLabel("Anchored VWAP anchor UTC").inputValue()).not.toBe(initialAnchor);
+
+  await volumeProfile.check();
+  await expect(volumeProfile).toBeChecked();
+  await expect(profileResult).toHaveAttribute("data-volume-profile-status", "ready");
+  await page.getByLabel("Volume Profile mode").selectOption("fixed");
+  await page.getByLabel("Volume Profile allocation").selectOption("range-uniform");
+  await page.getByLabel("Volume Profile bins").fill("32");
+  await page.getByLabel("Volume Profile value area").fill("0.75");
+  await expect(page.getByLabel("Volume Profile range from UTC")).toBeVisible();
+  await expect.poll(async () => (await readProfile()).status).toBe("ready");
+  const fullProfile = await readProfile();
+  expect(fullProfile.eligible).toBe(240);
+  expect(Number.isFinite(fullProfile.poc)).toBe(true);
+  expect(Number.isFinite(fullProfile.vah)).toBe(true);
+  expect(Number.isFinite(fullProfile.val)).toBe(true);
+  expect(fullProfile.val).toBeLessThanOrEqual(fullProfile.poc);
+  expect(fullProfile.poc).toBeLessThanOrEqual(fullProfile.vah);
+
+  const canvas = page.locator('[data-panel-id="chart-1"] canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  if (box !== null) await page.mouse.wheel(0, -240);
+  await expect(profileResult).toHaveAttribute("data-volume-profile-status", "ready");
+  await page.getByLabel("Price scale").selectOption("logarithmic");
+  await expect(page.getByLabel("Price scale")).toHaveValue("logarithmic");
+
+  await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Exit replay", exact: true })).toBeEnabled();
+  await expect(anchoredVwap).toBeDisabled();
+  await expect(volumeProfile).toBeDisabled();
+  await expect.poll(async () => (await readProfile()).status).toBe("ready");
+  const replayProfile = await readProfile();
+  expect(replayProfile.eligible).toBeLessThan(fullProfile.eligible);
+  expect(replayProfile.eligible).toBeGreaterThan(0);
+  expect(Number.isFinite(replayProfile.poc)).toBe(true);
+  expect(replayProfile.val).toBeLessThanOrEqual(replayProfile.poc);
+  expect(replayProfile.poc).toBeLessThanOrEqual(replayProfile.vah);
+  await page.getByRole("button", { name: "Replay previous bar", exact: true }).click();
+  await expect.poll(async () => (await readProfile()).eligible).toBe(replayProfile.eligible - 1);
+  await page.getByRole("button", { name: "Replay next bar", exact: true }).click();
+  await expect.poll(async () => (await readProfile()).eligible).toBe(replayProfile.eligible);
+  await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  await expect(anchoredVwap).toBeEnabled();
+  await expect(volumeProfile).toBeEnabled();
+  await expect.poll(async () => (await readProfile()).eligible).toBe(fullProfile.eligible);
+
+  await page.getByLabel("Workspace name", { exact: true }).fill("Volume Analytics Verification");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+  await expect(page.getByText("Workspace “Volume Analytics Verification” saved locally.", { exact: true })).toBeVisible();
+  const savedDocument = await page.evaluate(() => {
+    const stored = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as { workspaces?: Array<{ name: string; charts: Array<{ workspace: { indicators: Array<{ indicatorId: string }>; volumeAnalytics?: { volumeProfiles: Array<{ mode: string; allocation: string; binCount: number; valueAreaPercentage: number }> } } }> }> } | null;
+    return stored?.workspaces?.find((workspace) => workspace.name === "Volume Analytics Verification") ?? null;
+  });
+  expect(savedDocument?.charts[0]?.workspace.indicators.some((indicator) => indicator.indicatorId === "ANCHORED_VWAP")).toBe(true);
+  expect(savedDocument?.charts[0]?.workspace.volumeAnalytics?.volumeProfiles[0]).toMatchObject({ mode: "fixed", allocation: "range-uniform", binCount: 32, valueAreaPercentage: 0.75 });
+
+  await page.reload();
+  await expect(anchoredVwap).toBeChecked();
+  await expect(volumeProfile).toBeChecked();
+  await expect(profileResult).toHaveAttribute("data-volume-profile-status", "ready");
+  await page.getByLabel("Chart layout").selectOption("two-horizontal");
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+  await page.getByLabel("Active chart panel").selectOption("chart-2");
+  await expect(page.getByLabel("Enable Anchored VWAP")).not.toBeChecked();
+  await expect(page.getByLabel("Enable Estimated Volume Profile")).not.toBeChecked();
+  await page.getByLabel("Active chart panel").selectOption("chart-1");
+  await expect(page.getByLabel("Enable Anchored VWAP")).toBeChecked();
+  await expect(page.getByLabel("Enable Estimated Volume Profile")).toBeChecked();
+
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByText(/Raw-price volume analytics are temporarily hidden/)).toBeVisible();
+  await expect(page.getByLabel("Enable Anchored VWAP")).toBeDisabled();
+  await expect(page.getByLabel("Enable Estimated Volume Profile")).toBeDisabled();
+  await page.getByRole("button", { name: "Comparison mode", exact: true }).click();
+  await expect(page.getByLabel("Enable Anchored VWAP")).toBeEnabled();
+  await expect(page.getByLabel("Enable Estimated Volume Profile")).toBeEnabled();
+  await expect(page.getByLabel("Enable Anchored VWAP")).toBeChecked();
+  await expect(page.getByLabel("Enable Estimated Volume Profile")).toBeChecked();
+  expect(pageErrors).toEqual([]);
+});
+
 test("mobile multi-chart Studio switches the visible panel through the accessible selector", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

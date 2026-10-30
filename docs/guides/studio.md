@@ -34,6 +34,13 @@ the public workspace contract.
    step one bar, Space toggles playback, and Escape exits replay. Exit replay
    restores the complete workspace; source and structural object changes are
    intentionally disabled until then.
+7. Open **Volume Analytics** to enable Anchored VWAP or an estimated Volume
+   Profile. Anchored VWAP accepts a UTC anchor, a typical/close source, and a
+   one-shot visible-candle placement action. The profile supports visible or
+   fixed UTC ranges, close or range-uniform OHLCV allocation, bins, value-area
+   percentage, and POC/VAH/VAL display. These values are explicitly estimated
+   from OHLCV, not exchange-reported volume-at-price. See the
+   [volume analytics guide](studio-volume-analytics.md).
 
 The Settings panel changes theme, locale, timezone, price precision, scale
 mode (Linear, Log, Percentage, or Index 100), autoscale, axis labels, scale

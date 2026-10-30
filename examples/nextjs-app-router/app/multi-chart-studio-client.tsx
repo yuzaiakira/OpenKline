@@ -38,6 +38,11 @@ import {
   type WatchlistQuote,
   type WorkspaceDocument,
   type SeriesStyle,
+  type AnchoredVwapPriceSource,
+  type ResolvedVolumeProfileOptions,
+  type VolumeProfileAllocationMethod,
+  type VolumeProfileMode,
+  type VolumeProfileOptionsPatch,
   type SubscribeBarsArgs,
   type DatafeedRealtimeSubscriptionArgs,
   type SymbolInfo,
@@ -69,6 +74,8 @@ interface PanelSnapshot {
   readonly replayStatus: ReplayStatus;
   readonly replaySourceLength: number;
   readonly replayStartIndex: number;
+  readonly anchoredVwaps: ReadonlyArray<{ readonly id: string; readonly anchorTime: number; readonly priceSource: AnchoredVwapPriceSource }>;
+  readonly volumeProfiles: readonly ResolvedVolumeProfileOptions[];
 }
 
 interface StudioDialog {
@@ -313,9 +320,17 @@ function latestComparisonTime(lines: readonly ComparisonAssetOutput[], id: strin
 }
 function textForReplay(status: ReplayStatus, timeZone: string): string { return status.currentTimestamp === null ? "No current bar" : new Date(status.currentTimestamp).toLocaleString(undefined, { timeZone }); }
 function panelKey(panel: PanelState): string { return `${panel.symbol}|${panel.timeframe}`; }
+function utcInputValue(time: number | undefined): string {
+  return time === undefined || !Number.isFinite(time) ? "" : new Date(time).toISOString().slice(0, 16);
+}
+function parseUtcInput(value: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const time = Date.parse(`${value}:00Z`);
+  return Number.isSafeInteger(time) && time >= 0 ? time : null;
+}
 
 function emptySnapshot(): PanelSnapshot {
-  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84 };
+  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [] };
 }
 
 function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
@@ -359,6 +374,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   const marketKeyRef = useRef(panelKey(panel));
   const comparisonSeriesIdsRef = useRef<Set<string>>(new Set());
   const comparisonNormalStylesRef = useRef(new Map<string, SeriesStyle>());
+  const comparisonNormalProfileVisibilityRef = useRef(new Map<string, boolean>());
   const comparisonNormalScaleRef = useRef<PriceScaleConfiguration | null>(null);
   const comparisonActiveRef = useRef(false);
   const canonicalWorkspaceRef = useRef<WorkspaceDocument | null>(null);
@@ -377,6 +393,8 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       series: target.getSeriesInfo(),
       indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
       drawings: target.getDrawings(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex,
+      anchoredVwaps: target.getAnchoredVwaps().map((item) => ({ id: item.id, ...item.getOptions() })),
+      volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
     };
     setSnapshot(next);
     onSnapshot(panel.panelId, next);
@@ -473,6 +491,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
       comparisonNormalStylesRef.current.clear();
+      comparisonNormalProfileVisibilityRef.current.clear();
       comparisonNormalScaleRef.current = null;
       marketKeyRef.current = `${symbol}|${timeframe}`;
       publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35));
@@ -492,6 +511,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
       comparisonNormalStylesRef.current.clear();
+      comparisonNormalProfileVisibilityRef.current.clear();
       comparisonNormalScaleRef.current = null;
       publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
       if (comparisonStateRef.current?.active === true) queueMicrotask(() => applyComparisonRef.current(comparisonStateRef.current));
@@ -506,12 +526,17 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       if (!comparisonActiveRef.current) {
         canonicalWorkspaceRef.current = withoutComparisonSeries(target.serializeWorkspace());
         comparisonNormalStylesRef.current.clear();
+        comparisonNormalProfileVisibilityRef.current.clear();
         const existingComparisonIds = new Set(target.getSeriesIds().filter((id) => id.startsWith("comparison-")));
         comparisonSeriesIdsRef.current = existingComparisonIds;
         target.getSeriesInfo().forEach((series) => {
           if (!existingComparisonIds.has(series.id)) comparisonNormalStylesRef.current.set(series.id, { ...series.style });
         });
         comparisonNormalScaleRef.current = target.getPriceScaleOptions();
+        target.getVolumeProfiles().forEach((profile) => {
+          comparisonNormalProfileVisibilityRef.current.set(profile.id, profile.getOptions().visible);
+          profile.setVisible(false);
+        });
         comparisonActiveRef.current = true;
       }
       const nextIds = new Set<string>();
@@ -540,6 +565,9 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     for (const [id, style] of comparisonNormalStylesRef.current) {
       if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, style);
     }
+    for (const [id, visible] of comparisonNormalProfileVisibilityRef.current) {
+      target.getVolumeProfiles().find((profile) => profile.id === id)?.setVisible(visible);
+    }
     const savedScale = comparisonNormalScaleRef.current;
     if (savedScale !== null) {
       target.setPriceScaleOptions({
@@ -554,6 +582,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     }
     comparisonSeriesIdsRef.current = new Set();
     comparisonNormalStylesRef.current.clear();
+    comparisonNormalProfileVisibilityRef.current.clear();
     comparisonNormalScaleRef.current = null;
     comparisonActiveRef.current = false;
     canonicalWorkspaceRef.current = withoutComparisonSeries(target.serializeWorkspace());
@@ -973,6 +1002,85 @@ export default function MultiChartStudioClient() {
     activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" });
   }, [activeHandle, replayActive]);
   const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
+  const analyticsDisabled = replayActive || comparisonSettings.active;
+  const activeAnchoredVwap = activeSnapshot.anchoredVwaps[0];
+  const activeProfile = activeSnapshot.volumeProfiles[0];
+  const analyticsData = activeHandle?.getChart()?.getData() ?? [];
+  const activeProfileResult = activeHandle?.getChart()?.getVolumeProfiles()[0]?.getResult();
+  const addOrRemoveAnchoredVwap = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    try {
+      const existing = target.getAnchoredVwaps();
+      if (existing.length > 0) existing.forEach((item) => item.remove());
+      else {
+        const anchorTime = analyticsData.at(-50)?.time ?? analyticsData[0]?.time;
+        if (anchorTime === undefined) throw new Error("Anchored VWAP needs at least one candle");
+        target.addAnchoredVwap({ id: `studio-anchored-vwap-${serialRef.current++}`, anchorTime, priceSource: "typical", style: { color: "#f59e0b", lineWidth: 2 } });
+      }
+      activeHandle?.refresh();
+      setNotice(existing.length > 0 ? "Anchored VWAP removed from the active chart." : "Anchored VWAP enabled; choose a UTC anchor or select a candle on the chart.");
+    } catch (error) { setNotice(`Could not update Anchored VWAP: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const setAnchoredVwapAnchor = (value: string): void => {
+    const time = parseUtcInput(value);
+    const target = activeHandle?.getChart();
+    const api = target?.getAnchoredVwaps()[0];
+    if (time === null || api === undefined || analyticsDisabled) { if (time === null) setNotice("Enter a valid UTC date and time for the Anchored VWAP anchor."); return; }
+    try { api.setAnchor(time); activeHandle?.refresh(); } catch (error) { setNotice(`Could not set Anchored VWAP anchor: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const setAnchoredVwapSource = (source: AnchoredVwapPriceSource): void => {
+    const target = activeHandle?.getChart();
+    const api = target?.getAnchoredVwaps()[0];
+    if (api === undefined || analyticsDisabled) return;
+    try { api.setPriceSource(source); activeHandle?.refresh(); } catch (error) { setNotice(`Could not set Anchored VWAP source: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const startAnchoredVwapPlacement = (): void => {
+    const target = activeHandle?.getChart();
+    const api = target?.getAnchoredVwaps()[0];
+    if (api === undefined || analyticsDisabled) return;
+    try { api.startPlacement(); setNotice("Anchored VWAP placement active; select a visible candle on the chart."); } catch (error) { setNotice(`Could not start Anchored VWAP placement: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const addOrRemoveVolumeProfile = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    try {
+      const existing = target.getVolumeProfiles();
+      if (existing.length > 0) existing.forEach((item) => item.remove());
+      else target.addVolumeProfile({ id: `studio-volume-profile-${serialRef.current++}`, mode: "visible", allocation: "close", binCount: 24, valueAreaPercentage: 0.7, showLabels: true });
+      activeHandle?.refresh();
+      setNotice(existing.length > 0 ? "Estimated Volume Profile removed from the active chart." : "Estimated Volume Profile enabled; values are estimated from OHLCV candles.");
+    } catch (error) { setNotice(`Could not update Estimated Volume Profile: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const updateVolumeProfile = (patch: VolumeProfileOptionsPatch): void => {
+    const target = activeHandle?.getChart();
+    const api = target?.getVolumeProfiles()[0];
+    if (api === undefined || analyticsDisabled) return;
+    try { api.setOptions(patch); activeHandle?.refresh(); } catch (error) { setNotice(`Could not update Volume Profile: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const setVolumeProfileMode = (mode: VolumeProfileMode): void => {
+    const target = activeHandle?.getChart();
+    const api = target?.getVolumeProfiles()[0];
+    if (api === undefined || analyticsDisabled) return;
+    try {
+      if (mode === "fixed") {
+        const from = activeProfile?.range?.from ?? analyticsData[0]?.time;
+        const latest = analyticsData.at(-1)?.time;
+        if (from === undefined || latest === undefined) throw new Error("Fixed mode needs chart data");
+        api.setMode("fixed", { from, to: Math.max(from + 1, activeProfile?.range?.to ?? latest + 1) });
+      } else api.setMode("visible");
+      activeHandle?.refresh();
+    } catch (error) { setNotice(`Could not change Volume Profile mode: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const setVolumeProfileRange = (field: "from" | "to", value: string): void => {
+    const time = parseUtcInput(value);
+    const target = activeHandle?.getChart();
+    const api = target?.getVolumeProfiles()[0];
+    if (time === null || api === undefined || analyticsDisabled) { if (time === null) setNotice("Enter a valid UTC Volume Profile boundary."); return; }
+    const current = activeProfile?.range ?? { from: analyticsData[0]?.time ?? time, to: (analyticsData.at(-1)?.time ?? time) + 1 };
+    const range = { ...current, [field]: time };
+    try { api.setRange(range); activeHandle?.refresh(); } catch (error) { setNotice(`Could not set Volume Profile range: ${error instanceof Error ? error.message : String(error)}`); }
+  };
   const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { const period = indicatorPeriodOverride.trim() === "" ? undefined : Number(indicatorPeriodOverride); const constant = indicatorConstant.trim() === "" ? undefined : Number(indicatorConstant); const multiplier = indicatorMultiplier.trim() === "" ? undefined : Number(indicatorMultiplier); target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd, { period, constant, multiplier }) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const inputName = alertNameInputRef.current?.value ?? alertName; const normalizedName = inputName.trim() || "Price alert"; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: normalizedName, condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: normalizedName.slice(0, 120), outcome: "accepted" }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: "", outcome: "rejected" }); setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
@@ -1116,7 +1224,32 @@ export default function MultiChartStudioClient() {
     setNotice(`${activePanel.panelId}: optimizer selection is ready for Strategy Tester; Paper Trading remains unchanged.`);
   };
 
+  const volumeAnalyticsControls = <details open aria-label="Volume Analytics">
+    <summary>Volume Analytics</summary>
+    <p><small>Anchored VWAP and Volume Profile use raw OHLCV. Profile values are estimated, not exchange-reported volume-at-price.</small></p>
+    <label className={styles.check}><input aria-label="Enable Anchored VWAP" type="checkbox" checked={activeAnchoredVwap !== undefined} disabled={analyticsDisabled} onChange={addOrRemoveAnchoredVwap} />Anchored VWAP</label>
+    {activeAnchoredVwap === undefined ? null : <div className={styles.alertForm}>
+      <label>Anchor (UTC)<input aria-label="Anchored VWAP anchor UTC" type="datetime-local" value={utcInputValue(activeAnchoredVwap.anchorTime)} disabled={analyticsDisabled} onChange={(event) => setAnchoredVwapAnchor(event.target.value)} /></label>
+      <label>Price source<select aria-label="Anchored VWAP price source" value={activeAnchoredVwap.priceSource} disabled={analyticsDisabled} onChange={(event) => setAnchoredVwapSource(event.target.value as AnchoredVwapPriceSource)}><option value="typical">Typical price</option><option value="close">Close</option></select></label>
+      <button type="button" disabled={analyticsDisabled} onClick={startAnchoredVwapPlacement}>Select candle anchor</button>
+    </div>}
+    <label className={styles.check}><input aria-label="Enable Estimated Volume Profile" type="checkbox" checked={activeProfile !== undefined} disabled={analyticsDisabled} onChange={addOrRemoveVolumeProfile} />Estimated Volume Profile</label>
+    {activeProfile === undefined ? null : <div className={styles.alertForm}>
+      <label>Mode<select aria-label="Volume Profile mode" value={activeProfile.mode} disabled={analyticsDisabled} onChange={(event) => setVolumeProfileMode(event.target.value as VolumeProfileMode)}><option value="visible">Visible range</option><option value="fixed">Fixed UTC range</option></select></label>
+      <label>Allocation<select aria-label="Volume Profile allocation" value={activeProfile.allocation} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ allocation: event.target.value as VolumeProfileAllocationMethod })}><option value="close">Close price</option><option value="range-uniform">Uniform high/low range</option></select></label>
+      <label>Bins<input aria-label="Volume Profile bins" type="number" min="1" max="10000" value={activeProfile.binCount} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ binCount: Number(event.target.value) })} /></label>
+      <label>Value area<input aria-label="Volume Profile value area" type="number" min="0.01" max="1" step="0.05" value={activeProfile.valueAreaPercentage} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ valueAreaPercentage: Number(event.target.value) })} /></label>
+      {activeProfile.mode === "fixed" ? <><label>From (UTC)<input aria-label="Volume Profile range from UTC" type="datetime-local" value={utcInputValue(activeProfile.range?.from)} disabled={analyticsDisabled} onChange={(event) => setVolumeProfileRange("from", event.target.value)} /></label><label>To (UTC, exclusive)<input aria-label="Volume Profile range to UTC" type="datetime-local" value={utcInputValue(activeProfile.range?.to)} disabled={analyticsDisabled} onChange={(event) => setVolumeProfileRange("to", event.target.value)} /></label></> : null}
+      <label className={styles.check}><input aria-label="Show POC" type="checkbox" checked={activeProfile.showPoc} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ showPoc: event.target.checked })} />Show POC</label>
+      <label className={styles.check}><input aria-label="Show value area" type="checkbox" checked={activeProfile.showValueArea} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ showValueArea: event.target.checked })} />Show VAH / VAL</label>
+      <label className={styles.check}><input aria-label="Show Volume Profile labels" type="checkbox" checked={activeProfile.showLabels} disabled={analyticsDisabled} onChange={(event) => updateVolumeProfile({ showLabels: event.target.checked })} />Show labels</label>
+      <output aria-label="Volume Profile result" data-volume-profile-status={activeProfileResult?.status ?? "empty"} data-volume-profile-eligible-candles={activeProfileResult?.eligibleCandleCount ?? ""} data-volume-profile-poc={activeProfileResult?.pointOfControl?.price ?? ""} data-volume-profile-vah={activeProfileResult?.valueArea?.high ?? ""} data-volume-profile-val={activeProfileResult?.valueArea?.low ?? ""}>{activeProfile.mode === "visible" ? "Visible" : "Fixed"} · {activeProfileResult?.status ?? "empty"} · POC {activeProfileResult?.pointOfControl?.price.toFixed(2) ?? "—"} · VAH {activeProfileResult?.valueArea?.high.toFixed(2) ?? "—"} · VAL {activeProfileResult?.valueArea?.low.toFixed(2) ?? "—"}</output>
+    </div>}
+    {comparisonSettings.active ? <small>Raw-price volume analytics are temporarily hidden while normalized comparison mode is active and are restored on exit.</small> : null}
+  </details>;
+
   return <main className={styles.studio}>
+    {volumeAnalyticsControls}
     <header className={styles.topbar}>
       <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.5 analysis workspace</small></div>
       <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
