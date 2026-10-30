@@ -15,6 +15,8 @@ before comparison.
 - Starting SHA: `41a3cbc875555323dd6172b2ee237d8c89e28990`
 - Engineering validation tip before this report commit:
   `9df096745f77a8d3f11c9eb086a2802ac5bb4f59`
+- Report and evidence synchronization commit: `ae9a11a` (`docs(report):
+  verify phase 14.6 realtime rendering`)
 - Implementation commits:
   - `4b0ee0f839b85820824901197bd03951d452ae26`
     `perf(orderflow): preserve realtime cvd and dense candle rendering`
@@ -28,9 +30,10 @@ before comparison.
   GitHub Actions were used.
 - The protected `docs/audits/public-api-baseline.json` was not modified.
 
-The final documentation commit will supersede the engineering validation tip;
-the final remote SHA is recorded in the Git evidence section of the completed
-report commit.
+The report/evidence synchronization commit is the final validated
+Phase 14.6 source-and-documentation state before this metadata-only report
+clarification. The final handoff also verifies that the subsequent metadata
+commit is synchronized with `origin/main` and contains no source changes.
 
 ## Reproduced root cause
 
