@@ -346,6 +346,7 @@ export class Chart {
   private depthDisplay: Required<DepthDisplayOptions> = { ...DEFAULT_DEPTH_DISPLAY };
   private orderFlowWorkspaceReference: import("./workspace.js").WorkspaceOrderFlow | null = null;
   private orderFlowRevision = 0;
+  private chartDataRevision = 0;
   private footprintRenderCache: FootprintRenderCache | null = null;
   private cvdCalculator: CumulativeVolumeDeltaCalculator | null = null;
   private cvdCalculatorOptionsKey: string | null = null;
@@ -474,6 +475,7 @@ export class Chart {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
     this.replaceRawCandles(candles);
+    this.chartDataRevision += 1;
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromInput();
     this.refreshMultiTimeframe();
@@ -490,6 +492,7 @@ export class Chart {
     const lastTime = this.rawCandles.at(-1)?.time;
     const appendOnly = lastTime === undefined || candle.time > lastTime;
     this.updateRawCandle(candle);
+    this.chartDataRevision += 1;
     this.invalidateVolumeAnalytics();
     const adjustedView = this.corporateActionDataset !== null && this.corporateActionMode !== "raw";
     if (adjustedView) {
@@ -1207,6 +1210,7 @@ export class Chart {
     this.indicators.clear();
     this.nextIndicatorId = 1;
     this.model.destroy();
+    this.chartDataRevision += 1;
     this.cvdSeriesId = null;
     this.cvdPaneId = null;
     this.cvdPaneOwned = false;
@@ -1975,6 +1979,7 @@ export class Chart {
     this.assertReplayStructureMutationAllowed();
     const wasPrimaryCandleSeries = this.model.isPrimaryCandleSeries(id);
     this.model.removeSeries(id);
+    this.chartDataRevision += 1;
     this.invalidateVolumeAnalytics();
     if (wasPrimaryCandleSeries) {
       this.refreshIndicatorsFromInput();
@@ -3104,6 +3109,7 @@ export class Chart {
       this.footprintDisplay.tickSize,
       this.footprintDisplay.offTickPolicy,
       this.footprintDisplay.maxCells,
+      this.chartDataRevision,
       this.footprintDisplay.showLabels,
       this.footprintDisplay.opacity,
       this.footprintDisplay.buyColor,
@@ -3866,6 +3872,7 @@ export class Chart {
     const adjustment = this.computeCorporateActionAdjustment();
     if (adjustment?.candles !== null && adjustment?.candles !== undefined) this.model.setData(adjustment.candles);
     else this.model.setData(this.rawCandles);
+    this.chartDataRevision += 1;
     this.invalidateVolumeAnalytics();
     if (refresh) {
       this.refreshIndicatorsFromInput();
@@ -3889,6 +3896,7 @@ export class Chart {
         const primaryCandleSeries = this.model.isPrimaryCandleSeries(id);
         if (primaryCandleSeries) this.replaceRawCandles(data as readonly Candle[]);
         else this.model.setSeriesData(id, data as SeriesData);
+        this.chartDataRevision += 1;
         if (this.model.isPrimaryCandleSeries(id)) this.invalidateVolumeAnalytics();
         if (this.model.isPrimaryCandleSeries(id)) {
           this.refreshIndicatorsFromInput();
@@ -3907,6 +3915,7 @@ export class Chart {
         const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
         if (primaryCandleSeries) this.updateRawCandle(point as Candle);
         else this.model.updateSeries(id, point);
+        this.chartDataRevision += 1;
         if (primaryCandleSeries) this.invalidateVolumeAnalytics();
         if (primaryCandleSeries) {
           const adjustedView = this.corporateActionDataset !== null && this.corporateActionMode !== "raw";

@@ -41,9 +41,9 @@ not convert cloud timings into device-wide performance guarantees.
   deterministic time/price pixel grid with bounded columns, rows, and command
   output; exact analytics are not replaced by display LOD.
 - Footprint render commands are cached with the flow revision, viewport range,
-  replay cutoff, direction, pane geometry, price transform, device scale, and
-  display options. Resize, scale, replay, style, and data changes therefore
-  invalidate transformed commands.
+  chart-data revision, replay cutoff, direction, pane geometry, price
+  transform, device scale, and display options. Resize, scale, replay, style,
+  series, and data changes therefore invalidate transformed commands.
 - Depth heatmap rendering performs time/price culling and deterministic level
   stride sampling under an 8,000-command budget.
 - Dense Canvas2D line paths use first/minimum/maximum/last samples per pixel
