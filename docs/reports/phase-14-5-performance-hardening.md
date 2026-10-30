@@ -9,7 +9,8 @@ this cloud environment does not provide the managed Firefox/WebKit binaries or
 physical mobile devices required for a full browser acceptance claim.
 
 - Starting baseline: `46255e5d95e7466019b67df9e9bd70350c256575`
-- Source implementation tip used for this verification: `6ae278a74418f6f499a1a68e6fc2fd52c382afc1`
+- Final implementation tip used for this verification: `1676d9d1a85113172f0ed6af623f9ac4d834c5ca`
+- Initial report artifact commit: `5990805bce82cb433409a70cdf7f7768f26445cb`
 - Verification date: 2026-10-30 UTC
 - Branch: `main` (Phase 14.5 was explicitly required to continue on `main`)
 - Phase 15: not started
@@ -228,6 +229,7 @@ Implementation commits from the starting baseline:
 - `708cd0fe957605783d3ecea2bd5b508d11a50ef6`
 - `e768e34e3eca4baf090ba725b47292d661d4c1a9`
 - `6ae278a74418f6f499a1a68e6fc2fd52c382afc1`
+- `1676d9d1a85113172f0ed6af623f9ac4d834c5ca`
 
 The audit artifacts in this documentation increment were regenerated locally;
 they do not alter the protected compatibility baseline. The repository must
