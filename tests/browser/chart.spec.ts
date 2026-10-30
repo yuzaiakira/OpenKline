@@ -629,3 +629,44 @@ test("keeps raw candles separate from split-adjusted and total-return chart view
   expect(result.workspace).toMatchObject({ corporateActions: { sourceId: "browser-fixture", mode: "split-adjusted", context: "retrospective" } });
   expect(result.causalWorkspace).toMatchObject({ corporateActions: { mode: "split-adjusted", context: "causal-as-of", sourceDurationMs: 60 * 60 * 1000 } });
 });
+
+test("primary SeriesApi updates keep adjusted indicators on the displayed domain", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(async () => {
+    const { createChart } = await import("/dist/src/index.js");
+    const host = document.createElement("div");
+    host.style.width = "640px";
+    host.style.height = "320px";
+    document.body.append(host);
+    const chart = createChart(host, { autoSize: false, width: 640, height: 320 });
+    const start = Date.UTC(2026, 0, 2);
+    const source = [1, 2, 3, 4].map((index) => ({ time: start + index * 60_000, open: 100, high: 101, low: 99, close: 100, volume: 10 }));
+    const primary = chart.addCandlestickSeries({ id: "primary" });
+    primary.setData(source);
+    chart.setCorporateActions({
+      version: 1,
+      instrumentId: "TEST",
+      source: { id: "series-fixture", version: "1" },
+      knowledgeCoverage: "known",
+      actions: [{
+        id: "series-split",
+        instrumentId: "TEST",
+        kind: "stock-split",
+        effectiveTime: source[2].time,
+        revision: 1,
+        source: { id: "series-fixture", version: "1" },
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }, { mode: "split-adjusted" });
+    const sma = chart.addIndicator("SMA", { period: 2, pane: "main" });
+    primary.update({ ...source[1], open: 120, high: 121, low: 119, close: 120 });
+    const points = sma.getResult().outputs[0]?.points ?? [];
+    const corrected = points.find((point) => point.time === source[1].time)?.value ?? null;
+    chart.destroy();
+    host.remove();
+    return { corrected, canvases: document.querySelectorAll("canvas").length };
+  });
+  expect(result.corrected).toBeCloseTo(55, 8);
+  expect(result.canvases).toBe(1);
+});

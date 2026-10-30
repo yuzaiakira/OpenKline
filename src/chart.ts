@@ -3031,10 +3031,24 @@ export class Chart {
         else this.model.updateSeries(id, point);
         if (primaryCandleSeries) this.invalidateVolumeAnalytics();
         if (primaryCandleSeries) {
-          this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
-          this.refreshMultiTimeframe();
-          this.refreshSessionAnalysisFromUpdate(point as Candle);
-          this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
+          const adjustedView = this.corporateActionDataset !== null && this.corporateActionMode !== "raw";
+          if (adjustedView) {
+            // The raw point is the executable source, but adjusted views use
+            // the displayed domain as their analytical input. A primary
+            // SeriesApi update must therefore follow the same rebuild path as
+            // Chart.update() rather than feeding a raw point incrementally.
+            this.refreshIndicatorsFromInput();
+            this.refreshMultiTimeframe();
+            this.refreshSessionAnalysisFromInput();
+            this.refreshWorkerIndicatorsFromInput();
+            this.evaluateLiveAlerts(this.model.allCandles.at(-1) ?? point as Candle, appendOnly ? "append" : "correction");
+          } else {
+            this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
+            this.refreshMultiTimeframe();
+            this.refreshSessionAnalysisFromUpdate(point as Candle);
+            this.refreshWorkerIndicatorsFromUpdate(point as Candle);
+            this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
+          }
         }
         this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
         this.render();

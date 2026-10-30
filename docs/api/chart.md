@@ -168,6 +168,9 @@ chart.destroy();
   active, while `getDisplayedData()` returns the current rendered OHLCV
   domain. `getCorporateActionAdjustment()` exposes provenance and the explicit
   total-return index. Split/dividend markers use the existing overlay path.
+  When an adjusted display is active, both `Chart.update()` and the primary
+  candle `SeriesApi.update()` refresh analytical consumers from the displayed
+  adjusted domain; raw candles remain the executable source.
   See [Corporate actions API](corporate-actions.md).
 - `destroy()` is idempotent and releases the canvas, observer, listeners,
   datafeed subscription, analytics overlays, and stored series data. Other
