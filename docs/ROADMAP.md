@@ -1007,7 +1007,7 @@ to a vendor, backend, framework, or transport implementation.
   required. Firefox, WebKit, mobile Safari, physical devices, and provider
   credentials remain open unless independently executable and evidenced.
 
-- [Implemented / Verification in progress — 8.14.6] Realtime comparison now
+- [Implemented / Verified locally — 8.14.6] Realtime comparison now
   has an explicit fixed/follow window policy. Follow mode keeps normalized
   lines advancing after the initial historical upper bound, retains raw
   acquisition semantics, and applies replay cutoffs after live visibility
