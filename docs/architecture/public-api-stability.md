@@ -31,3 +31,10 @@ No breaking API change was introduced in Phase 8.5. Any future incompatible
 change requires an owner decision, a documented before/after contract, and
 migration guidance before implementation. No new versioning policy is inferred
 by this document.
+
+Phase 10 adds multi-timeframe calculation functions, chart-owned indicator and
+reference APIs, optional workspace fields, and an optional Canvas2D dash field
+for overlay lines. These are additive declarations; the historical baseline is
+not rewritten automatically. Run `npm run api:diagnostics` and review the
+reported additive delta before any owner-approved baseline update. Version-1
+workspaces without `multiTimeframe` remain valid.

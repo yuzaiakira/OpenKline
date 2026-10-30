@@ -1156,3 +1156,16 @@ compatibility decision packet, package evidence, and remaining gates.
   updater. Weekly, monthly, session, and guessed calendar intervals remain
   unsupported by design. See `docs/api/multi-timeframe.md` and
   `docs/architecture/multi-timeframe-analysis.md`.
+- [Implemented / Node + Chromium-verified — 10.1/10.2] Added higher-timeframe
+  SMA/EMA/RSI and previous-period OHLC calculations through the existing
+  Indicator Registry, causal source-time mapping, managed Chart series and
+  reference overlays, replay/datafeed correction refresh, optional workspace
+  persistence, and lifecycle cleanup. The focused Chromium test covers
+  correction, replay, visibility, workspace restore, and zero canvases after
+  destruction.
+- [Implemented / Chromium-verified — 10.3 workflow] Added isolated Next.js
+  Studio controls for per-panel higher-timeframe indicators and previous OHLC
+  levels. Controls persist through named workspaces, remain causal during
+  replay, and are hidden during normalized comparison without mixing raw and
+  normalized scales. Official non-Chromium, physical-device, accessibility,
+  and visual-approval gates remain open.

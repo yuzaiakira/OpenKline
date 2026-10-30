@@ -43,6 +43,7 @@ import {
   type VolumeProfileAllocationMethod,
   type VolumeProfileMode,
   type VolumeProfileOptionsPatch,
+  type MultiTimeframeFinalityPolicy,
   type SubscribeBarsArgs,
   type DatafeedRealtimeSubscriptionArgs,
   type SymbolInfo,
@@ -76,6 +77,8 @@ interface PanelSnapshot {
   readonly replayStartIndex: number;
   readonly anchoredVwaps: ReadonlyArray<{ readonly id: string; readonly anchorTime: number; readonly priceSource: AnchoredVwapPriceSource }>;
   readonly volumeProfiles: readonly ResolvedVolumeProfileOptions[];
+  readonly multiTimeframeIndicators: ReadonlyArray<{ readonly id: string; readonly indicatorId: string; readonly targetTimeframe: string; readonly visible?: boolean }>;
+  readonly multiTimeframeReferences: ReadonlyArray<{ readonly id: string; readonly targetTimeframe: string; readonly visible?: boolean }>;
 }
 
 interface StudioDialog {
@@ -330,7 +333,7 @@ function parseUtcInput(value: string): number | null {
 }
 
 function emptySnapshot(): PanelSnapshot {
-  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [] };
+  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [] };
 }
 
 function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
@@ -375,6 +378,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   const comparisonSeriesIdsRef = useRef<Set<string>>(new Set());
   const comparisonNormalStylesRef = useRef(new Map<string, SeriesStyle>());
   const comparisonNormalProfileVisibilityRef = useRef(new Map<string, boolean>());
+  const comparisonMultiTimeframeVisibilityRef = useRef(new Map<string, boolean>());
   const comparisonNormalScaleRef = useRef<PriceScaleConfiguration | null>(null);
   const comparisonActiveRef = useRef(false);
   const canonicalWorkspaceRef = useRef<WorkspaceDocument | null>(null);
@@ -395,6 +399,8 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       drawings: target.getDrawings(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex,
       anchoredVwaps: target.getAnchoredVwaps().map((item) => ({ id: item.id, ...item.getOptions() })),
       volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
+      multiTimeframeIndicators: target.getMultiTimeframeIndicators().map((item) => ({ id: item.id, indicatorId: item.indicatorId, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
+      multiTimeframeReferences: target.getMultiTimeframeReferences().map((item) => ({ id: item.id, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
     };
     setSnapshot(next);
     onSnapshot(panel.panelId, next);
@@ -492,6 +498,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       comparisonSeriesIdsRef.current = new Set();
       comparisonNormalStylesRef.current.clear();
       comparisonNormalProfileVisibilityRef.current.clear();
+      comparisonMultiTimeframeVisibilityRef.current.clear();
       comparisonNormalScaleRef.current = null;
       marketKeyRef.current = `${symbol}|${timeframe}`;
       publish(target, IDLE_REPLAY_STATUS, candles.length, Math.floor(candles.length * 0.35));
@@ -512,6 +519,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       comparisonSeriesIdsRef.current = new Set();
       comparisonNormalStylesRef.current.clear();
       comparisonNormalProfileVisibilityRef.current.clear();
+      comparisonMultiTimeframeVisibilityRef.current.clear();
       comparisonNormalScaleRef.current = null;
       publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
       if (comparisonStateRef.current?.active === true) queueMicrotask(() => applyComparisonRef.current(comparisonStateRef.current));
@@ -536,6 +544,14 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
         target.getVolumeProfiles().forEach((profile) => {
           comparisonNormalProfileVisibilityRef.current.set(profile.id, profile.getOptions().visible);
           profile.setVisible(false);
+        });
+        target.getMultiTimeframeIndicators().forEach((indicator) => {
+          comparisonMultiTimeframeVisibilityRef.current.set(`indicator:${indicator.id}`, indicator.getOptions().visible !== false);
+          indicator.setVisible(false);
+        });
+        target.getMultiTimeframeReferences().forEach((reference) => {
+          comparisonMultiTimeframeVisibilityRef.current.set(`reference:${reference.id}`, reference.getOptions().visible !== false);
+          reference.setVisible(false);
         });
         comparisonActiveRef.current = true;
       }
@@ -568,6 +584,11 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     for (const [id, visible] of comparisonNormalProfileVisibilityRef.current) {
       target.getVolumeProfiles().find((profile) => profile.id === id)?.setVisible(visible);
     }
+    for (const [key, visible] of comparisonMultiTimeframeVisibilityRef.current) {
+      const [kind, id] = key.split(":", 2);
+      if (kind === "indicator") target.getMultiTimeframeIndicators().find((indicator) => indicator.id === id)?.setVisible(visible);
+      if (kind === "reference") target.getMultiTimeframeReferences().find((reference) => reference.id === id)?.setVisible(visible);
+    }
     const savedScale = comparisonNormalScaleRef.current;
     if (savedScale !== null) {
       target.setPriceScaleOptions({
@@ -583,6 +604,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     comparisonSeriesIdsRef.current = new Set();
     comparisonNormalStylesRef.current.clear();
     comparisonNormalProfileVisibilityRef.current.clear();
+    comparisonMultiTimeframeVisibilityRef.current.clear();
     comparisonNormalScaleRef.current = null;
     comparisonActiveRef.current = false;
     canonicalWorkspaceRef.current = withoutComparisonSeries(target.serializeWorkspace());
@@ -696,6 +718,11 @@ export default function MultiChartStudioClient() {
   const [indicatorPeriodOverride, setIndicatorPeriodOverride] = useState("");
   const [indicatorConstant, setIndicatorConstant] = useState("0.015");
   const [indicatorMultiplier, setIndicatorMultiplier] = useState("2");
+  const [multiTimeframeIndicator, setMultiTimeframeIndicator] = useState<"SMA" | "EMA" | "RSI">("SMA");
+  const [multiTimeframeTarget, setMultiTimeframeTarget] = useState<Timeframe>("4h");
+  const [multiTimeframePeriod, setMultiTimeframePeriod] = useState("20");
+  const [multiTimeframeFinality, setMultiTimeframeFinality] = useState<MultiTimeframeFinalityPolicy>("complete-only");
+  const [multiTimeframeReference, setMultiTimeframeReference] = useState(true);
   const [presentation, setPresentation] = useState<Presentation>("candles");
   const [comparisonSettings, setComparisonSettings] = useState<StudioComparisonDocument>(() => ({
     active: false,
@@ -1003,6 +1030,9 @@ export default function MultiChartStudioClient() {
   }, [activeHandle, replayActive]);
   const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
   const analyticsDisabled = replayActive || comparisonSettings.active;
+  const multiTimeframeTargetOptions = timeframes.filter((candidate) => intervalFor(candidate) > intervalFor(activePanel.timeframe));
+  const activeMultiTimeframeIndicator = activeSnapshot.multiTimeframeIndicators[0];
+  const activeMultiTimeframeReference = activeSnapshot.multiTimeframeReferences[0];
   const activeAnchoredVwap = activeSnapshot.anchoredVwaps[0];
   const activeProfile = activeSnapshot.volumeProfiles[0];
   const analyticsData = activeHandle?.getChart()?.getData() ?? [];
@@ -1082,6 +1112,71 @@ export default function MultiChartStudioClient() {
     try { api.setRange(range); activeHandle?.refresh(); } catch (error) { setNotice(`Could not set Volume Profile range: ${error instanceof Error ? error.message : String(error)}`); }
   };
   const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { const period = indicatorPeriodOverride.trim() === "" ? undefined : Number(indicatorPeriodOverride); const constant = indicatorConstant.trim() === "" ? undefined : Number(indicatorConstant); const multiplier = indicatorMultiplier.trim() === "" ? undefined : Number(indicatorMultiplier); target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd, { period, constant, multiplier }) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
+  const toggleMultiTimeframeIndicator = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    const existing = target.getMultiTimeframeIndicators()[0];
+    if (existing !== undefined) {
+      existing.remove();
+      activeHandle?.refresh();
+      setNotice(`Removed higher-timeframe ${existing.indicatorId} from ${activePanel.panelId}.`);
+      return;
+    }
+    const targetTimeframe = multiTimeframeTargetOptions.includes(multiTimeframeTarget) ? multiTimeframeTarget : multiTimeframeTargetOptions[0];
+    if (targetTimeframe === undefined) {
+      setNotice(`${activePanel.timeframe} has no larger fixed Studio timeframe available.`);
+      return;
+    }
+    const period = Number(multiTimeframePeriod);
+    if (!Number.isSafeInteger(period) || period < 1 || period > 500) {
+      setNotice("Higher-timeframe indicator period must be an integer from 1 to 500.");
+      return;
+    }
+    try {
+      target.addMultiTimeframeIndicator({
+        id: `studio-mtf-${multiTimeframeIndicator.toLowerCase()}-${serialRef.current++}`,
+        indicatorId: multiTimeframeIndicator,
+        sourceTimeframe: activePanel.timeframe,
+        targetTimeframe,
+        pane: "main",
+        parameters: { period },
+        coveragePolicy: "fixed-duration",
+        finalityPolicy: multiTimeframeFinality,
+      });
+      activeHandle?.refresh();
+      setNotice(`Added causal ${multiTimeframeIndicator} from ${activePanel.timeframe} into ${targetTimeframe} on ${activePanel.panelId}.`);
+    } catch (error) { setNotice(`Could not add higher-timeframe indicator: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const toggleMultiTimeframeReference = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    const existing = target.getMultiTimeframeReferences()[0];
+    if (existing !== undefined) {
+      existing.remove();
+      activeHandle?.refresh();
+      setNotice(`Removed previous-period levels from ${activePanel.panelId}.`);
+      return;
+    }
+    const targetTimeframe = multiTimeframeTargetOptions.includes(multiTimeframeTarget) ? multiTimeframeTarget : multiTimeframeTargetOptions[0];
+    if (targetTimeframe === undefined) {
+      setNotice(`${activePanel.timeframe} has no larger fixed Studio timeframe available.`);
+      return;
+    }
+    try {
+      target.addMultiTimeframeReference({
+        id: `studio-mtf-levels-${serialRef.current++}`,
+        sourceTimeframe: activePanel.timeframe,
+        targetTimeframe,
+        levels: ["open", "high", "low", "close"],
+        coveragePolicy: "fixed-duration",
+        finalityPolicy: multiTimeframeFinality,
+        labels: true,
+        style: { color: "#f59e0b", lineWidth: 1.5, lineStyle: "dashed", alpha: 0.85 },
+      });
+      activeHandle?.refresh();
+      setNotice(`Added previous ${targetTimeframe} OHLC levels to ${activePanel.panelId}.`);
+    } catch (error) { setNotice(`Could not add previous-period levels: ${error instanceof Error ? error.message : String(error)}`); }
+  };
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const inputName = alertNameInputRef.current?.value ?? alertName; const normalizedName = inputName.trim() || "Price alert"; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: normalizedName, condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: normalizedName.slice(0, 120), outcome: "accepted" }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: "", outcome: "rejected" }); setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
   const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };
@@ -1248,8 +1343,11 @@ export default function MultiChartStudioClient() {
     {comparisonSettings.active ? <small>Raw-price volume analytics are temporarily hidden while normalized comparison mode is active and are restored on exit.</small> : null}
   </details>;
 
+  const multiTimeframeControls = <section className={styles.comparisonPanel} aria-label="Multi-timeframe analysis"><div className={styles.panelHeading}><div><h2>Multi-timeframe analysis</h2><small>Causal fixed-duration analysis for the active chart panel.</small></div><span>{activeSnapshot.multiTimeframeIndicators.length + activeSnapshot.multiTimeframeReferences.length} active</span></div><div className={styles.comparisonControls}><label>Indicator<select aria-label="Higher-timeframe indicator" value={multiTimeframeIndicator} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeIndicator(event.target.value as typeof multiTimeframeIndicator)}><option value="SMA">SMA</option><option value="EMA">EMA</option><option value="RSI">RSI</option></select></label><label>Target<select aria-label="Higher-timeframe target" value={multiTimeframeTarget} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeTarget(event.target.value as Timeframe)}>{multiTimeframeTargetOptions.map((timeframe) => <option key={timeframe} value={timeframe}>{timeframe}</option>)}</select></label><label>Period<input aria-label="Higher-timeframe period" type="number" min="1" max="500" value={multiTimeframePeriod} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframePeriod(event.target.value)} /></label><label>Finality<select aria-label="Higher-timeframe finality" value={multiTimeframeFinality} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeFinality(event.target.value as MultiTimeframeFinalityPolicy)}><option value="complete-only">Complete coverage only</option><option value="time-closed">Time-closed, preserve partial</option></select></label></div><label className={styles.check}><input aria-label="Previous timeframe levels" type="checkbox" checked={multiTimeframeReference} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeReference(event.target.checked)} />Previous OHLC levels</label><div className={styles.addRow}><button type="button" aria-label="Toggle higher-timeframe indicator" disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onClick={toggleMultiTimeframeIndicator}>{activeMultiTimeframeIndicator === undefined ? "Add" : "Remove"} {multiTimeframeIndicator}</button><button type="button" aria-label="Toggle previous timeframe levels" disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onClick={toggleMultiTimeframeReference}>{activeMultiTimeframeReference === undefined ? "Add" : "Remove"} levels</button></div>{activeMultiTimeframeIndicator === undefined ? null : <small data-multi-timeframe-indicator={activeMultiTimeframeIndicator.id}>{activeMultiTimeframeIndicator.indicatorId} · {activeMultiTimeframeIndicator.targetTimeframe} · {activeMultiTimeframeIndicator.visible === false ? "hidden" : "visible"}</small>}{activeMultiTimeframeReference === undefined ? null : <small data-multi-timeframe-reference={activeMultiTimeframeReference.id}>Previous OHLC · {activeMultiTimeframeReference.targetTimeframe} · {activeMultiTimeframeReference.visible === false ? "hidden" : "visible"}</small>}{multiTimeframeTargetOptions.length === 0 ? <small>This chart timeframe has no larger fixed Studio timeframe.</small> : null}{analyticsDisabled ? <small>Controls are disabled during replay or normalized comparison; saved causal configuration remains intact.</small> : null}</section>;
+
   return <main className={styles.studio}>
     {volumeAnalyticsControls}
+    {multiTimeframeControls}
     <header className={styles.topbar}>
       <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.5 analysis workspace</small></div>
       <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
