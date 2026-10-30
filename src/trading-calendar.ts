@@ -118,9 +118,11 @@ export interface TradingCalendarRegistryEntry {
 
 const DEFAULT_MAX_SESSIONS = 10_000;
 const DEFAULT_MAX_DAYS = 370;
+const MAX_RESOLVED_SESSION_CACHE = 20_000;
 const DAY_MS = 86_400_000;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const TIME_PATTERN = /^(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
+const PARTS_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
 
 /**
  * Resolve a local wall-clock value with IANA timezone rules.
@@ -178,6 +180,7 @@ export class TradingCalendarEngine implements TimeframeCalendar {
   public readonly definition: TradingCalendarDefinition;
   private readonly templates = new Map<number, TradingSessionTemplate>();
   private readonly exceptions = new Map<TradingDate, TradingCalendarException>();
+  private readonly resolvedSessions = new Map<TradingDate, TradingSession | null>();
   private readonly snapshotValue: TradingCalendarSnapshot;
 
   public constructor(definition: TradingCalendarDefinition) {
@@ -210,13 +213,14 @@ export class TradingCalendarEngine implements TimeframeCalendar {
 
   public resolveSession(tradingDate: TradingDate): TradingSession | null {
     parseTradingDate(tradingDate);
+    if (this.resolvedSessions.has(tradingDate)) return this.resolvedSessions.get(tradingDate) ?? null;
     if (!this.isDateInValidity(tradingDate)) return null;
     const exception = this.exceptions.get(tradingDate);
-    if (exception?.kind === "closed") return null;
+    if (exception?.kind === "closed") return this.cacheResolvedSession(tradingDate, null);
     const weekday = dayOfTradingDate(tradingDate);
     const template = exception?.segments === undefined ? this.templates.get(weekday) : undefined;
     const segments = exception?.segments ?? template?.segments;
-    if (segments === undefined || segments.length === 0) return null;
+    if (segments === undefined || segments.length === 0) return this.cacheResolvedSession(tradingDate, null);
     const sessionId = `${this.id}@${this.version}:${tradingDate}`;
     const resolvedSegments = segments.map((segment, index) => this.resolveSegment(sessionId, tradingDate, segment, index));
     resolvedSegments.sort((left, right) => left.start - right.start);
@@ -238,7 +242,7 @@ export class TradingCalendarEngine implements TimeframeCalendar {
       };
     }).filter((value) => value.start < value.end);
     const classification = exception?.classification ?? template?.classification ?? (exception === undefined ? "regular" : "holiday-adjusted");
-    return {
+    return this.cacheResolvedSession(tradingDate, {
       id: sessionId,
       tradingDate,
       calendarId: this.id,
@@ -251,7 +255,7 @@ export class TradingCalendarEngine implements TimeframeCalendar {
       classification,
       ...(exception?.label === undefined ? {} : { label: exception.label }),
       coverage: "supported",
-    };
+    });
   }
 
   public coverageForDate(tradingDate: TradingDate): TradingCalendarCoverage {
@@ -379,6 +383,15 @@ export class TradingCalendarEngine implements TimeframeCalendar {
   private isDateInValidity(date: TradingDate): boolean {
     const validity = this.definition.validity;
     return (validity?.from === undefined || date >= validity.from) && (validity?.to === undefined || date <= validity.to);
+  }
+
+  private cacheResolvedSession(tradingDate: TradingDate, session: TradingSession | null): TradingSession | null {
+    this.resolvedSessions.set(tradingDate, session);
+    if (this.resolvedSessions.size > MAX_RESOLVED_SESSION_CACHE) {
+      const oldest = this.resolvedSessions.keys().next().value as TradingDate | undefined;
+      if (oldest !== undefined) this.resolvedSessions.delete(oldest);
+    }
+    return session;
   }
 }
 
@@ -541,18 +554,22 @@ function validateTimeZone(timeZone: string): void {
 }
 
 function formatParts(timestamp: number, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number } {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    calendar: "gregory",
-    numberingSystem: "latn",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
+  let formatter = PARTS_FORMATTERS.get(timeZone);
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      calendar: "gregory",
+      numberingSystem: "latn",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    });
+    PARTS_FORMATTERS.set(timeZone, formatter);
+  }
   const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
   return {
     year: Number(parts.year),

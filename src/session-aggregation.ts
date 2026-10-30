@@ -17,6 +17,8 @@ import {
 import { tradingDateForTimestamp, TradingCalendarEngine, type TradingCalendarSnapshot, type TradingSession } from "./trading-calendar.js";
 import type { Candle, SeriesStyle } from "./types.js";
 
+const DEFAULT_SESSION_LOOKAHEAD_DAYS = 370;
+
 export type TradingAggregationPeriod = "session" | "week" | "month";
 
 export interface SessionAggregationOptions {
@@ -175,6 +177,8 @@ export class SessionAwareCandleAggregator {
   private readonly localDateSessions = new Map<string, readonly TradingSession[]>();
   private readonly expectedSlots = new Map<string, readonly number[]>();
   private readonly periodSchedules = new Map<string, PeriodSchedule>();
+  /** Cursor used only while getResult walks source candles in time order. */
+  private sessionCursor: TradingSession | null = null;
   private disposed = false;
 
   public constructor(options: SessionAggregationOptions) {
@@ -222,6 +226,7 @@ export class SessionAwareCandleAggregator {
   public getResult(asOfTime: number | undefined = this.asOfTime): SessionAggregationResult {
     this.assertAlive();
     const frontier = normalizeAsOf(asOfTime);
+    this.sessionCursor = null;
     const groups = new Map<string, { sessions: Map<string, TradingSession>; candles: Candle[] }>();
     for (const candle of [...this.candles.values()].sort((left, right) => left.time - right.time)) {
       if (candle.time + this.source.durationMs > frontier) continue;
@@ -242,15 +247,20 @@ export class SessionAwareCandleAggregator {
       const periodEnd = schedule.sessions.at(-1)?.end ?? Math.max(...sourceTimes) + this.source.durationMs;
       const expected = this.coveragePolicy === "unknown" ? null : this.expectedSlotsFor(schedule.sessions);
       const sourceSet = new Set(sourceTimes);
+      // Source timestamps are unique because the backing store is keyed by
+      // time. A size check plus set membership preserves the two-way coverage
+      // invariant without repeatedly scanning the expected-slot array with
+      // Array.includes for every source candle.
+      const complete = expected !== null && expected.length === sourceSet.size && expected.every((time) => sourceSet.has(time));
       const coverage = expected === null
         ? "unknown"
-        : expected.every((time) => sourceSet.has(time)) && sourceTimes.every((time) => expected.includes(time)) ? "complete" : "partial";
+        : complete ? "complete" : "partial";
       const missing = expected === null ? null : Math.max(0, expected.length - sourceTimes.length);
       const closed = frontier >= periodEnd;
-      const complete = coverage === "complete" && missing === 0;
+      const completeBucket = coverage === "complete" && missing === 0;
       const status: MultiTimeframeBucketStatus = !closed
         ? "forming"
-        : complete
+        : completeBucket
           ? "closed-complete"
           : coverage === "partial"
             ? "closed-partial"
@@ -298,6 +308,30 @@ export class SessionAwareCandleAggregator {
   }
 
   private resolveSessionSegment(time: number): { readonly session: TradingSession } | null {
+    if (this.sessionCursor !== null) {
+      const current = this.sessionCursor.segments.find((segment) => time >= segment.start && time < segment.end);
+      if (current !== undefined) return { session: this.sessionCursor };
+      if (time >= this.sessionCursor.end) {
+        let date = addDate(this.sessionCursor.tradingDate, 1);
+        for (let days = 0; days <= DEFAULT_SESSION_LOOKAHEAD_DAYS; days += 1) {
+          const candidate = this.calendar.resolveSession(date);
+          if (candidate !== null) {
+            this.sessionCursor = candidate;
+            if (time < candidate.start) return null;
+            const segment = candidate.segments.find((item) => time >= item.start && time < item.end);
+            if (segment !== undefined) return { session: candidate };
+            if (time < candidate.end) return null;
+          }
+          date = addDate(date, 1);
+        }
+        this.sessionCursor = null;
+        // A sparse dataset can legitimately jump farther than the bounded
+        // cursor look-ahead; fall back to the calendar's date-aware resolver
+        // instead of silently dropping the later candle.
+        return this.resolveSessionSegment(time);
+      }
+      return null;
+    }
     const localDate = tradingDateForTimestamp(time, this.calendar.timeZone);
     let candidates = this.localDateSessions.get(localDate);
     if (candidates === undefined) {
@@ -306,7 +340,10 @@ export class SessionAwareCandleAggregator {
       this.localDateSessions.set(localDate, candidates);
     }
     for (const session of candidates) {
-      if (session.segments.some((segment) => time >= segment.start && time < segment.end)) return { session };
+      if (session.segments.some((segment) => time >= segment.start && time < segment.end)) {
+        this.sessionCursor = session;
+        return { session };
+      }
     }
     return null;
   }
@@ -344,6 +381,7 @@ export class SessionAwareCandleAggregator {
     this.localDateSessions.clear();
     this.expectedSlots.clear();
     this.periodSchedules.clear();
+    this.sessionCursor = null;
   }
 
   private assertAlive(): void {

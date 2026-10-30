@@ -143,6 +143,25 @@ test("calendar replacement invalidates schedule caches and preserves correction/
   assert.throws(() => aggregator.getResult(), /disposed/);
 });
 
+test("session cursor falls back safely across sparse multi-year data gaps", () => {
+  const calendar = utcCalendar({
+    weeklySchedule: [{ weekday: 1, segments: [{ start: "09:00", end: "11:00" }] }],
+  });
+  const source = [
+    candle(utcTime("2024-01-01", "09:00"), 10),
+    candle(utcTime("2026-01-05", "09:00"), 20),
+  ];
+  const result = aggregateCandlesByTradingPeriod(source, {
+    sourceTimeframe: "1h",
+    targetPeriod: "session",
+    calendar,
+    coveragePolicy: "fixed-duration",
+    asOfTime: utcTime("2026-01-05", "11:00"),
+  });
+  assert.deepEqual(result.observations.map((item) => item.tradingDates[0]), ["2024-01-01", "2026-01-05"]);
+  assert.deepEqual(result.observations.map((item) => item.sourceCount), [1, 1]);
+});
+
 test("session aggregation uses real DST boundaries and never treats a holiday as a fake candle", () => {
   const calendar = new TradingCalendarEngine({
     id: "dst-session",
