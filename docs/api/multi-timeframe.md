@@ -120,6 +120,14 @@ provides causal previous session/week/month OHLC levels, and the mapping helpers
 apply the same as-of frontier. Calendar configuration is runtime state; persist
 only its stable ID/version and analysis options in a workspace.
 
+Chart-managed session analysis keeps an indexed source store and a persistent
+indicator instance. A realtime bar in a still-forming period updates that
+state without rebuilding a full session snapshot; a completed/available-period
+transition, historical correction, calendar change, or explicit `getResult()`
+request materializes a fresh causal result. The public calculation helpers
+remain deterministic snapshot functions, so this optimization does not change
+their API or their as-of semantics.
+
 The fixed-duration APIs above remain unchanged. A calendar must be selected
 explicitly, and a demonstration calendar is not an authoritative exchange
 schedule. See `docs/api/trading-calendars.md` and

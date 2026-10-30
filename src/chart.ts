@@ -118,8 +118,6 @@ import {
 } from "./session-visualization.js";
 import type { TradingCalendarEngine } from "./trading-calendar.js";
 import {
-  calculatePreviousSessionLevels,
-  calculateSessionIndicator,
   mapSessionIndicatorToSourceTimes,
   mapSessionReferenceToSourceTimes,
   type SessionIndicatorApi,
@@ -129,6 +127,7 @@ import {
   type SessionReferenceChartOptions,
   type SessionReferenceResult,
 } from "./session-aggregation.js";
+import { SessionIndicatorRuntime, SessionReferenceRuntime } from "./session-analytics-runtime.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -193,6 +192,7 @@ interface ManagedSessionIndicator {
   outputStyles: Record<string, import("./types.js").SeriesStyle>;
   visible: boolean;
   result: SessionIndicatorResult;
+  runtime: SessionIndicatorRuntime;
 }
 
 interface ManagedSessionReference {
@@ -200,6 +200,7 @@ interface ManagedSessionReference {
   options: SessionReferenceChartOptions & { readonly id: string };
   visible: boolean;
   result: SessionReferenceResult;
+  runtime: SessionReferenceRuntime;
 }
 
 const LIGHT_THEME: ChartTheme = {
@@ -364,6 +365,7 @@ export class Chart {
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromInput();
     this.refreshMultiTimeframe();
+    this.refreshSessionAnalysisFromInput();
     this.refreshWorkerIndicatorsFromInput();
     this.resetLiveAlerts(candles.at(-1));
     this.emit("dataUpdated", { kind: "set", time: candles.at(-1)?.time ?? null, appendOnly: false });
@@ -379,6 +381,7 @@ export class Chart {
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromUpdate(candle, appendOnly);
     this.refreshMultiTimeframe();
+    this.refreshSessionAnalysisFromUpdate(candle);
     this.refreshWorkerIndicatorsFromUpdate(candle);
     this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
@@ -1164,7 +1167,8 @@ export class Chart {
       outputStyles: options.outputStyles === undefined ? {} : cloneSeriesStyles(options.outputStyles),
       visible: options.visible ?? true,
     };
-    const result = calculateSessionIndicator(this.model.allCandles, normalizedOptions, this.indicatorRegistry);
+    const runtime = new SessionIndicatorRuntime(normalizedOptions, this.indicatorRegistry);
+    const result = runtime.setData(this.model.allCandles, this.resolveSessionAsOf(normalizedOptions, this.model.allCandles));
     const state: ManagedSessionIndicator = {
       id,
       indicatorId: result.indicatorId,
@@ -1174,6 +1178,7 @@ export class Chart {
       outputStyles: cloneSeriesStyles(options.outputStyles ?? {}),
       visible: normalizedOptions.visible ?? true,
       result,
+      runtime,
     };
     for (const output of result.outputs) {
       const seriesId = `${id}:${output.id}`;
@@ -1188,7 +1193,7 @@ export class Chart {
       state.outputSeriesIds.push(seriesId);
     }
     this.sessionIndicators.set(id, state);
-    this.syncSessionIndicator(state);
+    this.applySessionIndicatorResult(state);
     this.emit("indicatorChange", { action: "add", id, indicatorId: state.indicatorId });
     this.render();
     return this.wrapSessionIndicatorApi(state);
@@ -1215,14 +1220,15 @@ export class Chart {
       labelPrefix: options.labelPrefix ?? "Previous",
       style: { color: "#f59e0b", lineWidth: 1.5, lineStyle: "dashed", alpha: 0.9, ...(options.style ?? {}) },
     };
+    const runtime = new SessionReferenceRuntime(normalizedOptions);
     const state: ManagedSessionReference = {
       id,
       options: normalizedOptions,
       visible: normalizedOptions.visible ?? true,
-      result: calculatePreviousSessionLevels(this.model.allCandles, normalizedOptions),
+      result: runtime.setData(this.model.allCandles, this.resolveSessionAsOf(normalizedOptions, this.model.allCandles)),
+      runtime,
     };
     this.sessionReferences.set(id, state);
-    this.syncSessionReference(state);
     this.render();
     return this.wrapSessionReferenceApi(state);
   }
@@ -1541,6 +1547,7 @@ export class Chart {
     if (wasPrimaryCandleSeries) {
       this.refreshIndicatorsFromInput();
       this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
     }
     this.render();
   }
@@ -2740,6 +2747,7 @@ export class Chart {
         if (this.model.isPrimaryCandleSeries(id)) {
           this.refreshIndicatorsFromInput();
           this.refreshMultiTimeframe();
+          this.refreshSessionAnalysisFromInput();
           this.resetLiveAlerts((data.at(-1) as Candle | undefined));
         }
         this.emit("dataUpdated", { kind: "set", time: data.at(-1)?.time ?? null, appendOnly: false });
@@ -2756,6 +2764,7 @@ export class Chart {
         if (primaryCandleSeries) {
           this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
           this.refreshMultiTimeframe();
+          this.refreshSessionAnalysisFromUpdate(point as Candle);
           this.evaluateLiveAlerts(point as Candle, appendOnly ? "append" : "correction");
         }
         this.emit("dataUpdated", { kind: "update", time: point.time, appendOnly });
@@ -2865,11 +2874,16 @@ export class Chart {
         outputStyles: cloneSeriesStyles(state.outputStyles),
         visible: state.visible,
       }),
-      getResult: () => cloneSessionIndicatorResult(state.result),
+      getResult: () => {
+        state.result = state.runtime.getResult();
+        return cloneSessionIndicatorResult(state.result);
+      },
       setParameters: (parameters) => {
         this.assertAlive();
         this.assertReplayStructureMutationAllowed();
         state.options = { ...state.options, parameters: { ...parameters } };
+        const candles = this.model.allCandles;
+        state.result = state.runtime.setOptions(state.options, candles, this.resolveSessionAsOf(state.options, candles));
         this.syncSessionIndicator(state);
         this.emit("indicatorChange", { action: "update", id: state.id, indicatorId: state.indicatorId });
         this.render();
@@ -2909,12 +2923,17 @@ export class Chart {
         style: { ...(state.options.style ?? {}) },
         visible: state.visible,
       }),
-      getResult: () => cloneSessionReferenceResult(state.result),
+      getResult: () => {
+        state.result = state.runtime.getResult();
+        return cloneSessionReferenceResult(state.result);
+      },
       setOptions: (patch) => {
         this.assertAlive();
         this.assertReplayStructureMutationAllowed();
         state.options = { ...state.options, ...patch, id: state.id };
         state.visible = state.options.visible ?? state.visible;
+        const candles = this.model.allCandles;
+        state.result = state.runtime.setOptions(state.options, candles, this.resolveSessionAsOf(state.options, candles));
         this.syncSessionReference(state);
         this.render();
       },
@@ -2980,13 +2999,17 @@ export class Chart {
     const state = this.sessionIndicators.get(id);
     if (state === undefined) return;
     for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+    state.runtime.dispose();
     this.sessionIndicators.delete(id);
     this.emit("indicatorChange", { action: "remove", id, indicatorId: state.indicatorId });
     this.render();
   }
 
   private removeSessionReference(id: string): void {
-    if (!this.sessionReferences.delete(id)) return;
+    const state = this.sessionReferences.get(id);
+    if (state === undefined) return;
+    state.runtime.dispose();
+    this.sessionReferences.delete(id);
     this.render();
   }
 
@@ -3009,16 +3032,16 @@ export class Chart {
   }
 
   private syncSessionIndicator(state: ManagedSessionIndicator): void {
-    const candles = this.model.allCandles;
-    const asOfTime = this.resolveSessionAsOf(state.options, candles);
-    state.result = calculateSessionIndicator(candles, {
-      ...state.options,
-      ...(asOfTime === undefined ? {} : { asOfTime }),
-    }, this.indicatorRegistry);
+    state.result = state.runtime.getResult();
+    this.applySessionIndicatorResult(state);
+  }
+
+  private applySessionIndicatorResult(state: ManagedSessionIndicator): void {
+    const sourceTimes = this.model.allCandles.map((candle) => candle.time);
     for (const [index, output] of state.result.outputs.entries()) {
       const seriesId = state.outputSeriesIds[index];
       if (seriesId === undefined) continue;
-      const points = mapSessionIndicatorToSourceTimes(state.result, candles.map((candle) => candle.time), output.id)
+      const points = mapSessionIndicatorToSourceTimes(state.result, sourceTimes, output.id)
         .filter((point) => point.value !== null && point.availableAt !== null)
         .map((point) => ({ time: point.time, value: point.value! }));
       this.model.setSeriesData(seriesId, points);
@@ -3036,12 +3059,7 @@ export class Chart {
   }
 
   private syncSessionReference(state: ManagedSessionReference): void {
-    const candles = this.model.allCandles;
-    const asOfTime = this.resolveSessionAsOf(state.options, candles);
-    state.result = calculatePreviousSessionLevels(candles, {
-      ...state.options,
-      ...(asOfTime === undefined ? {} : { asOfTime }),
-    });
+    state.result = state.runtime.getResult();
   }
 
   /** Resolve a safe chart frontier without allowing replay to see beyond its cursor. */
@@ -3058,6 +3076,10 @@ export class Chart {
   private resolveSessionAsOf(options: { readonly asOfTime?: number }, candles: readonly Candle[]): number | undefined {
     const requested = options.asOfTime;
     const latestTime = candles.at(-1)?.time;
+    return this.resolveSessionAsOfTime(requested, latestTime);
+  }
+
+  private resolveSessionAsOfTime(requested: number | undefined, latestTime: number | undefined): number | undefined {
     if (this.model.getReplayCutoff() !== null && latestTime !== undefined) {
       return requested === undefined ? latestTime : Math.min(requested, latestTime);
     }
@@ -3067,8 +3089,54 @@ export class Chart {
   private refreshMultiTimeframe(): void {
     for (const state of this.multiTimeframeIndicators.values()) this.syncMultiTimeframeIndicator(state);
     for (const state of this.multiTimeframeReferences.values()) this.syncMultiTimeframeReference(state);
-    for (const state of this.sessionIndicators.values()) this.syncSessionIndicator(state);
-    for (const state of this.sessionReferences.values()) this.syncSessionReference(state);
+  }
+
+  private refreshSessionAnalysisFromInput(): void {
+    const candles = this.model.allCandles;
+    for (const state of this.sessionIndicators.values()) {
+      state.result = state.runtime.setData(candles, this.resolveSessionAsOf(state.options, candles));
+      this.applySessionIndicatorResult(state);
+    }
+    for (const state of this.sessionReferences.values()) {
+      state.result = state.runtime.setData(candles, this.resolveSessionAsOf(state.options, candles));
+    }
+  }
+
+  private refreshSessionAnalysisFromUpdate(candle: Candle): void {
+    const latestTime = this.model.getLatestCandleTime();
+    for (const state of this.sessionIndicators.values()) {
+      const asOfTime = this.resolveSessionAsOfTime(state.options.asOfTime, latestTime);
+      if (state.runtime.update(candle, asOfTime)) {
+        state.result = state.runtime.getResult();
+        this.applySessionIndicatorResult(state);
+      } else {
+        this.extendSessionIndicatorSeries(state, candle);
+        state.result = { ...state.result, asOfTime: asOfTime ?? state.result.asOfTime };
+      }
+    }
+    for (const state of this.sessionReferences.values()) {
+      const asOfTime = this.resolveSessionAsOfTime(state.options.asOfTime, latestTime);
+      if (state.runtime.update(candle, asOfTime)) {
+        state.result = state.runtime.getResult();
+      } else {
+        // The previously completed period remains the active reference while
+        // the new session is forming. Advancing only the display frontier lets
+        // the overlay continue across newly appended source timestamps.
+        state.result = { ...state.result, asOfTime: asOfTime ?? state.result.asOfTime };
+      }
+    }
+  }
+
+  private extendSessionIndicatorSeries(state: ManagedSessionIndicator, candle: Candle): void {
+    for (const [index, output] of state.result.outputs.entries()) {
+      const seriesId = state.outputSeriesIds[index];
+      if (seriesId === undefined) continue;
+      const point = [...output.points]
+        .filter((candidate) => candidate.availableAt !== null && candidate.availableAt <= candle.time && candidate.value !== null)
+        .at(-1);
+      if (point === undefined) continue;
+      this.model.updateSeries(seriesId, { time: candle.time, value: point.value! });
+    }
   }
 
   private clearMultiTimeframe(): void {
@@ -3083,7 +3151,9 @@ export class Chart {
   private clearSessionAnalysis(): void {
     for (const state of this.sessionIndicators.values()) {
       for (const seriesId of state.outputSeriesIds) if (this.model.getSeriesIds().includes(seriesId)) this.model.removeSeries(seriesId);
+      state.runtime.dispose();
     }
+    for (const state of this.sessionReferences.values()) state.runtime.dispose();
     this.sessionIndicators.clear();
     this.sessionReferences.clear();
     this.nextSessionAnalysisId = 1;
@@ -3299,6 +3369,7 @@ export class Chart {
       this.alertEngine.reset("replay", true);
       this.refreshIndicatorsFromInput();
       this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
       this.refreshWorkerIndicatorsFromInput();
       this.render();
     } catch (error) {
@@ -3321,6 +3392,7 @@ export class Chart {
     if (visibleLastCandle === undefined) {
       this.refreshIndicatorsFromInput();
       this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
       this.refreshWorkerIndicatorsFromInput();
       this.alertEngine.reset("replay", true);
       const visibleCandles = this.model.allCandles;
@@ -3328,6 +3400,7 @@ export class Chart {
     } else {
       this.refreshIndicatorsFromUpdate(visibleLastCandle, true);
       this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromUpdate(visibleLastCandle);
       this.refreshWorkerIndicatorsFromUpdate(visibleLastCandle);
       this.evaluateReplayAlerts(visibleLastCandle, "append");
     }
