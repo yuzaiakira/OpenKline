@@ -1169,3 +1169,10 @@ compatibility decision packet, package evidence, and remaining gates.
   replay, and are hidden during normalized comparison without mixing raw and
   normalized scales. Official non-Chromium, physical-device, accessibility,
   and visual-approval gates remain open.
+- [Implemented / Node-benchmarked — 10.4 verification] Added public API
+  coverage, deterministic multi-timeframe benchmark cases for 1,000, 10,000,
+  and 100,000 source candles, and lifecycle/correction regression coverage.
+  The cloud benchmark reports calculation latency only; it is not a Canvas2D
+  FPS or physical-device performance claim. See
+  `docs/reports/phase-10-final-verification.md` for the complete acceptance
+  matrix and remaining environment gates.

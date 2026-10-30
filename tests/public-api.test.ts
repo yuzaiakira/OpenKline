@@ -11,7 +11,8 @@ test("root public API exposes the documented framework-independent contracts", a
   for (const name of [
     "Chart", "createChart", "InMemoryDatafeed", "ComparisonDatafeedController", "IndicatorRegistry", "DrawingEngine",
     "PluginRegistry", "compileKlineScript", "ReplayEngine", "createBacktest",
-    "createOptimizationWorker", "createScreenerWorker", "createPaperTradingAccount",
+    "createOptimizationWorker", "createScreenerWorker", "createPaperTradingAccount", "aggregateCandlesByTimeframe",
+    "calculateMultiTimeframeIndicator", "calculatePreviousTimeframeLevels", "parseFixedTimeframe",
   ]) assert.equal(typeof api[name as keyof typeof api], "function", `${name} must remain a runtime export`);
 
   const store = new api.CandleStore();
@@ -97,4 +98,21 @@ test("Phase 9 public additions are consumable without changing legacy contracts"
   const parsed = api.parseWorkspace(legacyWorkspace);
   assert.equal(parsed.volumeAnalytics, undefined);
   assert.deepEqual(JSON.parse(JSON.stringify(parsed)), legacyWorkspace);
+});
+
+test("Phase 10 multi-timeframe public calculation APIs are consumable", () => {
+  const input = Array.from({ length: 10 }, (_, index) => ({
+    time: index * 60_000,
+    open: index + 1,
+    high: index + 2,
+    low: index,
+    close: index + 1.5,
+    volume: 10,
+  }));
+  const aggregated = api.aggregateCandlesByTimeframe(input, { sourceTimeframe: "1m", targetTimeframe: "5m", coveragePolicy: "fixed-duration", asOfTime: 10 * 60_000 });
+  assert.equal(aggregated.observations[0]?.status, "closed-complete");
+  const indicator = api.calculateMultiTimeframeIndicator(input, { indicatorId: "SMA", sourceTimeframe: "1m", targetTimeframe: "5m", coveragePolicy: "fixed-duration", parameters: { period: 2 }, asOfTime: 10 * 60_000 });
+  assert.equal(indicator.outputs[0]?.points.length, 2);
+  const levels = api.calculatePreviousTimeframeLevels(input, { sourceTimeframe: "1m", targetTimeframe: "5m", coveragePolicy: "fixed-duration", asOfTime: 10 * 60_000 });
+  assert.deepEqual(levels.points[1]?.levels, { open: 1, high: 6, low: 0, close: 5.5 });
 });

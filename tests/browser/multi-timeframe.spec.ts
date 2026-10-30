@@ -30,7 +30,6 @@ test("multi-timeframe indicators and previous levels remain causal through corre
     const initialPoints = initial.outputs[0]?.points ?? [];
     const firstAvailable = initialPoints.find((point) => point.availableAt !== null);
     const initialReference = reference.getResult().points;
-    const initialSeries = chart.getSeriesInfo().find((series) => series.id === "browser-mtf-sma:value");
 
     const correction = source[11];
     if (correction === undefined) throw new Error("Fixture has no correction candle");
