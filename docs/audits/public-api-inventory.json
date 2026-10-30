@@ -84,6 +84,13 @@
     },
     {
       "package": "openkline",
+      "name": "aggregateCandlesByTradingPeriod",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "92d1618e12aa3ac018745f354edc6d22c0994dc25e58e10f709378ffc65ce008"
+    },
+    {
+      "package": "openkline",
       "name": "AlertApi",
       "kind": "type",
       "module": "./alerts/index.js",
@@ -679,10 +686,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculatePreviousSessionLevels",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "e5ac65d0a2e7783fbdbb6b0b72f930fa5dd7c8ea5e1997401a53193b36b4a406"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePreviousTimeframeLevels",
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "2e373fb01b436b484e90213cffbed605a57c2c1a12d888ff6b621948f89aa4b6"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateSessionIndicator",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "764a3ad14645225f6d458dcea28ff34c36ed96488d86f462cafe9256a120edee"
     },
     {
       "package": "openkline",
@@ -759,7 +780,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "fbc580ea7bd3d75d0f779c60287389b869fdce8790ec222f05595597d98b3b61"
+      "signatureHash": "83212477ff9edbdf4064deb5876f44ca192eda44071c3c0d2dfd1d2cd182ffaa"
     },
     {
       "package": "openkline",
@@ -1039,7 +1060,7 @@
       "name": "ComparisonDatafeedCoveragePolicy",
       "kind": "type",
       "module": "./comparison-datafeed.js",
-      "signatureHash": "66cb99afb75dd7de2212cc859af2f024fc9f2cf151299800db83c323a3cdfba0"
+      "signatureHash": "b4e10d20824b641dee42bd4b8f5ad05187220eb0c82345ae5b975c35fc21dabc"
     },
     {
       "package": "openkline",
@@ -1162,6 +1183,13 @@
     },
     {
       "package": "openkline",
+      "name": "createComparisonDatafeedCalendarCoverage",
+      "kind": "runtime",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "3194925948a0b5baa6adf51fb965d55381fee16cf9cba759dc2a6400ee966953"
+    },
+    {
+      "package": "openkline",
       "name": "createDefaultIndicatorRegistry",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -1194,6 +1222,13 @@
       "kind": "runtime",
       "module": "./screener/index.js",
       "signatureHash": "8a25fb40d68a517ca10e45f3e0a9e76283c34e3ade4a79da2eaac1b9aa73ef0b"
+    },
+    {
+      "package": "openkline",
+      "name": "createIllustrativeWeekdayCalendar",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "15445e6fb02b80d30eeda274f10ac37f8ab96f97b5f87fcfa12580b7a7f7fbff"
     },
     {
       "package": "openkline",
@@ -1320,6 +1355,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "75e1a10359d5a23d85c74134bdea7781555ccbfa071518863b28c0b9a702d27b"
+    },
+    {
+      "package": "openkline",
+      "name": "defaultTradingCalendarDisplayOptions",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "1096f8cfca308571e4e851701b1fb0180f2e68b330aa1baec820f12f411d6153"
     },
     {
       "package": "openkline",
@@ -1876,6 +1918,13 @@
     },
     {
       "package": "openkline",
+      "name": "isTradingCalendarEngine",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "12d616208248c695839db77e762630595d34a37213d8bf0620980adb69b3b910"
+    },
+    {
+      "package": "openkline",
       "name": "isWorkerRequest",
       "kind": "runtime",
       "module": "./klinescript/index.js",
@@ -2198,6 +2247,13 @@
     },
     {
       "package": "openkline",
+      "name": "LocalTimeDisambiguation",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e34c43e14b39fc90e7beea305c0e39c95f1f7ce6b4208c00bdf062a5a6541090"
+    },
+    {
+      "package": "openkline",
       "name": "longPositionTool",
       "kind": "runtime",
       "module": "./drawings/index.js",
@@ -2244,6 +2300,27 @@
       "kind": "type",
       "module": "./multi-timeframe.js",
       "signatureHash": "0a39b8756a627b100f8601246d9165be2a5f8c5bf9840bd81475b7998da716c4"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedSessionReferencePoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "13effc4f2109cc7115cdf988bd5afbf48b57ed0d0bbd4375a952a806d58bcef8"
+    },
+    {
+      "package": "openkline",
+      "name": "mapSessionIndicatorToSourceTimes",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "52dbd2594039d2d650cb735654ee88c91a2f3912fbde11f94131d0236f535c0f"
+    },
+    {
+      "package": "openkline",
+      "name": "mapSessionReferenceToSourceTimes",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c3ad0aea8a8438c7a84b0fe2b0d4395dc0a537fd098cf1c054266478f123e091"
     },
     {
       "package": "openkline",
@@ -3535,6 +3612,13 @@
     },
     {
       "package": "openkline",
+      "name": "renderTradingCalendarOverlay",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "c9ef2eb44c4edd8644288bfe0e82d447ab0c707670924c4015a4a8af236de185"
+    },
+    {
+      "package": "openkline",
       "name": "ReplayApi",
       "kind": "type",
       "module": "./replay/index.js",
@@ -3612,10 +3696,31 @@
     },
     {
       "package": "openkline",
+      "name": "ResolvedTradingCalendarDisplayOptions",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "e41c1240a0eeadd453fcf17799be04f77a17f05ea9891fc09ee07034344b98ee"
+    },
+    {
+      "package": "openkline",
       "name": "ResolvedVolumeProfileOptions",
       "kind": "type",
       "module": "./volume-analytics.js",
       "signatureHash": "5424ae7215b0733370472e7f57dcd44c1b4172f1028b569da61193c256c9b4c6"
+    },
+    {
+      "package": "openkline",
+      "name": "resolveTradingCalendarDisplayOptions",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "b06a12e3145306dad33a4a6a2e86d1792fc34213ef22258e5510a563014cc6ef"
+    },
+    {
+      "package": "openkline",
+      "name": "resolveTradingLocalDateTime",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5764935984b017ef3c66a10437a2c63e2a8d99c4d5d026a40c45ee6ee30e3aae"
     },
     {
       "package": "openkline",
@@ -4361,6 +4466,118 @@
     },
     {
       "package": "openkline",
+      "name": "SessionAggregationMetadata",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "8e3c76a43ebaeb8d9c990f435640f3350fa33343e8d9b1f4aed057a734fb217a"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionAggregationOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "12e7c7ef58117dbd9c198ac3dfe29eebb8e96048c2248966d596cf559a7896fa"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionAggregationResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "acb317966823bae4871e431b491fd56e774de02a13f30099863c0c4eb9fddafd"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionAwareCandleAggregator",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c8f5f2fa05475760501d2c1fd1b1e03c5660ff7ab7d5eebf87edbf5b9360c7d4"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionCandleObservation",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "fc9fa6a7f4c6a34d02954a9dd5539fd7a407c96c993694ddc9a67d449796ee2e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorApi",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "bfe67b0e8a2f0fef05a633f34c723b19518df73656f9ba035a2e59c4547e539e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorChartOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c3ad14f0e6bdc42cf4f999cfa8025ad44b6e4658a15d88ae1234bde879771f9c"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "6d2f6820ada665cc537d4dc030f393ba093fe925f7d98f7570119c84e1107b56"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorOutput",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a7522dcaa54561061d1dffeda9758a78f7d2803198b82e3fd38655711554cfb3"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorPoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "e64b0e348579209d8b3d21df1af4261e7bc0f3574be63bdc14c75407172c8da8"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a127f1f7c610b323a63f213dfcafb7a14f2d6238658406b0c7857b45e2713914"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceApi",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "fe98e45f0e0c9afd0f671ebfa3408e801d02b6fd6f9c93fcd2bb7e21679812f5"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceChartOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "978d6e7a5f53f0b5d9d3aeee7c749b988d7746e2e5adf98c85cae6de2be8fba4"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "ca0ec3b0b78992b1f6f239ffd7e0a6533c15973079a44eb3975ef1057a0436a9"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferencePoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a07c7d945dfa2b15f656f377bb2bff47c433099c25bf84796f16d3dc03e6eb7e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a7e4dc1d88b91a8ef521ceda8081771595bf8c24c85fbc5ceb279baa3adaf3bb"
+    },
+    {
+      "package": "openkline",
       "name": "shortPositionTool",
       "kind": "runtime",
       "module": "./drawings/index.js",
@@ -4666,6 +4883,181 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "6a7b09e64398d2d0c954d7889a3b25389b53eaaa42d37d7c5d68b15acad6c04b"
+    },
+    {
+      "package": "openkline",
+      "name": "toTimeframeCalendar",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "a9ea43d6d64582d9b550d13710b101189c364a3e38134aae05a4286656a64f63"
+    },
+    {
+      "package": "openkline",
+      "name": "toWorkspaceTradingCalendar",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "e169c5153ab9c1a0fa13a0e0cb0e382918fa59da2ba0ff41a6d27c41528ca790"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingAggregationPeriod",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "d018a5e1bac02454a75a72b420ad8f9e6bc197e0a817b18d3a9dc55da7705cec"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarApi",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "28367bdf8e0e1aad141ab01c8d1b74a503790f44d49786f7431c7688e8a9d82f"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarCoverage",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "1f3c683c62ef3c99743f1d5c34ed29ec7e838a8b916d7429fba4703028f0e76d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarCoverageStatus",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "ac087d4350cb9c7aa17ed27bc4a1c8bee91fdaa638e12fd0fd33c124eda3a075"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarDefinition",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "8ac72cad8e4efe34548f242cfb343b8a93d004b36780afb5450fab082ca55d1d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarDisplayOptions",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "be7c8f26ad5dda158ca7703e84ac28e2b6a78e04c7dc0cb44dae0ae7236cdd5b"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarEngine",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "ee115b6fbbefd28bf982f0dd38bf02419e587a8678406c31a7bd9fff4322d2d0"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarException",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "567cc6f19270a6783dafe95fbb47c833d2d2de191b4d0ceb99edf698056498ed"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarExceptionKind",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0f7c863873903ca2b85b8ecac7d8afb40bfa095962d0ab707c9725871a03b2ca"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarLocalDateTime",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5ee88ffc15968747bc7b73959ee5d3492c3304b1894583a4c992f3fedd397c6c"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarQueryOptions",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "b4b46cc861e15f7edd9cfade16e8e138068f6e0803f03815c17c3402128ab99d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarRegistry",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e4da144a9081f98a3fcddc3d694c1f62b0d170bdf41da64986a30753f3a22d2c"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarRegistryEntry",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e19106c80d0b37a4a9dcebd34d6ba2077adae375a8b4d310b9f7ac4166134ef2"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarSnapshot",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0bf3febb66591aef4c9fed0d7cade5661d95d857551705816c33fde3661658f6"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarValidity",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "11ed869f0536be6f6f1c21a1a3f8289dabf692f30426907e139a2227ea7cebaf"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingDate",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "a509982697abde15444876a956c186996bd8ee62aa47e725070f80f025aa45b1"
+    },
+    {
+      "package": "openkline",
+      "name": "tradingDateForTimestamp",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0831040f6e2d7665c7482e64b5caf0a0bad02847277939c43afcfe7eacf62695"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSession",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "013c13f801096247ac9d6bcb7d5f19c836ce38b5f21d03dfb55c2388fbbc76dc"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionBreak",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5b54a2a61b7b3a67a68c76707cf95e7e360ae0427e816ab7a9cd063041c2758e"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionClassification",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "905563e96a94f004e2f438847744db660da76e92a402112ddfef66fd0f346599"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionSegment",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "04d864c3fce5ddb79aaa3e438bb257aa4b2d2c9d64c6c11ccb14947b1fc36106"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionSegmentDefinition",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "66e2282044dadf3b9fd632b0333296d77b32df3b574b94fa7e7a3b5e8e843b16"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionTemplate",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "f602483b9a80fcfd97475446ec20faaaa98816c177a2ba686e1f93e76cd42854"
     },
     {
       "package": "openkline",
@@ -5022,7 +5414,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "35f07005f6297d72f8bd11b0683f667c66bb516c03e019853f594ccf2b5484e6"
+      "signatureHash": "b9e693fcbbd32656ef092ccb7603f933a4530ea0e75ebb744bc92ca4934a5f01"
     },
     {
       "package": "openkline",
@@ -5085,7 +5477,7 @@
       "name": "WorkspaceRestoreOptions",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "c2dc1471bc35af1ac923d5ebf1f533e053e722082c52dac927c48d3131023bff"
+      "signatureHash": "9bc8fbe1476192dad92bf1f406ef776bb58c1e4ab19ad9d8dd74887536f2dffe"
     },
     {
       "package": "openkline",
@@ -5100,6 +5492,34 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "2110afc7a9ec9da14cd363ac3a96298c1f847cc34b3ce8f48d7ad308193c6ba7"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionAnalysis",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "fcf6af314e8bfe0b3baf7954896f34504e04481a041d14bb5f38cda81a0a6a25"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionIndicator",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "dc95e1c9a1daa46c45ba4fd0a86c4df06a09cff448ad84eb1c20f6d9c9391f06"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionReference",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "4779bb763ec7c4799f14ec6c941d8caee4e206b140a00e30a699fd41bfa40155"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceTradingCalendar",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "33264ac6008725ce781b6c5b6c3284d039fbe46db9302e4f20c746b7e960a681"
     },
     {
       "package": "openkline",
@@ -5151,6 +5571,13 @@
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "7ea1c18ac5405fc6488231332e113f9dd41f3f54df3e78c478b55a3dd445d5dd"
+    },
+    {
+      "package": "openkline",
+      "name": "aggregateCandlesByTradingPeriod",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "92d1618e12aa3ac018745f354edc6d22c0994dc25e58e10f709378ffc65ce008"
     },
     {
       "package": "openkline",
@@ -5315,10 +5742,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculatePreviousSessionLevels",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "e5ac65d0a2e7783fbdbb6b0b72f930fa5dd7c8ea5e1997401a53193b36b4a406"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePreviousTimeframeLevels",
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "2e373fb01b436b484e90213cffbed605a57c2c1a12d888ff6b621948f89aa4b6"
+    },
+    {
+      "package": "openkline",
+      "name": "calculateSessionIndicator",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "764a3ad14645225f6d458dcea28ff34c36ed96488d86f462cafe9256a120edee"
     },
     {
       "package": "openkline",
@@ -5367,7 +5808,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "fbc580ea7bd3d75d0f779c60287389b869fdce8790ec222f05595597d98b3b61"
+      "signatureHash": "83212477ff9edbdf4064deb5876f44ca192eda44071c3c0d2dfd1d2cd182ffaa"
     },
     {
       "package": "openkline",
@@ -5441,6 +5882,13 @@
     },
     {
       "package": "openkline",
+      "name": "createComparisonDatafeedCalendarCoverage",
+      "kind": "runtime",
+      "module": "./comparison-datafeed.js",
+      "signatureHash": "3194925948a0b5baa6adf51fb965d55381fee16cf9cba759dc2a6400ee966953"
+    },
+    {
+      "package": "openkline",
       "name": "createDefaultIndicatorRegistry",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -5473,6 +5921,13 @@
       "kind": "runtime",
       "module": "./screener/index.js",
       "signatureHash": "8a25fb40d68a517ca10e45f3e0a9e76283c34e3ade4a79da2eaac1b9aa73ef0b"
+    },
+    {
+      "package": "openkline",
+      "name": "createIllustrativeWeekdayCalendar",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "15445e6fb02b80d30eeda274f10ac37f8ab96f97b5f87fcfa12580b7a7f7fbff"
     },
     {
       "package": "openkline",
@@ -5564,6 +6019,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "75e1a10359d5a23d85c74134bdea7781555ccbfa071518863b28c0b9a702d27b"
+    },
+    {
+      "package": "openkline",
+      "name": "defaultTradingCalendarDisplayOptions",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "1096f8cfca308571e4e851701b1fb0180f2e68b330aa1baec820f12f411d6153"
     },
     {
       "package": "openkline",
@@ -5791,6 +6253,13 @@
     },
     {
       "package": "openkline",
+      "name": "isTradingCalendarEngine",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "12d616208248c695839db77e762630595d34a37213d8bf0620980adb69b3b910"
+    },
+    {
+      "package": "openkline",
       "name": "isWorkerRequest",
       "kind": "runtime",
       "module": "./klinescript/index.js",
@@ -5886,6 +6355,20 @@
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "f769355efb247e37029e94ea3bff66bdbc568c5fd8f129764f0e13781395fac2"
+    },
+    {
+      "package": "openkline",
+      "name": "mapSessionIndicatorToSourceTimes",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "52dbd2594039d2d650cb735654ee88c91a2f3912fbde11f94131d0236f535c0f"
+    },
+    {
+      "package": "openkline",
+      "name": "mapSessionReferenceToSourceTimes",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c3ad0aea8a8438c7a84b0fe2b0d4395dc0a537fd098cf1c054266478f123e091"
     },
     {
       "package": "openkline",
@@ -6274,6 +6757,13 @@
     },
     {
       "package": "openkline",
+      "name": "renderTradingCalendarOverlay",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "c9ef2eb44c4edd8644288bfe0e82d447ab0c707670924c4015a4a8af236de185"
+    },
+    {
+      "package": "openkline",
       "name": "ReplayEngine",
       "kind": "runtime",
       "module": "./replay/index.js",
@@ -6292,6 +6782,20 @@
       "kind": "runtime",
       "module": "./replay/index.js",
       "signatureHash": "193eb21dc073ef98106b28722680b439ada6c19e2e6f9e8d6cb3ae92106438c8"
+    },
+    {
+      "package": "openkline",
+      "name": "resolveTradingCalendarDisplayOptions",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "b06a12e3145306dad33a4a6a2e86d1792fc34213ef22258e5510a563014cc6ef"
+    },
+    {
+      "package": "openkline",
+      "name": "resolveTradingLocalDateTime",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5764935984b017ef3c66a10437a2c63e2a8d99c4d5d026a40c45ee6ee30e3aae"
     },
     {
       "package": "openkline",
@@ -6498,6 +7002,13 @@
     },
     {
       "package": "openkline",
+      "name": "SessionAwareCandleAggregator",
+      "kind": "runtime",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c8f5f2fa05475760501d2c1fd1b1e03c5660ff7ab7d5eebf87edbf5b9360c7d4"
+    },
+    {
+      "package": "openkline",
       "name": "shortPositionTool",
       "kind": "runtime",
       "module": "./drawings/index.js",
@@ -6579,6 +7090,41 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "6a7b09e64398d2d0c954d7889a3b25389b53eaaa42d37d7c5d68b15acad6c04b"
+    },
+    {
+      "package": "openkline",
+      "name": "toTimeframeCalendar",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "a9ea43d6d64582d9b550d13710b101189c364a3e38134aae05a4286656a64f63"
+    },
+    {
+      "package": "openkline",
+      "name": "toWorkspaceTradingCalendar",
+      "kind": "runtime",
+      "module": "./session-visualization.js",
+      "signatureHash": "e169c5153ab9c1a0fa13a0e0cb0e382918fa59da2ba0ff41a6d27c41528ca790"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarEngine",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "ee115b6fbbefd28bf982f0dd38bf02419e587a8678406c31a7bd9fff4322d2d0"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarRegistry",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e4da144a9081f98a3fcddc3d694c1f62b0d170bdf41da64986a30753f3a22d2c"
+    },
+    {
+      "package": "openkline",
+      "name": "tradingDateForTimestamp",
+      "kind": "runtime",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0831040f6e2d7665c7482e64b5caf0a0bad02847277939c43afcfe7eacf62695"
     },
     {
       "package": "openkline",
@@ -7434,7 +7980,7 @@
       "name": "ComparisonDatafeedCoveragePolicy",
       "kind": "type",
       "module": "./comparison-datafeed.js",
-      "signatureHash": "66cb99afb75dd7de2212cc859af2f024fc9f2cf151299800db83c323a3cdfba0"
+      "signatureHash": "b4e10d20824b641dee42bd4b8f5ad05187220eb0c82345ae5b975c35fc21dabc"
     },
     {
       "package": "openkline",
@@ -8138,6 +8684,13 @@
     },
     {
       "package": "openkline",
+      "name": "LocalTimeDisambiguation",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e34c43e14b39fc90e7beea305c0e39c95f1f7ce6b4208c00bdf062a5a6541090"
+    },
+    {
+      "package": "openkline",
       "name": "MacdParameters",
       "kind": "type",
       "module": "./indicators/index.js",
@@ -8156,6 +8709,13 @@
       "kind": "type",
       "module": "./multi-timeframe.js",
       "signatureHash": "0a39b8756a627b100f8601246d9165be2a5f8c5bf9840bd81475b7998da716c4"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedSessionReferencePoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "13effc4f2109cc7115cdf988bd5afbf48b57ed0d0bbd4375a952a806d58bcef8"
     },
     {
       "package": "openkline",
@@ -9118,6 +9678,13 @@
     },
     {
       "package": "openkline",
+      "name": "ResolvedTradingCalendarDisplayOptions",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "e41c1240a0eeadd453fcf17799be04f77a17f05ea9891fc09ee07034344b98ee"
+    },
+    {
+      "package": "openkline",
       "name": "ResolvedVolumeProfileOptions",
       "kind": "type",
       "module": "./volume-analytics.js",
@@ -9664,6 +10231,111 @@
     },
     {
       "package": "openkline",
+      "name": "SessionAggregationMetadata",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "8e3c76a43ebaeb8d9c990f435640f3350fa33343e8d9b1f4aed057a734fb217a"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionAggregationOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "12e7c7ef58117dbd9c198ac3dfe29eebb8e96048c2248966d596cf559a7896fa"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionAggregationResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "acb317966823bae4871e431b491fd56e774de02a13f30099863c0c4eb9fddafd"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionCandleObservation",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "fc9fa6a7f4c6a34d02954a9dd5539fd7a407c96c993694ddc9a67d449796ee2e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorApi",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "bfe67b0e8a2f0fef05a633f34c723b19518df73656f9ba035a2e59c4547e539e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorChartOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "c3ad14f0e6bdc42cf4f999cfa8025ad44b6e4658a15d88ae1234bde879771f9c"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "6d2f6820ada665cc537d4dc030f393ba093fe925f7d98f7570119c84e1107b56"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorOutput",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a7522dcaa54561061d1dffeda9758a78f7d2803198b82e3fd38655711554cfb3"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorPoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "e64b0e348579209d8b3d21df1af4261e7bc0f3574be63bdc14c75407172c8da8"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionIndicatorResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a127f1f7c610b323a63f213dfcafb7a14f2d6238658406b0c7857b45e2713914"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceApi",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "fe98e45f0e0c9afd0f671ebfa3408e801d02b6fd6f9c93fcd2bb7e21679812f5"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceChartOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "978d6e7a5f53f0b5d9d3aeee7c749b988d7746e2e5adf98c85cae6de2be8fba4"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceOptions",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "ca0ec3b0b78992b1f6f239ffd7e0a6533c15973079a44eb3975ef1057a0436a9"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferencePoint",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a07c7d945dfa2b15f656f377bb2bff47c433099c25bf84796f16d3dc03e6eb7e"
+    },
+    {
+      "package": "openkline",
+      "name": "SessionReferenceResult",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "a7e4dc1d88b91a8ef521ceda8081771595bf8c24c85fbc5ceb279baa3adaf3bb"
+    },
+    {
+      "package": "openkline",
       "name": "ShortSellingOptions",
       "kind": "type",
       "module": "./backtesting/index.js",
@@ -9885,6 +10557,146 @@
       "kind": "type",
       "module": "./multi-timeframe.js",
       "signatureHash": "e9b20c4904da37b769c54c450e8d18b9c5ad1187d3802e77da9716bddc07e596"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingAggregationPeriod",
+      "kind": "type",
+      "module": "./session-aggregation.js",
+      "signatureHash": "d018a5e1bac02454a75a72b420ad8f9e6bc197e0a817b18d3a9dc55da7705cec"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarApi",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "28367bdf8e0e1aad141ab01c8d1b74a503790f44d49786f7431c7688e8a9d82f"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarCoverage",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "1f3c683c62ef3c99743f1d5c34ed29ec7e838a8b916d7429fba4703028f0e76d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarCoverageStatus",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "ac087d4350cb9c7aa17ed27bc4a1c8bee91fdaa638e12fd0fd33c124eda3a075"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarDefinition",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "8ac72cad8e4efe34548f242cfb343b8a93d004b36780afb5450fab082ca55d1d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarDisplayOptions",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "be7c8f26ad5dda158ca7703e84ac28e2b6a78e04c7dc0cb44dae0ae7236cdd5b"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarException",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "567cc6f19270a6783dafe95fbb47c833d2d2de191b4d0ceb99edf698056498ed"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarExceptionKind",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0f7c863873903ca2b85b8ecac7d8afb40bfa095962d0ab707c9725871a03b2ca"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarLocalDateTime",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5ee88ffc15968747bc7b73959ee5d3492c3304b1894583a4c992f3fedd397c6c"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarQueryOptions",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "b4b46cc861e15f7edd9cfade16e8e138068f6e0803f03815c17c3402128ab99d"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarRegistryEntry",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "e19106c80d0b37a4a9dcebd34d6ba2077adae375a8b4d310b9f7ac4166134ef2"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarSnapshot",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "0bf3febb66591aef4c9fed0d7cade5661d95d857551705816c33fde3661658f6"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingCalendarValidity",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "11ed869f0536be6f6f1c21a1a3f8289dabf692f30426907e139a2227ea7cebaf"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingDate",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "a509982697abde15444876a956c186996bd8ee62aa47e725070f80f025aa45b1"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSession",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "013c13f801096247ac9d6bcb7d5f19c836ce38b5f21d03dfb55c2388fbbc76dc"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionBreak",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "5b54a2a61b7b3a67a68c76707cf95e7e360ae0427e816ab7a9cd063041c2758e"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionClassification",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "905563e96a94f004e2f438847744db660da76e92a402112ddfef66fd0f346599"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionSegment",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "04d864c3fce5ddb79aaa3e438bb257aa4b2d2c9d64c6c11ccb14947b1fc36106"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionSegmentDefinition",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "66e2282044dadf3b9fd632b0333296d77b32df3b574b94fa7e7a3b5e8e843b16"
+    },
+    {
+      "package": "openkline",
+      "name": "TradingSessionTemplate",
+      "kind": "type",
+      "module": "./trading-calendar.js",
+      "signatureHash": "f602483b9a80fcfd97475446ec20faaaa98816c177a2ba686e1f93e76cd42854"
     },
     {
       "package": "openkline",
@@ -10150,7 +10962,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "35f07005f6297d72f8bd11b0683f667c66bb516c03e019853f594ccf2b5484e6"
+      "signatureHash": "b9e693fcbbd32656ef092ccb7603f933a4530ea0e75ebb744bc92ca4934a5f01"
     },
     {
       "package": "openkline",
@@ -10213,7 +11025,7 @@
       "name": "WorkspaceRestoreOptions",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "c2dc1471bc35af1ac923d5ebf1f533e053e722082c52dac927c48d3131023bff"
+      "signatureHash": "9bc8fbe1476192dad92bf1f406ef776bb58c1e4ab19ad9d8dd74887536f2dffe"
     },
     {
       "package": "openkline",
@@ -10228,6 +11040,34 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "2110afc7a9ec9da14cd363ac3a96298c1f847cc34b3ce8f48d7ad308193c6ba7"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionAnalysis",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "fcf6af314e8bfe0b3baf7954896f34504e04481a041d14bb5f38cda81a0a6a25"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionIndicator",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "dc95e1c9a1daa46c45ba4fd0a86c4df06a09cff448ad84eb1c20f6d9c9391f06"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceSessionReference",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "4779bb763ec7c4799f14ec6c941d8caee4e206b140a00e30a699fd41bfa40155"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceTradingCalendar",
+      "kind": "type",
+      "module": "./session-visualization.js",
+      "signatureHash": "33264ac6008725ce781b6c5b6c3284d039fbe46db9302e4f20c746b7e960a681"
     },
     {
       "package": "openkline",
@@ -10249,5 +11089,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "6aa63d2202fff492fb8ce92b1cc0d898c8cf1a5d"
+  "generatedFrom": "9fadebb2a7ab2cc26a7db55c9bf8d2646e086be3"
 }

@@ -845,6 +845,7 @@ export default function MultiChartStudioClient() {
   const activeHandle = panelRefs.current.get(activePanel.panelId) ?? null;
   const activeSnapshot = snapshots[activePanel.panelId] ?? activeHandle?.getSnapshot() ?? emptySnapshot();
   const replayActive = activeSnapshot.replayStatus.state !== "idle" && activeSnapshot.replayStatus.state !== "disposed";
+  const chartReady = activeHandle !== null && activeHandle.getChart() !== null;
   const comparisonBaselineOptions = useMemo(() => {
     const candles = buildCandles(activePanel.symbol, activePanel.timeframe);
     const indexes = [0, Math.floor(candles.length * 0.25), Math.floor(candles.length * 0.5), Math.floor(candles.length * 0.75)];
@@ -1053,7 +1054,7 @@ export default function MultiChartStudioClient() {
     activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" });
   }, [activeHandle, replayActive]);
   const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
-  const analyticsDisabled = replayActive || comparisonSettings.active;
+  const analyticsDisabled = replayActive || comparisonSettings.active || !chartReady;
   const multiTimeframeTargetOptions = timeframes.filter((candidate) => intervalFor(candidate) > intervalFor(activePanel.timeframe));
   const activeMultiTimeframeIndicator = activeSnapshot.multiTimeframeIndicators[0];
   const activeMultiTimeframeReference = activeSnapshot.multiTimeframeReferences[0];
