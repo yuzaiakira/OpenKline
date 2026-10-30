@@ -801,7 +801,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "95a54b3f13e47157eefa6c7f6360740f60d78c77f0cebe068f71e619beab9765"
+      "signatureHash": "a2d853d367539d40efa900caa6551b3477d30c1dead600ae18e1c0f60ad7588b"
     },
     {
       "package": "openkline",
@@ -990,7 +990,7 @@
       "name": "ComparisonCorporateActionAssetInput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "c9c9bd9ba054e716c926beb84b6a976d1be40b1543b7bf1e2a9539d55ccbb13a"
+      "signatureHash": "1ea486dd2916a414a61d22c9ff6071e92a2d78979291be8fba11648ee6f48e75"
     },
     {
       "package": "openkline",
@@ -1221,14 +1221,14 @@
       "name": "CorporateActionAdjustmentOptions",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "76ad6657030d182cc04799d8798421ebec92d75ccd4953bf918cc29f5a18c52a"
+      "signatureHash": "397c513307773203b56c49935e9f34421d31a6c83419de8fb0b28f8b7c789b27"
     },
     {
       "package": "openkline",
       "name": "CorporateActionAdjustmentProvenance",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "c0e22dc5274dd32089399ad3f6b7fc75ffc1b800350bb2900076084dccff8c16"
+      "signatureHash": "aa55fe195746eda44fa8d0aee0bbdfabfadf0de098dae18e7081ca1e7df81e85"
     },
     {
       "package": "openkline",
@@ -1270,7 +1270,7 @@
       "name": "CorporateActionDisplayOptions",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "31912ddea6e3a23228f24715a387c686b819bdb79a809e7cd5b351c06bd20156"
+      "signatureHash": "79fa397b56ef323cf6406e448731d9ac7c28ff570ce79e90d3374c00f73d4009"
     },
     {
       "package": "openkline",
@@ -1306,6 +1306,13 @@
       "kind": "type",
       "module": "./corporate-actions.js",
       "signatureHash": "f3d4de5888aa98142f1d8704be26c268296e3b8ece0bbaca2085c1b687b95b14"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionSourceAvailability",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "86e391c4cd76bf61c17518408c2f34f0cdcbf751affc6b9423de7bb3cea4b70b"
     },
     {
       "package": "openkline",
@@ -6219,7 +6226,7 @@
       "name": "WorkspaceCorporateActions",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "38559278acf47716e47fc8f807179c6bdde6924e3f13c9000335b789f7e429bf"
+      "signatureHash": "1a695f6773557f4d8959671c10b1bd79d6dc731fb46de36502446b338e63183f"
     },
     {
       "package": "openkline",
@@ -6634,7 +6641,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "95a54b3f13e47157eefa6c7f6360740f60d78c77f0cebe068f71e619beab9765"
+      "signatureHash": "a2d853d367539d40efa900caa6551b3477d30c1dead600ae18e1c0f60ad7588b"
     },
     {
       "package": "openkline",
@@ -8967,7 +8974,7 @@
       "name": "ComparisonCorporateActionAssetInput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "c9c9bd9ba054e716c926beb84b6a976d1be40b1543b7bf1e2a9539d55ccbb13a"
+      "signatureHash": "1ea486dd2916a414a61d22c9ff6071e92a2d78979291be8fba11648ee6f48e75"
     },
     {
       "package": "openkline",
@@ -9177,14 +9184,14 @@
       "name": "CorporateActionAdjustmentOptions",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "76ad6657030d182cc04799d8798421ebec92d75ccd4953bf918cc29f5a18c52a"
+      "signatureHash": "397c513307773203b56c49935e9f34421d31a6c83419de8fb0b28f8b7c789b27"
     },
     {
       "package": "openkline",
       "name": "CorporateActionAdjustmentProvenance",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "c0e22dc5274dd32089399ad3f6b7fc75ffc1b800350bb2900076084dccff8c16"
+      "signatureHash": "aa55fe195746eda44fa8d0aee0bbdfabfadf0de098dae18e7081ca1e7df81e85"
     },
     {
       "package": "openkline",
@@ -9226,7 +9233,7 @@
       "name": "CorporateActionDisplayOptions",
       "kind": "type",
       "module": "./corporate-actions.js",
-      "signatureHash": "31912ddea6e3a23228f24715a387c686b819bdb79a809e7cd5b351c06bd20156"
+      "signatureHash": "79fa397b56ef323cf6406e448731d9ac7c28ff570ce79e90d3374c00f73d4009"
     },
     {
       "package": "openkline",
@@ -9255,6 +9262,13 @@
       "kind": "type",
       "module": "./corporate-actions.js",
       "signatureHash": "f3d4de5888aa98142f1d8704be26c268296e3b8ece0bbaca2085c1b687b95b14"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionSourceAvailability",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "86e391c4cd76bf61c17518408c2f34f0cdcbf751affc6b9423de7bb3cea4b70b"
     },
     {
       "package": "openkline",
@@ -12579,7 +12593,7 @@
       "name": "WorkspaceCorporateActions",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "38559278acf47716e47fc8f807179c6bdde6924e3f13c9000335b789f7e429bf"
+      "signatureHash": "1a695f6773557f4d8959671c10b1bd79d6dc731fb46de36502446b338e63183f"
     },
     {
       "package": "openkline",
@@ -12713,5 +12727,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "2e914c56f5b37bf3620306b11b80c8d955f1ad1f"
+  "generatedFrom": "9e21303f675dd097a9976ea507226fee2d6d9fc1"
 }
