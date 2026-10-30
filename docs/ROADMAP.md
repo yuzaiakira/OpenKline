@@ -1309,6 +1309,14 @@ evidence.
   replay-causal filtering, source lifecycle cancellation and cleanup,
   canonical workspace references, deterministic offline Studio controls, and
   multi-chart isolation coverage.
+- [Implemented / Node- and Chromium-benchmarked — Phase 14.5 performance
+  hardening] Added binary-indexed trade and heatmap range reads, incremental
+  CVD and Footprint calculators with deterministic correction fallbacks,
+  viewport-aware Footprint culling and bounded pixel-grid LOD, bounded depth
+  heatmap sampling, Canvas2D dense-path reduction, and coalesced order-flow
+  visual commits. The 1k/10k/100k Node and 45-record three-viewport Chromium
+  matrix are reproducible locally; the protected API baseline and unavailable
+  official Firefox/WebKit/mobile/physical-device gates remain open.
 - [Implemented / benchmarked — Phase 14.6 verification] Added deterministic
   trade/order-book Node benchmarks and real Chromium Canvas2D workloads at
   1k/10k/100k records, plus bounded-cell and resource-cleanup regressions.
