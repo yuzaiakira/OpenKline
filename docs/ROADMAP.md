@@ -1145,3 +1145,14 @@ temporarily linear price scale instead of the user's ordinary chart state.
 
 See `docs/reports/phase-9-5-api-compatibility.md` for the command matrix,
 compatibility decision packet, package evidence, and remaining gates.
+
+## Phase 10 multi-timeframe analysis
+
+- [Implemented / Node-verified — 10.0 foundation] Added provider-neutral fixed
+  UTC timeframe parsing and causal aggregation. The engine uses explicit
+  `[start,end)` buckets, normalizes out-of-order and duplicate corrections,
+  preserves missing-data metadata, supports explicit volume policies, exposes
+  forming/closed coverage and availability states, and provides an incremental
+  updater. Weekly, monthly, session, and guessed calendar intervals remain
+  unsupported by design. See `docs/api/multi-timeframe.md` and
+  `docs/architecture/multi-timeframe-analysis.md`.

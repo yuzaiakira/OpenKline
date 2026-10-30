@@ -82,6 +82,41 @@ export { InMemoryDatafeed } from "./datafeed.js";
 export { RestDatafeed, normalizeRestCandle, normalizeTimestamp } from "./datafeed-rest.js";
 export { WebSocketDatafeed } from "./datafeed-websocket.js";
 export {
+  CausalTimeframeAggregator,
+  aggregateCandlesByTimeframe,
+  calculateMultiTimeframeIndicator,
+  calculatePreviousTimeframeLevels,
+  mapMultiTimeframeIndicatorToSourceTimes,
+  mapMultiTimeframeReferenceToSourceTimes,
+  parseFixedTimeframe,
+  validateTimeframePair,
+} from "./multi-timeframe.js";
+export type {
+  CausalTimeframeAggregatorOptions,
+  FixedTimeframe,
+  FixedTimeframeUnit,
+  MappedMultiTimeframePoint,
+  MappedMultiTimeframeReferencePoint,
+  MultiTimeframeAggregationMetadata,
+  MultiTimeframeAggregationOptions,
+  MultiTimeframeAggregationResult,
+  MultiTimeframeBucketStatus,
+  MultiTimeframeCandleObservation,
+  MultiTimeframeCoverage,
+  MultiTimeframeCoveragePolicy,
+  MultiTimeframeFinalityPolicy,
+  MultiTimeframeIndicatorOptions,
+  MultiTimeframeIndicatorOutput,
+  MultiTimeframeIndicatorPoint,
+  MultiTimeframeIndicatorResult,
+  MultiTimeframeMissingVolumePolicy,
+  MultiTimeframeReferenceOptions,
+  MultiTimeframeReferencePoint,
+  MultiTimeframeReferenceResult,
+  PreviousTimeframeLevel,
+  TimeframeCalendar,
+} from "./multi-timeframe.js";
+export {
   OPENKLINE_WORKSPACE_VERSION,
   WorkspaceCompatibilityError,
   WorkspaceValidationError,
