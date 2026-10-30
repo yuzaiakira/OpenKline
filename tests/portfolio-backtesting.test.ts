@@ -14,6 +14,9 @@ import {
   serializePortfolioTradesCsv,
   StrategyRegistry,
   type Candle,
+  type CashDividendAction,
+  type StockSplitAction,
+  type CorporateActionDataset,
   type PortfolioBacktestWorkerLike,
   type PortfolioBacktestWorkerResponse,
   type StrategyDefinition,
@@ -54,6 +57,18 @@ function options(instruments: readonly { id: string; candles: readonly Candle[];
   };
 }
 
+function corporateActionDataset(instrumentId: string, actions: CorporateActionDataset["actions"]): CorporateActionDataset {
+  return { version: 1, instrumentId, source: { id: "fixture-actions", version: "2026-01" }, knowledgeCoverage: "known", actions };
+}
+
+function splitAction(instrumentId: string, effectiveTime: number): StockSplitAction {
+  return { id: "split-2-for-1", instrumentId, kind: "stock-split", effectiveTime, revision: 1, source: { id: "fixture-actions", version: "2026-01" }, newShares: 2, oldShares: 1 };
+}
+
+function dividendAction(instrumentId: string, effectiveTime: number): CashDividendAction {
+  return { id: "dividend-1", instrumentId, kind: "cash-dividend", effectiveTime, exDividendTime: effectiveTime, paymentTime: effectiveTime + 60_000, revision: 1, source: { id: "fixture-actions", version: "2026-01" }, amountPerShare: 1, currency: "USD" };
+}
+
 test("portfolio engine shares cash and gives deterministic priority independent of input order", () => {
   const a = { id: "AAA", candles: fixtureCandles(10, [10, 11, 12]) };
   const b = { id: "BBB", candles: fixtureCandles(20, [20, 21, 22]) };
@@ -66,6 +81,67 @@ test("portfolio engine shares cash and gives deterministic priority independent 
   assert.equal(first.metrics.netProfit, 10);
   assert.equal(serializePortfolioBacktestResult(first), serializePortfolioBacktestResult(reversed));
   assert.ok(first.timeline.some((event) => event.kind === "order-fill"));
+});
+
+test("portfolio corporate-action accounting adjusts split positions and preserves aggregate cost basis", () => {
+  const start = 1_800_000_000_000;
+  const candles = fixtureCandles(10, [10, 11, 6, 7], start);
+  const result = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    positionSizing: { type: "fixed-quantity", quantity: 10 },
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("AAA", [splitAction("AAA", start + 120_000)]) }],
+  }).run();
+  const position = result.positions[0];
+  assert.equal(position?.quantity, 20);
+  assert.equal(position?.entryPrice, 5.25);
+  assert.equal(position?.aggregateCostBasis, 105);
+  assert.equal(result.corporateActions?.length, 1);
+  assert.equal(result.corporateActionLedger?.find((record) => record.phase === "effective")?.status, "applied");
+  assert.equal(result.assumptions.corporateActionPolicy?.pendingOrderPolicy, "cancel");
+  assert.equal(result.timeline.some((event) => event.kind === "corporate-action" && event.corporateActionPhase === "effective"), true);
+});
+
+test("portfolio dividends accrue as receivables, settle only at payment, and round-trip through the result protocol", () => {
+  const start = 1_800_000_000_000;
+  const candles = fixtureCandles(10, [10, 11, 11, 11], start);
+  const result = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    positionSizing: { type: "fixed-quantity", quantity: 10 },
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("AAA", [dividendAction("AAA", start + 120_000)]) }],
+  }).run();
+  const receivable = result.dividendReceivables?.[0];
+  assert.equal(receivable?.quantity, 10);
+  assert.equal(receivable?.amount, 10);
+  assert.equal(receivable?.status, "paid");
+  assert.equal(result.finalAccount.cash, 405);
+  assert.equal(result.finalAccount.dividendIncome, 10);
+  assert.equal(result.metrics.dividendIncome, 10);
+  assert.equal(result.metrics.priceReturn, 0.01);
+  const encoded = serializePortfolioBacktestResult(result);
+  assert.equal([...serializePortfolioBacktestResultChunks(result)].join(""), encoded);
+  const decoded = parsePortfolioBacktestResult(JSON.parse(encoded));
+  assert.deepEqual(decoded.dividendReceivables, result.dividendReceivables);
+  assert.deepEqual(decoded.corporateActionLedger, result.corporateActionLedger);
+});
+
+test("pending orders crossing a split boundary are cancelled deterministically", () => {
+  const start = 1_800_000_000_000;
+  const candles = [
+    { time: start, open: 10, high: 11, low: 9, close: 10 },
+    { time: start + 120_000, open: 11, high: 12, low: 10, close: 11 },
+    { time: start + 180_000, open: 12, high: 13, low: 11, close: 12 },
+  ];
+  const result = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    positionSizing: { type: "fixed-quantity", quantity: 1 },
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("AAA", [splitAction("AAA", start + 90_000)]) }],
+  }).run();
+  assert.equal(result.orders[0]?.status, "cancelled");
+  assert.match(result.orders[0]?.reason ?? "", /corporate-action split boundary/i);
+  assert.equal(result.trades.length, 0);
 });
 
 test("portfolio signals become available only after completion and fill the next eligible opening", () => {

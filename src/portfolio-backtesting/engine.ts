@@ -1,6 +1,7 @@
 import { validateCandle } from "../core/candle-store.js";
 import { applyAdverseSlippage, calculateTransactionCost } from "../financial.js";
 import { parseFixedTimeframe } from "../multi-timeframe.js";
+import { normalizeCorporateActionDataset, type CorporateAction, type CorporateActionDataset } from "../corporate-actions.js";
 import { createDefaultStrategyRegistry, StrategyCancellationError, type StrategyEvaluationResult, type StrategyRegistry, type StrategySignal } from "../strategies/index.js";
 import type { Candle } from "../types.js";
 import {
@@ -18,6 +19,10 @@ import {
   type PortfolioBacktestStatus,
   type PortfolioBacktestStatusState,
   type PortfolioCalendarIdentity,
+  type PortfolioCorporateActionPolicy,
+  type PortfolioCorporateActionRecord,
+  type PortfolioDividendReceivable,
+  type PortfolioDividendReceivableStatus,
   type PortfolioDuplicateTimestampPolicy,
   type PortfolioInstrumentInput,
   type PortfolioInstrumentSummary,
@@ -44,6 +49,7 @@ interface NormalizedInstrument {
   readonly parameters: Readonly<Record<string, unknown>>;
   readonly positionSizing: PortfolioPositionSizing;
   readonly allowFractionalQuantity: boolean;
+  readonly corporateActions: CorporateActionDataset | null;
 }
 
 interface InternalSignal {
@@ -76,9 +82,9 @@ interface MutablePosition {
   readonly symbol: string;
   readonly entrySignalTime: number;
   readonly entryFillTime: number;
-  readonly entryPrice: number;
+  entryPrice: number;
   readonly entryFees: number;
-  readonly quantity: number;
+  quantity: number;
 }
 
 interface MutableTrade extends PortfolioTrade {}
@@ -90,6 +96,11 @@ interface CompletedMark {
 
 interface ScheduledEvent extends PortfolioTimelineEvent {
   readonly candle?: Candle;
+  readonly corporateAction?: CorporateAction;
+}
+
+interface MutableDividendReceivable extends PortfolioDividendReceivable {
+  status: PortfolioDividendReceivableStatus;
 }
 
 const DEFAULT_VALUATION: PortfolioValuationOptions = {
@@ -100,6 +111,12 @@ const DEFAULT_VALUATION: PortfolioValuationOptions = {
 
 const DEFAULT_RISK: PortfolioRiskOptions = {};
 const EVENT_PRIORITY: PortfolioBacktestAssumptions["eventPriority"] = ["market-open", "bar-complete", "order-fill", "valuation"];
+const DEFAULT_CORPORATE_ACTION_POLICY: PortfolioCorporateActionPolicy = {
+  pendingOrderPolicy: "cancel",
+  fractionalSharePolicy: "reject",
+  dividendSettlement: "payment-time",
+  receivableValuation: "include-in-equity",
+};
 
 export function createPortfolioBacktest(options: PortfolioBacktestOptions): PortfolioBacktestApi {
   return new PortfolioBacktestSession(options);
@@ -128,6 +145,10 @@ export class PortfolioBacktestSession implements PortfolioBacktestApi {
     this.options = cloneOptions(options);
     this.registry = options.strategyRegistry ?? createDefaultStrategyRegistry();
     this.instruments = normalizeInstruments(options, this.registry);
+    const hasCorporateActions = this.instruments.some((instrument) => instrument.corporateActions !== null && instrument.corporateActions.actions.length > 0);
+    const corporateActionPolicy = hasCorporateActions
+      ? normalizeCorporateActionPolicy(options.corporateActionPolicy ?? DEFAULT_CORPORATE_ACTION_POLICY)
+      : undefined;
     this.assumptions = {
       execution: "next-eligible-bar-open",
       eventPriority: EVENT_PRIORITY,
@@ -143,6 +164,7 @@ export class PortfolioBacktestSession implements PortfolioBacktestApi {
       allowFractionalQuantity: options.allowFractionalQuantity === true,
       longOnly: true,
       leverage: "none",
+      ...(corporateActionPolicy === undefined ? {} : { corporateActionPolicy, corporateActionEventPriority: ["corporate-action-effective", "market-open", "bar-complete", "order-fill", "corporate-action-payment", "valuation"] as const }),
     };
     this.externalSignal = options.signal;
     this.externalSignal?.addEventListener("abort", this.externalAbortListener);
@@ -323,6 +345,12 @@ function executeTimeline(
   const equityCurve: PortfolioAccountSnapshot[] = [];
   const completedMarks = new Map<string, CompletedMark>();
   const fallbackMarks = new Map<string, CompletedMark>();
+  const receivables = new Map<string, MutableDividendReceivable>();
+  const allReceivables: MutableDividendReceivable[] = [];
+  const corporateActionLedger: PortfolioCorporateActionRecord[] = [];
+  const dividendIncomeByInstrument = new Map<string, number>();
+  const corporateActions = instruments.flatMap((instrument) => instrument.corporateActions?.actions ?? []).sort(compareCorporateActions);
+  const hasCorporateActions = corporateActions.length > 0;
   const signalsByEvent = new Map<string, InternalSignal[]>();
   const orderById = new Map<string, InternalSignal>();
   const instrumentById = new Map(instruments.map((instrument) => [instrument.input.id, instrument]));
@@ -339,6 +367,7 @@ function executeTimeline(
   let realizedPnl = 0;
   let peakEquity: number | null = assumptions.initialCapital;
   let riskHalted = false;
+  let dividendIncome = 0;
   let tradeSequence = 0;
   const total = timeline.length;
   for (let eventIndex = 0; eventIndex < timeline.length; eventIndex += 1) {
@@ -346,7 +375,15 @@ function executeTimeline(
     const event = timeline[eventIndex];
     if (event === undefined) continue;
     const instrument = event.instrumentId === undefined ? undefined : instrumentById.get(event.instrumentId);
-    if (event.kind === "order-fill") {
+    if (event.kind === "corporate-action") {
+      const action = event.corporateAction;
+      if (action !== undefined) {
+        const actionResult = applyCorporateActionEvent(action, event.corporateActionPhase ?? "effective", event.time, positions, orders, receivables, allReceivables, corporateActionLedger, assumptions, cash, dividendIncome);
+        cash = actionResult.cash;
+        dividendIncome = actionResult.dividendIncome;
+        if (actionResult.paidDividend !== null) dividendIncomeByInstrument.set(actionResult.paidDividend.instrumentId, (dividendIncomeByInstrument.get(actionResult.paidDividend.instrumentId) ?? 0) + actionResult.paidDividend.amount);
+      }
+    } else if (event.kind === "order-fill") {
       const scheduled = event.orderId === undefined ? undefined : orderById.get(event.orderId);
       const order = scheduled === undefined ? undefined : orders.get(event.orderId!);
       if (scheduled !== undefined && order !== undefined && instrument !== undefined && order.status === "pending") {
@@ -386,7 +423,7 @@ function executeTimeline(
         }
       }
     } else if (event.kind === "valuation") {
-      const snapshot = createAccountSnapshot(event.time, cash, realizedPnl, positions, instruments, completedMarks, fallbackMarks, peakEquity, assumptions.valuation);
+      const snapshot = createAccountSnapshot(event.time, cash, realizedPnl, positions, instruments, completedMarks, fallbackMarks, peakEquity, assumptions.valuation, receivables, dividendIncome, hasCorporateActions);
       if (snapshot.equity !== null) peakEquity = Math.max(peakEquity ?? snapshot.equity, snapshot.equity);
       const withPeak = addPeakAndDrawdown(snapshot, peakEquity);
       if (withPeak.drawdown !== null && (assumptions.risk.maxDrawdown !== undefined && withPeak.drawdown >= assumptions.risk.maxDrawdown || assumptions.risk.maxDrawdownPercent !== undefined && (withPeak.drawdownPercent ?? 0) >= assumptions.risk.maxDrawdownPercent)) riskHalted = true;
@@ -394,12 +431,13 @@ function executeTimeline(
     }
     hooks.recordExecutionProgress(eventIndex + 1, total, signals.length);
   }
-  const finalAccount = equityCurve.at(-1) ?? createAccountSnapshot(null, cash, realizedPnl, positions, instruments, completedMarks, fallbackMarks, peakEquity, assumptions.valuation);
+  const finalAccount = equityCurve.at(-1) ?? createAccountSnapshot(null, cash, realizedPnl, positions, instruments, completedMarks, fallbackMarks, peakEquity, assumptions.valuation, receivables, dividendIncome, hasCorporateActions);
   const finalWithPeak = addPeakAndDrawdown(finalAccount, peakEquity);
-  const positionSnapshots = [...positions.values()].sort((left, right) => left.instrumentId.localeCompare(right.instrumentId)).map((position) => positionSnapshot(position, instruments.find((item) => item.input.id === position.instrumentId)!, completedMarks, fallbackMarks, finalWithPeak.time, assumptions.valuation));
+  const positionSnapshots = [...positions.values()].sort((left, right) => left.instrumentId.localeCompare(right.instrumentId)).map((position) => positionSnapshot(position, instruments.find((item) => item.input.id === position.instrumentId)!, completedMarks, fallbackMarks, finalWithPeak.time, assumptions.valuation, hasCorporateActions));
   const orderSnapshots = [...orders.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneOrder);
   const timelineSnapshot = timeline.map((event) => ({ ...event, ...(event.candle === undefined ? {} : { candle: undefined }) }));
-  const metrics = calculatePortfolioMetrics(assumptions.initialCapital, finalWithPeak, equityCurve, orderSnapshots, trades, instruments, positions);
+  const metrics = calculatePortfolioMetrics(assumptions.initialCapital, finalWithPeak, equityCurve, orderSnapshots, trades, instruments, positions, dividendIncome, corporateActions.length, dividendIncomeByInstrument, corporateActions);
+  const actionSnapshots = corporateActions.map((action) => ({ ...action, source: { ...action.source } }));
   return {
     engineVersion: 1,
     accountCurrency: assumptions.accountCurrency,
@@ -415,6 +453,11 @@ function executeTimeline(
     finalAccount: { ...finalWithPeak, marks: finalWithPeak.marks.map((mark) => ({ ...mark })) },
     metrics,
     inputFingerprint: fingerprintPortfolio(instruments),
+    ...(hasCorporateActions ? {
+      corporateActions: actionSnapshots,
+      dividendReceivables: allReceivables.map((receivable) => ({ ...receivable })),
+      corporateActionLedger: corporateActionLedger.map((record) => ({ ...record })),
+    } : {}),
   };
 }
 
@@ -484,6 +527,85 @@ function executeOrder(
   return { cash: cash + notional - commission, realizedPnl: realizedPnl + netPnl, tradeSequence: tradeSequence + 1, filled: true, riskHalted };
 }
 
+function applyCorporateActionEvent(
+  action: CorporateAction,
+  phase: "effective" | "payment",
+  time: number,
+  positions: Map<string, MutablePosition>,
+  orders: Map<string, MutableOrder>,
+  receivables: Map<string, MutableDividendReceivable>,
+  allReceivables: MutableDividendReceivable[],
+  ledger: PortfolioCorporateActionRecord[],
+  assumptions: PortfolioBacktestAssumptions,
+  cash: number,
+  dividendIncome: number,
+): { readonly cash: number; readonly dividendIncome: number; readonly paidDividend: { readonly instrumentId: string; readonly amount: number } | null } {
+  const policy = assumptions.corporateActionPolicy ?? DEFAULT_CORPORATE_ACTION_POLICY;
+  if (action.kind === "cash-dividend") {
+    if (phase === "effective") {
+      const position = positions.get(action.instrumentId);
+      if (position === undefined) {
+        ledger.push({ id: `${action.id}:entitlement`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "applied", reason: "No eligible position at the ex-dividend boundary" });
+        return { cash, dividendIncome, paidDividend: null };
+      }
+      const amount = position.quantity * action.amountPerShare;
+      const receivable: MutableDividendReceivable = {
+        id: `dividend:${action.id}`,
+        actionId: action.id,
+        instrumentId: action.instrumentId,
+        currency: action.currency,
+        quantity: position.quantity,
+        amountPerShare: action.amountPerShare,
+        amount,
+        entitlementTime: action.exDividendTime,
+        paymentTime: action.paymentTime ?? null,
+        status: action.paymentTime === undefined ? "unsettled" : "accrued",
+      };
+      receivables.set(receivable.id, receivable);
+      allReceivables.push(receivable);
+      ledger.push({ id: `${action.id}:entitlement`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: action.paymentTime === undefined ? "unsettled" : "applied", amount });
+      return { cash, dividendIncome, paidDividend: null };
+    }
+    const receivable = receivables.get(`dividend:${action.id}`);
+    if (receivable === undefined || receivable.status === "paid" || receivable.status === "unsettled") {
+      ledger.push({ id: `${action.id}:payment`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "unsettled", reason: "No payable dividend receivable exists" });
+      return { cash, dividendIncome, paidDividend: null };
+    }
+    receivable.status = "paid";
+    cash += receivable.amount;
+    dividendIncome += receivable.amount;
+    ledger.push({ id: `${action.id}:payment`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "applied", amount: receivable.amount });
+    return { cash, dividendIncome, paidDividend: { instrumentId: action.instrumentId, amount: receivable.amount } };
+  }
+
+  if (phase !== "effective") return { cash, dividendIncome, paidDividend: null };
+  {
+    const position = positions.get(action.instrumentId);
+    for (const order of orders.values()) {
+      if (order.instrumentId === action.instrumentId && order.status === "pending") {
+        transitionOrder(order, "cancelled");
+        order.reason = "Pending order crossed a corporate-action split boundary and was cancelled by policy";
+        ledger.push({ id: `${action.id}:order:${order.id}`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "cancelled", reason: policy.pendingOrderPolicy });
+      }
+    }
+    if (position === undefined) {
+      ledger.push({ id: `${action.id}:effective`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "applied" });
+      return { cash, dividendIncome, paidDividend: null };
+    }
+    const quantityBefore = position.quantity;
+    const costBasisBefore = position.entryPrice * position.quantity;
+    const quantityAfter = quantityBefore * action.newShares / action.oldShares;
+    if (policy.fractionalSharePolicy === "reject" && !Number.isInteger(quantityAfter)) {
+      ledger.push({ id: `${action.id}:effective`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "rejected", quantityBefore, quantityAfter, costBasisBefore, reason: "Fractional share entitlement is unsupported without explicit fractional-share permission" });
+      throw new PortfolioBacktestValidationError(`Corporate action ${action.id} produces an unsupported fractional quantity`);
+    }
+    position.quantity = quantityAfter;
+    position.entryPrice = position.entryPrice * action.oldShares / action.newShares;
+    ledger.push({ id: `${action.id}:effective`, actionId: action.id, instrumentId: action.instrumentId, kind: action.kind, phase, time, status: "applied", quantityBefore, quantityAfter, costBasisBefore, costBasisAfter: position.entryPrice * position.quantity });
+    return { cash, dividendIncome, paidDividend: null };
+  }
+}
+
 function rejectOrder(order: MutableOrder, reason: string, cash: number, realizedPnl: number, tradeSequence: number, riskHalted: boolean): { readonly cash: number; readonly realizedPnl: number; readonly tradeSequence: number; readonly filled: boolean; readonly riskHalted: boolean } {
   transitionOrder(order, "rejected");
   order.reason = reason;
@@ -544,6 +666,9 @@ function createAccountSnapshot(
   fallbackMarks: ReadonlyMap<string, CompletedMark>,
   peakEquity: number | null,
   valuation: PortfolioValuationOptions,
+  receivables: ReadonlyMap<string, MutableDividendReceivable> = new Map(),
+  dividendIncome = 0,
+  includeCorporateActions = false,
 ): PortfolioAccountSnapshot {
   const instrumentById = new Map(instruments.map((instrument) => [instrument.input.id, instrument]));
   const marks: PortfolioMark[] = [];
@@ -580,7 +705,10 @@ function createAccountSnapshot(
   const valuationStatus: PortfolioAccountSnapshot["valuationStatus"] = hasUnknown ? "unknown" : hasStale ? "partial" : "complete";
   if (positions.size > 0 && valuation.incomplete === "reject" && valuationStatus !== "complete") throw new PortfolioBacktestValidationError(`Portfolio valuation is ${valuationStatus}; the configured policy rejects incomplete marks at ${time ?? "the final snapshot"}`);
   const unrealizedPnl = completeUnrealized ? unrealized : null;
-  const equity = completeUnrealized ? cash + positionValue : null;
+  const dividendReceivable = includeCorporateActions
+    ? [...receivables.values()].filter((receivable) => receivable.status !== "paid" && receivable.status !== "unsettled").reduce((sum, receivable) => sum + receivable.amount, 0)
+    : 0;
+  const equity = completeUnrealized ? cash + positionValue + dividendReceivable : null;
   return {
     time,
     cash,
@@ -596,6 +724,7 @@ function createAccountSnapshot(
     activePositionCount: positions.size,
     valuationStatus,
     marks,
+    ...(includeCorporateActions ? { dividendReceivable, dividendIncome } : {}),
   };
 }
 
@@ -608,7 +737,7 @@ function addPeakAndDrawdown(snapshot: PortfolioAccountSnapshot, peakEquity: numb
   };
 }
 
-function positionSnapshot(position: MutablePosition, instrument: NormalizedInstrument, completedMarks: ReadonlyMap<string, CompletedMark>, fallbackMarks: ReadonlyMap<string, CompletedMark>, time: number | null, valuation: PortfolioValuationOptions): PortfolioPosition {
+function positionSnapshot(position: MutablePosition, instrument: NormalizedInstrument, completedMarks: ReadonlyMap<string, CompletedMark>, fallbackMarks: ReadonlyMap<string, CompletedMark>, time: number | null, valuation: PortfolioValuationOptions, includeCorporateActions = false): PortfolioPosition {
   const completed = completedMarks.get(position.instrumentId);
   const fallback = fallbackMarks.get(position.instrumentId);
   const observation = latestCompletedOrFallback(completed, fallback);
@@ -629,6 +758,7 @@ function positionSnapshot(position: MutablePosition, instrument: NormalizedInstr
     markTime: observation?.observedAt ?? null,
     markQuality,
     unrealizedPnl: markPrice === null ? null : (markPrice - position.entryPrice) * position.quantity,
+    ...(includeCorporateActions ? { aggregateCostBasis: position.entryPrice * position.quantity } : {}),
   };
 }
 
@@ -640,6 +770,10 @@ function calculatePortfolioMetrics(
   trades: readonly PortfolioTrade[],
   instruments: readonly NormalizedInstrument[],
   positions: ReadonlyMap<string, MutablePosition>,
+  dividendIncome = 0,
+  corporateActionCount = 0,
+  dividendIncomeByInstrument: ReadonlyMap<string, number> = new Map(),
+  corporateActions: readonly CorporateAction[] = [],
 ): PortfolioPerformanceMetrics {
   const winning = trades.filter((trade) => trade.netPnl > 0);
   const losing = trades.filter((trade) => trade.netPnl < 0);
@@ -663,6 +797,8 @@ function calculatePortfolioMetrics(
       grossExposure: finalAccount.marks.find((mark) => mark.instrumentId === instrument.input.id)?.price === undefined ? 0 : (finalAccount.marks.find((mark) => mark.instrumentId === instrument.input.id)?.price ?? 0) * (open?.quantity ?? 0),
       tradeCount: instrumentTrades.length,
       returnOnAllocatedCapital: allocated <= 0 || unrealizedPnl === null ? null : (realized + unrealizedPnl) / allocated,
+      ...(corporateActionCount === 0 ? {} : { dividendIncome: dividendIncomeByInstrument.get(instrument.input.id) ?? 0 }),
+      ...(corporateActionCount === 0 ? {} : { corporateActionIds: corporateActions.filter((action) => action.instrumentId === instrument.input.id).map((action) => action.id) }),
     };
   });
   return {
@@ -683,6 +819,7 @@ function calculatePortfolioMetrics(
     losingTradeCount: losing.length,
     winRate: trades.length === 0 ? null : winning.length / trades.length,
     perInstrument,
+    ...(corporateActionCount === 0 ? {} : { dividendIncome, priceReturn: initialCapital > 0 ? (finalAccount.equity === null ? null : (finalAccount.equity - dividendIncome - (finalAccount.dividendReceivable ?? 0) - initialCapital) / initialCapital) : null, corporateActionCount }),
   };
 }
 
@@ -712,20 +849,49 @@ function createInternalSignals(evaluations: readonly { readonly instrument: Norm
 
 function createScheduledEvents(instruments: readonly NormalizedInstrument[], signals: readonly InternalSignal[]): ScheduledEvents {
   const events: ScheduledEvent[] = [];
+  const hasCorporateActions = instruments.some((instrument) => (instrument.corporateActions?.actions.length ?? 0) > 0);
+  const marketPriority = hasCorporateActions ? 1 : 0;
+  const completePriority = hasCorporateActions ? 2 : 1;
+  const orderPriority = hasCorporateActions ? 3 : 2;
+  const valuationPriority = hasCorporateActions ? 5 : 3;
   for (const instrument of instruments) {
     instrument.candles.forEach((candle, index) => {
-      events.push({ id: `${instrument.input.id}:open:${index}`, time: candle.time, kind: "market-open", priority: 0, instrumentId: instrument.input.id, candleIndex: index, candle });
-      events.push({ id: `${instrument.input.id}:complete:${index}`, time: safeTimeAdd(candle.time, instrument.timeframe.durationMs), kind: "bar-complete", priority: 1, instrumentId: instrument.input.id, candleIndex: index, availableAt: safeTimeAdd(candle.time, instrument.timeframe.durationMs), candle });
+      events.push({ id: `${instrument.input.id}:open:${index}`, time: candle.time, kind: "market-open", priority: marketPriority, instrumentId: instrument.input.id, candleIndex: index, candle });
+      events.push({ id: `${instrument.input.id}:complete:${index}`, time: safeTimeAdd(candle.time, instrument.timeframe.durationMs), kind: "bar-complete", priority: completePriority, instrumentId: instrument.input.id, candleIndex: index, availableAt: safeTimeAdd(candle.time, instrument.timeframe.durationMs), candle });
     });
+    for (const action of instrument.corporateActions?.actions ?? []) {
+      events.push({
+        id: `corporate-action:${action.id}:effective`,
+        time: action.kind === "cash-dividend" ? action.exDividendTime : action.effectiveTime,
+        kind: "corporate-action",
+        priority: 0,
+        instrumentId: instrument.input.id,
+        corporateActionId: action.id,
+        corporateActionPhase: "effective",
+        corporateAction: action,
+      });
+      if (action.kind === "cash-dividend" && action.paymentTime !== undefined) {
+        events.push({
+          id: `corporate-action:${action.id}:payment`,
+          time: action.paymentTime,
+          kind: "corporate-action",
+          priority: 4,
+          instrumentId: instrument.input.id,
+          corporateActionId: action.id,
+          corporateActionPhase: "payment",
+          corporateAction: action,
+        });
+      }
+    }
   }
   for (const signal of signals) {
     if (signal.nextCandleIndex === null) continue;
     const nextCandle = signal.instrument.candles[signal.nextCandleIndex];
     if (nextCandle === undefined) continue;
-    events.push({ id: orderIdFor(signal), time: nextCandle.time, kind: "order-fill", priority: 2, instrumentId: signal.instrument.input.id, candleIndex: signal.nextCandleIndex, orderId: orderIdFor(signal), availableAt: signal.signal.availableAt, candle: nextCandle });
+    events.push({ id: orderIdFor(signal), time: nextCandle.time, kind: "order-fill", priority: orderPriority, instrumentId: signal.instrument.input.id, candleIndex: signal.nextCandleIndex, orderId: orderIdFor(signal), availableAt: signal.signal.availableAt, candle: nextCandle });
   }
   const valuationTimes = [...new Set(events.map((event) => event.time))].sort((left, right) => left - right);
-  valuationTimes.forEach((time, index) => events.push({ id: `valuation:${time}:${index}`, time, kind: "valuation", priority: 3 }));
+  valuationTimes.forEach((time, index) => events.push({ id: `valuation:${time}:${index}`, time, kind: "valuation", priority: valuationPriority }));
   events.sort(compareEvents);
   return { timeline: events, orders: signals };
 }
@@ -751,7 +917,8 @@ function normalizeInstruments(options: PortfolioBacktestOptions, registry: Strat
     validateSizing(positionSizing, `Instrument ${id}`);
     const allowFractionalQuantity = input.execution?.allowFractionalQuantity ?? options.allowFractionalQuantity === true;
     const calendar = input.calendar === undefined ? null : normalizeCalendar(input.calendar, id);
-    return { input: { ...input, id, symbol, quoteCurrency, timeframe: timeframe.id, candles, strategy: { strategy: strategyId, parameters }, ...(calendar === null ? {} : { calendar }) }, candles, timeframe, calendar, strategyId, parameters, positionSizing, allowFractionalQuantity };
+    const corporateActions = input.corporateActions === undefined ? null : normalizeCorporateActions(input.corporateActions, id, accountCurrency);
+    return { input: { ...input, id, symbol, quoteCurrency, timeframe: timeframe.id, candles, strategy: { strategy: strategyId, parameters }, ...(calendar === null ? {} : { calendar }), ...(corporateActions === null ? {} : { corporateActions }) }, candles, timeframe, calendar, strategyId, parameters, positionSizing, allowFractionalQuantity, corporateActions };
   });
   normalized.sort((left, right) => left.input.id.localeCompare(right.input.id));
   return normalized;
@@ -806,6 +973,29 @@ function normalizeCalendar(calendar: PortfolioCalendarIdentity, instrumentId: st
   return { id: calendar.id.trim(), version: calendar.version.trim() };
 }
 
+function normalizeCorporateActions(dataset: CorporateActionDataset, instrumentId: string, accountCurrency: string): CorporateActionDataset {
+  try {
+    const normalized = normalizeCorporateActionDataset(dataset);
+    if (normalized.instrumentId !== instrumentId) throw new PortfolioBacktestValidationError(`Corporate-action dataset instrument mismatch: ${instrumentId}`);
+    for (const action of normalized.actions) if (action.kind === "cash-dividend" && action.currency !== accountCurrency) throw new PortfolioBacktestValidationError(`Dividend ${action.id} uses ${action.currency}; explicit FX conversion to ${accountCurrency} is not implemented`);
+    return normalized;
+  } catch (error) {
+    if (error instanceof PortfolioBacktestValidationError) throw error;
+    throw new PortfolioBacktestValidationError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function normalizeCorporateActionPolicy(policy: PortfolioCorporateActionPolicy): PortfolioCorporateActionPolicy {
+  if (!isRecord(policy)
+    || policy.pendingOrderPolicy !== "cancel"
+    || policy.fractionalSharePolicy !== "reject"
+    || policy.dividendSettlement !== "payment-time"
+    || policy.receivableValuation !== "include-in-equity") {
+    throw new PortfolioBacktestValidationError("Unsupported corporate-action accounting policy");
+  }
+  return { ...policy };
+}
+
 function normalizeCurrency(value: string): string {
   if (typeof value !== "string" || !/^[A-Z0-9][A-Z0-9._-]{0,15}$/u.test(value.trim().toUpperCase())) throw new PortfolioBacktestValidationError("Currency must be a non-empty explicit code");
   return value.trim().toUpperCase();
@@ -817,11 +1007,30 @@ function normalizeIdentifier(value: string, label: string): string {
 }
 
 function cloneOptions(options: PortfolioBacktestOptions): PortfolioBacktestOptions {
-  return { ...options, instruments: options.instruments.map((instrument) => ({ ...instrument, candles: instrument.candles.map((candle) => ({ ...candle })), strategy: { strategy: instrument.strategy.strategy, parameters: cloneRecord(instrument.strategy.parameters) }, ...(instrument.calendar === undefined ? {} : { calendar: { ...instrument.calendar } }), ...(instrument.execution === undefined ? {} : { execution: { ...instrument.execution, ...(instrument.execution.positionSizing === undefined ? {} : { positionSizing: clonePortfolioPositionSizing(instrument.execution.positionSizing) }) } }) })), positionSizing: clonePortfolioPositionSizing(options.positionSizing), commission: { ...options.commission }, slippage: { ...options.slippage }, ...(options.risk === undefined ? {} : { risk: cloneRisk(options.risk) }), ...(options.valuation === undefined ? {} : { valuation: { ...options.valuation } }) };
+  return {
+    ...options,
+    instruments: options.instruments.map((instrument) => ({
+      ...instrument,
+      candles: instrument.candles.map((candle) => ({ ...candle })),
+      strategy: { strategy: instrument.strategy.strategy, parameters: cloneRecord(instrument.strategy.parameters) },
+      ...(instrument.calendar === undefined ? {} : { calendar: { ...instrument.calendar } }),
+      ...(instrument.corporateActions === undefined ? {} : { corporateActions: cloneCorporateActionDataset(instrument.corporateActions) }),
+      ...(instrument.execution === undefined ? {} : { execution: { ...instrument.execution, ...(instrument.execution.positionSizing === undefined ? {} : { positionSizing: clonePortfolioPositionSizing(instrument.execution.positionSizing) }) } }),
+    })),
+    positionSizing: clonePortfolioPositionSizing(options.positionSizing),
+    commission: { ...options.commission },
+    slippage: { ...options.slippage },
+    ...(options.risk === undefined ? {} : { risk: cloneRisk(options.risk) }),
+    ...(options.valuation === undefined ? {} : { valuation: { ...options.valuation } }),
+    ...(options.corporateActionPolicy === undefined ? {} : { corporateActionPolicy: { ...options.corporateActionPolicy } }),
+  };
 }
 
 function cloneRisk(risk: PortfolioRiskOptions): PortfolioRiskOptions { return { ...risk }; }
 function cloneRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> { return JSON.parse(JSON.stringify(value)) as Record<string, unknown>; }
+function cloneCorporateActionDataset(dataset: CorporateActionDataset): CorporateActionDataset {
+  return { ...dataset, source: { ...dataset.source }, actions: dataset.actions.map((action) => ({ ...action, source: { ...action.source } })) };
+}
 
 function findNextEligibleCandle(candles: readonly Candle[], index: number, availableAt: number): number | null {
   for (let cursor = index + 1; cursor < candles.length; cursor += 1) if (candles[cursor]!.time >= availableAt) return cursor;
@@ -839,7 +1048,17 @@ function compareSignals(left: PortfolioSignal | InternalSignal["signal"], right:
 }
 
 function compareEvents(left: ScheduledEvent, right: ScheduledEvent): number {
-  return left.time - right.time || left.priority - right.priority || (left.instrumentId ?? "").localeCompare(right.instrumentId ?? "") || (left.orderId ?? "").localeCompare(right.orderId ?? "") || left.id.localeCompare(right.id);
+  const phaseOrder = (event: ScheduledEvent): number => event.corporateActionPhase === "effective" ? 0 : event.corporateActionPhase === "payment" ? 1 : 2;
+  return left.time - right.time || left.priority - right.priority || phaseOrder(left) - phaseOrder(right) || (left.instrumentId ?? "").localeCompare(right.instrumentId ?? "") || (left.orderId ?? "").localeCompare(right.orderId ?? "") || left.id.localeCompare(right.id);
+}
+
+function compareCorporateActions(left: CorporateAction, right: CorporateAction): number {
+  const kindOrder = (kind: CorporateAction["kind"]): number => kind === "stock-split" ? 0 : kind === "reverse-stock-split" ? 1 : 2;
+  return left.effectiveTime - right.effectiveTime
+    || kindOrder(left.kind) - kindOrder(right.kind)
+    || left.instrumentId.localeCompare(right.instrumentId)
+    || left.id.localeCompare(right.id)
+    || left.revision - right.revision;
 }
 
 function signalEventKey(instrumentId: string, index: number): string { return `${instrumentId}|${index}`; }
@@ -883,7 +1102,8 @@ function fingerprintCandles(candles: readonly Candle[]): string {
 function fingerprintPortfolio(instruments: readonly NormalizedInstrument[]): string {
   let hash = 2_166_136_261;
   for (const instrument of instruments) {
-    const value = `${instrument.input.id}|${instrument.input.symbol}|${instrument.input.quoteCurrency}|${instrument.timeframe.id}|${fingerprintCandles(instrument.candles)};`;
+    const actionFingerprint = instrument.corporateActions === null ? "" : instrument.corporateActions.actions.map((action) => JSON.stringify(action)).join("|");
+    const value = `${instrument.input.id}|${instrument.input.symbol}|${instrument.input.quoteCurrency}|${instrument.timeframe.id}|${fingerprintCandles(instrument.candles)}|${actionFingerprint};`;
     for (let index = 0; index < value.length; index += 1) { hash ^= value.charCodeAt(index); hash = Math.imul(hash, 16_777_619); }
   }
   return `fnv1a32-${(hash >>> 0).toString(16).padStart(8, "0")}`;

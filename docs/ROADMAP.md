@@ -1280,4 +1280,24 @@ See `docs/api/portfolio-backtesting.md`,
 `docs/architecture/portfolio-execution.md`,
 `docs/benchmarks/portfolio-backtesting.md`, and
 `docs/reports/phase-12-final-verification.md` for the current contract and
-evidence. Phase 13 work is intentionally not started.
+evidence.
+
+## Phase 13 corporate actions and total-return analytics
+
+- [Implemented / Node-verified — 13.0/13.1 foundation and adjustment engine]
+  Added versioned provider-neutral split, reverse-split, and cash-dividend
+  contracts; deterministic stores and in-memory/paginated REST adapters;
+  revision validation; raw, retrospective split-adjusted, causal-as-of, and
+  explicit total-return index projections. Raw OHLCV is never overwritten.
+- [Implemented / Node-verified — 13.2 chart and comparison integration]
+  Chart display keeps raw candles separate from adjusted candles, feeds the
+  selected displayed domain into indicators, exposes event markers and
+  provenance, persists only source references/policy, and applies causal
+  eligibility during split-adjusted replay. `ComparisonEngine` accepts an
+  explicit corporate-action basis for derived price/index lines.
+- [In progress / 13.3 portfolio accounting]
+  Split quantity/cost-basis accounting, deterministic pending-order
+  cancellation, dividend receivables/payment cash flows, additive metrics,
+  export validation, and Worker option cloning are implemented with focused
+  Node coverage. Studio fixtures, final verification, and the complete Phase
+  13 acceptance matrix remain open.

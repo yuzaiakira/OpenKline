@@ -75,7 +75,7 @@ import type {
   VolumePoint,
   AsyncScriptIndicatorOptions,
 } from "./types.js";
-import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
+import { parseWorkspace, WorkspaceCompatibilityError, type WorkspaceCorporateActions, type WorkspaceDocument, type WorkspaceMetadata, type WorkspaceRestoreOptions, type WorkspaceRestoreResult } from "./workspace.js";
 import type { JsonValue } from "./extensions/types.js";
 import type { StrategyMarker } from "./backtesting/markers.js";
 import type { PaperTradingMarker } from "./paper-trading/markers.js";
@@ -128,6 +128,14 @@ import {
   type SessionReferenceResult,
 } from "./session-aggregation.js";
 import { SessionIndicatorRuntime, SessionReferenceRuntime } from "./session-analytics-runtime.js";
+import {
+  adjustCorporateActionData,
+  normalizeCorporateActionDataset,
+  type CorporateActionAdjustmentResult,
+  type CorporateActionDataset,
+  type CorporateActionDisplayOptions,
+  type CorporateActionVolumePolicy,
+} from "./corporate-actions.js";
 
 interface ManagedChartIndicator {
   id: string;
@@ -242,6 +250,15 @@ function syncInteractionSize(canvas: HTMLCanvasElement, currentWidth: number, cu
 export class Chart {
   private readonly canvas: HTMLCanvasElement;
   private readonly model = new ChartModel();
+  /** Canonical executable chart input; adjusted views never replace this copy. */
+  private rawCandles: Candle[] = [];
+  private corporateActionDataset: CorporateActionDataset | null = null;
+  private corporateActionMode: NonNullable<CorporateActionDisplayOptions["mode"]> = "raw";
+  private corporateActionContext: NonNullable<CorporateActionDisplayOptions["context"]> = "retrospective";
+  private corporateActionAsOfTime: number | undefined;
+  private corporateActionVolumePolicy: CorporateActionVolumePolicy = "equivalent-shares";
+  private corporateActionMarkersVisible = true;
+  private corporateActionWorkspaceReference: WorkspaceCorporateActions | null = null;
   private readonly renderer: CanvasRenderer;
   private readonly indicatorRegistry = createDefaultIndicatorRegistry();
   private readonly indicators = new Map<string, ManagedChartIndicator>();
@@ -296,6 +313,7 @@ export class Chart {
   private datafeedSession: { readonly datafeed: Datafeed; readonly query: Omit<GetBarsQuery, "signal"> } | null = null;
   private replayController: ReplayController | null = null;
   private replayBaseWorkspace: WorkspaceDocument | null = null;
+  private replayRawSource: Candle[] | null = null;
   private replayCursorIndex: number | null = null;
   private replayRestoring = false;
   private destroyed = false;
@@ -361,7 +379,7 @@ export class Chart {
   public setData(candles: readonly Candle[]): void {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
-    this.model.setData(candles);
+    this.replaceRawCandles(candles);
     this.invalidateVolumeAnalytics();
     this.refreshIndicatorsFromInput();
     this.refreshMultiTimeframe();
@@ -375,15 +393,24 @@ export class Chart {
   public update(candle: Candle): void {
     this.assertAlive();
     this.assertReplayDataMutationAllowed();
-    const lastTime = this.model.getLatestCandleTime();
+    const lastTime = this.rawCandles.at(-1)?.time;
     const appendOnly = lastTime === undefined || candle.time > lastTime;
-    this.model.update(candle);
+    this.updateRawCandle(candle);
     this.invalidateVolumeAnalytics();
-    this.refreshIndicatorsFromUpdate(candle, appendOnly);
-    this.refreshMultiTimeframe();
-    this.refreshSessionAnalysisFromUpdate(candle);
-    this.refreshWorkerIndicatorsFromUpdate(candle);
-    this.evaluateLiveAlerts(candle, appendOnly ? "append" : "correction");
+    const adjustedView = this.corporateActionDataset !== null && this.corporateActionMode !== "raw";
+    if (adjustedView) {
+      this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
+      this.refreshWorkerIndicatorsFromInput();
+    } else {
+      this.refreshIndicatorsFromUpdate(candle, appendOnly);
+      this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromUpdate(candle);
+      this.refreshWorkerIndicatorsFromUpdate(candle);
+    }
+    const alertCandle = adjustedView ? this.model.allCandles.at(-1) ?? candle : candle;
+    this.evaluateLiveAlerts(alertCandle, appendOnly ? "append" : "correction");
     this.emit("dataUpdated", { kind: "update", time: candle.time, appendOnly });
     this.render();
   }
@@ -636,7 +663,9 @@ export class Chart {
         ...(item.title === undefined ? {} : { title: item.title }),
         style: { ...item.style },
         ...(item.band === undefined ? {} : { band: { ...item.band } }),
-        data: item.data.map((point) => ({ ...point })),
+        data: this.model.isPrimaryCandleSeries(item.id)
+          ? this.rawCandles.map((candle) => ({ ...candle }))
+          : item.data.map((point) => ({ ...point })),
       }));
     const indicators = [...this.indicators.values()].map((indicator) => ({
       id: indicator.id,
@@ -746,6 +775,7 @@ export class Chart {
       ...(sessionIndicators.length === 0 && sessionReferences.length === 0 ? {} : {
         sessionAnalysis: { indicators: sessionIndicators, references: sessionReferences },
       }),
+      ...(this.getCorporateActionWorkspaceReference() === null ? {} : { corporateActions: this.getCorporateActionWorkspaceReference()! }),
       ...(alerts.alerts.length === 0 ? {} : { alerts }),
       ...(replayActive && replay !== undefined ? {
         replay: {
@@ -796,6 +826,7 @@ export class Chart {
       }
     }
     this.drawingEngine.validate(parsed.drawings);
+    const attachedCorporateActions = this.corporateActionDataset;
 
     this.stopDatafeed();
     this.clearVolumeProfiles();
@@ -808,6 +839,14 @@ export class Chart {
     this.indicators.clear();
     this.nextIndicatorId = 1;
     this.model.destroy();
+    this.rawCandles = [];
+    this.corporateActionDataset = null;
+    this.corporateActionWorkspaceReference = null;
+    this.corporateActionMode = "raw";
+    this.corporateActionContext = "retrospective";
+    this.corporateActionAsOfTime = undefined;
+    this.corporateActionVolumePolicy = "equivalent-shares";
+    this.corporateActionMarkersVisible = true;
     this.drawingEngine.restore({ version: 1, drawings: [] });
     this.selectedDrawingId = null;
     this.pendingDrawing = null;
@@ -843,6 +882,25 @@ export class Chart {
         ...(item.band === undefined ? {} : { band: { ...item.band } }),
       });
       this.model.setSeriesData(item.id, item.data as SeriesData);
+      if (this.model.isPrimaryCandleSeries(item.id)) this.rawCandles = item.data.map((point) => ({ ...(point as Candle) }));
+    }
+    if (parsed.corporateActions !== undefined) {
+      this.corporateActionWorkspaceReference = { ...parsed.corporateActions };
+      const sameSource = attachedCorporateActions !== null
+        && attachedCorporateActions.instrumentId === parsed.corporateActions.instrumentId
+        && attachedCorporateActions.source.id === parsed.corporateActions.sourceId
+        && attachedCorporateActions.source.version === parsed.corporateActions.sourceVersion;
+      if (sameSource) {
+        this.corporateActionDataset = attachedCorporateActions;
+      } else {
+        console.warn(`OpenKline corporate-action source is unresolved: ${parsed.corporateActions.sourceId}@${parsed.corporateActions.sourceVersion}`);
+      }
+      this.corporateActionMode = parsed.corporateActions.mode;
+      this.corporateActionContext = parsed.corporateActions.context;
+      this.corporateActionAsOfTime = parsed.corporateActions.asOfTime ?? undefined;
+      this.corporateActionVolumePolicy = parsed.corporateActions.volumePolicy;
+      this.corporateActionMarkersVisible = parsed.corporateActions.markersVisible;
+      this.applyCorporateActionDisplay();
     }
     for (const indicator of parsed.indicators) {
       if (missingIndicators.includes(indicator.id)) continue;
@@ -1822,7 +1880,83 @@ export class Chart {
   /** Return a defensive copy of the currently stored candles. */
   public getData(): Candle[] {
     this.assertAlive();
+    return this.rawCandles.map((candle) => ({ ...candle }));
+  }
+
+  /** Return the candle domain currently rendered by the chart. */
+  public getDisplayedData(): Candle[] {
+    this.assertAlive();
     return this.model.allCandles;
+  }
+
+  /** Attach or replace a validated corporate-action source without mutating raw candles. */
+  public setCorporateActions(dataset: CorporateActionDataset, options: CorporateActionDisplayOptions = {}): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    const normalized = normalizeCorporateActionDataset(dataset);
+    this.corporateActionDataset = normalized;
+    this.corporateActionMode = options.mode ?? this.corporateActionMode;
+    this.corporateActionContext = options.context ?? this.corporateActionContext;
+    this.corporateActionAsOfTime = options.asOfTime;
+    this.corporateActionVolumePolicy = options.volumePolicy ?? this.corporateActionVolumePolicy;
+    this.corporateActionMarkersVisible = options.markersVisible ?? this.corporateActionMarkersVisible;
+    this.corporateActionWorkspaceReference = this.createCorporateActionWorkspaceReference(normalized);
+    this.applyCorporateActionDisplay();
+  }
+
+  public getCorporateActions(): CorporateActionDataset | null {
+    this.assertAlive();
+    if (this.corporateActionDataset === null) return null;
+    return normalizeCorporateActionDataset(this.corporateActionDataset);
+  }
+
+  public getCorporateActionDisplayOptions(): Required<Pick<CorporateActionDisplayOptions, "mode" | "context" | "volumePolicy" | "markersVisible">> & Pick<CorporateActionDisplayOptions, "asOfTime"> {
+    this.assertAlive();
+    return {
+      mode: this.corporateActionMode,
+      context: this.corporateActionContext,
+      ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      volumePolicy: this.corporateActionVolumePolicy,
+      markersVisible: this.corporateActionMarkersVisible,
+    };
+  }
+
+  /** Select an explicit raw, split-adjusted, or analytical total-return view. */
+  public setCorporateActionDisplayMode(mode: NonNullable<CorporateActionDisplayOptions["mode"]>, options: Omit<CorporateActionDisplayOptions, "mode"> = {}): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    if (mode !== "raw" && mode !== "split-adjusted" && mode !== "total-return") throw new Error(`Unsupported corporate-action display mode: ${String(mode)}`);
+    this.corporateActionMode = mode;
+    this.corporateActionContext = options.context ?? this.corporateActionContext;
+    this.corporateActionAsOfTime = options.asOfTime;
+    this.corporateActionVolumePolicy = options.volumePolicy ?? this.corporateActionVolumePolicy;
+    this.corporateActionMarkersVisible = options.markersVisible ?? this.corporateActionMarkersVisible;
+    this.updateCorporateActionWorkspaceReference();
+    this.applyCorporateActionDisplay();
+  }
+
+  public getCorporateActionAdjustment(): CorporateActionAdjustmentResult | null {
+    this.assertAlive();
+    return this.computeCorporateActionAdjustment();
+  }
+
+  public setCorporateActionMarkersVisible(visible: boolean): void {
+    this.assertAlive();
+    this.corporateActionMarkersVisible = visible;
+    this.updateCorporateActionWorkspaceReference();
+    this.render();
+  }
+
+  public clearCorporateActions(): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.corporateActionDataset = null;
+    this.corporateActionWorkspaceReference = null;
+    this.corporateActionMode = "raw";
+    this.corporateActionContext = "retrospective";
+    this.corporateActionAsOfTime = undefined;
+    this.corporateActionVolumePolicy = "equivalent-shares";
+    this.replaceRawCandles(this.rawCandles);
   }
 
   /** Set non-persistent strategy signal/fill markers rendered through the existing overlay path. */
@@ -1898,7 +2032,11 @@ export class Chart {
     this.clearMultiTimeframe();
     this.clearSessionAnalysis();
     this.model.destroy();
+    this.rawCandles = [];
+    this.corporateActionDataset = null;
+    this.corporateActionWorkspaceReference = null;
     this.baseFrame = null;
+    this.replayRawSource = null;
     this.replayCursorIndex = null;
     this.drawingEngine.dispose();
     this.overlays.clear();
@@ -2326,6 +2464,31 @@ export class Chart {
     return this.overlays.delete(id);
   }
 
+  private getCorporateActionOverlayItem(): PluginOverlayRenderItem | null {
+    if (!this.corporateActionMarkersVisible || this.corporateActionDataset === null) return null;
+    const context = this.getPluginRenderContext();
+    const pane = context?.pane("main");
+    if (context === null || context === undefined || pane === undefined) return null;
+    const cutoff = this.model.getReplayCutoff();
+    const visibleFrom = context.times[0] ?? 0;
+    const visibleTo = context.times.at(-1) ?? 0;
+    const commands: PluginRenderCommand[] = [];
+    for (const action of this.corporateActionDataset.actions) {
+      const eventTime = action.kind === "cash-dividend" ? action.exDividendTime : action.effectiveTime;
+      if (cutoff !== null && eventTime > cutoff) continue;
+      if (eventTime < visibleFrom || eventTime > visibleTo) continue;
+      const x = context.xForTime(eventTime);
+      const isDividend = action.kind === "cash-dividend";
+      const color = isDividend ? "#f59e0b" : "#a855f7";
+      const label = isDividend
+        ? `DIV ${action.amountPerShare} ${action.currency}`
+        : `${action.kind === "reverse-stock-split" ? "REV SPLIT" : "SPLIT"} ${action.newShares}:${action.oldShares}`;
+      commands.push({ kind: "line", from: { x, y: pane.top }, to: { x, y: pane.bottom }, color, lineWidth: 1, alpha: 0.55, dash: [4, 3] });
+      commands.push({ kind: "text", x: x + 3, y: pane.top + 12, text: label, color, font: "10px system-ui, sans-serif", alpha: 1 });
+    }
+    return { id: "openkline.corporate-actions", zIndex: 16, commands };
+  }
+
   private getPluginOverlayItems(): PluginOverlayRenderItem[] {
     const items: PluginOverlayRenderItem[] = [];
     const strategyMarkers = this.getStrategyMarkerOverlay();
@@ -2337,6 +2500,8 @@ export class Chart {
     items.push(...this.getVolumeProfileOverlayItems());
     items.push(...this.getMultiTimeframeReferenceOverlayItems());
     items.push(...this.getSessionReferenceOverlayItems());
+    const corporateActions = this.getCorporateActionOverlayItem();
+    if (corporateActions !== null) items.push(corporateActions);
     if (this.overlays.size === 0) return items;
     const context = this.getPluginRenderContext();
     if (context === null) return items;
@@ -2732,6 +2897,74 @@ export class Chart {
     };
   }
 
+  private replaceRawCandles(candles: readonly Candle[]): void {
+    this.model.setData(candles);
+    this.rawCandles = this.model.allCandles.map((candle) => ({ ...candle }));
+    this.applyCorporateActionDisplay(false);
+  }
+
+  private updateRawCandle(candle: Candle): void {
+    if (this.corporateActionDataset === null || this.corporateActionMode === "raw") {
+      this.model.update(candle);
+      this.rawCandles = this.model.allCandles.map((item) => ({ ...item }));
+      return;
+    }
+    const next = [...this.rawCandles];
+    const index = lowerBoundCandleTime(next, candle.time);
+    if (next[index]?.time === candle.time) next[index] = { ...candle };
+    else next.splice(index, 0, { ...candle });
+    this.model.setData(next);
+    this.rawCandles = this.model.allCandles.map((item) => ({ ...item }));
+    this.applyCorporateActionDisplay(false);
+  }
+
+  private computeCorporateActionAdjustment(): CorporateActionAdjustmentResult | null {
+    if (this.corporateActionDataset === null) return null;
+    return adjustCorporateActionData(this.rawCandles, this.corporateActionDataset, {
+      mode: this.corporateActionMode,
+      context: this.corporateActionContext,
+      ...(this.corporateActionAsOfTime === undefined ? {} : { asOfTime: this.corporateActionAsOfTime }),
+      volumePolicy: this.corporateActionVolumePolicy,
+    });
+  }
+
+  private createCorporateActionWorkspaceReference(dataset: CorporateActionDataset): WorkspaceCorporateActions {
+    return {
+      instrumentId: dataset.instrumentId,
+      sourceId: dataset.source.id,
+      sourceVersion: dataset.source.version,
+      mode: this.corporateActionMode,
+      context: this.corporateActionContext,
+      asOfTime: this.corporateActionAsOfTime ?? null,
+      volumePolicy: this.corporateActionVolumePolicy,
+      markersVisible: this.corporateActionMarkersVisible,
+    };
+  }
+
+  private updateCorporateActionWorkspaceReference(): void {
+    if (this.corporateActionDataset !== null) this.corporateActionWorkspaceReference = this.createCorporateActionWorkspaceReference(this.corporateActionDataset);
+    else if (this.corporateActionWorkspaceReference !== null) this.corporateActionWorkspaceReference = { ...this.corporateActionWorkspaceReference, mode: this.corporateActionMode, context: this.corporateActionContext, asOfTime: this.corporateActionAsOfTime ?? null, volumePolicy: this.corporateActionVolumePolicy, markersVisible: this.corporateActionMarkersVisible };
+  }
+
+  private getCorporateActionWorkspaceReference(): WorkspaceCorporateActions | null {
+    this.updateCorporateActionWorkspaceReference();
+    return this.corporateActionWorkspaceReference === null ? null : { ...this.corporateActionWorkspaceReference };
+  }
+
+  private applyCorporateActionDisplay(refresh = true): void {
+    const adjustment = this.computeCorporateActionAdjustment();
+    if (adjustment?.candles !== null && adjustment?.candles !== undefined) this.model.setData(adjustment.candles);
+    else this.model.setData(this.rawCandles);
+    this.invalidateVolumeAnalytics();
+    if (refresh) {
+      this.refreshIndicatorsFromInput();
+      this.refreshMultiTimeframe();
+      this.refreshSessionAnalysisFromInput();
+      this.refreshWorkerIndicatorsFromInput();
+      this.render();
+    }
+  }
+
   private createSeriesApi<T extends SeriesPoint>(type: SeriesType, options: SeriesOptions): SeriesApi<T> {
     this.assertAlive();
     this.assertReplayStructureMutationAllowed();
@@ -2742,7 +2975,9 @@ export class Chart {
       setData: (data) => {
         this.assertAlive();
         this.assertReplayDataMutationAllowed();
-        this.model.setSeriesData(id, data as SeriesData);
+        const primaryCandleSeries = this.model.isPrimaryCandleSeries(id);
+        if (primaryCandleSeries) this.replaceRawCandles(data as readonly Candle[]);
+        else this.model.setSeriesData(id, data as SeriesData);
         if (this.model.isPrimaryCandleSeries(id)) this.invalidateVolumeAnalytics();
         if (this.model.isPrimaryCandleSeries(id)) {
           this.refreshIndicatorsFromInput();
@@ -2757,9 +2992,10 @@ export class Chart {
         this.assertAlive();
         this.assertReplayDataMutationAllowed();
         const primaryCandleSeries = isCandleSeriesType(type) && this.model.isPrimaryCandleSeries(id);
-        const lastTime = primaryCandleSeries ? this.model.getLatestCandleTime() : undefined;
+        const lastTime = primaryCandleSeries ? this.rawCandles.at(-1)?.time : undefined;
         const appendOnly = primaryCandleSeries && (lastTime === undefined || point.time > lastTime);
-        this.model.updateSeries(id, point);
+        if (primaryCandleSeries) this.updateRawCandle(point as Candle);
+        else this.model.updateSeries(id, point);
         if (primaryCandleSeries) this.invalidateVolumeAnalytics();
         if (primaryCandleSeries) {
           this.refreshIndicatorsFromUpdate(point as Candle, appendOnly);
@@ -3360,9 +3596,10 @@ export class Chart {
   private beginReplay(source: readonly Candle[]): void {
     if (this.isReplayActive()) throw new Error("Replay is already active");
     this.replayBaseWorkspace = this.serializeWorkspace();
+    this.replayRawSource = source.map((candle) => ({ ...candle }));
     this.suspendDatafeed();
     try {
-      this.model.setReplaySource(source);
+      this.model.setReplaySource(this.replayRawSource);
       this.model.setReplayCutoff(Number.NEGATIVE_INFINITY);
       this.invalidateVolumeAnalytics();
       this.replayCursorIndex = null;
@@ -3374,6 +3611,7 @@ export class Chart {
       this.render();
     } catch (error) {
       this.replayBaseWorkspace = null;
+      this.replayRawSource = null;
       this.model.setReplayCutoff(null);
       this.replayCursorIndex = null;
       throw error;
@@ -3382,6 +3620,15 @@ export class Chart {
 
   private applyReplayCursor(cursor: ReplayCursor): void {
     if (this.replayBaseWorkspace === null) throw new Error("Replay chart state has not been prepared");
+    if (this.replayRawSource !== null && this.corporateActionDataset !== null && this.corporateActionMode === "split-adjusted" && cursor.timestamp !== null) {
+      const replayAdjustment = adjustCorporateActionData(this.replayRawSource, this.corporateActionDataset, {
+        mode: "split-adjusted",
+        context: "causal-as-of",
+        asOfTime: cursor.timestamp,
+        volumePolicy: this.corporateActionVolumePolicy,
+      });
+      if (replayAdjustment.candles !== null) this.model.setReplaySource(replayAdjustment.candles);
+    }
     this.model.setReplayCutoff(cursor.timestamp ?? Number.NEGATIVE_INFINITY);
     this.invalidateVolumeAnalytics();
     this.model.resetView();
@@ -3420,6 +3667,7 @@ export class Chart {
     } finally {
       this.replayRestoring = false;
       this.replayBaseWorkspace = null;
+      this.replayRawSource = null;
       this.model.setReplayCutoff(null);
       this.invalidateVolumeAnalytics();
       this.replayCursorIndex = null;
@@ -3436,6 +3684,7 @@ export class Chart {
     this.model.setReplayCutoff(null);
     this.invalidateVolumeAnalytics();
     this.replayCursorIndex = null;
+    this.replayRawSource = null;
     this.replayBaseWorkspace = null;
   }
 
@@ -3689,6 +3938,17 @@ function findOutputPointAtTime(points: readonly { readonly time: number; readonl
     else high = middle - 1;
   }
   return undefined;
+}
+
+function lowerBoundCandleTime(candles: readonly Candle[], time: number): number {
+  let low = 0;
+  let high = candles.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (candles[middle]!.time < time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 
 export function createChart(container: HTMLElement, options?: ChartOptions): Chart {

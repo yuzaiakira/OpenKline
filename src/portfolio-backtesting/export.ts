@@ -6,6 +6,7 @@ import type {
   PortfolioInstrumentSummary,
   PortfolioPerformanceMetrics,
 } from "./types.js";
+import type { CorporateAction } from "../corporate-actions.js";
 
 export const OPENKLINE_PORTFOLIO_BACKTEST_RESULT_VERSION = 1 as const;
 
@@ -44,7 +45,13 @@ export function* serializePortfolioBacktestResultChunks(result: PortfolioBacktes
   yield* jsonArray(result.equityCurve);
   yield `,"finalAccount":${json(result.finalAccount)}`;
   yield `,"metrics":${json(result.metrics)}`;
-  yield `,"inputFingerprint":${json(result.inputFingerprint)}}`;
+  yield `,"inputFingerprint":${json(result.inputFingerprint)}`;
+  if (result.corporateActions !== undefined) {
+    yield `,"corporateActions":${json(result.corporateActions)}`;
+    yield `,"dividendReceivables":${json(result.dividendReceivables ?? [])}`;
+    yield `,"corporateActionLedger":${json(result.corporateActionLedger ?? [])}`;
+  }
+  yield "}";
 }
 
 /**
@@ -122,6 +129,9 @@ function validateResult(value: Record<string, unknown>): void {
   for (const item of equityCurve) validateSnapshot(record(item, "equity snapshot"), instrumentIds);
   validateSnapshot(record(value.finalAccount, "final account"), instrumentIds);
   validateMetrics(record(value.metrics, "metrics"), instrumentIds);
+  if (value.corporateActions !== undefined) validateCorporateActions(value.corporateActions, instrumentIds);
+  if (value.dividendReceivables !== undefined) validateDividendReceivables(value.dividendReceivables, instrumentIds);
+  if (value.corporateActionLedger !== undefined) validateCorporateActionLedger(value.corporateActionLedger, instrumentIds);
 }
 
 function validateAssumptions(value: Record<string, unknown>): void {
@@ -130,6 +140,14 @@ function validateAssumptions(value: Record<string, unknown>): void {
   positiveFinite(value.initialCapital, "assumption initial capital");
   const priority = array(value.eventPriority, "assumption event priority", 4);
   if (priority.length !== 4 || priority.some((item, index) => item !== (["market-open", "bar-complete", "order-fill", "valuation"] as const)[index])) fail("Invalid event priority");
+  if (value.corporateActionEventPriority !== undefined) {
+    const corporatePriority = array(value.corporateActionEventPriority, "corporate-action event priority", 6);
+    if (corporatePriority.length !== 6 || corporatePriority.some((item, index) => item !== (["corporate-action-effective", "market-open", "bar-complete", "order-fill", "corporate-action-payment", "valuation"] as const)[index])) fail("Invalid corporate-action event priority");
+    const policy = record(value.corporateActionPolicy, "corporate-action policy");
+    if (policy.pendingOrderPolicy !== "cancel" || policy.fractionalSharePolicy !== "reject" || policy.dividendSettlement !== "payment-time" || policy.receivableValuation !== "include-in-equity") fail("Invalid corporate-action policy");
+  } else if (value.corporateActionPolicy !== undefined) {
+    fail("Corporate-action policy requires corporate-action event priority");
+  }
   validateSizing(record(value.positionSizing, "assumption position sizing"));
   validateCost(record(value.commission, "assumption commission"));
   validateCost(record(value.slippage, "assumption slippage"));
@@ -161,12 +179,98 @@ function validateTimeline(value: Record<string, unknown>, instrumentIds: Readonl
   if (ids.has(id)) fail(`Duplicate timeline id: ${id}`);
   ids.add(id);
   safeInteger(value.time, "timeline time");
-  if (!["market-open", "order-fill", "bar-complete", "valuation"].includes(String(value.kind))) fail("Invalid timeline kind");
-  if (![0, 1, 2, 3].includes(Number(value.priority))) fail("Invalid timeline priority");
+  if (!["market-open", "order-fill", "bar-complete", "valuation", "corporate-action"].includes(String(value.kind))) fail("Invalid timeline kind");
+  if (![0, 1, 2, 3, 4, 5].includes(Number(value.priority))) fail("Invalid timeline priority");
+  if (value.kind === "corporate-action") {
+    if (value.priority !== 0 && value.priority !== 4) fail("Invalid corporate-action timeline priority");
+    validateInstrumentRef(value.instrumentId, instrumentIds);
+    nonEmptyString(value.corporateActionId, "timeline corporate-action id");
+    if (value.corporateActionPhase !== "effective" && value.corporateActionPhase !== "payment") fail("Invalid corporate-action timeline phase");
+  } else if (value.corporateActionId !== undefined || value.corporateActionPhase !== undefined) {
+    fail("Non-corporate timeline event contains corporate-action fields");
+  }
   if (value.instrumentId !== undefined) validateInstrumentRef(value.instrumentId, instrumentIds);
   if (value.orderId !== undefined) nonEmptyString(value.orderId, "timeline order id");
   if (value.candleIndex !== undefined) nonNegativeInteger(value.candleIndex, "timeline candle index");
   if (value.availableAt !== undefined) safeInteger(value.availableAt, "timeline availability");
+}
+
+function validateCorporateActions(value: unknown, instrumentIds: ReadonlySet<string>): void {
+  const actions = array(value, "corporate actions", MAX_ARRAY_LENGTH);
+  const ids = new Set<string>();
+  for (const item of actions) {
+    const action = record(item, "corporate action");
+    const id = nonEmptyString(action.id, "corporate action id");
+    if (ids.has(id)) fail(`Duplicate corporate action id: ${id}`);
+    ids.add(id);
+    validateInstrumentRef(action.instrumentId, instrumentIds);
+    if (action.kind !== "stock-split" && action.kind !== "reverse-stock-split" && action.kind !== "cash-dividend") fail("Invalid corporate action kind");
+    safeInteger(action.effectiveTime, "corporate action effective time");
+    if (!Number.isSafeInteger(action.revision) || Number(action.revision) < 1) fail("Invalid corporate action revision");
+    if (action.knowledgeTime !== undefined) safeInteger(action.knowledgeTime, "corporate action knowledge time");
+    if (action.announcementTime !== undefined) safeInteger(action.announcementTime, "corporate action announcement time");
+    const source = record(action.source, "corporate action source");
+    nonEmptyString(source.id, "corporate action source id");
+    nonEmptyString(source.version, "corporate action source version");
+    if (source.provenance !== undefined && typeof source.provenance !== "string") fail("Invalid corporate action provenance");
+    if (action.kind === "stock-split" || action.kind === "reverse-stock-split") {
+      positiveFinite(action.newShares, "corporate action new shares");
+      positiveFinite(action.oldShares, "corporate action old shares");
+      if (action.kind === "stock-split" && Number(action.newShares) < Number(action.oldShares) || action.kind === "reverse-stock-split" && Number(action.newShares) >= Number(action.oldShares)) fail("Invalid corporate action split direction");
+    } else {
+      safeInteger(action.exDividendTime, "cash dividend ex-dividend time");
+      if (Number(action.exDividendTime) !== Number(action.effectiveTime)) fail("Cash dividend effective and ex-dividend times must match");
+      nonNegativeFinite(action.amountPerShare, "cash dividend amount per share");
+      nonEmptyString(action.currency, "cash dividend currency");
+      if (action.paymentTime !== undefined) {
+        safeInteger(action.paymentTime, "cash dividend payment time");
+        if (Number(action.paymentTime) < Number(action.exDividendTime)) fail("Cash dividend payment precedes ex-dividend time");
+      }
+      if (action.declarationTime !== undefined) {
+        safeInteger(action.declarationTime, "cash dividend declaration time");
+        if (Number(action.declarationTime) > Number(action.exDividendTime)) fail("Cash dividend declaration follows ex-dividend time");
+      }
+    }
+  }
+}
+
+function validateDividendReceivables(value: unknown, instrumentIds: ReadonlySet<string>): void {
+  const receivables = array(value, "dividend receivables", MAX_ARRAY_LENGTH);
+  const ids = new Set<string>();
+  for (const item of receivables) {
+    const receivable = record(item, "dividend receivable");
+    const id = nonEmptyString(receivable.id, "dividend receivable id");
+    if (ids.has(id)) fail(`Duplicate dividend receivable id: ${id}`);
+    ids.add(id);
+    nonEmptyString(receivable.actionId, "dividend receivable action id");
+    validateInstrumentRef(receivable.instrumentId, instrumentIds);
+    nonEmptyString(receivable.currency, "dividend receivable currency");
+    positiveFinite(receivable.quantity, "dividend receivable quantity");
+    nonNegativeFinite(receivable.amountPerShare, "dividend receivable amount per share");
+    nonNegativeFinite(receivable.amount, "dividend receivable amount");
+    safeInteger(receivable.entitlementTime, "dividend receivable entitlement time");
+    if (receivable.paymentTime !== null) safeInteger(receivable.paymentTime, "dividend receivable payment time");
+    if (!["entitled", "accrued", "payable", "paid", "unsettled"].includes(String(receivable.status))) fail("Invalid dividend receivable status");
+  }
+}
+
+function validateCorporateActionLedger(value: unknown, instrumentIds: ReadonlySet<string>): void {
+  const records = array(value, "corporate action ledger", MAX_ARRAY_LENGTH);
+  const ids = new Set<string>();
+  for (const item of records) {
+    const recordValue = record(item, "corporate action ledger record");
+    const id = nonEmptyString(recordValue.id, "corporate action ledger id");
+    if (ids.has(id)) fail(`Duplicate corporate action ledger id: ${id}`);
+    ids.add(id);
+    nonEmptyString(recordValue.actionId, "corporate action ledger action id");
+    validateInstrumentRef(recordValue.instrumentId, instrumentIds);
+    if (!["stock-split", "reverse-stock-split", "cash-dividend"].includes(String(recordValue.kind))) fail("Invalid corporate action ledger kind");
+    if (recordValue.phase !== "effective" && recordValue.phase !== "payment") fail("Invalid corporate action ledger phase");
+    safeInteger(recordValue.time, "corporate action ledger time");
+    if (!["applied", "cancelled", "rejected", "unsettled"].includes(String(recordValue.status))) fail("Invalid corporate action ledger status");
+    for (const key of ["quantityBefore", "quantityAfter", "costBasisBefore", "costBasisAfter", "amount"] as const) if (recordValue[key] !== undefined) nonNegativeFinite(recordValue[key], `corporate action ledger ${key}`);
+    if (recordValue.reason !== undefined && typeof recordValue.reason !== "string") fail("Invalid corporate action ledger reason");
+  }
 }
 
 function validateOrder(value: Record<string, unknown>, instrumentIds: ReadonlySet<string>, ids: Set<string>): void {
@@ -225,6 +329,7 @@ function validatePosition(value: Record<string, unknown>, instrumentIds: Readonl
   nullableSafeInteger(value.markTime, "position mark time");
   if (!["fresh", "stale", "unknown", "execution"].includes(String(value.markQuality))) fail("Invalid position mark quality");
   nullableFinite(value.unrealizedPnl, "position unrealized pnl");
+  if (value.aggregateCostBasis !== undefined) nonNegativeFinite(value.aggregateCostBasis, "position aggregate cost basis");
 }
 
 function validateSnapshot(value: Record<string, unknown>, instrumentIds: ReadonlySet<string>): void {
@@ -237,6 +342,8 @@ function validateSnapshot(value: Record<string, unknown>, instrumentIds: Readonl
   nullableFinite(value.peakEquity, "snapshot peak equity");
   nullableFinite(value.drawdown, "snapshot drawdown");
   nullableFinite(value.drawdownPercent, "snapshot drawdown percent");
+  if (value.dividendReceivable !== undefined) nonNegativeFinite(value.dividendReceivable, "snapshot dividend receivable");
+  if (value.dividendIncome !== undefined) nonNegativeFinite(value.dividendIncome, "snapshot dividend income");
   nonNegativeFinite(value.grossExposure, "snapshot gross exposure");
   finite(value.netExposure, "snapshot net exposure");
   nonNegativeInteger(value.activePositionCount, "snapshot active positions");
@@ -284,7 +391,15 @@ function validateMetrics(value: Record<string, unknown>, instrumentIds: Readonly
     nonNegativeFinite(contribution.grossExposure, "contribution exposure");
     nonNegativeInteger(contribution.tradeCount, "contribution trade count");
     nullableFinite(contribution.returnOnAllocatedCapital, "contribution return");
+    if (contribution.dividendIncome !== undefined) nonNegativeFinite(contribution.dividendIncome, "contribution dividend income");
+    if (contribution.corporateActionIds !== undefined) {
+      const actionIds = array(contribution.corporateActionIds, "contribution corporate action ids", MAX_ARRAY_LENGTH);
+      actionIds.forEach((actionId) => nonEmptyString(actionId, "contribution corporate action id"));
+    }
   }
+  if (value.dividendIncome !== undefined) nonNegativeFinite(value.dividendIncome, "metric dividend income");
+  if (value.priceReturn !== undefined) nullableFinite(value.priceReturn, "metric price return");
+  if (value.corporateActionCount !== undefined) nonNegativeInteger(value.corporateActionCount, "metric corporate action count");
 }
 
 function validateSizing(value: Record<string, unknown>): void {
@@ -330,11 +445,24 @@ function cloneResult(result: PortfolioBacktestResult): PortfolioBacktestResult {
     finalAccount: cloneSnapshot(result.finalAccount),
     metrics: cloneMetrics(result.metrics),
     inputFingerprint: result.inputFingerprint,
+    ...(result.corporateActions === undefined ? {} : { corporateActions: result.corporateActions.map(cloneCorporateAction) }),
+    ...(result.dividendReceivables === undefined ? {} : { dividendReceivables: result.dividendReceivables.map((receivable) => ({ ...receivable })) }),
+    ...(result.corporateActionLedger === undefined ? {} : { corporateActionLedger: result.corporateActionLedger.map((record) => ({ ...record })) }),
   };
 }
 
 function cloneAssumptions(value: PortfolioBacktestAssumptions): PortfolioBacktestAssumptions {
-  return { ...value, eventPriority: [...value.eventPriority], positionSizing: { ...value.positionSizing }, commission: { ...value.commission }, slippage: { ...value.slippage }, risk: { ...value.risk }, valuation: { ...value.valuation } };
+  return {
+    ...value,
+    eventPriority: [...value.eventPriority],
+    positionSizing: { ...value.positionSizing },
+    commission: { ...value.commission },
+    slippage: { ...value.slippage },
+    risk: { ...value.risk },
+    valuation: { ...value.valuation },
+    ...(value.corporateActionPolicy === undefined ? {} : { corporateActionPolicy: { ...value.corporateActionPolicy } }),
+    ...(value.corporateActionEventPriority === undefined ? {} : { corporateActionEventPriority: [...value.corporateActionEventPriority] }),
+  };
 }
 
 function cloneInstrument(value: PortfolioInstrumentSummary): PortfolioInstrumentSummary {
@@ -346,7 +474,11 @@ function cloneSnapshot(value: PortfolioAccountSnapshot): PortfolioAccountSnapsho
 }
 
 function cloneMetrics(value: PortfolioPerformanceMetrics): PortfolioPerformanceMetrics {
-  return { ...value, perInstrument: value.perInstrument.map((item: PortfolioInstrumentContribution) => ({ ...item })) };
+  return { ...value, perInstrument: value.perInstrument.map((item: PortfolioInstrumentContribution) => ({ ...item, ...(item.corporateActionIds === undefined ? {} : { corporateActionIds: [...item.corporateActionIds] }) })) };
+}
+
+function cloneCorporateAction(value: CorporateAction): CorporateAction {
+  return { ...value, source: { ...value.source } } as CorporateAction;
 }
 
 function array(value: unknown, label: string, maximum: number): unknown[] {

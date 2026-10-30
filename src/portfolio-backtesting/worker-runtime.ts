@@ -1,5 +1,6 @@
 import { isPortfolioBacktestWorkerResponse, OPENKLINE_PORTFOLIO_BACKTEST_WORKER_PROTOCOL_VERSION, type PortfolioBacktestWorkerErrorCode, type PortfolioBacktestWorkerRequest, type PortfolioBacktestWorkerRunOptions } from "./worker-protocol.js";
 import { clonePortfolioPositionSizing, type PortfolioBacktestProgress, type PortfolioBacktestResult } from "./types.js";
+import type { CorporateActionDataset } from "../corporate-actions.js";
 export type { PortfolioBacktestWorkerRunOptions } from "./worker-protocol.js";
 
 export interface PortfolioBacktestWorkerLike { onmessage: ((event: { readonly data: unknown }) => void) | null; onerror: ((event: unknown) => void) | null; onmessageerror: ((event: unknown) => void) | null; postMessage(message: unknown): void; terminate(): void; }
@@ -77,6 +78,7 @@ function cloneOptions(options: PortfolioBacktestWorkerRunOptions): PortfolioBack
       candles: instrument.candles.map((candle) => ({ ...candle })),
       strategy: { strategy: instrument.strategy.strategy, parameters: cloneRecord(instrument.strategy.parameters) },
       ...(instrument.calendar === undefined ? {} : { calendar: { ...instrument.calendar } }),
+      ...(instrument.corporateActions === undefined ? {} : { corporateActions: cloneCorporateActionDataset(instrument.corporateActions) }),
       ...(instrument.execution === undefined ? {} : {
         execution: {
           ...instrument.execution,
@@ -90,6 +92,10 @@ function cloneOptions(options: PortfolioBacktestWorkerRunOptions): PortfolioBack
     ...(options.risk === undefined ? {} : { risk: { ...options.risk } }),
     ...(options.valuation === undefined ? {} : { valuation: { ...options.valuation } }),
   };
+}
+
+function cloneCorporateActionDataset(dataset: CorporateActionDataset): CorporateActionDataset {
+  return { ...dataset, source: { ...dataset.source }, actions: dataset.actions.map((action) => ({ ...action, source: { ...action.source } })) };
 }
 
 function cloneRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> {

@@ -551,3 +551,72 @@ test("renders OHLC, hollow, Heikin-Ashi, and baseline series without replacing r
   expect(result.remainingSeries).not.toContain("heikin");
   expect(result.remainingSeries).not.toContain("baseline");
 });
+
+test("keeps raw candles separate from split-adjusted and total-return chart views", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(() => {
+    type Candle = { time: number; open: number; high: number; low: number; close: number; volume?: number };
+    type Chart = {
+      getData(): Candle[];
+      getDisplayedData(): Candle[];
+      setCorporateActions(dataset: object, options?: object): void;
+      setCorporateActionDisplayMode(mode: string, options?: object): void;
+      getCorporateActionAdjustment(): { mode: string; candles: Candle[] | null; totalReturn: Array<{ time: number; value: number }> | null; appliedActions: unknown[] } | null;
+      serializeWorkspace(): { corporateActions?: { sourceId: string; mode: string; context: string } };
+      clearCorporateActions(): void;
+      destroy(): void;
+    };
+    const chart = (globalThis as unknown as { __openklineChart: Chart }).__openklineChart;
+    const rawBefore = chart.getData();
+    const actionTime = rawBefore[40]!.time;
+    chart.setCorporateActions({
+      version: 1,
+      instrumentId: "TEST",
+      source: { id: "browser-fixture", version: "1" },
+      knowledgeCoverage: "known",
+      actions: [{
+        id: "browser-split",
+        instrumentId: "TEST",
+        kind: "stock-split",
+        effectiveTime: actionTime,
+        revision: 1,
+        source: { id: "browser-fixture", version: "1" },
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }, { mode: "split-adjusted", markersVisible: true });
+    const split = chart.getCorporateActionAdjustment();
+    const displayed = chart.getDisplayedData();
+    const workspace = chart.serializeWorkspace();
+    chart.setCorporateActionDisplayMode("total-return");
+    const totalReturn = chart.getCorporateActionAdjustment();
+    const totalReturnDisplayed = chart.getDisplayedData();
+    chart.clearCorporateActions();
+    const rawAfterClear = chart.getDisplayedData();
+    chart.destroy();
+    return {
+      rawClose: rawBefore[0]!.close,
+      displayedClose: displayed[0]!.close,
+      rawAfterClearClose: rawAfterClear[0]!.close,
+      splitMode: split?.mode,
+      splitCandleMode: split?.candles !== null,
+      applied: split?.appliedActions.length,
+      totalReturnMode: totalReturn?.mode,
+      totalReturnHasIndex: (totalReturn?.totalReturn?.length ?? 0) > 0,
+      totalReturnHasCandles: totalReturn?.candles !== null,
+      totalReturnDisplayedClose: totalReturnDisplayed[0]!.close,
+      workspace,
+    };
+  });
+  expect(result.rawClose).not.toBe(result.displayedClose);
+  expect(result.displayedClose).toBeCloseTo(result.rawClose * 0.5, 8);
+  expect(result.rawAfterClearClose).toBe(result.rawClose);
+  expect(result.splitMode).toBe("split-adjusted");
+  expect(result.splitCandleMode).toBe(true);
+  expect(result.applied).toBe(1);
+  expect(result.totalReturnMode).toBe("total-return");
+  expect(result.totalReturnHasIndex).toBe(true);
+  expect(result.totalReturnHasCandles).toBe(false);
+  expect(result.totalReturnDisplayedClose).toBe(result.rawClose);
+  expect(result.workspace).toMatchObject({ corporateActions: { sourceId: "browser-fixture", mode: "split-adjusted", context: "retrospective" } });
+});

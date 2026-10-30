@@ -8,6 +8,7 @@ import { resolveVolumeProfileOptions, type ResolvedVolumeProfileOptions, type Vo
 import { parseFixedTimeframe, validateTimeframePair, type MultiTimeframeFinalityPolicy, type MultiTimeframeMissingVolumePolicy, type MultiTimeframeReferenceStyle, type PreviousTimeframeLevel } from "./multi-timeframe.js";
 import type { TradingCalendarEngine } from "./trading-calendar.js";
 import { resolveTradingCalendarDisplayOptions, type WorkspaceTradingCalendar } from "./session-visualization.js";
+import type { CorporateActionAdjustmentContext, CorporateActionAdjustmentMode, CorporateActionVolumePolicy } from "./corporate-actions.js";
 
 export const OPENKLINE_WORKSPACE_VERSION = 1 as const;
 
@@ -132,6 +133,18 @@ export interface WorkspaceSessionAnalysis {
   readonly references: readonly WorkspaceSessionReference[];
 }
 
+/** Canonical corporate-action source and presentation reference. Derived data is never persisted. */
+export interface WorkspaceCorporateActions {
+  readonly instrumentId: string;
+  readonly sourceId: string;
+  readonly sourceVersion: string;
+  readonly mode: CorporateActionAdjustmentMode;
+  readonly context: CorporateActionAdjustmentContext;
+  readonly asOfTime: number | null;
+  readonly volumePolicy: CorporateActionVolumePolicy;
+  readonly markersVisible: boolean;
+}
+
 /** A replay export marker; it is descriptive and is not a replay source. */
 export interface WorkspaceReplayState {
   readonly active: true;
@@ -160,6 +173,8 @@ export interface WorkspaceDocument {
   readonly sessionAnalysis?: WorkspaceSessionAnalysis;
   /** Optional Phase 11 calendar identity and display settings; runtime schedule is resolved by the host. */
   readonly tradingCalendar?: WorkspaceTradingCalendar;
+  /** Optional Phase 13 corporate-action source and analytical presentation reference. */
+  readonly corporateActions?: WorkspaceCorporateActions;
   /** Present when this document was exported from a partial replay-visible chart. */
   readonly replay?: WorkspaceReplayState;
 }
@@ -207,6 +222,7 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
   const multiTimeframe = value.multiTimeframe === undefined ? undefined : parseMultiTimeframe(value.multiTimeframe, panes.map((pane) => pane.id));
   const sessionAnalysis = value.sessionAnalysis === undefined ? undefined : parseSessionAnalysis(value.sessionAnalysis, panes.map((pane) => pane.id));
   const tradingCalendar = value.tradingCalendar === undefined ? undefined : parseTradingCalendar(value.tradingCalendar);
+  const corporateActions = value.corporateActions === undefined ? undefined : parseCorporateActions(value.corporateActions);
   const metadata = value.metadata === undefined ? undefined : parseMetadata(value.metadata);
   const paneIds = new Set(panes.map((pane) => pane.id));
   if (!paneIds.has("main")) throw new WorkspaceValidationError("Workspace must contain a main pane");
@@ -231,7 +247,33 @@ export function parseWorkspace(value: unknown): WorkspaceDocument {
     ...(multiTimeframe === undefined ? {} : { multiTimeframe }),
     ...(sessionAnalysis === undefined ? {} : { sessionAnalysis }),
     ...(tradingCalendar === undefined ? {} : { tradingCalendar }),
+    ...(corporateActions === undefined ? {} : { corporateActions }),
     ...(replay === undefined ? {} : { replay }),
+  };
+}
+
+function parseCorporateActions(value: unknown): WorkspaceCorporateActions {
+  if (!isPlainObject(value)
+    || typeof value.instrumentId !== "string" || value.instrumentId.trim().length === 0
+    || typeof value.sourceId !== "string" || value.sourceId.trim().length === 0
+    || typeof value.sourceVersion !== "string" || value.sourceVersion.trim().length === 0
+    || (value.mode !== "raw" && value.mode !== "split-adjusted" && value.mode !== "total-return")
+    || (value.context !== "retrospective" && value.context !== "causal-as-of")
+    || (value.asOfTime !== null && !isFiniteInteger(value.asOfTime))
+    || (value.volumePolicy !== "equivalent-shares" && value.volumePolicy !== "preserve")
+    || typeof value.markersVisible !== "boolean") {
+    throw new WorkspaceValidationError("Invalid workspace corporate actions configuration");
+  }
+  if (value.context === "causal-as-of" && value.asOfTime === null) throw new WorkspaceValidationError("Causal workspace corporate actions require an as-of time");
+  return {
+    instrumentId: value.instrumentId.trim(),
+    sourceId: value.sourceId.trim(),
+    sourceVersion: value.sourceVersion.trim(),
+    mode: value.mode,
+    context: value.context,
+    asOfTime: value.asOfTime,
+    volumePolicy: value.volumePolicy,
+    markersVisible: value.markersVisible,
   };
 }
 

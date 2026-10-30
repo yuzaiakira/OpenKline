@@ -85,6 +85,15 @@ export interface CorporateActionAdjustmentOptions {
   readonly totalReturnBase?: number;
 }
 
+/** Chart/Studio presentation policy; derived adjusted data is never persisted. */
+export interface CorporateActionDisplayOptions {
+  readonly mode?: CorporateActionAdjustmentMode;
+  readonly context?: CorporateActionAdjustmentContext;
+  readonly asOfTime?: number;
+  readonly volumePolicy?: CorporateActionVolumePolicy;
+  readonly markersVisible?: boolean;
+}
+
 export interface CorporateActionAdjustmentProvenance {
   readonly source: CorporateActionSource;
   readonly context: CorporateActionAdjustmentContext;

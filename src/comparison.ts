@@ -1,4 +1,5 @@
 import type { Candle } from "./types.js";
+import { adjustCorporateActionData, type CorporateActionAdjustmentContext, type CorporateActionDataset, type CorporateActionAdjustmentMode, type CorporateActionVolumePolicy } from "./corporate-actions.js";
 
 /** A validated raw price observation used by the comparison engine. */
 export interface ComparisonPricePoint {
@@ -7,6 +8,7 @@ export interface ComparisonPricePoint {
 }
 
 export type ComparisonNormalizationMode = "percentage" | "indexed";
+export type ComparisonDataBasis = CorporateActionAdjustmentMode;
 
 /** The explicit baseline policy used for every asset. */
 export interface ComparisonBaseline {
@@ -21,12 +23,15 @@ export interface ComparisonAssetInput {
   readonly label?: string;
   readonly color?: string;
   readonly data: readonly ComparisonPricePoint[];
+  /** Optional explicit source basis for auditability; legacy assets omit it. */
+  readonly basis?: ComparisonDataBasis;
 }
 
 export interface ComparisonAssetSnapshot {
   readonly id: string;
   readonly label: string;
   readonly color?: string;
+  readonly basis?: ComparisonDataBasis;
   readonly data: readonly ComparisonPricePoint[];
 }
 
@@ -39,6 +44,7 @@ export interface ComparisonAssetOutput {
   readonly id: string;
   readonly label: string;
   readonly color?: string;
+  readonly basis?: ComparisonDataBasis;
   readonly baselineTime: number | null;
   readonly baselinePrice: number | null;
   readonly data: readonly ComparisonNormalizedPoint[];
@@ -67,10 +73,25 @@ export interface ComparisonEngineOptions {
   readonly baseline?: ComparisonBaseline;
 }
 
+export interface ComparisonCorporateActionAssetInput {
+  readonly id: string;
+  readonly label?: string;
+  readonly color?: string;
+  readonly candles: readonly Candle[];
+  readonly corporateActions: CorporateActionDataset;
+  /** The basis is explicit; total-return is an index, not synthetic OHLC. */
+  readonly mode: CorporateActionAdjustmentMode;
+  readonly context?: CorporateActionAdjustmentContext;
+  readonly asOfTime?: number;
+  readonly volumePolicy?: CorporateActionVolumePolicy;
+  readonly totalReturnBase?: number;
+}
+
 interface StoredAsset {
   readonly id: string;
   label: string;
   color?: string;
+  basis?: ComparisonDataBasis;
   data: ComparisonPricePoint[];
 }
 
@@ -112,10 +133,27 @@ export class ComparisonEngine {
       id,
       label: normalizeLabel(input.label ?? id),
       ...(input.color === undefined ? {} : { color: normalizeColor(input.color) }),
+      ...(input.basis === undefined ? {} : { basis: normalizeBasis(input.basis) }),
       data: normalizeData(input.data),
     });
     this.invalidate();
     this.emit({ kind: "asset-added", assetId: id });
+  }
+
+  /** Add a comparison asset from raw candles using an explicit corporate-action basis. */
+  public addCorporateActionAsset(input: ComparisonCorporateActionAssetInput): void {
+    this.assertAlive();
+    const adjustment = adjustCorporateActionData(input.candles, input.corporateActions, {
+      mode: input.mode,
+      ...(input.context === undefined ? {} : { context: input.context }),
+      ...(input.asOfTime === undefined ? {} : { asOfTime: input.asOfTime }),
+      ...(input.volumePolicy === undefined ? {} : { volumePolicy: input.volumePolicy }),
+      ...(input.totalReturnBase === undefined ? {} : { totalReturnBase: input.totalReturnBase }),
+    });
+    const data = adjustment.totalReturn === null
+      ? (adjustment.candles ?? []).map((candle) => ({ time: candle.time, price: candle.close }))
+      : adjustment.totalReturn.map((point) => ({ time: point.time, price: point.value }));
+    this.addAsset({ id: input.id, ...(input.label === undefined ? {} : { label: input.label }), ...(input.color === undefined ? {} : { color: input.color }), basis: input.mode, data });
   }
 
   public removeAsset(id: string): boolean {
@@ -278,6 +316,7 @@ export class ComparisonEngine {
         id: asset.id,
         label: asset.label,
         ...(asset.color === undefined ? {} : { color: asset.color }),
+        ...(asset.basis === undefined ? {} : { basis: asset.basis }),
         baselineTime: baselinePoint?.time ?? null,
         baselinePrice: null,
         data: [],
@@ -295,6 +334,7 @@ export class ComparisonEngine {
       id: asset.id,
       label: asset.label,
       ...(asset.color === undefined ? {} : { color: asset.color }),
+      ...(asset.basis === undefined ? {} : { basis: asset.basis }),
       baselineTime: baselinePoint.time,
       baselinePrice: baselinePoint.price,
       data,
@@ -368,6 +408,11 @@ function normalizeColor(value: string): string {
   return value;
 }
 
+function normalizeBasis(value: ComparisonDataBasis): ComparisonDataBasis {
+  if (value !== "raw" && value !== "split-adjusted" && value !== "total-return") throw new Error(`Unsupported comparison data basis: ${String(value)}`);
+  return value;
+}
+
 function findAtOrBefore(data: readonly ComparisonPricePoint[], time: number): ComparisonPricePoint | undefined {
   const index = upperBound(data, time) - 1;
   return index < 0 ? undefined : data[index];
@@ -400,6 +445,7 @@ function snapshotAsset(asset: StoredAsset): ComparisonAssetSnapshot {
     id: asset.id,
     label: asset.label,
     ...(asset.color === undefined ? {} : { color: asset.color }),
+    ...(asset.basis === undefined ? {} : { basis: asset.basis }),
     data: asset.data.map((point) => ({ ...point })),
   };
 }

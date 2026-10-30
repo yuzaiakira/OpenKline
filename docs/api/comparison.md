@@ -31,6 +31,25 @@ comparison.removeAsset("ETH-USD");
 comparison.dispose();
 ```
 
+For a market-data comparison with a corporate-action policy, require the basis
+explicitly. The helper stores adjusted close/index observations as derived
+comparison points and records the selected basis without mutating the input
+candles:
+
+```ts
+comparison.addCorporateActionAsset({
+  id: "ACME",
+  candles,
+  corporateActions,
+  mode: "split-adjusted", // or "raw" / "total-return"
+  context: "retrospective",
+});
+```
+
+`total-return` supplies an index series, never synthetic OHLC. Each resulting
+asset exposes `basis` so a legend or audit report can distinguish price-only,
+split-adjusted, and dividend-inclusive comparisons.
+
 ## Contracts and lifecycle
 
 - `ComparisonPricePoint` is `{ time, price }`, with UTC integer milliseconds and

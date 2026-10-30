@@ -1,4 +1,5 @@
 import type { Candle } from "../types.js";
+import type { CorporateAction, CorporateActionDataset } from "../corporate-actions.js";
 import type { StrategyEvaluationResult, StrategyRegistry, StrategySignal } from "../strategies/index.js";
 import type { TransactionCost } from "../backtesting/types.js";
 
@@ -8,10 +9,52 @@ export type PortfolioBacktestStatusState = "idle" | "running" | "completed" | "c
 export type PortfolioBacktestPhase = "validation" | "signals" | "execution" | "metrics";
 export type PortfolioOrderStatus = "submitted" | "pending" | "filled" | "rejected" | "cancelled";
 export type PortfolioPositionDirection = "long";
-export type PortfolioEventKind = "market-open" | "order-fill" | "bar-complete" | "valuation";
+export type PortfolioEventKind = "market-open" | "order-fill" | "bar-complete" | "valuation" | "corporate-action";
 export type PortfolioValuationStatus = "complete" | "partial" | "unknown";
 export type PortfolioPriceQuality = "fresh" | "stale" | "unknown" | "execution";
 export type PortfolioDuplicateTimestampPolicy = "reject" | "last-write-wins";
+export type PortfolioCorporateActionPhase = "effective" | "payment";
+export type PortfolioDividendReceivableStatus = "entitled" | "accrued" | "payable" | "paid" | "unsettled";
+
+export interface PortfolioCorporateActionPolicy {
+  /** Pending orders whose fill is after a split are cancelled explicitly. */
+  readonly pendingOrderPolicy: "cancel";
+  /** Unsupported fractional entitlements fail closed; no cash-in-lieu is invented. */
+  readonly fractionalSharePolicy: "reject";
+  /** Receivables become cash only at the declared payment boundary. */
+  readonly dividendSettlement: "payment-time";
+  /** Eligible receivables are included in equity but never available cash. */
+  readonly receivableValuation: "include-in-equity";
+}
+
+export interface PortfolioDividendReceivable {
+  readonly id: string;
+  readonly actionId: string;
+  readonly instrumentId: string;
+  readonly currency: string;
+  readonly quantity: number;
+  readonly amountPerShare: number;
+  readonly amount: number;
+  readonly entitlementTime: number;
+  readonly paymentTime: number | null;
+  readonly status: PortfolioDividendReceivableStatus;
+}
+
+export interface PortfolioCorporateActionRecord {
+  readonly id: string;
+  readonly actionId: string;
+  readonly instrumentId: string;
+  readonly kind: CorporateAction["kind"];
+  readonly phase: PortfolioCorporateActionPhase;
+  readonly time: number;
+  readonly status: "applied" | "cancelled" | "rejected" | "unsettled";
+  readonly quantityBefore?: number;
+  readonly quantityAfter?: number;
+  readonly costBasisBefore?: number;
+  readonly costBasisAfter?: number;
+  readonly amount?: number;
+  readonly reason?: string;
+}
 
 export type PortfolioPositionSizing =
   | { readonly type: "fixed-quantity"; readonly quantity: number }
@@ -43,6 +86,8 @@ export interface PortfolioInstrumentInput {
   readonly candles: readonly Candle[];
   readonly strategy: PortfolioStrategyAssignment;
   readonly calendar?: PortfolioCalendarIdentity;
+  /** Optional raw corporate-action source for this instrument. */
+  readonly corporateActions?: CorporateActionDataset;
   readonly execution?: PortfolioInstrumentExecutionOptions;
 }
 
@@ -101,6 +146,7 @@ export interface PortfolioBacktestOptions {
   readonly valuation?: PortfolioValuationOptions;
   readonly duplicateTimestampPolicy?: PortfolioDuplicateTimestampPolicy;
   readonly allowFractionalQuantity?: boolean;
+  readonly corporateActionPolicy?: PortfolioCorporateActionPolicy;
   readonly strategyRegistry?: StrategyRegistry;
   readonly signal?: AbortSignal;
   readonly onProgress?: (progress: PortfolioBacktestProgress) => void;
@@ -121,17 +167,21 @@ export interface PortfolioBacktestAssumptions {
   readonly allowFractionalQuantity: boolean;
   readonly longOnly: true;
   readonly leverage: "none";
+  readonly corporateActionPolicy?: PortfolioCorporateActionPolicy;
+  readonly corporateActionEventPriority?: readonly ["corporate-action-effective", "market-open", "bar-complete", "order-fill", "corporate-action-payment", "valuation"];
 }
 
 export interface PortfolioTimelineEvent {
   readonly id: string;
   readonly time: number;
   readonly kind: PortfolioEventKind;
-  readonly priority: 0 | 1 | 2 | 3;
+  readonly priority: 0 | 1 | 2 | 3 | 4 | 5;
   readonly instrumentId?: string;
   readonly candleIndex?: number;
   readonly orderId?: string;
   readonly availableAt?: number;
+  readonly corporateActionId?: string;
+  readonly corporateActionPhase?: PortfolioCorporateActionPhase;
 }
 
 export interface PortfolioSignal extends StrategySignal {
@@ -188,6 +238,8 @@ export interface PortfolioPosition {
   readonly markTime: number | null;
   readonly markQuality: PortfolioPriceQuality;
   readonly unrealizedPnl: number | null;
+  /** Present when corporate-action accounting was active. */
+  readonly aggregateCostBasis?: number;
 }
 
 export interface PortfolioMark {
@@ -213,6 +265,8 @@ export interface PortfolioAccountSnapshot {
   readonly activePositionCount: number;
   readonly valuationStatus: PortfolioValuationStatus;
   readonly marks: readonly PortfolioMark[];
+  readonly dividendReceivable?: number;
+  readonly dividendIncome?: number;
 }
 
 export interface PortfolioInstrumentSummary {
@@ -238,6 +292,8 @@ export interface PortfolioInstrumentContribution {
   readonly grossExposure: number;
   readonly tradeCount: number;
   readonly returnOnAllocatedCapital: number | null;
+  readonly dividendIncome?: number;
+  readonly corporateActionIds?: readonly string[];
 }
 
 export interface PortfolioPerformanceMetrics {
@@ -258,6 +314,9 @@ export interface PortfolioPerformanceMetrics {
   readonly losingTradeCount: number;
   readonly winRate: number | null;
   readonly perInstrument: readonly PortfolioInstrumentContribution[];
+  readonly dividendIncome?: number;
+  readonly priceReturn?: number | null;
+  readonly corporateActionCount?: number;
 }
 
 export interface PortfolioBacktestResult {
@@ -275,6 +334,9 @@ export interface PortfolioBacktestResult {
   readonly finalAccount: PortfolioAccountSnapshot;
   readonly metrics: PortfolioPerformanceMetrics;
   readonly inputFingerprint: string;
+  readonly corporateActions?: readonly CorporateAction[];
+  readonly dividendReceivables?: readonly PortfolioDividendReceivable[];
+  readonly corporateActionLedger?: readonly PortfolioCorporateActionRecord[];
 }
 
 export interface PortfolioBacktestApi {

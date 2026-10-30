@@ -31,6 +31,29 @@ test("comparison engine calculates percentage and indexed performance from one s
   ]);
 });
 
+test("comparison integration requires and preserves an explicit corporate-action basis", () => {
+  const engine = new ComparisonEngine({ mode: "indexed", baseline: { time: 1_000, maxAgeMs: 0 } });
+  const candles = [
+    { time: 1_000, open: 100, high: 101, low: 99, close: 100 },
+    { time: 2_000, open: 50, high: 51, low: 49, close: 50 },
+  ];
+  engine.addCorporateActionAsset({
+    id: "split-adjusted",
+    candles,
+    corporateActions: {
+      version: 1,
+      instrumentId: "AAA",
+      source: { id: "comparison-fixture", version: "1" },
+      knowledgeCoverage: "known",
+      actions: [{ id: "split", instrumentId: "AAA", kind: "stock-split", effectiveTime: 2_000, revision: 1, source: { id: "comparison-fixture", version: "1" }, newShares: 2, oldShares: 1 }],
+    },
+    mode: "split-adjusted",
+  });
+  const asset = engine.getNormalizedData()[0];
+  assert.equal(asset?.basis, "split-adjusted");
+  assert.deepEqual(rounded(asset?.data ?? []), [{ time: 1_000, value: 100 }, { time: 2_000, value: 100 }]);
+});
+
 test("baseline selection never uses a future observation and handles freshness explicitly", () => {
   const engine = new ComparisonEngine({ mode: "percentage" });
   engine.addAsset("late", [{ time: 2_000, price: 50 }, { time: 3_000, price: 75 }]);

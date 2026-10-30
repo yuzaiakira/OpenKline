@@ -64,13 +64,13 @@ export type {
   CorporateActionChange,
   CorporateActionDatafeed,
   CorporateActionDataset,
+  CorporateActionDisplayOptions,
   CorporateActionKind,
   CorporateActionKnowledgeCoverage,
   CorporateActionQuery,
   CorporateActionSource,
   CorporateActionStoreOptions,
   CorporateActionVolumePolicy,
-  InMemoryCorporateActionDatafeed as InMemoryCorporateActionDatafeedType,
   RestCorporateActionDatafeedOptions,
   RestCorporateActionPage,
   RestCorporateActionPayload,
@@ -79,10 +79,12 @@ export type {
 } from "./corporate-actions.js";
 export { ComparisonEngine } from "./comparison.js";
 export type {
+  ComparisonCorporateActionAssetInput,
   ComparisonAssetInput,
   ComparisonAssetOutput,
   ComparisonAssetSnapshot,
   ComparisonAssetStatus,
+  ComparisonDataBasis,
   ComparisonBaseline,
   ComparisonChange,
   ComparisonChangeListener,
@@ -249,6 +251,7 @@ export type {
   WorkspaceSessionReference,
   WorkspaceVolumeAnalytics,
   WorkspaceVolumeProfile,
+  WorkspaceCorporateActions,
 } from "./workspace.js";
 export {
   AlertEngine,
@@ -775,6 +778,11 @@ export type {
   PortfolioBacktestStatus,
   PortfolioBacktestStatusState,
   PortfolioCalendarIdentity,
+  PortfolioCorporateActionPhase,
+  PortfolioCorporateActionPolicy,
+  PortfolioCorporateActionRecord,
+  PortfolioDividendReceivable,
+  PortfolioDividendReceivableStatus,
   PortfolioDuplicateTimestampPolicy,
   PortfolioInstrumentContribution,
   PortfolioInstrumentExecutionOptions,

@@ -48,6 +48,12 @@ Datafeed vendors, or Chart instances. `Chart` remains responsible for its raw
 price scale and viewport; a host may render the engine's normalized output as
 ordinary line series on a separate display state.
 
+`addCorporateActionAsset()` is the explicit bridge for action-aware
+comparison. It applies the caller-selected raw, split-adjusted, or
+total-return basis before storing derived price points and exposes that basis
+in snapshots and normalized output. It never changes the source candle array;
+total-return remains an index rather than fake OHLC.
+
 The baseline is selected independently for every asset as the latest point at
 or before the requested UTC timestamp. A maximum age is checked explicitly.
 This handles different trading calendars, missing intervals, and asynchronous

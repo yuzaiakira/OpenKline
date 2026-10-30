@@ -41,6 +41,26 @@ test("workspace parser validates and defensively clones a versioned document", (
   assert.equal(parsed.chart.theme.background, "#fff");
 });
 
+test("workspace parser preserves corporate-action presentation references without derived candles", () => {
+  const input = {
+    ...workspace(),
+    corporateActions: {
+      instrumentId: "AAA",
+      sourceId: "fixture-actions",
+      sourceVersion: "2026-01",
+      mode: "split-adjusted" as const,
+      context: "causal-as-of" as const,
+      asOfTime: 2,
+      volumePolicy: "equivalent-shares" as const,
+      markersVisible: true,
+    },
+  };
+  const parsed = parseWorkspace(input);
+  assert.deepEqual(parsed.corporateActions, input.corporateActions);
+  assert.throws(() => parseWorkspace({ ...input, corporateActions: { ...input.corporateActions, context: "causal-as-of", asOfTime: null } }), WorkspaceValidationError);
+  assert.deepEqual(parseWorkspace(JSON.parse(JSON.stringify(input))).corporateActions, input.corporateActions);
+});
+
 test("workspace parser keeps Phase 7 price-scale settings while accepting prior version-1 workspaces", () => {
   const legacy = parseWorkspace(workspace());
   assert.equal(legacy.chart.priceScale, undefined);
