@@ -562,3 +562,27 @@ test("Studio cancels a large Worker backtest without retaining a partial result"
   await expect(page.getByRole("region", { name: "Strategy Tester for chart-1" }).getByRole("button", { name: "Export JSON" })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test("Studio exposes offline calendar mode, session analysis periods, and persistence", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  const sessions = page.getByRole("region", { name: "Trading sessions and calendar analysis" });
+  await expect(sessions).toContainText("America/New_York");
+  await expect(page.getByLabel("Market session mode")).toHaveValue("calendar");
+  await expect(sessions.locator('[data-calendar-status="supported"]')).toContainText("openkline-studio-demo-market@2026.1");
+
+  await page.getByLabel("Session analysis period").selectOption("week");
+  await page.getByRole("button", { name: "Toggle session SMA", exact: true }).click();
+  await expect(sessions.locator('[data-session-indicator]')).toContainText("week");
+  await page.getByRole("button", { name: "Toggle previous session levels", exact: true }).click();
+  await expect(sessions.locator('[data-session-reference]')).toContainText("week");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const storedCollection = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as { workspaces: Array<{ charts: Array<{ workspace: { sessionAnalysis?: unknown; tradingCalendar?: unknown } }> }> });
+  expect(storedCollection.workspaces[0]?.charts[0]?.workspace).toMatchObject({ sessionAnalysis: { indicators: expect.any(Array), references: expect.any(Array) }, tradingCalendar: { calendarId: "openkline-studio-demo-market", version: "2026.1" } });
+
+  await page.getByLabel("Market session mode").selectOption("utc");
+  await expect(page.locator('[data-calendar-status="utc"]')).toContainText("24/7 UTC mode");
+  await expect(page.getByLabel("Session analysis period")).toBeDisabled();
+  expect(errors).toEqual([]);
+});

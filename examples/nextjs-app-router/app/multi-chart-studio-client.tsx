@@ -44,9 +44,11 @@ import {
   type VolumeProfileMode,
   type VolumeProfileOptionsPatch,
   type MultiTimeframeFinalityPolicy,
+  type TradingAggregationPeriod,
   type SubscribeBarsArgs,
   type DatafeedRealtimeSubscriptionArgs,
   type SymbolInfo,
+  TradingCalendarEngine,
 } from "openkline";
 import type { IndicatorCategory } from "openkline";
 import { binanceStudioInterval, binanceStudioSymbol, createBinanceDatafeed } from "../../shared/binance-datafeed.js";
@@ -79,6 +81,9 @@ interface PanelSnapshot {
   readonly volumeProfiles: readonly ResolvedVolumeProfileOptions[];
   readonly multiTimeframeIndicators: ReadonlyArray<{ readonly id: string; readonly indicatorId: string; readonly targetTimeframe: string; readonly visible?: boolean }>;
   readonly multiTimeframeReferences: ReadonlyArray<{ readonly id: string; readonly targetTimeframe: string; readonly visible?: boolean }>;
+  readonly tradingCalendar: { readonly calendarId: string; readonly version: string; readonly visible: boolean } | null;
+  readonly sessionIndicators: ReadonlyArray<{ readonly id: string; readonly indicatorId: string; readonly targetPeriod: string; readonly visible?: boolean }>;
+  readonly sessionReferences: ReadonlyArray<{ readonly id: string; readonly targetPeriod: string; readonly visible?: boolean }>;
 }
 
 interface StudioDialog {
@@ -160,6 +165,13 @@ const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
 const scaleModes: ReadonlyArray<readonly [PriceScaleMode, string]> = [["linear", "Linear"], ["logarithmic", "Log"], ["percentage", "%"], ["indexed", "Index 100"]];
 const defaultScript = ['indicator("Studio EMA")', 'period = input.int("Period", default=21, min=1, max=200)', "value = ta.ema(close, period)", 'plot(value, title="EMA", color="#a78bfa")'].join("\n");
 const IDLE_REPLAY_STATUS: ReplayStatus = { state: "idle", currentIndex: null, currentTimestamp: null, totalBars: 0, speed: 1 };
+const studioTradingCalendar = new TradingCalendarEngine({
+  id: "openkline-studio-demo-market",
+  version: "2026.1",
+  timeZone: "America/New_York",
+  weeklySchedule: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, segments: [{ start: "09:30", end: "16:00" }] })),
+  exceptions: [{ date: "2026-07-03", kind: "modified", classification: "early-close", segments: [{ start: "09:30", end: "13:00" }] }],
+});
 
 function intervalFor(timeframe: Timeframe): number {
   return { "5m": 5 * 60_000, "1h": 60 * 60_000, "4h": 4 * 60 * 60_000, "1D": 24 * 60 * 60_000 }[timeframe];
@@ -333,7 +345,7 @@ function parseUtcInput(value: string): number | null {
 }
 
 function emptySnapshot(): PanelSnapshot {
-  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [] };
+  return { series: [], indicators: [], drawings: [], alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS, replaySourceLength: 0, replayStartIndex: 84, anchoredVwaps: [], volumeProfiles: [], multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [] };
 }
 
 function withoutComparisonSeries(workspace: WorkspaceDocument): WorkspaceDocument {
@@ -401,6 +413,13 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
       multiTimeframeIndicators: target.getMultiTimeframeIndicators().map((item) => ({ id: item.id, indicatorId: item.indicatorId, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
       multiTimeframeReferences: target.getMultiTimeframeReferences().map((item) => ({ id: item.id, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
+      tradingCalendar: target.getTradingCalendar() === null ? null : {
+        calendarId: target.getTradingCalendar()!.getSnapshot().calendarId,
+        version: target.getTradingCalendar()!.getSnapshot().version,
+        visible: target.getTradingCalendar()!.getDisplayOptions().visible,
+      },
+      sessionIndicators: target.getSessionIndicators().map((item) => ({ id: item.id, indicatorId: item.getOptions().indicatorId, targetPeriod: item.getOptions().targetPeriod, visible: item.getOptions().visible })),
+      sessionReferences: target.getSessionReferences().map((item) => ({ id: item.id, targetPeriod: item.getOptions().targetPeriod, visible: item.getOptions().visible })),
     };
     setSnapshot(next);
     onSnapshot(panel.panelId, next);
@@ -409,6 +428,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
 
   const seedChart = useCallback((target: Chart, symbol: string, timeframe: Timeframe): void => {
     const candles = buildCandles(symbol, timeframe);
+    target.setTradingCalendar(studioTradingCalendar, { showLabels: false });
     const price = target.addCandlestickSeries({ id: "studio-price", title: "Price", style: { upColor: "#34d399", downColor: "#fb7185" } });
     const ohlc = target.addOhlcSeries({ id: "studio-ohlc", title: "OHLC", style: { upColor: "#34d399", downColor: "#fb7185", visible: false } });
     const hollow = target.addHollowCandlestickSeries({ id: "studio-hollow", title: "Hollow candles", style: { hollowUpColor: "#34d399", downColor: "#fb7185", visible: false } });
@@ -430,7 +450,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     else {
       try {
         const canonical = withoutComparisonSeries(initialWorkspace);
-        target.restoreWorkspace(canonical);
+        target.restoreWorkspace(canonical, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
         canonicalWorkspaceRef.current = canonical;
         publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
       }
@@ -492,7 +512,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       series: base.series.map((series) => ({ ...series, data: series.type === "volume" || series.type === "histogram" ? volumePoints(candles) : (series.type === "line" || series.type === "area" || series.type === "baseline" ? pricePoints(candles) : candles) })),
     };
     try {
-      target.restoreWorkspace(nextWorkspace);
+      target.restoreWorkspace(nextWorkspace, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
       canonicalWorkspaceRef.current = nextWorkspace;
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
@@ -513,7 +533,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     if (target === null) return;
     try {
       const canonical = withoutComparisonSeries(document);
-      target.restoreWorkspace(canonical);
+      target.restoreWorkspace(canonical, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
       canonicalWorkspaceRef.current = canonical;
       comparisonActiveRef.current = false;
       comparisonSeriesIdsRef.current = new Set();
@@ -723,6 +743,10 @@ export default function MultiChartStudioClient() {
   const [multiTimeframePeriod, setMultiTimeframePeriod] = useState("20");
   const [multiTimeframeFinality, setMultiTimeframeFinality] = useState<MultiTimeframeFinalityPolicy>("complete-only");
   const [multiTimeframeReference, setMultiTimeframeReference] = useState(true);
+  const [sessionIndicatorEnabled, setSessionIndicatorEnabled] = useState(false);
+  const [sessionReferenceEnabled, setSessionReferenceEnabled] = useState(false);
+  const [sessionCalendarVisible, setSessionCalendarVisible] = useState(true);
+  const [sessionPeriod, setSessionPeriod] = useState<TradingAggregationPeriod>("session");
   const [presentation, setPresentation] = useState<Presentation>("candles");
   const [comparisonSettings, setComparisonSettings] = useState<StudioComparisonDocument>(() => ({
     active: false,
@@ -1177,6 +1201,94 @@ export default function MultiChartStudioClient() {
       setNotice(`Added previous ${targetTimeframe} OHLC levels to ${activePanel.panelId}.`);
     } catch (error) { setNotice(`Could not add previous-period levels: ${error instanceof Error ? error.message : String(error)}`); }
   };
+  const toggleSessionCalendar = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    try {
+      const existing = target.getTradingCalendar();
+      if (existing === null) target.setTradingCalendar(studioTradingCalendar, { showLabels: false });
+      else existing.setVisible(!existing.getDisplayOptions().visible);
+      const visible = target.getTradingCalendar()?.getDisplayOptions().visible ?? false;
+      setSessionCalendarVisible(visible);
+      activeHandle?.refresh();
+      setNotice(`${visible ? "Enabled" : "Hidden"} session boundaries for ${activePanel.panelId}.`);
+    } catch (error) { setNotice(`Could not update trading calendar: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const setSessionMarketMode = (mode: "calendar" | "utc"): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    try {
+      if (mode === "utc") {
+        target.getSessionIndicators().forEach((item) => item.remove());
+        target.getSessionReferences().forEach((item) => item.remove());
+        target.removeTradingCalendar();
+        setSessionIndicatorEnabled(false);
+        setSessionReferenceEnabled(false);
+        setNotice(`Switched ${activePanel.panelId} to 24/7 UTC mode; session-derived studies were cleared.`);
+      } else {
+        target.setTradingCalendar(studioTradingCalendar, { showLabels: false });
+        setSessionCalendarVisible(true);
+        setNotice(`Using the illustrative ${studioTradingCalendar.timeZone} trading calendar on ${activePanel.panelId}.`);
+      }
+      activeHandle?.refresh();
+    } catch (error) { setNotice(`Could not change market session mode: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const toggleSessionIndicator = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    const existing = target.getSessionIndicators()[0];
+    if (existing !== undefined) {
+      existing.remove();
+      setSessionIndicatorEnabled(false);
+      activeHandle?.refresh();
+      setNotice(`Removed session SMA from ${activePanel.panelId}.`);
+      return;
+    }
+    try {
+      target.addSessionIndicator({
+        id: `studio-session-sma-${serialRef.current++}`,
+        indicatorId: "SMA",
+        sourceTimeframe: activePanel.timeframe,
+        targetPeriod: sessionPeriod,
+        calendar: studioTradingCalendar,
+        pane: "main",
+        parameters: { period: 1 },
+        coveragePolicy: "fixed-duration",
+        finalityPolicy: "time-closed",
+        asOfTime: Number.MAX_SAFE_INTEGER,
+      });
+      setSessionIndicatorEnabled(true);
+      activeHandle?.refresh();
+      setNotice(`Added causal session SMA to ${activePanel.panelId}.`);
+    } catch (error) { setNotice(`Could not add session indicator: ${error instanceof Error ? error.message : String(error)}`); }
+  };
+  const toggleSessionReference = (): void => {
+    const target = activeHandle?.getChart();
+    if (target === null || target === undefined || analyticsDisabled) return;
+    const existing = target.getSessionReferences()[0];
+    if (existing !== undefined) {
+      existing.remove();
+      setSessionReferenceEnabled(false);
+      activeHandle?.refresh();
+      setNotice(`Removed previous session levels from ${activePanel.panelId}.`);
+      return;
+    }
+    try {
+      target.addSessionReference({
+        id: `studio-session-levels-${serialRef.current++}`,
+        sourceTimeframe: activePanel.timeframe,
+        targetPeriod: sessionPeriod,
+        calendar: studioTradingCalendar,
+        levels: ["open", "high", "low", "close"],
+        labels: true,
+        labelPrefix: "Previous session",
+        style: { color: "#fb923c", lineWidth: 1.5, lineStyle: "dashed", alpha: 0.85 },
+      });
+      setSessionReferenceEnabled(true);
+      activeHandle?.refresh();
+      setNotice(`Added previous session levels to ${activePanel.panelId}.`);
+    } catch (error) { setNotice(`Could not add session levels: ${error instanceof Error ? error.message : String(error)}`); }
+  };
   const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const inputName = alertNameInputRef.current?.value ?? alertName; const normalizedName = inputName.trim() || "Price alert"; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: normalizedName, condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: normalizedName.slice(0, 120), outcome: "accepted" }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: "", outcome: "rejected" }); setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
   const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };
@@ -1345,9 +1457,14 @@ export default function MultiChartStudioClient() {
 
   const multiTimeframeControls = <section className={styles.comparisonPanel} aria-label="Multi-timeframe analysis"><div className={styles.panelHeading}><div><h2>Multi-timeframe analysis</h2><small>Causal fixed-duration analysis for the active chart panel.</small></div><span>{activeSnapshot.multiTimeframeIndicators.length + activeSnapshot.multiTimeframeReferences.length} active</span></div><div className={styles.comparisonControls}><label>Indicator<select aria-label="Higher-timeframe study" value={multiTimeframeIndicator} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeIndicator(event.target.value as typeof multiTimeframeIndicator)}><option value="SMA">SMA</option><option value="EMA">EMA</option><option value="RSI">RSI</option></select></label><label>Target<select aria-label="Higher-timeframe target" value={multiTimeframeTarget} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeTarget(event.target.value as Timeframe)}>{multiTimeframeTargetOptions.map((timeframe) => <option key={timeframe} value={timeframe}>{timeframe}</option>)}</select></label><label>Period<input aria-label="Higher-timeframe period" type="number" min="1" max="500" value={multiTimeframePeriod} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframePeriod(event.target.value)} /></label><label>Finality<select aria-label="Higher-timeframe finality" value={multiTimeframeFinality} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeFinality(event.target.value as MultiTimeframeFinalityPolicy)}><option value="complete-only">Complete coverage only</option><option value="time-closed">Time-closed, preserve partial</option></select></label></div><label className={styles.check}><input aria-label="Previous timeframe levels" type="checkbox" checked={multiTimeframeReference} disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onChange={(event) => setMultiTimeframeReference(event.target.checked)} />Previous OHLC levels</label><div className={styles.addRow}><button type="button" aria-label="Toggle higher-timeframe study" disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onClick={toggleMultiTimeframeIndicator}>{activeMultiTimeframeIndicator === undefined ? "Add" : "Remove"} {multiTimeframeIndicator}</button><button type="button" aria-label="Toggle previous timeframe levels" disabled={analyticsDisabled || multiTimeframeTargetOptions.length === 0} onClick={toggleMultiTimeframeReference}>{activeMultiTimeframeReference === undefined ? "Add" : "Remove"} levels</button></div>{activeMultiTimeframeIndicator === undefined ? null : <small data-multi-timeframe-indicator={activeMultiTimeframeIndicator.id}>{activeMultiTimeframeIndicator.indicatorId} · {activeMultiTimeframeIndicator.targetTimeframe} · {activeMultiTimeframeIndicator.visible === false ? "hidden" : "visible"}</small>}{activeMultiTimeframeReference === undefined ? null : <small data-multi-timeframe-reference={activeMultiTimeframeReference.id}>Previous OHLC · {activeMultiTimeframeReference.targetTimeframe} · {activeMultiTimeframeReference.visible === false ? "hidden" : "visible"}</small>}{multiTimeframeTargetOptions.length === 0 ? <small>This chart timeframe has no larger fixed Studio timeframe.</small> : null}{analyticsDisabled ? <small>Controls are disabled during replay or normalized comparison; saved causal configuration remains intact.</small> : null}</section>;
 
+  const activeCalendar = activeHandle?.getChart()?.getTradingCalendar();
+  const activeCalendarSnapshot = activeCalendar?.getSnapshot() ?? null;
+  const sessionControls = <section className={styles.comparisonPanel} aria-label="Trading sessions and calendar analysis"><div className={styles.panelHeading}><div><h2>Trading sessions</h2><small>Offline illustrative schedule; it is not an authoritative exchange holiday calendar.</small></div><span>{activeSnapshot.sessionIndicators.length + activeSnapshot.sessionReferences.length} active</span></div><div className={styles.comparisonControls}><label>Market mode<select aria-label="Market session mode" value={activeCalendarSnapshot === null ? "utc" : "calendar"} disabled={analyticsDisabled} onChange={(event) => setSessionMarketMode(event.target.value as "calendar" | "utc")}><option value="utc">24/7 UTC</option><option value="calendar">Calendar-backed market</option></select></label><label>Calendar<select aria-label="Trading calendar" value={activeCalendarSnapshot?.calendarId ?? studioTradingCalendar.id} disabled={analyticsDisabled || activeCalendarSnapshot === null} onChange={() => setSessionMarketMode("calendar")}><option value={studioTradingCalendar.id}>Illustrative US cash · 2026.1</option></select></label><label>Analysis period<select aria-label="Session analysis period" value={sessionPeriod} disabled={analyticsDisabled || activeCalendarSnapshot === null} onChange={(event) => setSessionPeriod(event.target.value as TradingAggregationPeriod)}><option value="session">Trading session</option><option value="week">Trading week</option><option value="month">Trading month</option></select></label></div><small data-calendar-status={activeCalendarSnapshot?.coverage ?? "utc"}>{activeCalendarSnapshot === null ? "24/7 UTC mode: no exchange session assumptions" : `Calendar ${activeCalendarSnapshot.calendarId}@${activeCalendarSnapshot.version} · ${activeCalendarSnapshot.timeZone} · validity ${activeCalendarSnapshot.validity.from ?? "unbounded"}–${activeCalendarSnapshot.validity.to ?? "unbounded"}`}</small><label className={styles.check}><input aria-label="Show trading sessions" type="checkbox" checked={activeSnapshot.tradingCalendar?.visible ?? sessionCalendarVisible} disabled={analyticsDisabled || activeCalendarSnapshot === null} onChange={toggleSessionCalendar} />Session boundaries and labels</label><div className={styles.addRow}><button type="button" aria-label="Toggle session SMA" disabled={analyticsDisabled || activeCalendarSnapshot === null} onClick={toggleSessionIndicator}>{activeSnapshot.sessionIndicators.length === 0 && !sessionIndicatorEnabled ? "Add" : "Remove"} {sessionPeriod} SMA</button><button type="button" aria-label="Toggle previous session levels" disabled={analyticsDisabled || activeCalendarSnapshot === null} onClick={toggleSessionReference}>{activeSnapshot.sessionReferences.length === 0 && !sessionReferenceEnabled ? "Add" : "Remove"} previous {sessionPeriod} levels</button></div>{activeSnapshot.sessionIndicators[0] === undefined ? null : <small data-session-indicator={activeSnapshot.sessionIndicators[0].id}>SMA · {activeSnapshot.sessionIndicators[0].targetPeriod}</small>}{activeSnapshot.sessionReferences[0] === undefined ? null : <small data-session-reference={activeSnapshot.sessionReferences[0].id}>Previous OHLC · {activeSnapshot.sessionReferences[0].targetPeriod}</small>}{analyticsDisabled ? <small>Session controls are disabled during replay or normalized comparison; persisted configuration remains intact.</small> : null}</section>;
+
   return <main className={styles.studio}>
     {volumeAnalyticsControls}
     {multiTimeframeControls}
+    {sessionControls}
     <header className={styles.topbar}>
       <div className={styles.brand}><span aria-hidden="true">◈</span><strong>OpenKline Studio</strong><small>Phase 7.5 analysis workspace</small></div>
       <label>Layout<select aria-label="Chart layout" value={layout} onChange={(event) => changeLayout(event.target.value as StudioLayout)}>{layoutChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>

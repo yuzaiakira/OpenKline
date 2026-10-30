@@ -1217,5 +1217,21 @@ compatibility decision packet, package evidence, and remaining gates.
   calendar ID/version workspace restoration through a host resolver. Existing
   Canvas2D, pane, series, plugin, and disposal paths are reused. See
   `docs/api/chart.md` and `docs/api/workspaces.md`.
-- [Open] Studio controls, calendar benchmarks, and full Phase 11 verification
-  remain to be implemented. No Phase 12 work has started.
+- [Implemented / Node- and Chromium-verified — 11.3 Studio integration] Added
+  offline Studio controls for 24/7 UTC versus the deterministic illustrative
+  calendar, calendar/timezone/validity status, session/week/month analysis,
+  previous-session levels, boundaries, and workspace persistence. The fixture
+  is explicitly non-authoritative and requires no provider credentials. See
+  `docs/guides/studio-trading-sessions.md`.
+- [Implemented / Node-benchmarked — 11.4 performance] Added the isolated
+  `benchmark:calendar` matrix for 1k/10k/100k candles, DST resolution,
+  schedule and coverage lookup, session/week/month aggregation, append,
+  correction, as-of seek, calendar replacement, and disposal. Session lookup
+  now reuses a sorted-stream calendar cursor and coverage checks avoid
+  repeated linear membership scans. Results are recorded in
+  `docs/benchmarks/market-calendars.md`; they are Node calculation timings,
+  not Canvas2D or universal device claims.
+- [Open] Full Phase 11 verification remains open for unavailable official
+  Firefox/WebKit/mobile browser engines, physical devices, accessibility and
+  visual review, and the protected historical API baseline. No Phase 12 work
+  has started.
