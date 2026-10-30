@@ -13,6 +13,7 @@ cross-browser compatibility, physical devices, licensing, or release approval.
 | Starting revision | `33b80653633dd3df4cf63732fb52e8671353b39d` |
 | Implementation revision before documentation | `086c9c6942b5e5dd14ccf1237bf1025564a20683` |
 | Documentation revision | `9248f01` |
+| Final revision after ledger correction | `9fe24bb` |
 | Branch | `main` |
 | Remote | `origin/main` |
 | Git identity | `Akira Yuzai <yuzai.akira@gmail.com>` |
@@ -30,9 +31,8 @@ Phase 14 implementation commits, in order:
 
 Each implementation commit was created with the required identity, pushed to
 `origin/main`, and synchronized before continuing. The first documentation
-commit is `9248f01` (`docs(report): verify phase 14 engineering`). The final
-ledger correction containing this exact SHA is the current documentation
-commit.
+commit is `9248f01` (`docs(report): verify phase 14 engineering`). The ledger
+correction is `9fe24bb` (`docs(report): finalize phase 14 ledger`).
 
 ## 2. Implemented capabilities
 
@@ -262,6 +262,5 @@ physical-device gates, licensing/release authorization, and the measured 100k
 order-flow rendering limitation have not been cleared. Phase 15 has not been
 started.
 
-The final SHA is recorded as the current documentation commit after this
-ledger correction. The worktree must remain clean and `HEAD` must equal
-`origin/main` before this report is considered final.
+The final SHA is `9fe24bb`. The worktree must remain clean and `HEAD` must
+equal `origin/main`; that synchronization is the final verification condition.
