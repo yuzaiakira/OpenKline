@@ -129,6 +129,45 @@ export {
   OPENKLINE_MARKET_TRADES_VERSION,
   normalizeMarketTrade,
 } from "./market-trades.js";
+export {
+  InMemoryOrderBookDatafeed,
+  OPENKLINE_ORDER_BOOK_VERSION,
+  OrderBookController,
+  OrderBookLifecycleError,
+  OrderBookValidationError,
+} from "./order-book.js";
+export type {
+  OrderBookApplyKind,
+  OrderBookApplyResult,
+  OrderBookControllerOptions,
+  OrderBookDatafeed,
+  OrderBookDelta,
+  OrderBookHistory,
+  OrderBookIntegrity,
+  OrderBookPriceLevel,
+  OrderBookQuery,
+  OrderBookRealtimeStatus,
+  OrderBookSequence,
+  OrderBookSequenceRange,
+  OrderBookSnapshot,
+  OrderBookSource,
+  OrderBookState,
+  OrderBookStatus,
+  OrderBookSubscriptionArgs,
+  OrderBookQuantityMode,
+} from "./order-book.js";
+export {
+  MarketDepthValidationError,
+  OrderBookHeatmapStore,
+  calculateOrderBookDepthMetrics,
+} from "./market-depth.js";
+export type {
+  OrderBookDepthMetricOptions,
+  OrderBookDepthMetrics,
+  OrderBookHeatmapObservation,
+  OrderBookHeatmapOptions,
+  OrderBookMetricQuality,
+} from "./market-depth.js";
 export type {
   MarketTrade,
   MarketTradeAggressorSide,

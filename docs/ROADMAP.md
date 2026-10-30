@@ -1290,6 +1290,12 @@ evidence.
   as-of filtering, and a deterministic in-memory trade feed. Level-2
   reconstruction, trade-derived Footprint/CVD, Chart/Studio integration,
   browser evidence, and the final acceptance matrix remain open.
+- [Implemented / Node-verified — Phase 14.1 order-book foundation] Added
+  bounded snapshot/delta reconstruction, explicit absolute versus signed-delta
+  semantics, source/venue checks, tick normalization policy, duplicate and
+  delayed-response handling, sequence-gap stale state, replacement-snapshot
+  recovery, as-of reconstruction, depth quality metrics, and non-interpolating
+  bounded heatmap observations.
 
 ## Phase 13 corporate actions and total-return analytics
 
