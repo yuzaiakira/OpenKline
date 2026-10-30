@@ -30,3 +30,20 @@ version-1 envelope around chart workspaces. Its optional `comparison` member
 stores active state, normalization mode, UTC baseline, maximum baseline age,
 and ordered asset IDs. Older documents omit this member and remain valid;
 unknown or duplicate asset IDs are rejected by `parseStudioWorkspace`.
+
+## Compatibility and validation
+
+The `volumeAnalytics` property is optional so a version-1 document written
+before Phase 9 remains valid without migration. A consumer that does not
+recognize the property may preserve or omit it according to its storage
+policy; it must not treat its absence as an error. `parseWorkspace` validates
+profile IDs, ranges, modes, allocation, display values, and duplicate IDs.
+An empty profile list is valid, while duplicate IDs and malformed profile
+options are rejected.
+
+`serializeWorkspace()` emits canonical profile options in insertion order and
+never stores calculated bins, pixel geometry, caches, or temporary placement
+state. Repeated parse/serialize cycles therefore preserve the user-owned
+configuration without persisting runtime objects. The version remains `1`;
+this additive optional field does not authorize changing required fields or
+the meaning of existing fields.

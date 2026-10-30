@@ -241,3 +241,17 @@ Built-in tools are horizontal/vertical lines, trend lines, rectangles,
 Fibonacci retracements, and text. Drawing styles support color, fill, line
 width, visibility, and locking. See `docs/api/drawings.md` for the complete
 contract and `docs/guides/custom-drawing-tools.md` for extensions.
+
+## Compatibility notes
+
+Phase 9 volume analytics is additive to the existing `Chart` contract. Existing
+series, indicator, drawing, Datafeed, viewport, and lifecycle methods retain
+their signatures and behavior. The new `addAnchoredVwap`,
+`getAnchoredVwaps`, `startAnchoredVwapPlacement`, `addVolumeProfile`, and
+`getVolumeProfiles` methods share the existing indicator, Canvas2D, replay, and
+disposal lifecycles; consumers may continue using the older methods without
+understanding these additions. The pane-bounds helper is also additive.
+
+The strict historical API checker remains the release gate. Run
+`npm run api:diagnostics` to review an intentional additive delta before
+requesting approval to update the stored baseline.

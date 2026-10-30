@@ -19,6 +19,14 @@ breaking. Worker protocols and serialized documents are versioned contracts and
 are covered by their existing protocol/round-trip tests rather than inferred
 from declaration text alone.
 
+When a strict hash changes, `npm run api:diagnostics` compares the historical
+source declarations with the current TypeScript AST. It reports additive
+public class methods, optional interface fields, new root exports, removals,
+changed signatures, required-property additions, and overload changes. This is
+an explanation and review aid, not a relaxed compatibility policy: the
+historical baseline remains unchanged until the owner approves the exact
+before/after contract.
+
 No breaking API change was introduced in Phase 8.5. Any future incompatible
 change requires an owner decision, a documented before/after contract, and
 migration guidance before implementation. No new versioning policy is inferred

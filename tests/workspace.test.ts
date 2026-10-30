@@ -214,3 +214,25 @@ test("workspace parser preserves optional estimated Volume Profile configuration
   }), WorkspaceValidationError);
   assert.deepEqual(parseWorkspace(workspace()).volumeAnalytics, undefined);
 });
+
+test("workspace Volume Profile persistence accepts empty and multiple profiles deterministically", () => {
+  const input = {
+    ...workspace(),
+    volumeAnalytics: {
+      volumeProfiles: [
+        { id: "left", mode: "visible" as const, binCount: 8, allocation: "close" as const, position: "left" as const },
+        { id: "right", mode: "fixed" as const, range: { from: 1, to: 2_000 }, binCount: 12, allocation: "range-uniform" as const, position: "right" as const },
+      ],
+    },
+  };
+  const parsed = parseWorkspace(input);
+  assert.deepEqual(parsed.volumeAnalytics?.volumeProfiles.map((profile) => profile.id), ["left", "right"]);
+  assert.deepEqual(parseWorkspace({ ...workspace(), volumeAnalytics: { volumeProfiles: [] } }).volumeAnalytics, { volumeProfiles: [] });
+  assert.equal(JSON.stringify(parseWorkspace(input)), JSON.stringify(parseWorkspace(JSON.parse(JSON.stringify(input)))));
+  assert.throws(() => parseWorkspace({
+    ...input,
+    volumeAnalytics: {
+      volumeProfiles: [input.volumeAnalytics.volumeProfiles[0], input.volumeAnalytics.volumeProfiles[0]],
+    },
+  }), /duplicate/);
+});

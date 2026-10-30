@@ -1116,3 +1116,32 @@ temporarily linear price scale instead of the user's ordinary chart state.
   signature changes. The earlier `WorkspaceRestoreResult` mismatch was caused
   by concurrent validation commands racing through `clean`/`build`, not by an
   API declaration change. See `docs/reports/phase-8-13-1-comparison-persistence.md`.
+
+## Phase 9.5 public API compatibility hardening
+
+- [Implemented / Node-verified] Added consumer-oriented public API coverage for
+  the root ESM package, Phase 9 calculation exports, legacy version-1
+  workspaces, optional Volume Profile persistence, empty and multiple profile
+  documents, duplicate rejection, and deterministic parse/serialize behavior.
+- [Implemented / Review-verified] Added isolated compatibility fixtures for
+  removed exports and methods, changed parameters and return types, optional
+  to required fields, required property additions, changed property types, and
+  removed overloads. Positive fixtures cover additive methods, optional fields,
+  and unrelated exports.
+- [Implemented / Diagnostic] `npm run api:diagnostics` uses the existing
+  TypeScript development dependency to explain the strict historical hash
+  delta. The current Phase 9 delta contains six additive `Chart` methods, one
+  optional `WorkspaceDocument.volumeAnalytics` field, and 71 additive root
+  exports; it found no removals or incompatible member changes.
+- [Open / Owner approval] `docs/audits/public-api-baseline.json` remains at
+  its historical commit. `npm run api:check` therefore continues to report
+  the intentional `Chart` and `WorkspaceDocument` hash changes until the
+  owner approves the exact before/after contract and a reviewed baseline
+  update. No baseline was changed in this increment.
+- [Open / Environment] The available cloud environment provides only the
+  existing system Chromium evidence. Official Firefox, WebKit, mobile Safari,
+  physical-device, accessibility, and visual-approval gates remain open and
+  are not converted into compatibility claims.
+
+See `docs/reports/phase-9-5-api-compatibility.md` for the command matrix,
+compatibility decision packet, package evidence, and remaining gates.

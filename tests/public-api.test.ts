@@ -61,3 +61,40 @@ test("versioned worker and serialized contracts remain public and explicit", () 
   assert.equal(typeof api.serializeBacktestResult, "function");
   assert.equal(typeof api.parseWorkspace, "function");
 });
+
+test("Phase 9 public additions are consumable without changing legacy contracts", () => {
+  assert.equal(typeof api.calculateAnchoredVwap, "function");
+  assert.equal(typeof api.calculateEstimatedVolumeProfile, "function");
+  assert.equal(typeof api.resolveVolumeProfileOptions, "function");
+
+  const anchored = api.calculateAnchoredVwap(candles, { anchorTime: candles[0].time, priceSource: "close" });
+  assert.ok(Math.abs((anchored.currentValue ?? 0) - (105 * 10 + 108 * 12) / 22) < 1e-12);
+  const profile = api.calculateEstimatedVolumeProfile(candles, {
+    from: candles[0].time,
+    to: candles.at(-1)!.time + 1,
+    binCount: 4,
+    allocation: "close",
+  });
+  assert.equal(profile.status, "ready");
+  assert.equal(profile.totalEligibleVolume, 22);
+
+  const legacyWorkspace = {
+    version: 1 as const,
+    chart: {
+      theme: { background: "#fff", text: "#111", grid: "#ddd", border: "#ccc", upCandle: "#0a0", downCandle: "#a00", crosshair: "#555", volumeUp: "#0a0", volumeDown: "#a00" },
+      locale: "en-US",
+      timeZone: "UTC",
+      pricePrecision: 2,
+      direction: "ltr" as const,
+    },
+    panes: [{ id: "main", height: null, minHeight: 80 }],
+    series: [{ id: "candles", type: "candlestick" as const, paneId: "main", style: {}, data: [{ ...candles[0] }] }],
+    indicators: [],
+    drawings: { version: 1 as const, drawings: [] },
+    viewport: { rangeStart: 0, visibleCount: 1 },
+    plugins: [],
+  };
+  const parsed = api.parseWorkspace(legacyWorkspace);
+  assert.equal(parsed.volumeAnalytics, undefined);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed)), legacyWorkspace);
+});
