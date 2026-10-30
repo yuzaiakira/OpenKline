@@ -2,11 +2,14 @@ import type {
   PortfolioAccountSnapshot,
   PortfolioBacktestResult,
   PortfolioInstrumentContribution,
+  PortfolioCorporateActionRecord,
+  PortfolioDividendReceivable,
   PortfolioOrder,
   PortfolioPerformanceMetrics,
   PortfolioPosition,
   PortfolioTrade,
 } from "./types.js";
+import type { CorporateAction } from "../corporate-actions.js";
 
 /** A causal presentation of a completed portfolio run at one historical boundary. */
 export interface PortfolioBacktestAsOfResult extends PortfolioBacktestResult {
@@ -35,8 +38,14 @@ export function projectPortfolioBacktestAsOf(result: PortfolioBacktestResult, as
     .filter((snapshot) => snapshot.time !== null && snapshot.time <= asOfTime)
     .map(cloneSnapshot);
   const finalAccount = cloneSnapshot(equityCurve.at(-1) ?? createInitialSnapshot(result, asOfTime));
-  const positions = projectPositions(result, finalAccount, asOfTime);
-  const metrics = calculateAsOfMetrics(result, finalAccount, equityCurve, orders, trades, positions);
+  const corporateActions = result.corporateActions?.filter((action) => isActionAvailableAt(action, asOfTime)).map(cloneCorporateAction);
+  const visibleActionIds = new Set(corporateActions?.map((action) => action.id) ?? []);
+  const corporateActionLedger = result.corporateActionLedger?.filter((record) => record.time <= asOfTime && visibleActionIds.has(record.actionId)).map((record) => ({ ...record }));
+  const dividendReceivables = result.dividendReceivables
+    ?.filter((receivable) => receivable.entitlementTime <= asOfTime && visibleActionIds.has(receivable.actionId))
+    .map((receivable) => ({ ...receivable, status: projectReceivableStatus(receivable.status, receivable.paymentTime, asOfTime) }));
+  const positions = projectPositions(result, finalAccount, asOfTime, corporateActions ?? [], result.corporateActions !== undefined);
+  const metrics = calculateAsOfMetrics(result, finalAccount, equityCurve, orders, trades, positions, corporateActions ?? [], dividendReceivables ?? [], corporateActionLedger ?? []);
 
   return {
     ...result,
@@ -52,7 +61,23 @@ export function projectPortfolioBacktestAsOf(result: PortfolioBacktestResult, as
     finalAccount,
     metrics,
     instruments: result.instruments.map((instrument) => ({ ...instrument, ...(instrument.calendar === null ? {} : { calendar: { ...instrument.calendar } }) })),
+    ...(corporateActions === undefined ? {} : { corporateActions }),
+    ...(dividendReceivables === undefined ? {} : { dividendReceivables }),
+    ...(corporateActionLedger === undefined ? {} : { corporateActionLedger }),
   };
+}
+
+function isActionAvailableAt(action: CorporateAction, asOfTime: number): boolean {
+  return action.effectiveTime <= asOfTime && (action.knowledgeTime === undefined || action.knowledgeTime <= asOfTime);
+}
+
+function cloneCorporateAction(action: CorporateAction): CorporateAction {
+  return { ...action, source: { ...action.source } };
+}
+
+function projectReceivableStatus(status: PortfolioDividendReceivable["status"], paymentTime: number | null, asOfTime: number): PortfolioDividendReceivable["status"] {
+  if (paymentTime !== null && paymentTime <= asOfTime && status === "paid") return "paid";
+  return paymentTime === null ? "unsettled" : "accrued";
 }
 
 function projectOrder(order: PortfolioOrder, outcomeTime: number | undefined, asOfTime: number): PortfolioOrder {
@@ -93,33 +118,45 @@ function createInitialSnapshot(result: PortfolioBacktestResult, asOfTime: number
   };
 }
 
-function projectPositions(result: PortfolioBacktestResult, finalAccount: PortfolioAccountSnapshot, asOfTime: number): PortfolioPosition[] {
-  const positions = result.positions
-    .filter((position) => position.entryFillTime <= asOfTime)
-    .map((position) => applyMark(position, finalAccount));
-  const positionIds = new Set(positions.map((position) => position.instrumentId));
-  for (const trade of result.trades) {
-    if (trade.entryFillTime > asOfTime || trade.exitFillTime <= asOfTime || positionIds.has(trade.instrumentId)) continue;
-    const instrument = result.instruments.find((item) => item.id === trade.instrumentId);
+function projectPositions(result: PortfolioBacktestResult, finalAccount: PortfolioAccountSnapshot, asOfTime: number, corporateActions: readonly CorporateAction[], corporateActionAccountingActive: boolean): PortfolioPosition[] {
+  const active = new Map<string, PortfolioPosition>();
+  const entries = result.orders
+    .filter((order) => order.action === "enter-long" && order.status === "filled" && order.fillTime !== undefined && order.fillTime <= asOfTime && order.executionPrice !== undefined)
+    .sort((left, right) => (left.fillTime ?? 0) - (right.fillTime ?? 0) || left.id.localeCompare(right.id));
+  for (const order of entries) {
+    const trade = result.trades.find((candidate) => candidate.instrumentId === order.instrumentId && candidate.entryFillTime === order.fillTime);
+    if (trade !== undefined && trade.exitFillTime <= asOfTime) {
+      active.delete(order.instrumentId);
+      continue;
+    }
+    const instrument = result.instruments.find((item) => item.id === order.instrumentId);
     if (instrument === undefined) continue;
-    const entryOrder = result.orders.find((order) => order.instrumentId === trade.instrumentId && order.action === "enter-long" && order.status === "filled" && order.fillTime === trade.entryFillTime);
-    positions.push(applyMark({
-      instrumentId: trade.instrumentId,
+    let quantity = order.quantity;
+    let entryPrice = order.executionPrice!;
+    for (const action of corporateActions) {
+      if (action.instrumentId !== order.instrumentId || action.effectiveTime <= order.fillTime! || action.effectiveTime > asOfTime) continue;
+      if (action.kind === "stock-split" || action.kind === "reverse-stock-split") {
+        quantity *= action.newShares / action.oldShares;
+        entryPrice *= action.oldShares / action.newShares;
+      }
+    }
+    active.set(order.instrumentId, applyMark({
+      instrumentId: order.instrumentId,
       symbol: instrument.symbol,
       direction: "long",
-      quantity: trade.quantity,
-      entrySignalTime: trade.entrySignalTime,
-      entryFillTime: trade.entryFillTime,
-      entryPrice: trade.entryPrice,
-      entryFees: entryOrder?.commission ?? 0,
+      quantity,
+      entrySignalTime: order.signalTime,
+      entryFillTime: order.fillTime!,
+      entryPrice,
+      entryFees: order.commission,
       markPrice: null,
       markTime: null,
       markQuality: "unknown",
       unrealizedPnl: null,
+      ...(corporateActionAccountingActive ? { aggregateCostBasis: quantity * entryPrice } : {}),
     }, finalAccount));
-    positionIds.add(trade.instrumentId);
   }
-  return positions.sort((left, right) => left.instrumentId.localeCompare(right.instrumentId));
+  return [...active.values()].sort((left, right) => left.instrumentId.localeCompare(right.instrumentId));
 }
 
 function applyMark(position: PortfolioPosition, snapshot: PortfolioAccountSnapshot): PortfolioPosition {
@@ -141,6 +178,9 @@ function calculateAsOfMetrics(
   orders: readonly PortfolioOrder[],
   trades: readonly PortfolioTrade[],
   positions: readonly PortfolioPosition[],
+  corporateActions: readonly CorporateAction[],
+  dividendReceivables: readonly PortfolioDividendReceivable[],
+  corporateActionLedger: readonly PortfolioCorporateActionRecord[],
 ): PortfolioPerformanceMetrics {
   const winningTradeCount = trades.filter((trade) => trade.netPnl > 0).length;
   const losingTradeCount = trades.filter((trade) => trade.netPnl < 0).length;
@@ -151,12 +191,15 @@ function calculateAsOfMetrics(
   const maxDrawdownPercent = maximum(equityCurve, (point) => point.drawdownPercent);
   const grossExposure = maximum(equityCurve, (point) => point.grossExposure);
   const netExposure = maximum(equityCurve, (point) => point.netExposure);
+  const dividendIncome = finalAccount.dividendIncome ?? corporateActionLedger.filter((record) => record.kind === "cash-dividend" && record.phase === "payment" && record.status === "applied").reduce((sum, record) => sum + (record.amount ?? 0), 0);
+  const dividendReceivable = finalAccount.dividendReceivable ?? dividendReceivables.filter((receivable) => receivable.status !== "paid" && receivable.status !== "unsettled").reduce((sum, receivable) => sum + receivable.amount, 0);
   const perInstrument = result.instruments.map((instrument): PortfolioInstrumentContribution => {
     const instrumentTrades = trades.filter((trade) => trade.instrumentId === instrument.id);
     const instrumentOrders = orders.filter((order) => order.instrumentId === instrument.id);
     const position = positions.find((item) => item.instrumentId === instrument.id);
     const realizedPnl = instrumentTrades.reduce((sum, trade) => sum + trade.netPnl, 0);
     const unrealizedPnl = position?.unrealizedPnl ?? (position === undefined ? 0 : null);
+    const instrumentDividendIncome = corporateActionLedger.filter((record) => record.instrumentId === instrument.id && record.kind === "cash-dividend" && record.phase === "payment" && record.status === "applied").reduce((sum, record) => sum + (record.amount ?? 0), 0);
     const allocated = instrumentTrades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0)
       + instrumentOrders.filter((order) => order.action === "enter-long" && order.status === "filled").reduce((sum, order) => sum + (order.executionPrice ?? 0) * order.quantity, 0);
     return {
@@ -168,6 +211,7 @@ function calculateAsOfMetrics(
       grossExposure: position?.markPrice === null || position === undefined ? 0 : (position.markPrice ?? 0) * position.quantity,
       tradeCount: instrumentTrades.length,
       returnOnAllocatedCapital: allocated <= 0 || unrealizedPnl === null ? null : (realizedPnl + unrealizedPnl) / allocated,
+      ...(corporateActions.length === 0 ? {} : { dividendIncome: instrumentDividendIncome, corporateActionIds: corporateActions.filter((action) => action.instrumentId === instrument.id).map((action) => action.id) }),
     };
   });
   return {
@@ -188,6 +232,7 @@ function calculateAsOfMetrics(
     losingTradeCount,
     winRate: trades.length === 0 ? null : winningTradeCount / trades.length,
     perInstrument,
+    ...(corporateActions.length === 0 ? {} : { dividendIncome, priceReturn: result.assumptions.initialCapital > 0 && finalAccount.equity !== null ? (finalAccount.equity - dividendIncome - dividendReceivable - result.assumptions.initialCapital) / result.assumptions.initialCapital : null, corporateActionCount: corporateActions.length }),
   };
 }
 

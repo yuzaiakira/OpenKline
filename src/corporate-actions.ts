@@ -413,7 +413,8 @@ export function adjustCorporateActionData(
   if (options.mode === "raw") {
     return buildAdjustmentResult("raw", context, asOfTime, raw, null, eligible, excluded, dataset, volumePolicy);
   }
-  const splitAdjusted = raw.map((candle) => adjustCandle(candle, splitFactorAt(candle.time, eligible), volumePolicy));
+  const splitIndex = createSplitAdjustmentIndex(eligible);
+  const splitAdjusted = raw.map((candle) => adjustCandle(candle, splitIndex.factorAt(candle.time), volumePolicy));
   if (options.mode === "split-adjusted") {
     return buildAdjustmentResult("split-adjusted", context, asOfTime, splitAdjusted, null, eligible, excluded, dataset, volumePolicy);
   }
@@ -431,23 +432,30 @@ export function calculateTotalReturnIndex(
   const normalized = normalizeActions(actions, raw.length === 0 ? undefined : undefined);
   const splits = normalized.filter(isSplitAction);
   const dividends = normalized.filter(isDividendAction);
+  const splitIndex = createSplitAdjustmentIndex(splits);
   const points: TotalReturnPoint[] = [];
   let index = base;
   let previousAdjustedClose: number | null = null;
   let previousTime: number | null = null;
+  let dividendCursor = 0;
   for (const candle of raw) {
-    const adjusted = adjustCandle(candle, splitFactorAt(candle.time, splits), volumePolicy);
+    const adjusted = adjustCandle(candle, splitIndex.factorAt(candle.time), volumePolicy);
     const close = adjusted.close;
     let dividendFactor = 1;
     if (previousAdjustedClose !== null && previousAdjustedClose > 0 && previousTime !== null) {
-      for (const dividend of dividends) {
-        if (dividend.exDividendTime > previousTime && dividend.exDividendTime <= candle.time) {
-          const dividendAdjusted = dividend.amountPerShare * splitFactorAt(dividend.exDividendTime, splits);
+      while (dividendCursor < dividends.length && dividends[dividendCursor]!.exDividendTime <= previousTime) dividendCursor += 1;
+      while (dividendCursor < dividends.length && dividends[dividendCursor]!.exDividendTime <= candle.time) {
+        const dividend = dividends[dividendCursor]!;
+        if (dividend.exDividendTime > previousTime) {
+          const dividendAdjusted = dividend.amountPerShare * splitIndex.factorAt(dividend.exDividendTime);
           dividendFactor *= 1 + dividendAdjusted / previousAdjustedClose;
         }
+        dividendCursor += 1;
       }
       index *= close / previousAdjustedClose;
       index *= dividendFactor;
+    } else {
+      while (dividendCursor < dividends.length && dividends[dividendCursor]!.exDividendTime <= candle.time) dividendCursor += 1;
     }
     points.push({ time: candle.time, value: index, splitAdjustedClose: close, dividendFactor });
     previousAdjustedClose = close;
@@ -500,11 +508,30 @@ function adjustCandle(candle: Candle, factor: number, volumePolicy: CorporateAct
   return adjusted;
 }
 
-function splitFactorAt(time: number, actions: readonly CorporateAction[]): number {
-  let factor = 1;
-  for (const action of actions) if (isSplitAction(action) && action.effectiveTime > time) factor *= action.oldShares / action.newShares;
-  if (!Number.isFinite(factor) || factor <= 0) throw new CorporateActionValidationError("Corporate-action split factor is invalid");
-  return factor;
+interface SplitAdjustmentIndex {
+  factorAt(time: number): number;
+}
+
+function createSplitAdjustmentIndex(actions: readonly CorporateAction[]): SplitAdjustmentIndex {
+  const splits = actions.filter(isSplitAction).sort(compareActions);
+  const suffixFactors = new Array<number>(splits.length + 1).fill(1);
+  for (let index = splits.length - 1; index >= 0; index -= 1) {
+    const action = splits[index]!;
+    suffixFactors[index] = suffixFactors[index + 1]! * action.oldShares / action.newShares;
+    if (!Number.isFinite(suffixFactors[index]) || suffixFactors[index]! <= 0) throw new CorporateActionValidationError("Corporate-action split factor is invalid");
+  }
+  return {
+    factorAt: (time: number): number => {
+      let low = 0;
+      let high = splits.length;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (splits[middle]!.effectiveTime <= time) low = middle + 1;
+        else high = middle;
+      }
+      return suffixFactors[low] ?? 1;
+    },
+  };
 }
 
 function isEligibleForAdjustment(action: CorporateAction, context: CorporateActionAdjustmentContext, asOfTime: number, knowledgeTime: number): boolean {

@@ -42,6 +42,7 @@
     "benchmark:portfolio": "npm run build && node --expose-gc scripts/portfolio-backtest-benchmark.mjs",
     "benchmark:portfolio-worker": "npm run build && node scripts/portfolio-worker-benchmark.mjs",
     "benchmark:portfolio-result": "npm run build && node --expose-gc scripts/portfolio-result-benchmark.mjs",
+    "benchmark:corporate-actions": "npm run build && node --expose-gc scripts/corporate-actions-benchmark.mjs",
     "benchmark:screener": "npm run build && node --expose-gc scripts/screener-benchmark.mjs",
     "benchmark:klinescript": "npm run build && node scripts/benchmark-klinescript.mjs",
     "benchmark:volume-analytics": "npm run build && node scripts/volume-analytics-benchmark.mjs",

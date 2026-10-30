@@ -63,6 +63,13 @@
     },
     {
       "package": "openkline",
+      "name": "adjustCorporateActionData",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "154c23a8b8351a7c8a236cab1e9981ae826a152ab5f9b4ea25f0f64be8ca9463"
+    },
+    {
+      "package": "openkline",
       "name": "adxDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -707,6 +714,13 @@
     },
     {
       "package": "openkline",
+      "name": "calculateTotalReturnIndex",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "1bfb21a44a608c0ea50d2ffbcc9fdeb264c5f099ead9a8cade674b0af42d762f"
+    },
+    {
+      "package": "openkline",
       "name": "Candle",
       "kind": "type",
       "module": "./types.js",
@@ -749,6 +763,13 @@
     },
     {
       "package": "openkline",
+      "name": "CashDividendAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "0ab7e2658c71edbefb15263100472c6440ca8b7243e5c2014dc9c59d636322a8"
+    },
+    {
+      "package": "openkline",
       "name": "CausalTimeframeAggregator",
       "kind": "runtime",
       "module": "./multi-timeframe.js",
@@ -780,7 +801,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "83212477ff9edbdf4064deb5876f44ca192eda44071c3c0d2dfd1d2cd182ffaa"
+      "signatureHash": "95a54b3f13e47157eefa6c7f6360740f60d78c77f0cebe068f71e619beab9765"
     },
     {
       "package": "openkline",
@@ -920,21 +941,21 @@
       "name": "ComparisonAssetInput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "a39336cf8aa0a699d598f9b71c2b9f9be7e3f9876faf94d80733f07336fe09b2"
+      "signatureHash": "72a9a77b1611236bd458b6bc83adb661881244ea00e1776d15fb7bfb18743572"
     },
     {
       "package": "openkline",
       "name": "ComparisonAssetOutput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "9bd962ebe70f33d7871a13af2c9ce01b1d9e6b4b0f03be3634a5a61cd9c5ea48"
+      "signatureHash": "596d80d29310c32e51db33b06865317dd1a254aee7ca282fb2705db8159d92c8"
     },
     {
       "package": "openkline",
       "name": "ComparisonAssetSnapshot",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "6be60d9d187109eb2d1f15708f00a69c7677715691545992e15af2d915c9470d"
+      "signatureHash": "1b4ffd8896a63430422dd94d0da55cf62b1c5e6b1d2ebc916158d4e735e97c09"
     },
     {
       "package": "openkline",
@@ -963,6 +984,20 @@
       "kind": "type",
       "module": "./comparison.js",
       "signatureHash": "c5e85c5041ea36ed9f89067760c422ae36a9831cbfb9b13b837948dd4d14fd4e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonCorporateActionAssetInput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "c9c9bd9ba054e716c926beb84b6a976d1be40b1543b7bf1e2a9539d55ccbb13a"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDataBasis",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "17432c053b644fff42a774fd77279d2bb672aaae071ee157c5eac655f3627a2e"
     },
     {
       "package": "openkline",
@@ -1123,7 +1158,7 @@
       "name": "ComparisonEngine",
       "kind": "runtime",
       "module": "./comparison.js",
-      "signatureHash": "4b2f7dfee535a66587f816c304e72cc76965808430bed1f88c9a52ac3e31ad5e"
+      "signatureHash": "941054b027c394f009ee1cbdf121cd0c982464c22c79b9ecba1a9b0bd06308d4"
     },
     {
       "package": "openkline",
@@ -1159,6 +1194,146 @@
       "kind": "runtime",
       "module": "./klinescript/index.js",
       "signatureHash": "030f8875f6a5070d731b02c4077d6744ed416e2dd2fd7c982aa7ba54dfc13adb"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "218bcce29edbeb6981b4a3fb1c71d4e4eea73304115d33926d33fbe52d40912d"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentContext",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "648d24192800a92cb1103094ffb1d39e3ee7d594472fe585024be856ff00ecd5"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentMode",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "a592f25eaaf604f2a32e7bb07271e233e6e133e88211ad29629c94b8bdcb28f3"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "76ad6657030d182cc04799d8798421ebec92d75ccd4953bf918cc29f5a18c52a"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentProvenance",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "c0e22dc5274dd32089399ad3f6b7fc75ffc1b800350bb2900076084dccff8c16"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentResult",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f61189261f265113307981edba8a6e2358e728e189648661fcddc4b8d3ff21d9"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionBase",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "2907d59dbe6e1c84f609f16bc2d55bda4baed2b9225ed7aba282d6acbfadbe4e"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionChange",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "e2e4cc67f3939e7e7acd7d4cb9af88b3fab487df57e38d633cdefd3fb7ffd0a3"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDatafeed",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f04107a6f69df1e12fb6f0b5c6ee883fbd448144f909ddaeb33898982ae80eb5"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDataset",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "49b18fb4ee44007310a694c64d6d84549f70cc688fba653ecdbe8bc53ec51f9d"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDisplayOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "31912ddea6e3a23228f24715a387c686b819bdb79a809e7cd5b351c06bd20156"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionKind",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "c89e2f7db3aceb36e18b520044c811fa9519f6c519fb6d6bf03a71e0362e9244"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionKnowledgeCoverage",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "79eda8b660342baebb57df97ef27e43b017a214379acba69af7729e07c95dd49"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionLifecycleError",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "748a7307871e37b49b0a7b6e76e597bda063c600387eee221146a61120b9bd30"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionQuery",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "7fbdfd0291afc00c823a3d9aee88593358614550f0a0c111748d1c6e1c65e306"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionSource",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f3d4de5888aa98142f1d8704be26c268296e3b8ece0bbaca2085c1b687b95b14"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionStore",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "8ddc2d9a68f78f4ff9035209b6a645f988fce7fbe074f0c6ab1e517cc481afce"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionStoreOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "4c702e3ee571ecda6a378229d0914e3ad20789095baf03ef724ee842936d4b17"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionValidationError",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "84449efaf635bb6f69e2a4e1d6868b1dbed47a61bb846bb1ab91b81d8b13aebb"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionVolumePolicy",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "891349c457e97429bd70965d1ce658a25948e296dde3e258f0d9dc317ccc70a9"
     },
     {
       "package": "openkline",
@@ -1883,6 +2058,13 @@
     },
     {
       "package": "openkline",
+      "name": "InMemoryCorporateActionDatafeed",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "af426fc06f4685ba0d053fb1b21b7a93b07668b562d5fdcf07ba4c7a3c0656ea"
+    },
+    {
+      "package": "openkline",
       "name": "InMemoryDatafeed",
       "kind": "runtime",
       "module": "./datafeed.js",
@@ -2520,6 +2702,13 @@
     },
     {
       "package": "openkline",
+      "name": "normalizeCorporateActionDataset",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "d2f1e2758e141bb55ae76392a1d0255795c590edd38856b0b477780cf36b9246"
+    },
+    {
+      "package": "openkline",
       "name": "normalizePaperEvent",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -2587,6 +2776,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "4cd01afd3a54cf2870e0c9084d671adff04b679de8f13e3ea54cab2a3cff2d42"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_CORPORATE_ACTIONS_VERSION",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "33aa14642fe8ce1821353f6e1f6968aa1af6b7c4e654f38a98241221bcd31042"
     },
     {
       "package": "openkline",
@@ -3850,6 +4046,41 @@
     },
     {
       "package": "openkline",
+      "name": "PortfolioCorporateActionPhase",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a6056d1438400d8fa27bc09721081d68f937482abb579eacc14c5b05f43db5ee"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCorporateActionPolicy",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "89d8403c801eb11d8f8c2ce3398e3188e411685fa7ae502e4d42e072071a3fdf"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCorporateActionRecord",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f6890eeea8e2491aadb9d94aec675ae0e77e235d07e8ffc2716a68cce787ea84"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDividendReceivable",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "8ffd76a781f96e4edb25b02cde38d6e502e2dca21d9672d2f80f6717751fcbf7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDividendReceivableStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a2ba1836eac71945e5c623eebdc714e4012ed3b085b3521b962065de5cbdd8f9"
+    },
+    {
+      "package": "openkline",
       "name": "PortfolioDuplicateTimestampPolicy",
       "kind": "type",
       "module": "./portfolio-backtesting/index.js",
@@ -4232,6 +4463,34 @@
       "kind": "type",
       "module": "./datafeed-rest.js",
       "signatureHash": "d50122a2f4d306a5b59eed7e7dbd19e19c81e5892462fcec802539c74cb58f98"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionDatafeed",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "51a4baefbc4a239a3bc3042954cacf74a284584bbaffb71f3cd8db98b3a07f42"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionDatafeedOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "989f555d961a135d40c1a661aa76684f9b400ca56b1957aa5abf9dcf581bb10d"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionPage",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "0959f0c60101b326ab8f28c9f4688f7e3bf72ace0e9b5c22ce0241695b5f1cd5"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionPayload",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "3bc825aa650612a430f027dd6d2c21c8b45a2202f7b1ec8a01c8e48538206f98"
     },
     {
       "package": "openkline",
@@ -5138,6 +5397,13 @@
     },
     {
       "package": "openkline",
+      "name": "StockSplitAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "9b69d934e1b4f553b0142bbd48e22b5e88ac88b8886eec32d87a3d0fc7e70e5f"
+    },
+    {
+      "package": "openkline",
       "name": "StrategyBarContext",
       "kind": "type",
       "module": "./strategies/index.js",
@@ -5411,6 +5677,13 @@
     },
     {
       "package": "openkline",
+      "name": "TotalReturnPoint",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "927fc4ab6ed655e89c6bfd54b04d2442d6a1f74130129a639e538172f7679438"
+    },
+    {
+      "package": "openkline",
       "name": "toTimeframeCalendar",
       "kind": "runtime",
       "module": "./trading-calendar.js",
@@ -5604,6 +5877,13 @@
       "kind": "type",
       "module": "./screener/index.js",
       "signatureHash": "59c1bd464975e7b3a15f35c1c7fad7d99eb73334b88c347ec5b6ccedc4703c16"
+    },
+    {
+      "package": "openkline",
+      "name": "validateCorporateActionDataset",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "ed62064fbf5c424640611266ab54b19220f079376ee13b9c46248dd1109a7cbf"
     },
     {
       "package": "openkline",
@@ -5936,10 +6216,17 @@
     },
     {
       "package": "openkline",
+      "name": "WorkspaceCorporateActions",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "38559278acf47716e47fc8f807179c6bdde6924e3f13c9000335b789f7e429bf"
+    },
+    {
+      "package": "openkline",
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "b9e693fcbbd32656ef092ccb7603f933a4530ea0e75ebb744bc92ca4934a5f01"
+      "signatureHash": "482a5277035a59e4ebc406e9580cf25016155c797833852b7ceb9b492e61a3b4"
     },
     {
       "package": "openkline",
@@ -6082,6 +6369,13 @@
       "kind": "runtime",
       "module": ".",
       "signatureHash": "85fea54873297972d15db4e673cf4ffa3986364ca2980076d82a5d8777d37f98"
+    },
+    {
+      "package": "openkline",
+      "name": "adjustCorporateActionData",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "154c23a8b8351a7c8a236cab1e9981ae826a152ab5f9b4ea25f0f64be8ca9463"
     },
     {
       "package": "openkline",
@@ -6288,6 +6582,13 @@
     },
     {
       "package": "openkline",
+      "name": "calculateTotalReturnIndex",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "1bfb21a44a608c0ea50d2ffbcc9fdeb264c5f099ead9a8cade674b0af42d762f"
+    },
+    {
+      "package": "openkline",
       "name": "CandleStore",
       "kind": "runtime",
       "module": "./core/candle-store.js",
@@ -6333,7 +6634,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "83212477ff9edbdf4064deb5876f44ca192eda44071c3c0d2dfd1d2cd182ffaa"
+      "signatureHash": "95a54b3f13e47157eefa6c7f6360740f60d78c77f0cebe068f71e619beab9765"
     },
     {
       "package": "openkline",
@@ -6375,7 +6676,7 @@
       "name": "ComparisonEngine",
       "kind": "runtime",
       "module": "./comparison.js",
-      "signatureHash": "4b2f7dfee535a66587f816c304e72cc76965808430bed1f88c9a52ac3e31ad5e"
+      "signatureHash": "941054b027c394f009ee1cbdf121cd0c982464c22c79b9ecba1a9b0bd06308d4"
     },
     {
       "package": "openkline",
@@ -6383,6 +6684,27 @@
       "kind": "runtime",
       "module": "./klinescript/index.js",
       "signatureHash": "030f8875f6a5070d731b02c4077d6744ed416e2dd2fd7c982aa7ba54dfc13adb"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionLifecycleError",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "748a7307871e37b49b0a7b6e76e597bda063c600387eee221146a61120b9bd30"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionStore",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "8ddc2d9a68f78f4ff9035209b6a645f988fce7fbe074f0c6ab1e517cc481afce"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionValidationError",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "84449efaf635bb6f69e2a4e1d6868b1dbed47a61bb846bb1ab91b81d8b13aebb"
     },
     {
       "package": "openkline",
@@ -6764,6 +7086,13 @@
     },
     {
       "package": "openkline",
+      "name": "InMemoryCorporateActionDatafeed",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "af426fc06f4685ba0d053fb1b21b7a93b07668b562d5fdcf07ba4c7a3c0656ea"
+    },
+    {
+      "package": "openkline",
       "name": "InMemoryDatafeed",
       "kind": "runtime",
       "module": "./datafeed.js",
@@ -6960,6 +7289,13 @@
     },
     {
       "package": "openkline",
+      "name": "normalizeCorporateActionDataset",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "d2f1e2758e141bb55ae76392a1d0255795c590edd38856b0b477780cf36b9246"
+    },
+    {
+      "package": "openkline",
       "name": "normalizePaperEvent",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -7013,6 +7349,13 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "4cd01afd3a54cf2870e0c9084d671adff04b679de8f13e3ea54cab2a3cff2d42"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_CORPORATE_ACTIONS_VERSION",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "33aa14642fe8ce1821353f6e1f6968aa1af6b7c4e654f38a98241221bcd31042"
     },
     {
       "package": "openkline",
@@ -7478,6 +7821,13 @@
     },
     {
       "package": "openkline",
+      "name": "RestCorporateActionDatafeed",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "51a4baefbc4a239a3bc3042954cacf74a284584bbaffb71f3cd8db98b3a07f42"
+    },
+    {
+      "package": "openkline",
       "name": "RestDatafeed",
       "kind": "runtime",
       "module": "./datafeed-rest.js",
@@ -7839,6 +8189,13 @@
       "kind": "runtime",
       "module": "./drawings/index.js",
       "signatureHash": "eb2c61f9fc114f1dcc2b289e3d493fb18f6ed0e4d072a6782503b1c96aad5dd8"
+    },
+    {
+      "package": "openkline",
+      "name": "validateCorporateActionDataset",
+      "kind": "runtime",
+      "module": "./corporate-actions.js",
+      "signatureHash": "ed62064fbf5c424640611266ab54b19220f079376ee13b9c46248dd1109a7cbf"
     },
     {
       "package": "openkline",
@@ -8432,6 +8789,13 @@
     },
     {
       "package": "openkline",
+      "name": "CashDividendAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "0ab7e2658c71edbefb15263100472c6440ca8b7243e5c2014dc9c59d636322a8"
+    },
+    {
+      "package": "openkline",
       "name": "CausalTimeframeAggregatorOptions",
       "kind": "type",
       "module": "./multi-timeframe.js",
@@ -8554,21 +8918,21 @@
       "name": "ComparisonAssetInput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "a39336cf8aa0a699d598f9b71c2b9f9be7e3f9876faf94d80733f07336fe09b2"
+      "signatureHash": "72a9a77b1611236bd458b6bc83adb661881244ea00e1776d15fb7bfb18743572"
     },
     {
       "package": "openkline",
       "name": "ComparisonAssetOutput",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "9bd962ebe70f33d7871a13af2c9ce01b1d9e6b4b0f03be3634a5a61cd9c5ea48"
+      "signatureHash": "596d80d29310c32e51db33b06865317dd1a254aee7ca282fb2705db8159d92c8"
     },
     {
       "package": "openkline",
       "name": "ComparisonAssetSnapshot",
       "kind": "type",
       "module": "./comparison.js",
-      "signatureHash": "6be60d9d187109eb2d1f15708f00a69c7677715691545992e15af2d915c9470d"
+      "signatureHash": "1b4ffd8896a63430422dd94d0da55cf62b1c5e6b1d2ebc916158d4e735e97c09"
     },
     {
       "package": "openkline",
@@ -8597,6 +8961,20 @@
       "kind": "type",
       "module": "./comparison.js",
       "signatureHash": "c5e85c5041ea36ed9f89067760c422ae36a9831cbfb9b13b837948dd4d14fd4e"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonCorporateActionAssetInput",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "c9c9bd9ba054e716c926beb84b6a976d1be40b1543b7bf1e2a9539d55ccbb13a"
+    },
+    {
+      "package": "openkline",
+      "name": "ComparisonDataBasis",
+      "kind": "type",
+      "module": "./comparison.js",
+      "signatureHash": "17432c053b644fff42a774fd77279d2bb672aaae071ee157c5eac655f3627a2e"
     },
     {
       "package": "openkline",
@@ -8772,6 +9150,125 @@
       "kind": "type",
       "module": "./comparison.js",
       "signatureHash": "6f09f8a9c9e55434530e3fd8e7baa24590c39634858f520928bd430c6eabec22"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "218bcce29edbeb6981b4a3fb1c71d4e4eea73304115d33926d33fbe52d40912d"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentContext",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "648d24192800a92cb1103094ffb1d39e3ee7d594472fe585024be856ff00ecd5"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentMode",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "a592f25eaaf604f2a32e7bb07271e233e6e133e88211ad29629c94b8bdcb28f3"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "76ad6657030d182cc04799d8798421ebec92d75ccd4953bf918cc29f5a18c52a"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentProvenance",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "c0e22dc5274dd32089399ad3f6b7fc75ffc1b800350bb2900076084dccff8c16"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionAdjustmentResult",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f61189261f265113307981edba8a6e2358e728e189648661fcddc4b8d3ff21d9"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionBase",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "2907d59dbe6e1c84f609f16bc2d55bda4baed2b9225ed7aba282d6acbfadbe4e"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionChange",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "e2e4cc67f3939e7e7acd7d4cb9af88b3fab487df57e38d633cdefd3fb7ffd0a3"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDatafeed",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f04107a6f69df1e12fb6f0b5c6ee883fbd448144f909ddaeb33898982ae80eb5"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDataset",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "49b18fb4ee44007310a694c64d6d84549f70cc688fba653ecdbe8bc53ec51f9d"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionDisplayOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "31912ddea6e3a23228f24715a387c686b819bdb79a809e7cd5b351c06bd20156"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionKind",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "c89e2f7db3aceb36e18b520044c811fa9519f6c519fb6d6bf03a71e0362e9244"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionKnowledgeCoverage",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "79eda8b660342baebb57df97ef27e43b017a214379acba69af7729e07c95dd49"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionQuery",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "7fbdfd0291afc00c823a3d9aee88593358614550f0a0c111748d1c6e1c65e306"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionSource",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "f3d4de5888aa98142f1d8704be26c268296e3b8ece0bbaca2085c1b687b95b14"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionStoreOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "4c702e3ee571ecda6a378229d0914e3ad20789095baf03ef724ee842936d4b17"
+    },
+    {
+      "package": "openkline",
+      "name": "CorporateActionVolumePolicy",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "891349c457e97429bd70965d1ce658a25948e296dde3e258f0d9dc317ccc70a9"
     },
     {
       "package": "openkline",
@@ -10462,6 +10959,41 @@
     },
     {
       "package": "openkline",
+      "name": "PortfolioCorporateActionPhase",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a6056d1438400d8fa27bc09721081d68f937482abb579eacc14c5b05f43db5ee"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCorporateActionPolicy",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "89d8403c801eb11d8f8c2ce3398e3188e411685fa7ae502e4d42e072071a3fdf"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioCorporateActionRecord",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "f6890eeea8e2491aadb9d94aec675ae0e77e235d07e8ffc2716a68cce787ea84"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDividendReceivable",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "8ffd76a781f96e4edb25b02cde38d6e502e2dca21d9672d2f80f6717751fcbf7"
+    },
+    {
+      "package": "openkline",
+      "name": "PortfolioDividendReceivableStatus",
+      "kind": "type",
+      "module": "./portfolio-backtesting/index.js",
+      "signatureHash": "a2ba1836eac71945e5c623eebdc714e4012ed3b085b3521b962065de5cbdd8f9"
+    },
+    {
+      "package": "openkline",
       "name": "PortfolioDuplicateTimestampPolicy",
       "kind": "type",
       "module": "./portfolio-backtesting/index.js",
@@ -10753,6 +11285,27 @@
       "kind": "type",
       "module": "./datafeed-rest.js",
       "signatureHash": "d50122a2f4d306a5b59eed7e7dbd19e19c81e5892462fcec802539c74cb58f98"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionDatafeedOptions",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "989f555d961a135d40c1a661aa76684f9b400ca56b1957aa5abf9dcf581bb10d"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionPage",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "0959f0c60101b326ab8f28c9f4688f7e3bf72ace0e9b5c22ce0241695b5f1cd5"
+    },
+    {
+      "package": "openkline",
+      "name": "RestCorporateActionPayload",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "3bc825aa650612a430f027dd6d2c21c8b45a2202f7b1ec8a01c8e48538206f98"
     },
     {
       "package": "openkline",
@@ -11400,6 +11953,13 @@
     },
     {
       "package": "openkline",
+      "name": "StockSplitAction",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "9b69d934e1b4f553b0142bbd48e22b5e88ac88b8886eec32d87a3d0fc7e70e5f"
+    },
+    {
+      "package": "openkline",
       "name": "StrategyBarContext",
       "kind": "type",
       "module": "./strategies/index.js",
@@ -11607,6 +12167,13 @@
       "kind": "type",
       "module": "./multi-timeframe.js",
       "signatureHash": "e9b20c4904da37b769c54c450e8d18b9c5ad1187d3802e77da9716bddc07e596"
+    },
+    {
+      "package": "openkline",
+      "name": "TotalReturnPoint",
+      "kind": "type",
+      "module": "./corporate-actions.js",
+      "signatureHash": "927fc4ab6ed655e89c6bfd54b04d2442d6a1f74130129a639e538172f7679438"
     },
     {
       "package": "openkline",
@@ -12009,10 +12576,17 @@
     },
     {
       "package": "openkline",
+      "name": "WorkspaceCorporateActions",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "38559278acf47716e47fc8f807179c6bdde6924e3f13c9000335b789f7e429bf"
+    },
+    {
+      "package": "openkline",
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "b9e693fcbbd32656ef092ccb7603f933a4530ea0e75ebb744bc92ca4934a5f01"
+      "signatureHash": "482a5277035a59e4ebc406e9580cf25016155c797833852b7ceb9b492e61a3b4"
     },
     {
       "package": "openkline",
@@ -12139,5 +12713,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "7d66c1a7d5fb1f1d04c3e5d2c1263b186a8d8306"
+  "generatedFrom": "f7defaf5120fa5a0cf7628b3d0910b714276266c"
 }

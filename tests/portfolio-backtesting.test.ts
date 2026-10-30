@@ -102,6 +102,36 @@ test("portfolio corporate-action accounting adjusts split positions and preserve
   assert.equal(result.timeline.some((event) => event.kind === "corporate-action" && event.corporateActionPhase === "effective"), true);
 });
 
+test("portfolio split fixtures preserve cost for 3-for-2 and reverse splits", () => {
+  const start = 1_800_000_000_000;
+  const candles = fixtureCandles(10, [10, 10.5, 10.5, 10.5], start);
+  const forward = createPortfolioBacktest({
+    ...options([{ id: "FORWARD", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    positionSizing: { type: "fixed-quantity", quantity: 10 },
+    instruments: [{ id: "FORWARD", symbol: "FORWARD", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("FORWARD", [{ ...splitAction("FORWARD", start + 120_000), id: "split-3-for-2", newShares: 3, oldShares: 2 }]) }],
+  }).run();
+  assert.equal(forward.positions[0]?.quantity, 15);
+  assert.equal(forward.positions[0]?.entryPrice, 10 * 2 / 3);
+  assert.equal(forward.positions[0]?.aggregateCostBasis, 100);
+
+  const reverse = createPortfolioBacktest({
+    ...options([{ id: "REVERSE", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 5_000,
+    positionSizing: { type: "fixed-quantity", quantity: 100 },
+    instruments: [{ id: "REVERSE", symbol: "REVERSE", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("REVERSE", [{ ...splitAction("REVERSE", start + 120_000), id: "reverse-1-for-5", kind: "reverse-stock-split", newShares: 1, oldShares: 5 }]) }],
+  }).run();
+  assert.equal(reverse.positions[0]?.quantity, 20);
+  assert.equal(reverse.positions[0]?.entryPrice, 50);
+  assert.equal(reverse.positions[0]?.aggregateCostBasis, 1_000);
+  assert.throws(() => createPortfolioBacktest({
+    ...options([{ id: "FRACTIONAL", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    positionSizing: { type: "fixed-quantity", quantity: 1 },
+    instruments: [{ id: "FRACTIONAL", symbol: "FRACTIONAL", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("FRACTIONAL", [{ ...splitAction("FRACTIONAL", start + 120_000), id: "split-3-for-2", newShares: 3, oldShares: 2 }]) }],
+  }).run(), /unsupported fractional quantity/);
+});
+
 test("portfolio dividends accrue as receivables, settle only at payment, and round-trip through the result protocol", () => {
   const start = 1_800_000_000_000;
   const candles = fixtureCandles(10, [10, 11, 11, 11], start);
@@ -124,6 +154,50 @@ test("portfolio dividends accrue as receivables, settle only at payment, and rou
   const decoded = parsePortfolioBacktestResult(JSON.parse(encoded));
   assert.deepEqual(decoded.dividendReceivables, result.dividendReceivables);
   assert.deepEqual(decoded.corporateActionLedger, result.corporateActionLedger);
+});
+
+test("dividend entitlement survives a sale before payment and is not granted before purchase", () => {
+  const start = 1_800_000_000_000;
+  const candles = fixtureCandles(10, [10, 10, 10, 10], start);
+  const soldAfterEntitlement = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_FIXTURE" }]),
+    initialCapital: 500,
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_FIXTURE", parameters: {} }, corporateActions: corporateActionDataset("AAA", [dividendAction("AAA", start + 120_000)]) }],
+  }).run();
+  assert.equal(soldAfterEntitlement.dividendReceivables?.[0]?.quantity, 10);
+  assert.equal(soldAfterEntitlement.dividendReceivables?.[0]?.status, "paid");
+  assert.equal(soldAfterEntitlement.metrics.dividendIncome, 10);
+  assert.equal(soldAfterEntitlement.corporateActionLedger?.filter((record) => record.phase === "payment" && record.status === "applied").length, 1);
+
+  const beforePurchase = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("AAA", [dividendAction("AAA", start)]) }],
+  }).run();
+  assert.equal(beforePurchase.dividendReceivables?.length, 0);
+  assert.match(beforePurchase.corporateActionLedger?.[0]?.reason ?? "", /no eligible position/i);
+});
+
+test("portfolio as-of projection excludes future actions and reconstructs pre-split positions", () => {
+  const start = 1_800_000_000_000;
+  const candles = fixtureCandles(10, [10, 10.5, 10.5, 10.5, 10.5], start);
+  const result = createPortfolioBacktest({
+    ...options([{ id: "AAA", candles, strategy: "PORTFOLIO_ENTER_ONLY" }]),
+    initialCapital: 500,
+    instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles, strategy: { strategy: "PORTFOLIO_ENTER_ONLY", parameters: {} }, corporateActions: corporateActionDataset("AAA", [splitAction("AAA", start + 180_000)]) }],
+  }).run();
+  const beforeSplit = projectPortfolioBacktestAsOf(result, start + 120_000);
+  assert.equal(beforeSplit.corporateActions?.length, 0);
+  assert.equal(beforeSplit.corporateActionLedger?.length, 0);
+  assert.equal(beforeSplit.positions[0]?.quantity, 10);
+  assert.equal(beforeSplit.positions[0]?.entryPrice, 10);
+  assert.equal(beforeSplit.positions[0]?.aggregateCostBasis, 100);
+  const afterSplit = projectPortfolioBacktestAsOf(result, start + 240_000);
+  assert.equal(afterSplit.corporateActions?.length, 1);
+  assert.equal(afterSplit.positions[0]?.quantity, 20);
+  assert.equal(afterSplit.positions[0]?.entryPrice, 5);
+  assert.equal(afterSplit.positions[0]?.aggregateCostBasis, 100);
+  assert.equal(result.positions[0]?.quantity, 20, "the complete result remains unchanged");
 });
 
 test("pending orders crossing a split boundary are cancelled deterministically", () => {
@@ -265,7 +339,8 @@ class HangingPortfolioWorker extends HandlerWorker {
 }
 
 test("portfolio Worker matches synchronous results and disposes cleanly", async () => {
-  const { strategyRegistry: _registry, ...input } = { ...options([{ id: "AAA", candles: fixtureCandles(10, [10, 11, 12]) }]), initialCapital: 1_000, positionSizing: { type: "fixed-quantity" as const, quantity: 1 }, instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles: fixtureCandles(10, [10, 11, 12]), strategy: { strategy: "EMA_TREND", parameters: { period: 2 } } }] };
+  const workerCandles = fixtureCandles(10, [10, 11, 12]);
+  const { strategyRegistry: _registry, ...input } = { ...options([{ id: "AAA", candles: workerCandles }]), initialCapital: 1_000, positionSizing: { type: "fixed-quantity" as const, quantity: 1 }, instruments: [{ id: "AAA", symbol: "AAA", quoteCurrency: "USD", timeframe: "1m", candles: workerCandles, strategy: { strategy: "EMA_TREND", parameters: { period: 2 } }, corporateActions: corporateActionDataset("AAA", [{ ...splitAction("AAA", workerCandles[2]!.time), id: "worker-split" }]) }] };
   const synchronous = createPortfolioBacktest(input).run();
   const worker = createPortfolioBacktestWorker(input, { factory: () => new HandlerWorker() });
   const asynchronous = await worker.run();

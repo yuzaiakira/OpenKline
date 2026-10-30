@@ -52,3 +52,12 @@ These are additive declarations and are documented separately in
 `docs/api/portfolio-backtesting.md`. The historical API baseline remains
 protected; additive diagnostics must be reviewed and the strict compatibility
 gate remains independently reported.
+
+Phase 13 adds provider-neutral corporate-action contracts, chart display
+methods, comparison basis metadata, optional portfolio action inputs/results,
+and the optional workspace `corporateActions` reference. These declarations
+are additive and are documented in `docs/api/corporate-actions.md`; raw candle
+and legacy result behavior remains the compatibility reference. The protected
+historical baseline is intentionally not rewritten by Phase 13, so a strict
+`api:check` result must distinguish inherited/additive differences from an
+owner-approved baseline update.

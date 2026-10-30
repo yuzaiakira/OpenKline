@@ -132,3 +132,10 @@ The fixed-duration APIs above remain unchanged. A calendar must be selected
 explicitly, and a demonstration calendar is not an authoritative exchange
 schedule. See `docs/api/trading-calendars.md` and
 `docs/architecture/market-sessions.md`.
+
+When a Chart has an explicit corporate-action display policy, its managed
+multi-timeframe calculations consume the displayed split-adjusted OHLCV domain
+for that view. Raw candles remain available through `getData()` and are the
+only executable source. Analytical total-return index points are not silently
+treated as OHLCV input; consumers must select an explicit comparison or index
+workflow instead.

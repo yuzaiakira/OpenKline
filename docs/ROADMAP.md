@@ -1295,9 +1295,22 @@ evidence.
   provenance, persists only source references/policy, and applies causal
   eligibility during split-adjusted replay. `ComparisonEngine` accepts an
   explicit corporate-action basis for derived price/index lines.
-- [In progress / 13.3 portfolio accounting]
+- [Implemented / Node-verified — 13.3 portfolio accounting]
   Split quantity/cost-basis accounting, deterministic pending-order
   cancellation, dividend receivables/payment cash flows, additive metrics,
   export validation, and Worker option cloning are implemented with focused
-  Node coverage. Studio fixtures, final verification, and the complete Phase
-  13 acceptance matrix remain open.
+  Node coverage. As-of projections now filter future action records and
+  reconstruct causal pre/post-split positions without mutating the complete
+  result.
+- [Implemented / Chromium-verified — 13.4 Studio integration]
+  The private Next.js Studio includes an accessible Corporate Actions & Total
+  Return workflow with deterministic split/dividend illustration, raw versus
+  split-adjusted versus total-return selection, event details and markers,
+  replay-safe controls, unresolved-source warnings, canonical workspace
+  persistence, and a bounded portfolio accounting preview.
+- [Implemented / Node-verified — 13.5 correctness/performance hardening]
+  Independent split/dividend/as-of fixtures, synchronous/Worker parity,
+  indexed split boundaries, monotonic dividend processing, and the dedicated
+  corporate-action benchmark are complete. The final report remains the
+  authoritative acceptance matrix; protected historical API approval and
+  unavailable browser/device/accessibility gates remain open.
