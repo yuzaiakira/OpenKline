@@ -45,6 +45,13 @@ trades intentionally take the reference rebuild path because downstream
 cumulative values can change. The public `getLatestObservation()` query is
 defensive and does not expose the mutable cache.
 
+Chart workspace bookkeeping stores the normalized trade source identity and
+presentation settings separately from the trade history. Once that identity is
+known, a live print does not clone the complete trade store just to refresh a
+workspace reference; source replacement and workspace restore explicitly
+replace the reference. This keeps workspace metadata maintenance out of the
+realtime CVD critical path.
+
 The Canvas2D renderer independently reduces dense line paths and standard
 candlestick/OHLC/hollow-candlestick commands to deterministic per-pixel-column
 display samples. Candle aggregates preserve the first open, last close, and

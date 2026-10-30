@@ -22,6 +22,9 @@ Run the Node and browser workloads sequentially because both rebuild the shared
 ```bash
 npm run benchmark:order-flow
 npm run benchmark:order-flow:browser
+npm run benchmark:cvd-cache
+npm run benchmark:realtime-cvd
+npm run benchmark:dense-ohlcv
 ```
 
 The Node workload uses deterministic `MarketTradeStore`, Footprint, CVD, and
@@ -42,3 +45,25 @@ chart-facing Phase 14.5 path also measures the effect of indexed visible-range
 reads, deterministic Footprint display LOD, cached CVD append state, and dense
 Canvas2D line-path reduction; these optimizations must be reported separately
 from exact analytics timing.
+
+## Phase 14.6 focused workloads
+
+`benchmark:cvd-cache` measures a 100,000-trade Node calculator with 100
+chronological appends, latest-point reads, one historical correction, a full
+snapshot, and independent numerical parity. `benchmark:realtime-cvd` runs the
+same scale in a real Chromium Canvas2D chart and separates calculator update,
+latest observation, chart call, series update, renderer commit, visual-frame
+latency, and full public `getCvdResult()` snapshots. Its correction counters
+must show the full replacement path and its parity flag must be true.
+
+`benchmark:dense-ohlcv` measures 1,000, 10,000, and 100,000 source points for
+candlestick, OHLC, hollow-candlestick, Heikin-Ashi, volume, and histogram
+presentations. It records actual Canvas2D fill/stroke command counts, fit and
+navigation timing, source length, and canvas cleanup. Candlestick/OHLC/hollow
+commands may be reduced by display-only pixel-column aggregation; Heikin-Ashi
+and volume/histogram remain exact because their semantics are not interchangeable
+with a candle aggregate.
+
+The focused browser scripts use the local system/Playwright Chromium selected
+by the existing repository fallback. They do not claim Firefox, WebKit, mobile,
+physical-device, or universal performance compatibility.

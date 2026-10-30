@@ -342,6 +342,7 @@ export class Chart {
   private orderBookRequestId = 0;
   private orderBookHeatmap: OrderBookHeatmapStore | null = null;
   private latestMarketTrade: MarketTrade | null = null;
+  private marketTradeSourceReference: NonNullable<WorkspaceOrderFlow["tradeSource"]> | null = null;
   private footprintDisplay: Required<FootprintDisplayOptions> = { ...DEFAULT_FOOTPRINT_DISPLAY };
   private cvdDisplay: Required<CvdDisplayOptions> = { ...DEFAULT_CVD_DISPLAY };
   private depthDisplay: Required<DepthDisplayOptions> = { ...DEFAULT_DEPTH_DISPLAY };
@@ -772,6 +773,7 @@ export class Chart {
     this.marketTradeStore.dispose();
     this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
     this.latestMarketTrade = null;
+    this.marketTradeSourceReference = null;
     this.resetCvdCalculator();
     this.orderBookController?.dispose();
     this.orderBookController = null;
@@ -2092,6 +2094,17 @@ export class Chart {
     this.marketTradeStore.dispose();
     this.marketTradeStore = next;
     this.latestMarketTrade = next.getAll().at(-1) ?? null;
+    if ("trades" in values) {
+      this.marketTradeSourceReference = {
+        instrumentId: values.instrumentId,
+        sourceId: values.source.id,
+        sourceVersion: values.source.version,
+        ...(values.venueId === undefined ? {} : { venueId: values.venueId }),
+      };
+    } else {
+      const first = values[0];
+      this.marketTradeSourceReference = first === undefined ? null : createChartTradeSourceReference(first);
+    }
     this.resetCvdCalculator();
     this.updateOrderFlowWorkspaceReference();
   }
@@ -2110,6 +2123,7 @@ export class Chart {
     const status = this.marketTradeStore.update(value);
     if (status === "duplicate") return { changed: false, appendOnly: false };
     const normalized = this.marketTradeStore.get(value.id);
+    if (this.marketTradeSourceReference === null && normalized !== undefined) this.marketTradeSourceReference = createChartTradeSourceReference(normalized);
     this.cvdCalculator?.update(value);
     const appendOnly = status === "inserted"
       && normalized !== undefined
@@ -3797,17 +3811,10 @@ export class Chart {
   }
 
   private updateOrderFlowWorkspaceReference(): void {
-    const trades = this.marketTradeStore.getAll();
-    const tradeDataset = trades.length === 0 ? null : this.marketTradeStore.getDataset();
     const depth = this.orderBookController?.getState(this.depthDisplay.maxLevels);
-    const hasRuntime = tradeDataset !== null || depth !== undefined || this.footprintDisplay.visible || this.cvdDisplay.visible || this.depthDisplay.visible;
+    const tradeSource = this.marketTradeSourceReference ?? this.orderFlowWorkspaceReference?.tradeSource;
+    const hasRuntime = tradeSource !== undefined || depth !== undefined || this.footprintDisplay.visible || this.cvdDisplay.visible || this.depthDisplay.visible;
     if (!hasRuntime && this.orderFlowWorkspaceReference === null) return;
-    const tradeSource = tradeDataset === null ? this.orderFlowWorkspaceReference?.tradeSource : {
-      instrumentId: tradeDataset.instrumentId,
-      sourceId: tradeDataset.source.id,
-      sourceVersion: tradeDataset.source.version,
-      ...(tradeDataset.venueId === undefined ? {} : { venueId: tradeDataset.venueId }),
-    };
     const orderBookSource = depth?.source === null || depth === undefined ? this.orderFlowWorkspaceReference?.orderBookSource : {
       instrumentId: depth.instrumentId ?? "unknown",
       sourceId: depth.source.id,
@@ -3856,6 +3863,7 @@ export class Chart {
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
       this.latestMarketTrade = null;
+      this.marketTradeSourceReference = null;
       this.resetCvdCalculator();
       attachedOrderBook?.dispose();
       this.orderBookController = null;
@@ -3892,12 +3900,22 @@ export class Chart {
       this.marketTradeStore.dispose();
       this.marketTradeStore = next;
       this.latestMarketTrade = next.getAll().at(-1) ?? null;
+      const first = attachedTrades.trades[0];
+      this.marketTradeSourceReference = first === undefined
+        ? {
+          instrumentId: attachedTrades.instrumentId,
+          sourceId: attachedTrades.source.id,
+          sourceVersion: attachedTrades.source.version,
+          ...(attachedTrades.venueId === undefined ? {} : { venueId: attachedTrades.venueId }),
+        }
+        : createChartTradeSourceReference(first);
       this.resetCvdCalculator();
     } else {
       this.stopMarketTradeSource();
       this.marketTradeStore.dispose();
       this.marketTradeStore = new MarketTradeStore({ maxTrades: 1_000_000 });
       this.latestMarketTrade = null;
+      this.marketTradeSourceReference = null;
       this.resetCvdCalculator();
       if (persisted.tradeSource !== undefined && attachedReference?.tradeSource !== undefined) {
         console.warn(`OpenKline trade source is unresolved: ${persisted.tradeSource.sourceId}@${persisted.tradeSource.sourceVersion}`);
@@ -4876,6 +4894,15 @@ function compareChartMarketTrades(left: MarketTrade, right: MarketTrade): number
     || (left.sequence ?? Number.MAX_SAFE_INTEGER) - (right.sequence ?? Number.MAX_SAFE_INTEGER)
     || left.id.localeCompare(right.id)
     || left.revision - right.revision;
+}
+
+function createChartTradeSourceReference(value: Pick<MarketTrade, "instrumentId" | "venueId" | "source">): NonNullable<WorkspaceOrderFlow["tradeSource"]> {
+  return {
+    instrumentId: value.instrumentId,
+    sourceId: value.source.id,
+    sourceVersion: value.source.version,
+    ...(value.venueId === undefined ? {} : { venueId: value.venueId }),
+  };
 }
 
 interface FootprintLodBin {
