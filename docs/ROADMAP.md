@@ -1176,3 +1176,14 @@ compatibility decision packet, package evidence, and remaining gates.
   FPS or physical-device performance claim. See
   `docs/reports/phase-10-final-verification.md` for the complete acceptance
   matrix and remaining environment gates.
+- [Implemented / Causal hardening verified in Node and Chromium — 10.5] Closed
+  the public as-of future-data boundary: a source candle contributes only after
+  its source interval ends, filtered OHLCV/coverage/source metadata is exposed,
+  and buckets with no eligible source data are omitted while the complete
+  backing store remains available for forward and backward seeking. Indicator,
+  previous-period reference, source-time mapping, Chart, and replay paths now
+  preserve the same frontier. Deterministic correction, replay, append,
+  disposal, and no-lookahead benchmarks are recorded in
+  `docs/reports/phase-10-5-causal-hardening.md`. Firefox, WebKit, mobile
+  Safari, physical-device, and historical API-baseline approval gates remain
+  open in the cloud environment.

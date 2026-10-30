@@ -77,6 +77,13 @@
     },
     {
       "package": "openkline",
+      "name": "aggregateCandlesByTimeframe",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "7ea1c18ac5405fc6488231332e113f9dd41f3f54df3e78c478b55a3dd445d5dd"
+    },
+    {
+      "package": "openkline",
       "name": "AlertApi",
       "kind": "type",
       "module": "./alerts/index.js",
@@ -658,10 +665,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculateMultiTimeframeIndicator",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "24177137a6480df0772b2828446e66d914d89b687562c246d22eefdfab5a59a9"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePerformanceMetrics",
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "edc643c680d2e37509d9591ff2e9f5b73bb03710aee7054fca2fae972288c7b3"
+    },
+    {
+      "package": "openkline",
+      "name": "calculatePreviousTimeframeLevels",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "2e373fb01b436b484e90213cffbed605a57c2c1a12d888ff6b621948f89aa4b6"
     },
     {
       "package": "openkline",
@@ -707,6 +728,20 @@
     },
     {
       "package": "openkline",
+      "name": "CausalTimeframeAggregator",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "be54b985b3b199bab36541fc9f62ff022f84d11b377e8ecc528bf80406f9fa13"
+    },
+    {
+      "package": "openkline",
+      "name": "CausalTimeframeAggregatorOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "8ac1c5a89cac5ad955febec4148aadd4d524ccd3fd72d7e6c2e38ba5e2dd3316"
+    },
+    {
+      "package": "openkline",
       "name": "cciDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -724,7 +759,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "c6ad693a10bc7ce501bed84a39a10dc618a4571ab03bf18c253278a426a74c82"
+      "signatureHash": "fbc580ea7bd3d75d0f779c60287389b869fdce8790ec222f05595597d98b3b61"
     },
     {
       "package": "openkline",
@@ -1582,6 +1617,20 @@
     },
     {
       "package": "openkline",
+      "name": "FixedTimeframe",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "95ff922512f3eea624cd22979ab58b10dc14b8e26648abcaef86db5d5f3e08cb"
+    },
+    {
+      "package": "openkline",
+      "name": "FixedTimeframeUnit",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "326ac823f04c6a3a50a5562d237225aae4459f54618808a7281dca13d0b773e1"
+    },
+    {
+      "package": "openkline",
       "name": "formatTimeTick",
       "kind": "runtime",
       "module": "./core/scales.js",
@@ -2170,6 +2219,34 @@
     },
     {
       "package": "openkline",
+      "name": "mapMultiTimeframeIndicatorToSourceTimes",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "91ff4ef85601a43af1dbc7c9ece393df5416ebf35c1f1f815f5f5aefdae58d08"
+    },
+    {
+      "package": "openkline",
+      "name": "mapMultiTimeframeReferenceToSourceTimes",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "f769355efb247e37029e94ea3bff66bdbc568c5fd8f129764f0e13781395fac2"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedMultiTimeframePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "45cda6219779451340725de2f5539840d0655825880f2e2b926a293a52f469df"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedMultiTimeframeReferencePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0a39b8756a627b100f8601246d9165be2a5f8c5bf9840bd81475b7998da716c4"
+    },
+    {
+      "package": "openkline",
       "name": "mfiDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -2181,6 +2258,139 @@
       "kind": "runtime",
       "module": "./studio/index.js",
       "signatureHash": "036349848892159f16a16ff44e7a32aa77c949a75c8abc6b8d9b9c5e24f5a29a"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationMetadata",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "9025f0cc6b95fbaa500272f762caef0f5c97812b9975f32174bcdfa33ab9faa0"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "74a0c1a394f6bf5a21bb200b2cc93bbffc31e42a8a8581e9932c99ab0b2292b2"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "063d429d734ecb88a22d48801f0d2d21043a6cc1e02170cc44eac1b1a76ad0ab"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeBucketStatus",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "1beaf16f9c457dfdee94a1c0142f6f03cfa60e8bd0cc2383357cef9666b94e10"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCandleObservation",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "fe8f944f10b7e53eada33b321b869b4dbc4881d5d942c69154c22c09ca30e915"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCoverage",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "a2887ede4d4236cf9b9fdb7be25d0a9956da4d0e31d1822acb63fd57d0f83b1a"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCoveragePolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3d6eca2bf9ff26b68779f86510c1b6d53745bcf43b1a782e231b33c2ac8c8a6a"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeFinalityPolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "c73c0e97a30823dec7f01d1b0de6eef507a54178f34fd366a3cd104381438bbc"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorApi",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "b2fd2c581b0a52e7cac18b2db049effebe9ecc45314470d5235410bb42925555"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0691dfe09514015cd7abefffb3dbc20a0ea6921563e97fb7c0ca435a8ab42dc1"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorOutput",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "61973b582cca2bd019d532725ae3c355476f5263a4d2425de8eb55838877954c"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorPoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "33e65ad3ce29a611f40402b6c052c7e30e7c1539f1d34e2eb32d9f3326b7a0c9"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "8399c909d181a151f511a1014734f9df448db7b839eaaeb172e0f03d0d0c6776"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeMissingVolumePolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "1ca9b65476dbaa6df6c78c76ad72bcb7717702dd1573dc0931079e182d3dbcd8"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceApi",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3148a9bac77be9e346491c604cb1bd40d408e32dcceadb9d29dfda2a1f87606c"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "2aa8e215b0568d5b3a6e5080a656bc005c17dd6d8760c5dc5df7d725c62e6fca"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferencePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0300db3d0126b7c5c955f73db8f89a84d0b8de8540a80e349a4f8d8766a85872"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "f81c3631f81e0644f9c25f4fdcdb1da4ea237547ba88872f5f717e076ab99bfa"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceStyle",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "545035d0577c627becd0fd8925ba9164c5021c5154ba1a9f7ad364ae5b7a1df1"
     },
     {
       "package": "openkline",
@@ -2975,6 +3185,13 @@
     },
     {
       "package": "openkline",
+      "name": "parseFixedTimeframe",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "e10efca4c8056391cccdab786b868907813b058e82be5ff0ddbfb6bd1aac70b3"
+    },
+    {
+      "package": "openkline",
       "name": "parsePaperTradingDocument",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -3210,6 +3427,13 @@
       "kind": "type",
       "module": "./backtesting/index.js",
       "signatureHash": "7ea33b90f757eb80ddc90f6314ef7df4cbf9638ed171e7245560f091609fa22d"
+    },
+    {
+      "package": "openkline",
+      "name": "PreviousTimeframeLevel",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "7056cf7d43874f8b8e99121930a0327d7261111de1337490515ae0b1c02a5ef2"
     },
     {
       "package": "openkline",
@@ -4424,6 +4648,13 @@
     },
     {
       "package": "openkline",
+      "name": "TimeframeCalendar",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "e9b20c4904da37b769c54c450e8d18b9c5ad1187d3802e77da9716bddc07e596"
+    },
+    {
+      "package": "openkline",
       "name": "TimeScale",
       "kind": "runtime",
       "module": "./core/scales.js",
@@ -4477,6 +4708,13 @@
       "kind": "runtime",
       "module": "./screener/index.js",
       "signatureHash": "25d2831d8f391a07f622d9dd2c5635e321f38efe1b1ffd0476f1d009d69a64e1"
+    },
+    {
+      "package": "openkline",
+      "name": "validateTimeframePair",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3a0d6ff8a33e5455353298fa6a81da78c2fdb23cc538f11d977db296b40409ba"
     },
     {
       "package": "openkline",
@@ -4784,7 +5022,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "8e1cde74a8df88d9f32c3c59159d9b30cd9adfc49751cc20761d3c2c7dc951d1"
+      "signatureHash": "35f07005f6297d72f8bd11b0683f667c66bb516c03e019853f594ccf2b5484e6"
     },
     {
       "package": "openkline",
@@ -4799,6 +5037,27 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "16ff17461e99a309f39e6410ff0466142d58e6869f4b47775b5444f0518be971"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeAnalysis",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "68afe8babe2ce288d36ba82f20c8fdfe22f1f3fad6cbecf17447d626c47cc82d"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeIndicator",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "4eb4f510babb9bcf523c53ac73a6f971076c08d79b40f02d5c9c14f1225f4ca6"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeReference",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "70df633e0484ce9823127ebea4d3dbdb3b11e4b732ed02042aa66875ae762855"
     },
     {
       "package": "openkline",
@@ -4885,6 +5144,13 @@
       "kind": "runtime",
       "module": "./indicators/index.js",
       "signatureHash": "8acec398763bcd22267365ee98701564a098cf0d8ccba74f31cc9c615f37ea52"
+    },
+    {
+      "package": "openkline",
+      "name": "aggregateCandlesByTimeframe",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "7ea1c18ac5405fc6488231332e113f9dd41f3f54df3e78c478b55a3dd445d5dd"
     },
     {
       "package": "openkline",
@@ -5035,10 +5301,24 @@
     },
     {
       "package": "openkline",
+      "name": "calculateMultiTimeframeIndicator",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "24177137a6480df0772b2828446e66d914d89b687562c246d22eefdfab5a59a9"
+    },
+    {
+      "package": "openkline",
       "name": "calculatePerformanceMetrics",
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "edc643c680d2e37509d9591ff2e9f5b73bb03710aee7054fca2fae972288c7b3"
+    },
+    {
+      "package": "openkline",
+      "name": "calculatePreviousTimeframeLevels",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "2e373fb01b436b484e90213cffbed605a57c2c1a12d888ff6b621948f89aa4b6"
     },
     {
       "package": "openkline",
@@ -5070,6 +5350,13 @@
     },
     {
       "package": "openkline",
+      "name": "CausalTimeframeAggregator",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "be54b985b3b199bab36541fc9f62ff022f84d11b377e8ecc528bf80406f9fa13"
+    },
+    {
+      "package": "openkline",
       "name": "cciDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -5080,7 +5367,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "c6ad693a10bc7ce501bed84a39a10dc618a4571ab03bf18c253278a426a74c82"
+      "signatureHash": "fbc580ea7bd3d75d0f779c60287389b869fdce8790ec222f05595597d98b3b61"
     },
     {
       "package": "openkline",
@@ -5588,6 +5875,20 @@
     },
     {
       "package": "openkline",
+      "name": "mapMultiTimeframeIndicatorToSourceTimes",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "91ff4ef85601a43af1dbc7c9ece393df5416ebf35c1f1f815f5f5aefdae58d08"
+    },
+    {
+      "package": "openkline",
+      "name": "mapMultiTimeframeReferenceToSourceTimes",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "f769355efb247e37029e94ea3bff66bdbc568c5fd8f129764f0e13781395fac2"
+    },
+    {
+      "package": "openkline",
       "name": "mfiDefinition",
       "kind": "runtime",
       "module": "./indicators/index.js",
@@ -5858,6 +6159,13 @@
       "kind": "runtime",
       "module": "./alerts/index.js",
       "signatureHash": "c821a165bb971520ef7cd97f9a2c0567ac86b6e9a5a53de3c6850b9b8995ada6"
+    },
+    {
+      "package": "openkline",
+      "name": "parseFixedTimeframe",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "e10efca4c8056391cccdab786b868907813b058e82be5ff0ddbfb6bd1aac70b3"
     },
     {
       "package": "openkline",
@@ -6299,6 +6607,13 @@
       "kind": "runtime",
       "module": "./screener/index.js",
       "signatureHash": "25d2831d8f391a07f622d9dd2c5635e321f38efe1b1ffd0476f1d009d69a64e1"
+    },
+    {
+      "package": "openkline",
+      "name": "validateTimeframePair",
+      "kind": "runtime",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3a0d6ff8a33e5455353298fa6a81da78c2fdb23cc538f11d977db296b40409ba"
     },
     {
       "package": "openkline",
@@ -6864,6 +7179,13 @@
     },
     {
       "package": "openkline",
+      "name": "CausalTimeframeAggregatorOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "8ac1c5a89cac5ad955febec4148aadd4d524ccd3fd72d7e6c2e38ba5e2dd3316"
+    },
+    {
+      "package": "openkline",
       "name": "CciParameters",
       "kind": "type",
       "module": "./indicators/index.js",
@@ -7410,6 +7732,20 @@
     },
     {
       "package": "openkline",
+      "name": "FixedTimeframe",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "95ff922512f3eea624cd22979ab58b10dc14b8e26648abcaef86db5d5f3e08cb"
+    },
+    {
+      "package": "openkline",
+      "name": "FixedTimeframeUnit",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "326ac823f04c6a3a50a5562d237225aae4459f54618808a7281dca13d0b773e1"
+    },
+    {
+      "package": "openkline",
       "name": "GetBarsQuery",
       "kind": "type",
       "module": "./types.js",
@@ -7806,6 +8142,153 @@
       "kind": "type",
       "module": "./indicators/index.js",
       "signatureHash": "81229b82029c9b9fcf5829a0b5fc0106ef0383a0b915b61e882792e6512798f9"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedMultiTimeframePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "45cda6219779451340725de2f5539840d0655825880f2e2b926a293a52f469df"
+    },
+    {
+      "package": "openkline",
+      "name": "MappedMultiTimeframeReferencePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0a39b8756a627b100f8601246d9165be2a5f8c5bf9840bd81475b7998da716c4"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationMetadata",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "9025f0cc6b95fbaa500272f762caef0f5c97812b9975f32174bcdfa33ab9faa0"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "74a0c1a394f6bf5a21bb200b2cc93bbffc31e42a8a8581e9932c99ab0b2292b2"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeAggregationResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "063d429d734ecb88a22d48801f0d2d21043a6cc1e02170cc44eac1b1a76ad0ab"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeBucketStatus",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "1beaf16f9c457dfdee94a1c0142f6f03cfa60e8bd0cc2383357cef9666b94e10"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCandleObservation",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "fe8f944f10b7e53eada33b321b869b4dbc4881d5d942c69154c22c09ca30e915"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCoverage",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "a2887ede4d4236cf9b9fdb7be25d0a9956da4d0e31d1822acb63fd57d0f83b1a"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeCoveragePolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3d6eca2bf9ff26b68779f86510c1b6d53745bcf43b1a782e231b33c2ac8c8a6a"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeFinalityPolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "c73c0e97a30823dec7f01d1b0de6eef507a54178f34fd366a3cd104381438bbc"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorApi",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "b2fd2c581b0a52e7cac18b2db049effebe9ecc45314470d5235410bb42925555"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0691dfe09514015cd7abefffb3dbc20a0ea6921563e97fb7c0ca435a8ab42dc1"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorOutput",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "61973b582cca2bd019d532725ae3c355476f5263a4d2425de8eb55838877954c"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorPoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "33e65ad3ce29a611f40402b6c052c7e30e7c1539f1d34e2eb32d9f3326b7a0c9"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeIndicatorResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "8399c909d181a151f511a1014734f9df448db7b839eaaeb172e0f03d0d0c6776"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeMissingVolumePolicy",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "1ca9b65476dbaa6df6c78c76ad72bcb7717702dd1573dc0931079e182d3dbcd8"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceApi",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "3148a9bac77be9e346491c604cb1bd40d408e32dcceadb9d29dfda2a1f87606c"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceOptions",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "2aa8e215b0568d5b3a6e5080a656bc005c17dd6d8760c5dc5df7d725c62e6fca"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferencePoint",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "0300db3d0126b7c5c955f73db8f89a84d0b8de8540a80e349a4f8d8766a85872"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceResult",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "f81c3631f81e0644f9c25f4fdcdb1da4ea237547ba88872f5f717e076ab99bfa"
+    },
+    {
+      "package": "openkline",
+      "name": "MultiTimeframeReferenceStyle",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "545035d0577c627becd0fd8925ba9164c5021c5154ba1a9f7ad364ae5b7a1df1"
     },
     {
       "package": "openkline",
@@ -8506,6 +8989,13 @@
       "kind": "type",
       "module": "./backtesting/index.js",
       "signatureHash": "7ea33b90f757eb80ddc90f6314ef7df4cbf9638ed171e7245560f091609fa22d"
+    },
+    {
+      "package": "openkline",
+      "name": "PreviousTimeframeLevel",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "7056cf7d43874f8b8e99121930a0327d7261111de1337490515ae0b1c02a5ef2"
     },
     {
       "package": "openkline",
@@ -9391,6 +9881,13 @@
     },
     {
       "package": "openkline",
+      "name": "TimeframeCalendar",
+      "kind": "type",
+      "module": "./multi-timeframe.js",
+      "signatureHash": "e9b20c4904da37b769c54c450e8d18b9c5ad1187d3802e77da9716bddc07e596"
+    },
+    {
+      "package": "openkline",
       "name": "TransactionCost",
       "kind": "type",
       "module": "./backtesting/index.js",
@@ -9653,7 +10150,7 @@
       "name": "WorkspaceDocument",
       "kind": "type",
       "module": "./workspace.js",
-      "signatureHash": "8e1cde74a8df88d9f32c3c59159d9b30cd9adfc49751cc20761d3c2c7dc951d1"
+      "signatureHash": "35f07005f6297d72f8bd11b0683f667c66bb516c03e019853f594ccf2b5484e6"
     },
     {
       "package": "openkline",
@@ -9668,6 +10165,27 @@
       "kind": "type",
       "module": "./workspace.js",
       "signatureHash": "16ff17461e99a309f39e6410ff0466142d58e6869f4b47775b5444f0518be971"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeAnalysis",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "68afe8babe2ce288d36ba82f20c8fdfe22f1f3fad6cbecf17447d626c47cc82d"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeIndicator",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "4eb4f510babb9bcf523c53ac73a6f971076c08d79b40f02d5c9c14f1225f4ca6"
+    },
+    {
+      "package": "openkline",
+      "name": "WorkspaceMultiTimeframeReference",
+      "kind": "type",
+      "module": "./workspace.js",
+      "signatureHash": "70df633e0484ce9823127ebea4d3dbdb3b11e4b732ed02042aa66875ae762855"
     },
     {
       "package": "openkline",
@@ -9731,5 +10249,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "175d94c085a418403b8299ff400ae9aafcad6db3"
+  "generatedFrom": "6aa63d2202fff492fb8ce92b1cc0d898c8cf1a5d"
 }

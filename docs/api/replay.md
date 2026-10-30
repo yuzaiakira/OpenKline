@@ -68,3 +68,15 @@ drawings, and plugin render contexts are all limited to the current cursor.
 The active datafeed subscription is suspended and safely resubscribed after
 `exit()`. A workspace serialized during replay is marked as a partial replay
 snapshot and cannot be restored without the complete replay source.
+
+## Causal multi-timeframe replay
+
+Chart-managed higher-timeframe indicators and previous-period reference levels
+use the latest replay-visible source opening time as their as-of frontier. An
+explicit `asOfTime` option is clamped to that frontier while replay is active.
+The multi-timeframe engine still requires each source candle's interval to have
+ended before including its OHLCV or metadata, so a forming source candle cannot
+leak into a replay snapshot. Seeking backward removes values that are no longer
+eligible; seeking forward deterministically restores them from the retained
+source history. See `docs/api/multi-timeframe.md` for the source-time mapping
+and finality contract.
