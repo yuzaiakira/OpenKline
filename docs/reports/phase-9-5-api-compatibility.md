@@ -12,7 +12,7 @@ compatibility, or license approval.
 | --- | --- |
 | Phase 9.5 starting commit | `d986bf1cb53c7dcd551661e3b57a4765faea7561` |
 | Historical API baseline commit | `3e7a889a94c40255bbcce210a672856cfc98b32b` |
-| Phase 9.5 implementation commit | Pending commit; this report is finalized in the follow-up documentation commit |
+| Phase 9.5 implementation commit | `175d94c085a418403b8299ff400ae9aafcad6db3` |
 | Git identity | `Akira Yuzai <yuzai.akira@gmail.com>` |
 | Baseline policy | Historical baseline unchanged; owner approval required |
 | Publication policy | No npm publication, release, tag, or license change |
