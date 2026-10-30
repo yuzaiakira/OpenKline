@@ -42,6 +42,11 @@ try {
     }
     const sizes = [1_000, 10_000, 100_000];
     const scenarios = ["plain", "cvd", "footprint", "depth", "combined"];
+    const viewportConfigs = [
+      { id: "realistic", visibleBars: 120 },
+      { id: "medium", visibleBars: 2_000 },
+      { id: "fit", visibleBars: Number.POSITIVE_INFINITY },
+    ];
     const intervalMs = 60_000;
     const percentile = (values, ratio) => {
       const sorted = [...values].sort((left, right) => left - right);
@@ -114,7 +119,8 @@ try {
       const candles = createCandles(size);
       const trades = createTrades(size);
       const depth = createDepth(size);
-      for (const scenario of scenarios) {
+      for (const viewport of viewportConfigs) {
+        for (const scenario of scenarios) {
         const root = document.createElement("div");
         root.style.cssText = "width: 920px; height: 560px; position: absolute; left: -10000px; top: 0";
         document.body.append(root);
@@ -124,6 +130,11 @@ try {
         const price = chart.addCandlestickSeries({ id: `benchmark-price-${size}-${scenario}` });
         price.setData(candles);
         chart.fitContent();
+        if (Number.isFinite(viewport.visibleBars) && viewport.visibleBars < size) {
+          const from = candles[Math.max(0, size - viewport.visibleBars)]?.time;
+          const to = candles.at(-1)?.time;
+          if (from !== undefined && to !== undefined) chart.setVisibleTimeRange({ from, to });
+        }
         const loadStarted = performance.now();
         let orderBookIngestMs = null;
         let orderBookFinalSequence = null;
@@ -177,7 +188,8 @@ try {
         const canvasAfterDestroy = root.querySelectorAll("canvas").length;
         const workerCountAfterDestroy = workerStats.created - workerStats.terminated;
         root.remove();
-        results.push({ size, scenario, samples: { navigation: visualSamples, realtime: realtimeSamples }, loadMs: Number(loadMs.toFixed(3)), orderBookIngestMs: orderBookIngestMs === null ? null : Number(orderBookIngestMs.toFixed(3)), orderBookFinalSequence, navigation, realtime, heapBeforeDestroy: memoryBeforeDestroy, heapAfterDestroy: memoryAfterDestroy, canvasBeforeDestroy, canvasAfterDestroy, workerCountBeforeDestroy, workerCountAfterDestroy, workersCreated: workerStats.created - workersCreatedBefore, workersActiveAtScenarioStart: workersBefore });
+        results.push({ size, viewport: viewport.id, visibleBars: Number.isFinite(viewport.visibleBars) ? Math.min(size, viewport.visibleBars) : size, scenario, samples: { navigation: visualSamples, realtime: realtimeSamples }, loadMs: Number(loadMs.toFixed(3)), orderBookIngestMs: orderBookIngestMs === null ? null : Number(orderBookIngestMs.toFixed(3)), orderBookFinalSequence, navigation, realtime, heapBeforeDestroy: memoryBeforeDestroy, heapAfterDestroy: memoryAfterDestroy, canvasBeforeDestroy, canvasAfterDestroy, workerCountBeforeDestroy, workerCountAfterDestroy, workersCreated: workerStats.created - workersCreatedBefore, workersActiveAtScenarioStart: workersBefore });
+        }
       }
     }
     return {
@@ -188,6 +200,7 @@ try {
         "Real Canvas2D chart instances were used; each scenario was destroyed before the next one.",
         "FPS and heap values are browser/workload-specific and are not device compatibility claims.",
         "The depth scenarios reconstruct the complete requested delta count in an OrderBookController, attach its final snapshot to the chart, and apply live deltas during the visual phase.",
+        "Each size is measured in realistic (120 bars), medium (2,000 bars), and fit (all bars) viewport configurations; the visible range is part of each result record.",
       ],
     };
   });

@@ -8,10 +8,11 @@ best bid/ask, Footprint, CVD, as-of reconstruction, recovery, heap, and
 disposal.
 
 Browser measurements must distinguish plain OHLCV, CVD, Footprint, depth, and
-combined views. Report FPS, frame interval median/p95, update latency, heap,
-canvas count, and Worker count after disposal. A result is environment-specific
-and does not establish a universal device claim. Displayed depth is liquidity
-observation, not guaranteed executable liquidity.
+combined views across realistic (120 bars), medium (2,000 bars), and fit (all
+bars) visible windows. Report FPS, frame interval median/p95, update latency,
+heap, canvas count, and Worker count after disposal. A result is
+environment-specific and does not establish a universal device claim.
+Displayed depth is liquidity observation, not guaranteed executable liquidity.
 
 ## Reproduction
 
@@ -28,8 +29,11 @@ The Node workload uses deterministic `MarketTradeStore`, Footprint, CVD, and
 checks correction replacement, event-time as-of filtering, sequence-gap
 staleness, depth metrics, and disposal. The browser workload creates real
 Canvas2D charts for plain, CVD, Footprint, depth, and combined scenarios at
-the same trade/delta sizes. It measures load, pan/zoom visual latency, realtime
-update latency, frame interval/FPS, and heap/canvas state around destruction.
+the same trade/delta sizes, repeating each scenario for the three viewport
+profiles. It measures load, pan/zoom visual latency, realtime update latency,
+frame interval/FPS, and heap/canvas state around destruction. Every result
+includes `size`, `viewport`, and `visibleBars`, so fit-content measurements are
+not mixed with realistic-window measurements.
 
 Neither command uses external credentials or market data. Values in the Phase
 14 report are the output of the exact commands on the recorded environment;
