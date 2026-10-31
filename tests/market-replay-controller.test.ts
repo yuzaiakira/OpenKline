@@ -117,6 +117,53 @@ test("checkpoint restoration matches full reconstruction and revisions do not ex
   assert.ok(checkpoints.every((checkpoint) => checkpoint.datasetFingerprint === tape.fingerprint));
 });
 
+test("replay corrections remain isolated by instrument and source generation", () => {
+  const sourceA = { id: "feed", version: "generation-a" } as const;
+  const sourceB = { id: "feed", version: "generation-b" } as const;
+  const tradeEvent = (eventId: string, instrumentId: string, source: { readonly id: string; readonly version: string }, quantity: number, side: "buy" | "sell", revision: number, time: number): MarketReplayEvent => ({
+    id: eventId,
+    kind: "trade",
+    instrumentId,
+    time,
+    revision,
+    source,
+    trade: { id: "provider-trade-1", instrumentId, time, price: 100, quantity, aggressorSide: side, sideQuality: "observed", revision, source },
+  });
+  const tape = createMarketReplayTape({ events: [
+    tradeEvent("a-r0", "ASSET-A", sourceA, 2, "buy", 0, 1_000),
+    tradeEvent("b-r0", "ASSET-A", sourceB, 3, "buy", 0, 1_100),
+    tradeEvent("a-r1", "ASSET-A", sourceA, 5, "sell", 1, 1_200),
+    tradeEvent("other-instrument", "ASSET-B", sourceA, 7, "buy", 0, 1_300),
+  ] });
+  const controller = new MarketReplayController({ tape, checkpointInterval: 1 });
+  controller.start();
+  controller.seekToTimestamp(2_000);
+
+  const all = controller.getSnapshot();
+  assert.equal(all.tradeMaterialization.complete, true);
+  assert.equal(all.tradeSummary.find((item) => item.instrumentId === "ASSET-A")?.tradeCount, 2);
+  assert.equal(all.tradeSummary.find((item) => item.instrumentId === "ASSET-A")?.totalVolume, 8);
+  assert.equal(all.cvd.find((item) => item.instrumentId === "ASSET-A")?.value, -2);
+  assert.equal(controller.getSnapshot({ instrumentId: "ASSET-A" }).trades.length, 2);
+  assert.equal(controller.getSnapshot({ instrumentId: "ASSET-B" }).trades.length, 1);
+});
+
+test("checkpoint retention is bounded and checkpoint identity includes replay policy", () => {
+  const events = Array.from({ length: 40 }, (_, index) => {
+    const base = tradeEvent(`bounded-${index}`, index + 1, 1);
+    return { ...base, trade: { ...(base as Extract<MarketReplayEvent, { kind: "trade" }>).trade, id: `bounded-trade-${index}` } } as MarketReplayEvent;
+  });
+  const tape = createMarketReplayTape({ events });
+  const controller = new MarketReplayController({ tape, checkpointInterval: 1, maxCheckpoints: 100, checkpointMemoryBudgetBytes: 20_000 });
+  controller.start();
+  controller.seekToTimestamp(10_000);
+  const diagnostics = controller.getCheckpointDiagnostics();
+  assert.ok(diagnostics.retainedCheckpoints <= 100);
+  assert.ok(diagnostics.estimatedRetainedBytes <= diagnostics.memoryBudgetBytes);
+  assert.ok(diagnostics.evictions > 0);
+  assert.ok(controller.getCheckpoints().every((checkpoint) => checkpoint.knowledgePolicy === "strict-causal" && checkpoint.id.includes(":strict-causal:")));
+});
+
 class FakeScheduler implements ReplayScheduler {
   private nextId = 1;
   private readonly callbacks = new Map<number, () => void>();

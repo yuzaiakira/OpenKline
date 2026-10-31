@@ -476,6 +476,7 @@ export {
 } from "./replay/index.js";
 export type {
   MarketReplayCheckpoint,
+  MarketReplayCheckpointDiagnostics,
   MarketReplayCompletedCandle,
   MarketReplayControllerOptions,
   MarketReplayCvdState,
@@ -488,9 +489,11 @@ export type {
   MarketReplayProgress,
   MarketReplaySessionState,
   MarketReplaySnapshot,
+  MarketReplaySnapshotOptions,
   MarketReplaySourceCoverageState,
   MarketReplayState,
   MarketReplayStateListener,
+  MarketReplayTradeMaterialization,
   MarketReplayTradeSummary,
 } from "./replay/index.js";
 export {

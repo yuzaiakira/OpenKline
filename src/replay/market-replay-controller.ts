@@ -97,6 +97,14 @@ export interface MarketReplayCompletedCandle extends Candle {
   readonly instrumentId: string;
 }
 
+export interface MarketReplayTradeMaterialization {
+  readonly complete: boolean;
+  readonly totalEligibleTrades: number;
+  readonly materializedTrades: number;
+  readonly limit: number;
+  readonly instrumentId?: string;
+}
+
 export interface MarketReplayOrderBookState {
   readonly key: string;
   readonly state: OrderBookState;
@@ -123,6 +131,8 @@ export interface MarketReplaySnapshot {
   /** Opening/forming events intentionally expose only the opening price. */
   readonly formingCandles: readonly MarketReplayFormingCandle[];
   readonly trades: readonly MarketTrade[];
+  /** Indicates whether the defensive trade array contains the complete view. */
+  readonly tradeMaterialization: MarketReplayTradeMaterialization;
   readonly tradeSummary: readonly MarketReplayTradeSummary[];
   readonly cvd: readonly MarketReplayCvdState[];
   readonly footprint: readonly MarketReplayFootprintCell[];
@@ -164,8 +174,27 @@ export interface MarketReplayCheckpoint {
   readonly tapeVersion: number;
   readonly datasetFingerprint: string;
   readonly clockPolicy: MarketReplayClockPolicy;
+  readonly knowledgePolicy: MarketReplayKnowledgePolicy;
   readonly orderingVersion: number;
   readonly snapshot: MarketReplaySnapshot;
+}
+
+export interface MarketReplayCheckpointDiagnostics {
+  readonly interval: number;
+  readonly maxCheckpoints: number;
+  readonly memoryBudgetBytes: number;
+  readonly retainedCheckpoints: number;
+  readonly estimatedRetainedBytes: number;
+  readonly evictions: number;
+  readonly oldestEventIndex: number | null;
+  readonly newestEventIndex: number | null;
+}
+
+export interface MarketReplaySnapshotOptions {
+  /** Restrict materialization to one instrument without changing replay state. */
+  readonly instrumentId?: string;
+  /** Optional lower bound for defensive trade materialization. */
+  readonly maxMaterializedTrades?: number;
 }
 
 export interface MarketReplayControllerOptions {
@@ -177,6 +206,8 @@ export interface MarketReplayControllerOptions {
   readonly scheduler?: ReplayScheduler;
   readonly checkpointInterval?: number;
   readonly maxCheckpoints?: number;
+  /** Approximate retained checkpoint budget in bytes. */
+  readonly checkpointMemoryBudgetBytes?: number;
   readonly maxMaterializedTrades?: number;
   readonly maxFootprintCells?: number;
   readonly maxDepth?: number;
@@ -252,6 +283,12 @@ interface RuntimeCheckpoint {
   readonly eventIndex: number;
   readonly eventId: string | null;
   readonly timestamp: number | null;
+  readonly tapeVersion: number;
+  readonly datasetFingerprint: string;
+  readonly clockPolicy: MarketReplayClockPolicy;
+  readonly knowledgePolicy: MarketReplayKnowledgePolicy;
+  readonly orderingVersion: number;
+  readonly estimatedBytes: number;
   readonly completedCandles: readonly [string, { readonly instrumentId: string; readonly candle: Candle; readonly revision: number }][];
   readonly formingCandles: readonly [string, { readonly instrumentId: string; readonly time: number; readonly open: number; readonly intervalMs?: number; readonly status: "opening" | "forming"; readonly revision: number }][];
   readonly trades: readonly [string, MarketTrade][];
@@ -272,6 +309,7 @@ const MIN_SPEED = 0.01;
 const MAX_SPEED = 100;
 const DEFAULT_CHECKPOINT_INTERVAL = 250;
 const DEFAULT_MAX_CHECKPOINTS = 64;
+const DEFAULT_CHECKPOINT_MEMORY_BUDGET_BYTES = 64 * 1024 * 1024;
 const DEFAULT_MAX_TRADES = 5_000;
 const DEFAULT_MAX_FOOTPRINT_CELLS = 50_000;
 const DEFAULT_MAX_DEPTH = 100;
@@ -288,13 +326,18 @@ export class MarketReplayController {
   private readonly scheduler: ReplayScheduler;
   private readonly checkpointInterval: number;
   private readonly maxCheckpoints: number;
+  private readonly checkpointMemoryBudgetBytes: number;
   private readonly maxMaterializedTrades: number;
   private readonly maxFootprintCells: number;
   private readonly maxDepth: number;
   private readonly projectedEvents: readonly ProjectedEvent[];
   private readonly clockOrderingUncertain: boolean;
+  private readonly eventIndexById: ReadonlyMap<string, number>;
+  private readonly timestampProjection: readonly number[];
   private readonly listeners = new Set<MarketReplayStateListener>();
   private readonly checkpoints = new Map<number, RuntimeCheckpoint>();
+  private retainedCheckpointBytes = 0;
+  private checkpointEvictions = 0;
   private readonly initialIndex: number;
   private runtime: MutableRuntime = createRuntime();
   private state: MarketReplayPlaybackState = "idle";
@@ -316,12 +359,15 @@ export class MarketReplayController {
     this.scheduler = options.scheduler ?? defaultScheduler;
     this.checkpointInterval = positiveLimit(options.checkpointInterval, DEFAULT_CHECKPOINT_INTERVAL, 100_000, "checkpointInterval");
     this.maxCheckpoints = positiveLimit(options.maxCheckpoints, DEFAULT_MAX_CHECKPOINTS, 1_000, "maxCheckpoints");
+    this.checkpointMemoryBudgetBytes = positiveLimit(options.checkpointMemoryBudgetBytes, DEFAULT_CHECKPOINT_MEMORY_BUDGET_BYTES, 1_073_741_824, "checkpointMemoryBudgetBytes");
     this.maxMaterializedTrades = positiveLimit(options.maxMaterializedTrades, DEFAULT_MAX_TRADES, 100_000, "maxMaterializedTrades");
     this.maxFootprintCells = positiveLimit(options.maxFootprintCells, DEFAULT_MAX_FOOTPRINT_CELLS, 1_000_000, "maxFootprintCells");
     this.maxDepth = positiveLimit(options.maxDepth, DEFAULT_MAX_DEPTH, 10_000, "maxDepth");
     this.speed = normalizeSpeed(options.speed ?? 1);
     this.projectedEvents = projectEvents(this.tape, this.clockPolicy);
     this.clockOrderingUncertain = hasClockRegression(this.projectedEvents);
+    this.eventIndexById = new Map(this.projectedEvents.map((item, index) => [item.event.id, index]));
+    this.timestampProjection = this.projectedEvents.map((item) => item.clockTimestamp);
     this.initialIndex = options.startAt === undefined ? -1 : this.resolveTimestampIndex(options.startAt);
     if (options.startAt !== undefined && (!Number.isSafeInteger(options.startAt) || options.startAt < 0)) throw new MarketReplayValidationError("startAt must be a non-negative safe integer timestamp");
   }
@@ -358,24 +404,47 @@ export class MarketReplayController {
     };
   }
 
-  public getSnapshot(): MarketReplaySnapshot {
+  public getSnapshot(options: MarketReplaySnapshotOptions = {}): MarketReplaySnapshot {
+    const instrumentId = options.instrumentId === undefined ? undefined : requireSnapshotInstrument(options.instrumentId);
+    const tradeLimit = options.maxMaterializedTrades === undefined
+      ? this.maxMaterializedTrades
+      : positiveLimit(options.maxMaterializedTrades, this.maxMaterializedTrades, 100_000, "maxMaterializedTrades");
     const current = this.projectedEvents[this.currentIndex];
     const completedCandles = [...this.runtime.completedCandles.entries()]
+      .filter(([, item]) => instrumentId === undefined || item.instrumentId === instrumentId)
       .sort(([, left], [, right]) => left.candle.time - right.candle.time || left.candle.open - right.candle.open)
       .map(([, item]) => ({ instrumentId: item.instrumentId, ...item.candle }));
     const formingCandles = [...this.runtime.formingCandles.entries()]
+      .filter(([, item]) => instrumentId === undefined || item.instrumentId === instrumentId)
       .map(([, item]) => ({ instrumentId: item.instrumentId, time: item.time, open: item.open, ...(item.intervalMs === undefined ? {} : { intervalMs: item.intervalMs }), status: item.status } as MarketReplayFormingCandle))
       .sort((left, right) => left.time - right.time || left.instrumentId.localeCompare(right.instrumentId));
-    const trades = [...this.runtime.trades.values()].sort(compareTrades).slice(-this.maxMaterializedTrades).map(cloneTrade);
-    const tradeSummary = summarizeTrades(this.runtime.trades);
-    const cvd = [...this.runtime.cvd.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([instrumentId, value]) => ({ instrumentId, ...value }));
+    const scopedTrades = [...this.runtime.trades.values()].filter((trade) => instrumentId === undefined || trade.instrumentId === instrumentId).sort(compareTrades);
+    const trades = scopedTrades.slice(-tradeLimit).map(cloneTrade);
+    const tradeSummary = summarizeTrades(scopedTrades);
+    const cvd = [...this.runtime.cvd.entries()]
+      .filter(([key]) => instrumentId === undefined || key === instrumentId)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([instrumentId, value]) => ({ instrumentId, ...value }));
     const footprint = [...this.runtime.footprint.values()]
+      .filter((cell) => instrumentId === undefined || cell.instrumentId === instrumentId)
       .sort((left, right) => left.time - right.time || left.price - right.price || left.instrumentId.localeCompare(right.instrumentId))
       .map((cell) => ({ ...cell }));
-    const orderBooks = [...this.runtime.books.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([key, controller]) => ({ key, state: cloneOrderBookState(controller.getState(this.maxDepth)) }));
-    const effectiveCorporateActions = [...this.runtime.effectiveActions.values()].sort(compareActionValues).map((item) => cloneAction(item.action));
-    const paymentCorporateActions = [...this.runtime.paymentActions.values()].sort(compareActionValues).map((item) => cloneAction(item.action));
-    const sessions = [...this.runtime.sessions.values()].sort((left, right) => left.time - right.time || left.eventId.localeCompare(right.eventId)).map((item) => ({ ...item }));
+    const orderBooks = [...this.runtime.books.entries()]
+      .map(([key, controller]) => ({ key, state: cloneOrderBookState(controller.getState(this.maxDepth)) }))
+      .filter(({ state }) => instrumentId === undefined || state.instrumentId === instrumentId)
+      .sort((left, right) => left.key.localeCompare(right.key));
+    const effectiveCorporateActions = [...this.runtime.effectiveActions.values()]
+      .filter((item) => instrumentId === undefined || item.action.instrumentId === instrumentId)
+      .sort(compareActionValues)
+      .map((item) => cloneAction(item.action));
+    const paymentCorporateActions = [...this.runtime.paymentActions.values()]
+      .filter((item) => instrumentId === undefined || item.action.instrumentId === instrumentId)
+      .sort(compareActionValues)
+      .map((item) => cloneAction(item.action));
+    const sessions = [...this.runtime.sessions.values()]
+      .filter((item) => instrumentId === undefined || item.instrumentId === instrumentId)
+      .sort((left, right) => left.time - right.time || left.eventId.localeCompare(right.eventId))
+      .map((item) => ({ ...item }));
     return {
       cursor: {
         eventIndex: current === undefined ? null : this.currentIndex,
@@ -390,6 +459,13 @@ export class MarketReplayController {
       completedCandles,
       formingCandles,
       trades,
+      tradeMaterialization: {
+        complete: trades.length === scopedTrades.length,
+        totalEligibleTrades: scopedTrades.length,
+        materializedTrades: trades.length,
+        limit: tradeLimit,
+        ...(instrumentId === undefined ? {} : { instrumentId }),
+      },
       tradeSummary,
       cvd,
       footprint,
@@ -397,23 +473,38 @@ export class MarketReplayController {
       effectiveCorporateActions,
       paymentCorporateActions,
       sessions,
-      sourceCoverage: this.getCoverage(),
+      sourceCoverage: this.getCoverage(instrumentId),
       integrity: this.getIntegrity(),
     };
   }
 
   public getCheckpoints(): readonly MarketReplayCheckpoint[] {
     return [...this.checkpoints.values()].sort((left, right) => left.eventIndex - right.eventIndex).map((checkpoint) => ({
-      id: checkpointId(this.tape, checkpoint.eventIndex, this.clockPolicy),
+      id: checkpointId(this.tape, checkpoint.eventIndex, this.clockPolicy, this.knowledgePolicy),
       eventIndex: checkpoint.eventIndex,
       eventId: checkpoint.eventId,
       timestamp: checkpoint.timestamp,
       tapeVersion: this.tape.version,
       datasetFingerprint: this.tape.fingerprint,
       clockPolicy: this.clockPolicy,
+      knowledgePolicy: this.knowledgePolicy,
       orderingVersion: this.tape.ordering.version,
       snapshot: snapshotFromCheckpoint(checkpoint, this.tape, this.clockPolicy, this.knowledgePolicy),
     }));
+  }
+
+  public getCheckpointDiagnostics(): MarketReplayCheckpointDiagnostics {
+    const indices = [...this.checkpoints.keys()].sort((left, right) => left - right);
+    return {
+      interval: this.checkpointInterval,
+      maxCheckpoints: this.maxCheckpoints,
+      memoryBudgetBytes: this.checkpointMemoryBudgetBytes,
+      retainedCheckpoints: this.checkpoints.size,
+      estimatedRetainedBytes: this.retainedCheckpointBytes,
+      evictions: this.checkpointEvictions,
+      oldestEventIndex: indices[0] ?? null,
+      newestEventIndex: indices.at(-1) ?? null,
+    };
   }
 
   public getAvailableSeekBoundaries(): { readonly from: number | null; readonly to: number | null } {
@@ -421,7 +512,8 @@ export class MarketReplayController {
   }
 
   public getEvent(eventId: string): MarketReplayEvent | null {
-    const event = this.tape.events.find((candidate) => candidate.id === eventId);
+    const projectedIndex = this.eventIndexById.get(eventId);
+    const event = projectedIndex === undefined ? this.tape.events.find((candidate) => candidate.id === eventId) : this.projectedEvents[projectedIndex]?.event;
     return event === undefined ? null : cloneEventForPublic(event);
   }
 
@@ -554,7 +646,7 @@ export class MarketReplayController {
 
   public seekToEvent(eventId: string): void {
     this.assertActive();
-    const target = this.projectedEvents.findIndex((item) => item.event.id === eventId);
+    const target = this.eventIndexById.get(eventId) ?? -1;
     if (target < 0) throw new MarketReplayValidationError(`Event ${eventId} is not eligible under ${this.clockPolicy} replay`);
     const wasPlaying = this.state === "playing";
     this.clearTimer();
@@ -579,6 +671,7 @@ export class MarketReplayController {
     this.clearTimer();
     this.disposeRuntime();
     this.checkpoints.clear();
+    this.retainedCheckpointBytes = 0;
     this.listeners.clear();
     this.state = "disposed";
     this.disposed = true;
@@ -586,6 +679,16 @@ export class MarketReplayController {
   }
 
   private resolveTimestampIndex(timestamp: number): number {
+    if (!this.clockOrderingUncertain) {
+      let low = 0;
+      let high = this.timestampProjection.length;
+      while (low < high) {
+        const middle = low + Math.floor((high - low) / 2);
+        if (this.timestampProjection[middle]! <= timestamp) low = middle + 1;
+        else high = middle;
+      }
+      return low - 1;
+    }
     let result = -1;
     for (let index = 0; index < this.projectedEvents.length; index += 1) {
       const item = this.projectedEvents[index]!;
@@ -760,10 +863,15 @@ export class MarketReplayController {
   }
 
   private saveCheckpoint(eventIndex: number): void {
-    const checkpoint: RuntimeCheckpoint = {
+    const checkpointWithoutSize: Omit<RuntimeCheckpoint, "estimatedBytes"> = {
       eventIndex,
       eventId: this.projectedEvents[eventIndex]?.event.id ?? null,
       timestamp: this.projectedEvents[eventIndex]?.clockTimestamp ?? null,
+      tapeVersion: this.tape.version,
+      datasetFingerprint: this.tape.fingerprint,
+      clockPolicy: this.clockPolicy,
+      knowledgePolicy: this.knowledgePolicy,
+      orderingVersion: this.tape.ordering.version,
       completedCandles: [...this.runtime.completedCandles.entries()].map(([key, value]) => [key, { instrumentId: value.instrumentId, candle: { ...value.candle }, revision: value.revision }]),
       formingCandles: [...this.runtime.formingCandles.entries()].map(([key, value]) => [key, { ...value }]),
       trades: [...this.runtime.trades.entries()].map(([key, value]) => [key, cloneTrade(value)]),
@@ -779,16 +887,33 @@ export class MarketReplayController {
       rejectedEventIds: [...this.runtime.rejectedEventIds],
       notes: [...this.runtime.notes],
     };
+    const estimatedBytes = estimateRetainedBytes(checkpointWithoutSize);
+    if (estimatedBytes > this.checkpointMemoryBudgetBytes) {
+      this.runtime.notes.add(`Checkpoint at event ${eventIndex} exceeded the ${this.checkpointMemoryBudgetBytes}-byte retained budget and was not stored`);
+      return;
+    }
+    const checkpoint: RuntimeCheckpoint = { ...checkpointWithoutSize, estimatedBytes };
+    const previous = this.checkpoints.get(eventIndex);
+    if (previous !== undefined) this.retainedCheckpointBytes -= previous.estimatedBytes;
     this.checkpoints.set(eventIndex, checkpoint);
-    while (this.checkpoints.size > this.maxCheckpoints) {
+    this.retainedCheckpointBytes += estimatedBytes;
+    while (this.checkpoints.size > this.maxCheckpoints || this.retainedCheckpointBytes > this.checkpointMemoryBudgetBytes) {
       const oldest = [...this.checkpoints.keys()].sort((left, right) => left - right)[0];
       if (oldest === undefined) break;
+      const removed = this.checkpoints.get(oldest);
       this.checkpoints.delete(oldest);
+      this.retainedCheckpointBytes -= removed?.estimatedBytes ?? 0;
+      this.checkpointEvictions += 1;
     }
   }
 
   private restoreCheckpoint(checkpoint: RuntimeCheckpoint): boolean {
     if (checkpoint.eventIndex >= this.projectedEvents.length) return false;
+    if (checkpoint.tapeVersion !== this.tape.version
+      || checkpoint.datasetFingerprint !== this.tape.fingerprint
+      || checkpoint.clockPolicy !== this.clockPolicy
+      || checkpoint.knowledgePolicy !== this.knowledgePolicy
+      || checkpoint.orderingVersion !== this.tape.ordering.version) return false;
     if (checkpoint.books.some(([, state]) => state.status !== "live" && state.status !== "uninitialized")) return false;
     this.disposeRuntime();
     const runtime = createRuntime();
@@ -827,8 +952,11 @@ export class MarketReplayController {
     return true;
   }
 
-  private getCoverage(): readonly MarketReplaySourceCoverageState[] {
-    return [...this.runtime.coverage.values()].sort((left, right) => left.source.id.localeCompare(right.source.id) || left.instrumentId.localeCompare(right.instrumentId)).map((value) => ({ ...value, source: { ...value.source } }));
+  private getCoverage(instrumentId?: string): readonly MarketReplaySourceCoverageState[] {
+    return [...this.runtime.coverage.values()]
+      .filter((value) => instrumentId === undefined || value.instrumentId === instrumentId)
+      .sort((left, right) => left.source.id.localeCompare(right.source.id) || left.source.version.localeCompare(right.source.version) || left.instrumentId.localeCompare(right.instrumentId))
+      .map((value) => ({ ...value, source: { ...value.source } }));
   }
 
   private getIntegrity(): MarketReplayIntegrityState {
@@ -953,9 +1081,9 @@ function createRuntime(): MutableRuntime {
   };
 }
 
-function summarizeTrades(trades: ReadonlyMap<string, MarketTrade>): readonly MarketReplayTradeSummary[] {
+function summarizeTrades(trades: Iterable<MarketTrade>): readonly MarketReplayTradeSummary[] {
   const summary = new Map<string, MarketReplayTradeSummary>();
-  for (const trade of trades.values()) {
+  for (const trade of trades) {
     const previous = summary.get(trade.instrumentId) ?? { instrumentId: trade.instrumentId, tradeCount: 0, totalVolume: 0, knownSideVolume: 0, unknownSideVolume: 0, buyVolume: 0, sellVolume: 0 };
     const next = { ...previous, tradeCount: previous.tradeCount + 1, totalVolume: previous.totalVolume + trade.quantity };
     if (trade.aggressorSide === "buy") { next.knownSideVolume += trade.quantity; next.buyVolume += trade.quantity; }
@@ -1035,7 +1163,13 @@ function snapshotFromCheckpoint(checkpoint: RuntimeCheckpoint, tape: MarketRepla
     completedCandles: checkpoint.completedCandles.map(([, value]) => ({ instrumentId: value.instrumentId, ...value.candle })),
     formingCandles: checkpoint.formingCandles.map(([, value]) => ({ instrumentId: value.instrumentId, time: value.time, open: value.open, ...(value.intervalMs === undefined ? {} : { intervalMs: value.intervalMs }), status: value.status })),
     trades: checkpoint.trades.map(([, value]) => cloneTrade(value)),
-    tradeSummary: summarizeTrades(new Map(checkpoint.trades)),
+    tradeMaterialization: {
+      complete: true,
+      totalEligibleTrades: checkpoint.trades.length,
+      materializedTrades: checkpoint.trades.length,
+      limit: checkpoint.trades.length,
+    },
+    tradeSummary: summarizeTrades(checkpoint.trades.map(([, value]) => value)),
     cvd: checkpoint.cvd.map(([instrumentId, value]) => ({ instrumentId, ...value })),
     footprint: checkpoint.footprint.map(([, value]) => ({ ...value })),
     orderBooks: checkpoint.books.map(([key, state]) => ({ key, state: cloneOrderBookState(state) })),
@@ -1047,8 +1181,8 @@ function snapshotFromCheckpoint(checkpoint: RuntimeCheckpoint, tape: MarketRepla
   };
 }
 
-function checkpointId(tape: MarketReplayTape, eventIndex: number, clockPolicy: MarketReplayClockPolicy): string {
-  return `${tape.fingerprint}:${tape.ordering.version}:${clockPolicy}:${eventIndex}`;
+function checkpointId(tape: MarketReplayTape, eventIndex: number, clockPolicy: MarketReplayClockPolicy, knowledgePolicy: MarketReplayKnowledgePolicy): string {
+  return `${tape.fingerprint}:${tape.ordering.version}:${clockPolicy}:${knowledgePolicy}:${eventIndex}`;
 }
 
 function normalizeSpeed(value: number): number {
@@ -1060,6 +1194,22 @@ function positiveLimit(value: number | undefined, fallback: number, maximum: num
   if (value === undefined) return fallback;
   if (!Number.isSafeInteger(value) || value < 1 || value > maximum) throw new MarketReplayValidationError(`${label} must be between 1 and ${maximum}`);
   return value;
+}
+
+function requireSnapshotInstrument(value: string): string {
+  if (value.trim().length === 0) throw new MarketReplayValidationError("Snapshot instrumentId must be a non-empty string");
+  return value;
+}
+
+function estimateRetainedBytes(value: unknown): number {
+  if (value === null || value === undefined) return 8;
+  if (typeof value === "string") return 16 + value.length * 2;
+  if (typeof value === "number" || typeof value === "boolean") return 8;
+  if (Array.isArray(value)) return 24 + value.reduce((sum, item) => sum + estimateRetainedBytes(item), 0);
+  if (typeof value === "object") {
+    return 32 + Object.entries(value as Record<string, unknown>).reduce((sum, [key, item]) => sum + estimateRetainedBytes(key) + estimateRetainedBytes(item), 0);
+  }
+  return 16;
 }
 
 const defaultScheduler: ReplayScheduler = {

@@ -117,6 +117,22 @@ replay.seekToTimestamp(asOfTime);
 const snapshot = replay.getSnapshot();
 ```
 
+`getSnapshot({ instrumentId })` is a bounded panel selector. It returns the
+same causal cursor and only materializes the selected instrument's candles,
+trades, derived flow, books, actions, sessions, and coverage. Trade arrays are
+defensive reads and may be bounded by `maxMaterializedTrades`; inspect
+`tradeMaterialization` before treating them as complete. `MarketReplayCoordinator`
+uses this selector for each registered panel instead of constructing one full
+snapshot per panel.
+
+The default checkpoint policy is an interval of 250 eligible events, at most
+64 retained checkpoints, and a deterministic 64 MiB approximate retained
+memory budget. Older checkpoints are evicted by event index when either bound
+is reached. `getCheckpointDiagnostics()` reports the retained count, estimated
+bytes, and eviction count. Checkpoint identity includes the tape fingerprint,
+ordering version, clock policy, and knowledge policy; a checkpoint from a
+different replay dataset or policy is never restored.
+
 The strict snapshot exposes final candles only after completion events,
 eligible trade revisions, CVD/Footprint, Level-2 integrity, source coverage,
 and corporate-action boundaries. In `receive-time` mode, records without a

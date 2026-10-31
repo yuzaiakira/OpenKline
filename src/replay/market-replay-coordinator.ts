@@ -70,7 +70,7 @@ export class MarketReplayCoordinator {
     this.assertAlive();
     const panel = this.panels.get(panelId);
     if (panel === undefined) throw new Error(`Replay panel ${panelId} is not registered`);
-    const replay = this.controller.getSnapshot();
+    const replay = this.controller.getSnapshot({ instrumentId: panel.registration.instrumentId });
     return filterPanelSnapshot(panel.registration, replay);
   }
 
@@ -92,7 +92,7 @@ export class MarketReplayCoordinator {
   }
 
   private emitPanel(panel: { registration: MarketReplayPanelRegistration; listeners: Set<MarketReplayPanelListener> }): void {
-    const snapshot = filterPanelSnapshot(panel.registration, this.controller.getSnapshot());
+    const snapshot = filterPanelSnapshot(panel.registration, this.controller.getSnapshot({ instrumentId: panel.registration.instrumentId }));
     for (const listener of [...panel.listeners]) listener(snapshot);
   }
 
