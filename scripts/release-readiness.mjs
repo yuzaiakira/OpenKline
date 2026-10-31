@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { evaluateRepositoryState } from "./release-readiness-policy.mjs";
 
 const root = process.cwd();
 const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
@@ -25,6 +26,7 @@ function runGate(name, command, args, options = {}) {
   writeFileSync(join(output, `${name}.stdout.log`), stdout);
   writeFileSync(join(output, `${name}.stderr.log`), stderr);
   let status = result.status === 0 ? "PASS" : "FAIL";
+  if (result.status !== 0 && options.blockedExitCodes?.includes(result.status)) status = "BLOCKED";
   if (options.blockedPattern !== undefined && options.blockedPattern.test(`${stdout}\n${stderr}`)) status = "BLOCKED";
   gates.push({ name, status, command: [command, ...args], cwd, exitCode: result.status, logs: { stdout: `${name}.stdout.log`, stderr: `${name}.stderr.log` } });
 }
@@ -32,7 +34,17 @@ function runGate(name, command, args, options = {}) {
 const branch = commandVersion("git", ["branch", "--show-current"]);
 const upstream = commandVersion("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
 const porcelain = commandVersion("git", ["status", "--porcelain", "--untracked-files=all"]);
-gates.push({ name: "repository", status: branch === "work" && upstream === "origin/work" && porcelain === "" ? "PASS" : "FAIL", evidence: { branch, upstream, clean: porcelain === "" } });
+const head = commandVersion("git", ["rev-parse", "HEAD"]);
+const upstreamHead = commandVersion("git", ["rev-parse", "origin/main"]);
+gates.push(evaluateRepositoryState({
+  branch,
+  upstream,
+  clean: porcelain === "",
+  head,
+  upstreamHead,
+  expectedBranch: "main",
+  expectedUpstream: "origin/main",
+}));
 
 runGate("api-compatibility", "node", ["scripts/api-compatibility.mjs"]);
 runGate("typecheck", "npm", ["run", "typecheck"]);
@@ -43,7 +55,7 @@ runGate("canvas2d-benchmark", "npm", ["run", "benchmark:browser"]);
 runGate("package-portability", "npm", ["run", "package:portability"]);
 runGate("distribution", "npm", ["run", "distribution:check"]);
 runGate("package-smoke", "npm", ["run", "package:smoke"]);
-runGate("consumer-smoke", "node", ["scripts/consumer-preview-smoke.mjs"]);
+runGate("consumer-smoke", "node", ["scripts/consumer-preview-smoke.mjs"], { blockedExitCodes: [2] });
 runGate("trusted-browser-evidence", "npm", ["run", "evidence:browser:check"]);
 runGate("license-inventory", "node", ["scripts/validate-license-inventory.mjs"]);
 runGate("root-audit", "npm", ["audit", "--json", "--include=dev"]);

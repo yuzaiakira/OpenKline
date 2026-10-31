@@ -4,12 +4,24 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const stages = [];
+
+class ReleaseGateError extends Error {
+  constructor(label, status, exitCode) {
+    super(`${label} ${status.toLowerCase()} with exit code ${exitCode}`);
+    this.name = "ReleaseGateError";
+    this.status = status;
+    this.exitCode = exitCode;
+  }
+}
 
 function run(label, command, args, cwd = root) {
   console.log(`\n[release-check] ${label}`);
   const result = spawnSync(command, args, { cwd, stdio: "inherit", env: process.env });
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`${label} failed with exit code ${result.status}`);
+  const status = result.status === 0 ? "PASS" : result.status === 2 ? "BLOCKED" : "FAIL";
+  stages.push({ label, status, exitCode: result.status });
+  if (result.status !== 0) throw new ReleaseGateError(label, status, result.status);
 }
 
 function validateRepository() {
@@ -92,6 +104,8 @@ try {
   run("Firefox/WebKit/mobile compatibility gate", "npm", ["run", "test:browser:compat"]);
   console.log("\n[release-check] PASS: all configured local gates completed");
 } catch (error) {
-  console.error(`\n[release-check] BLOCKED/FAILED: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
+  const status = error instanceof ReleaseGateError ? error.status : "FAIL";
+  console.error(`\n[release-check] ${status}: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(JSON.stringify({ status, completedStages: stages }, null, 2));
+  process.exitCode = error instanceof ReleaseGateError ? error.exitCode : 1;
 }

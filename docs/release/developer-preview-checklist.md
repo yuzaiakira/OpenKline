@@ -39,6 +39,18 @@ resources, KlineScript, workspace state, appearance changes, and destruction.
 The local override is reported as such and does not clear the managed
 cross-browser acceptance gate.
 
+The lower-level independent gate can be reproduced with:
+
+```bash
+node scripts/consumer-preview-smoke.mjs
+```
+
+It selects archives by package identity and version rather than directory
+order, enforces normal npm peers, and exits `2` when the isolated offline cache
+is incomplete. An exit `2` is an environment **BLOCKED** result, not a passing
+consumer result. Use `OPENKLINE_CONSUMER_PREVIEW_OFFLINE=0` only for an
+explicitly network-enabled diagnostic; do not use peer-resolution bypass flags.
+
 ## Owner approval before publication
 
 - Complete [license approval](./license-approval-checklist.md) and add an

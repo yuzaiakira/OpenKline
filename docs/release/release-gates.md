@@ -18,6 +18,38 @@ compatibility policy.
 | KlineScript and plugin security regressions | **Verified locally** | Node tests cover parser/AST limits, runtime budgets, cancellation, host restrictions, workspace validation, and plugin rollback/disposal |
 | Stable 1.0 release | **Blocked** | Every prior gate plus final API review and explicit owner release authorization |
 
+## Independent consumer preview gate
+
+`node scripts/consumer-preview-smoke.mjs` creates a fresh temporary consumer,
+packs the current Core and React artifacts, verifies each archive's package
+name/version/peer metadata, and installs the exact React, React DOM, TypeScript,
+and declaration versions from the lockfiles with npm's normal peer resolver.
+It then tests Vanilla ESM, TypeScript declarations, React SSR, an installed
+package Next.js build, and an installed-package Chromium chart with pointer/
+wheel input and canvas cleanup.
+
+The default run is offline and uses the isolated
+`/tmp/openkline-npm-cache` cache. Exit status and gate status are intentionally
+different from a generic failure:
+
+- `0` / **PASS** means all independent consumers completed.
+- `1` / **FAIL** means packed metadata, peer constraints, consumer behavior, or
+  a build assertion failed. A real resolved peer conflict is never bypassed.
+- `2` / **BLOCKED** means an offline registry artifact/metadata prerequisite or
+  an explicitly unavailable browser executable prevented verification. The
+  script never uses `--force` or `--legacy-peer-deps`.
+
+For an explicitly network-enabled diagnostic, set
+`OPENKLINE_CONSUMER_PREVIEW_OFFLINE=0`; this does not turn an offline blocked
+gate into a release approval. `OPENKLINE_CHROMIUM_EXECUTABLE_PATH` may identify
+an approved local Chromium for the browser consumer. The installed package
+paths are always used; no workspace-source import fallback is permitted.
+
+The repository readiness gate is strict: it requires a clean `main` branch,
+the `origin/main` upstream, a valid HEAD, and equal local/upstream SHAs. A
+stale `work`/`origin/work` expectation is not accepted, and dirty or
+unsynchronized state remains **FAIL**.
+
 ## Decision rule
 
 Only the owner may authorize a developer preview after the license and
