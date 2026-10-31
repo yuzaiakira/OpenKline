@@ -163,12 +163,12 @@ the prior Phase 16.0 baseline are recorded in
 | --- | --- | --- |
 | `2163676685d83ff6de77d4eae77b64ceb972ad8f` | Continuation identity, resource validation, restore cleanup, focused tests | Pushed to `origin/main` |
 | `403ac9249bbd89c7b5d4fa694944b8d97e865372` | Continuation benchmark protocol and lifecycle measurements | Pushed to `origin/main` |
-| Documentation commit | This report and the architecture/roadmap/benchmark/API-boundary updates | To be verified immediately after commit and push |
+| `a85c0e85875af334e73b7ec61b26b9b09358b953` | This report and the architecture/roadmap/benchmark/API-boundary updates | Pushed to `origin/main`; synchronization verified before this closure update |
 
 At each commit the configured author and committer were verified as
-`Akira Yuzai <yuzai.akira@gmail.com>`. The final documentation commit must
-remain on `main` with `HEAD == origin/main` and a clean working tree; the
-handoff records its exact SHA after that push.
+`Akira Yuzai <yuzai.akira@gmail.com>`. The closure update following this
+report must remain on `main` with `HEAD == origin/main` and a clean working
+tree; its exact SHA is recorded in the final handoff.
 
 ## Acceptance matrix
 
