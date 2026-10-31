@@ -60,6 +60,25 @@ function options(tape: ReturnType<typeof createMarketReplayTape>): ResearchExecu
   };
 }
 
+test("headless replay avoids snapshot materialization when no subscriber exists", () => {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001), trade("trade-2", 1_002)] });
+  const session = createResearchExecutionSession(options(tape));
+  let snapshotCalls = 0;
+  const readSnapshot = session.getSnapshot.bind(session);
+  session.getSnapshot = () => {
+    snapshotCalls += 1;
+    return readSnapshot();
+  };
+  session.start();
+  session.step();
+  session.step();
+  session.submitOrder({ idempotencyKey: "headless-instrumentation", side: "buy", type: "market", quantity: 1 });
+  while (readSnapshot().state !== "completed") session.step();
+  assert.equal(snapshotCalls, 0, "headless emit must not materialize snapshots without subscribers");
+  assert.equal(readSnapshot().fills.length, 1);
+  session.dispose();
+});
+
 test("snapshot reads stay defensive across cache hits", () => {
   const session = createResearchExecutionSession(options(createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade", 1_001)] })));
   session.start();
@@ -73,6 +92,137 @@ test("snapshot reads stay defensive across cache hits", () => {
   assert.equal(session.getSnapshot().journal.length, second.journal.length);
   assert.deepEqual(session.getSnapshot(), second);
   session.dispose();
+  session.dispose();
+});
+
+test("snapshot and scenario exports isolate nested research records", () => {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001), trade("trade-2", 1_002)] });
+  const session = createResearchExecutionSession(options(tape));
+  session.start();
+  session.step();
+  session.step();
+  session.submitOrder({ idempotencyKey: "nested-isolation", side: "buy", type: "market", quantity: 1 });
+  session.step();
+  const baseline = session.getSnapshot();
+  const returned = session.getSnapshot() as unknown as {
+    ledger: { cash: number; position: { quantity: number } | null };
+    orders: Array<{ fills: string[] }>;
+    fills: Array<{ quality: { displayedQuantity: number; source: { id: string } | null } }>;
+    journal: Array<{ payload?: Record<string, unknown>; source?: { id: string } }>;
+    diagnostics: { sourceCoverage: Array<{ source: { id: string } }> };
+  };
+  returned.ledger.cash = -123;
+  if (returned.ledger.position !== null) returned.ledger.position.quantity = 999;
+  returned.orders[0]!.fills.push("mutated-fill");
+  returned.fills[0]!.quality.displayedQuantity = 999;
+  returned.fills[0]!.quality.source!.id = "mutated-source";
+  returned.journal.find((entry) => entry.payload !== undefined)!.payload!.mutated = true;
+  returned.diagnostics.sourceCoverage[0]!.source.id = "mutated-coverage";
+  const exported = session.exportScenario();
+  (exported.decisions[0] as { decisionEventId: string }).decisionEventId = "mutated-decision";
+  const fresh = session.getSnapshot();
+  const freshExport = session.exportScenario();
+  assert.equal(fresh.ledger.cash, baseline.ledger.cash);
+  assert.equal(fresh.ledger.position?.quantity, baseline.ledger.position?.quantity);
+  assert.deepEqual(fresh.orders, baseline.orders);
+  assert.deepEqual(fresh.fills, baseline.fills);
+  assert.deepEqual(fresh.journal, baseline.journal);
+  assert.deepEqual(fresh.diagnostics, baseline.diagnostics);
+  assert.deepEqual(freshExport.decisions, session.exportScenario().decisions);
+  assert.notEqual(freshExport.decisions[0]?.decisionEventId, "mutated-decision");
+  session.dispose();
+});
+
+test("late observers receive causal seek notifications and repeated registration stays set-based", () => {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001), trade("trade-2", 1_002)] });
+  const session = createResearchExecutionSession(options(tape));
+  session.start();
+  session.step();
+  session.step();
+  const frontiers: Array<{ readonly eventId: string | null; readonly eventIndex: number | null }> = [];
+  const listener = (snapshot: ResearchSnapshot) => frontiers.push({ eventId: snapshot.cursor.eventId, eventIndex: snapshot.cursor.eventIndex });
+  const firstUnsubscribe = session.subscribe(listener);
+  const secondUnsubscribe = session.subscribe(listener);
+  firstUnsubscribe();
+  session.step();
+  assert.equal(frontiers.length, 0, "unsubscribing one set registration removes the shared callback");
+  secondUnsubscribe();
+  const lateUnsubscribe = session.subscribe(listener);
+  session.seekToEvent("book");
+  assert.ok(frontiers.some((frontier) => frontier.eventId === "book"), "a late observer receives the backward-seek frontier");
+  lateUnsubscribe();
+  session.dispose();
+});
+
+function runObserverScenario(subscriberCount: number): { readonly result: ReturnType<ReturnType<typeof createResearchExecutionSession>["exportScenario"]>; readonly notifications: number } {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001), trade("trade-2", 1_002)] });
+  const session = createResearchExecutionSession(options(tape));
+  let notifications = 0;
+  const unsubscribers = Array.from({ length: subscriberCount }, () => session.subscribe(() => { notifications += 1; }));
+  session.start();
+  session.step();
+  session.step();
+  session.submitOrder({ idempotencyKey: "observer-parity", side: "buy", type: "market", quantity: 1 });
+  while (session.getSnapshot().state !== "completed") session.step();
+  const result = session.exportScenario();
+  unsubscribers.forEach((unsubscribe) => unsubscribe());
+  session.dispose();
+  return { result, notifications };
+}
+
+test("headless and subscribed replay produce identical causal and financial state", () => {
+  const headless = runObserverScenario(0);
+  const oneSubscriber = runObserverScenario(1);
+  const fourSubscribers = runObserverScenario(4);
+  assert.deepEqual(oneSubscriber.result, headless.result);
+  assert.deepEqual(fourSubscribers.result, headless.result);
+  assert.equal(headless.notifications, 0);
+  assert.ok(oneSubscriber.notifications > 0);
+  assert.equal(fourSubscribers.notifications, oneSubscriber.notifications * 4);
+});
+
+test("observer delivery preserves snapshot frontiers and listener mutation semantics", () => {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001), trade("trade-2", 1_002)] });
+  const session = createResearchExecutionSession(options(tape));
+  const firstFrontiers: number[] = [];
+  const secondFrontiers: number[] = [];
+  let firstSnapshot: ResearchSnapshot | null = null;
+  let secondSnapshot: ResearchSnapshot | null = null;
+  let secondUnsubscribe: (() => void) | null = null;
+  const firstUnsubscribe = session.subscribe((snapshot) => {
+    if (firstSnapshot === null) firstSnapshot = snapshot;
+    firstFrontiers.push(snapshot.cursor.eventIndex ?? -1);
+    assert.deepEqual(session.getSnapshot().cursor, snapshot.cursor);
+    if (secondUnsubscribe !== null && firstFrontiers.length === 1) secondUnsubscribe();
+  });
+  secondUnsubscribe = session.subscribe((snapshot) => {
+    if (secondSnapshot === null) secondSnapshot = snapshot;
+    secondFrontiers.push(snapshot.cursor.eventIndex ?? -1);
+  });
+  session.start();
+  session.step();
+  session.step();
+  assert.equal(secondFrontiers.length, 1, "a listener removed during notification still receives that notification snapshot");
+  assert.strictEqual(firstSnapshot, secondSnapshot, "listeners retain the existing shared snapshot identity contract");
+  const afterUnsubscribeCount = firstFrontiers.length;
+  session.step();
+  assert.equal(firstFrontiers.length, afterUnsubscribeCount + 1);
+  assert.equal(secondFrontiers.length, 1, "the removed listener does not receive later notifications");
+  firstUnsubscribe();
+  assert.doesNotThrow(() => session.submitOrder({ idempotencyKey: "after-unsubscribe", side: "buy", type: "limit", quantity: 1, limitPrice: 98 }));
+  session.dispose();
+});
+
+test("observer errors propagate without changing the headless dispatch contract", () => {
+  const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade-1", 1_001)] });
+  const session = createResearchExecutionSession(options(tape));
+  session.start();
+  session.step();
+  session.step();
+  const unsubscribe = session.subscribe(() => { throw new Error("observer failure"); });
+  assert.throws(() => session.submitOrder({ idempotencyKey: "observer-error", side: "buy", type: "limit", quantity: 1, limitPrice: 98 }), /observer failure/);
+  unsubscribe();
+  assert.equal(session.getSnapshot().orders.length, 1);
   session.dispose();
 });
 

@@ -1547,7 +1547,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private emit(): void {
-    if (this.disposed) return;
+    if (this.disposed || this.listeners.size === 0) return;
     const snapshot = this.getSnapshot();
     for (const listener of [...this.listeners]) listener(snapshot);
   }
