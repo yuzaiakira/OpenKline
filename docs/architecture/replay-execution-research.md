@@ -319,6 +319,17 @@ The artifact and restoration contracts are exported only from the internal
 `src/research-execution` boundary. They are not exported from the root
 package, React package, Studio, worker runtime, or broker integrations.
 
+Phase 16.2.1 keeps schema-1 result evidence independent of the internal
+checkpoint cache. The evidence fingerprint includes the declared assumptions,
+durable decisions, orders, fills, ledger, causal journal and retention,
+frontier, and the causal diagnostics fields (`quality`, `warnings`, source
+coverage, observed trade/order-book counts, and simulated fill count). It omits
+checkpoint enablement, budgets, retained counts, estimated bytes, evictions,
+invalidations, timings, and fallback history. This explicit projection matches
+the pre-Phase-16.2 diagnostic shape, so old schema-1 expected-result evidence
+remains verifiable after restoration. Financially altered evidence still returns
+`mismatch`; imported results are never trusted or injected.
+
 ## Phase 16.1.1 continuation and resource hardening
 
 Schema-1 restoration is also a continuation boundary. Imported decision and

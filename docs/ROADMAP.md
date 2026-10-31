@@ -173,6 +173,17 @@ offline Studio Market Replay Lab are present.
   gates remain open. See
   `docs/reports/phase-16-2-causal-checkpoints.md` and
   `docs/architecture/research-execution-checkpoints.md`.
+- [Implemented / Verified internally — Phase 16.2.1 evidence compatibility]
+  Corrective maintenance now excludes operational checkpoint cache metadata
+  from schema-1 result evidence fingerprints while retaining causal quality,
+  source coverage, observed-event counts, fills, orders, ledger, journal,
+  retention, and frontier evidence. Checkpoint-enabled artifacts restore as
+  `verified` under the checkpoint-disabled artifact reconstruction path;
+  identical cache configurations share one fingerprint, while deliberately
+  altered financial evidence remains `mismatch`. The schema version, artifact
+  content hash, UTF-16 FNV-1a semantics, public boundary, and Phase 16.2
+  benchmark are unchanged. See
+  `docs/reports/phase-16-2-1-evidence-compatibility.md`.
 
 ## Current milestone
 

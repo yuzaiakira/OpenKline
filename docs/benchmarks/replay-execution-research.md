@@ -374,3 +374,21 @@ engine must retain full replay as the safe fallback. No 500k run was executed;
 `ReferenceExecutionLedger` fixtures, rather than timing alone, determine
 correctness. No chart, Worker, Studio, broker, or public API performance is
 represented by these measurements.
+
+## Phase 16.2.1 evidence-compatibility addendum
+
+The Phase 16.2.1 correction does not change the checkpoint benchmark workload
+or its measurements. It changes only `fingerprintResearchScenarioResult`: the
+schema-1 expected-result fingerprint now projects the causal diagnostics
+(`quality`, `warnings`, `sourceCoverage`, observed trade count, observed
+order-book event count, and simulated fill count) and excludes operational
+checkpoint cache metadata. The existing 100k rows therefore remain the
+controlled performance evidence: ordinary `642.656 / 420.714` ms enabled /
+disabled, decision-heavy `939.633 / 694.086` ms, and order-book-heavy
+`211.155 / 367.006` ms. These values continue to show that checkpoints are not
+universally faster.
+
+The correction adds no adaptive checkpointing, does not change the default
+(`enabled: false`), and preserves the distinction between structural retained
+byte estimates and process heap observations. A 500k run remains **NOT
+VERIFIED**.

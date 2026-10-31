@@ -117,6 +117,18 @@ retention, and disposal. The independent `ReferenceExecutionLedger` parity
 fixtures and the existing research correctness suite remain the financial
 reference; final equity alone is not an acceptance criterion.
 
+Scenario schema-1 result evidence uses an explicit causal projection. Its
+diagnostics fields are `quality`, `warnings`, `sourceCoverage`,
+`observedTradeCount`, `observedOrderBookEventCount`, and `simulatedFillCount`.
+Checkpoint configuration, retention, estimated bytes, evictions,
+invalidations, timings, and fallback history remain available in runtime
+diagnostics but are excluded from the result fingerprint. Identical orders,
+fills, ledger, journal, causal frontier, and market-data quality evidence thus
+remain stable across cache configurations and restoration from artifacts that
+do not persist checkpoint options. The artifact content hash, schema version,
+and UTF-16 FNV-1a implementation are unchanged. A deliberately altered
+financial result still produces `mismatch`.
+
 The controlled benchmark at
 `scripts/research-execution-checkpoint-benchmark.mjs` covers ordinary,
 decision-heavy, and order-book-heavy 1k/10k/100k tapes with enabled and
