@@ -24,10 +24,25 @@ offline Studio Market Replay Lab are present.
   the cloud memory budget. A Worker is intentionally not introduced without
   measured need. Existing Phase 14.6 Canvas2D and Order Flow baselines remain
   separate acceptance evidence.
+- [Implemented / Freshly verified — Phase 15.5 recovery] Source-scoped
+  logical identities now cover instrument, venue, source ID, source
+  generation, and trade ID; CVD/Footprint corrections, candle timeframes,
+  corporate actions, checkpoints, seeks, snapshots, import/export, and Studio
+  panels preserve those boundaries. Checkpoint retention is explicitly
+  bounded at the default `250` interval, `64` maximum checkpoints, and
+  approximate 64 MiB retained-state budget. Recovery verification passed
+  `npm test` (322/322), replay tests (17/17), Chromium (35/35), React Studio
+  (38/38), production Next/Chromium (1/1), stress, package, and local
+  benchmark gates. The final evidence is in
+  `docs/reports/phase-15-5-replay-hardening.md`.
 - [Open] Protected API baseline approval; official Firefox/WebKit/Mobile
   Safari, physical-device, formal accessibility, visual, licensing, and
-  release gates remain open. Phase 15 commits are synchronized with
-  `origin/main`; Phase 16 has not started.
+  release gates remain open. The available compatibility run verified
+  Chromium and mobile-Chrome emulation but blocked Firefox, WebKit, and
+  mobile-Safari before assertions because Playwright-managed binaries are
+  absent. The offline release consumer preview also remains blocked by npm
+  peer-resolution in this environment. Phase 15 commits are synchronized
+  with `origin/main`; Phase 16 has not started.
 
 ## Current milestone
 

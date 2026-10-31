@@ -2765,6 +2765,13 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplayCheckpointDiagnostics",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "d8e623739a589b29383f6dfc4c07745881a13b49a4d4f29fdcf25ec70ad5c446"
+    },
+    {
+      "package": "openkline",
       "name": "MarketReplayClockPolicy",
       "kind": "type",
       "module": "./replay/index.js",
@@ -2982,6 +2989,13 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplaySnapshotOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e53548db0d07afe78ae6df30d05ed22e9c561c7960190b79852c326f34a872ec"
+    },
+    {
+      "package": "openkline",
       "name": "MarketReplaySource",
       "kind": "type",
       "module": "./replay/index.js",
@@ -3049,6 +3063,13 @@
       "kind": "type",
       "module": "./replay/index.js",
       "signatureHash": "23ffc35adcf3bac41867aae8de9821d314cbda0852c22d4f52c8c8d1be1e7efc"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeMaterialization",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "0824f230f2be6c0fbfc3bda3e7951dea08075aa9d2e855b15d8101a5e4a6bb07"
     },
     {
       "package": "openkline",
@@ -3133,6 +3154,13 @@
       "kind": "type",
       "module": "./market-trades.js",
       "signatureHash": "0ebf031a2fc90aa4949e5ff1516c3004fa6aaff2fb40838e6ec6b5d2d58f6ed2"
+    },
+    {
+      "package": "openkline",
+      "name": "marketTradeLogicalIdentity",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "490b6188dadb5a370563cb0835cf3b2e6420e5903b32f20bf80c43ede91b2670"
     },
     {
       "package": "openkline",
@@ -8430,6 +8458,13 @@
     },
     {
       "package": "openkline",
+      "name": "marketTradeLogicalIdentity",
+      "kind": "runtime",
+      "module": "./market-trades.js",
+      "signatureHash": "490b6188dadb5a370563cb0835cf3b2e6420e5903b32f20bf80c43ede91b2670"
+    },
+    {
+      "package": "openkline",
       "name": "MarketTradeStore",
       "kind": "runtime",
       "module": "./market-trades.js",
@@ -11337,6 +11372,13 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplayCheckpointDiagnostics",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "d8e623739a589b29383f6dfc4c07745881a13b49a4d4f29fdcf25ec70ad5c446"
+    },
+    {
+      "package": "openkline",
       "name": "MarketReplayClockPolicy",
       "kind": "type",
       "module": "./replay/index.js",
@@ -11533,6 +11575,13 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplaySnapshotOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e53548db0d07afe78ae6df30d05ed22e9c561c7960190b79852c326f34a872ec"
+    },
+    {
+      "package": "openkline",
       "name": "MarketReplaySource",
       "kind": "type",
       "module": "./replay/index.js",
@@ -11593,6 +11642,13 @@
       "kind": "type",
       "module": "./replay/index.js",
       "signatureHash": "23ffc35adcf3bac41867aae8de9821d314cbda0852c22d4f52c8c8d1be1e7efc"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeMaterialization",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "0824f230f2be6c0fbfc3bda3e7951dea08075aa9d2e855b15d8101a5e4a6bb07"
     },
     {
       "package": "openkline",
@@ -14729,5 +14785,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "bd5d13ab21b590b1e097cbe13c7f508cbe953932"
+  "generatedFrom": "0a4094a242b04bdd71b535a758101b2c64b19f13"
 }
