@@ -122,6 +122,7 @@ function options(tape, scenarioId, maxJournalEntries = 10_000) {
     commission: { type: "fixed", value: 1 },
     slippage: { type: "fixed", value: 0 },
     maxJournalEntries,
+    checkpoints: { enabled: false },
   };
 }
 
@@ -191,7 +192,7 @@ function runScenario({ eventCount, tape, tapeBuildMs, mode, subscriberCount = 0,
   const reconstructed = session.getSnapshot();
   const seekReconstructionMs = now() - seekStart;
   assert.ok(middle.cursor.eventIndex !== null && middle.cursor.eventIndex < eventCount - 1);
-  assert.deepEqual(session.exportScenario(), completedExport);
+  assert.deepEqual(stripCheckpointDiagnostics(session.exportScenario()), stripCheckpointDiagnostics(completedExport));
   assert.deepEqual(reconstructed.fills, completedSnapshot.fills);
 
   const serializationStart = now();
@@ -235,7 +236,7 @@ function runScenario({ eventCount, tape, tapeBuildMs, mode, subscriberCount = 0,
     heapAfterDisposeBytes,
     heapRetainedAfterDisposeBytes: Math.max(0, heapAfterDisposeBytes - heapBeforeBytes),
     forcedGc: typeof globalThis.gc === "function",
-    exportForParity: completedExport,
+    exportForParity: stripCheckpointDiagnostics(completedExport),
   };
 }
 
@@ -281,7 +282,7 @@ function runCorrectnessSample(sampleIndex) {
   assert.deepEqual(afterSeek.fills, beforeSeek.fills);
   assert.deepEqual(afterSeek.ledger, beforeSeek.ledger);
   assert.deepEqual(afterSeek.journal, beforeSeek.journal);
-  assert.deepEqual(afterSeek.diagnostics, beforeSeek.diagnostics);
+  assert.deepEqual(stripCheckpointDiagnostics(afterSeek.diagnostics), stripCheckpointDiagnostics(beforeSeek.diagnostics));
   const serializedBytes = Buffer.byteLength(JSON.stringify(afterSeek));
   gc();
   const heapBeforeDisposeBytes = process.memoryUsage().heapUsed;
@@ -336,6 +337,16 @@ function summarizeCorrectness(samples) {
 function stripParity(sample) {
   const { exportForParity: _exportForParity, ...metrics } = sample;
   return metrics;
+}
+
+function stripCheckpointDiagnostics(value) {
+  if (value === null || typeof value !== "object") return value;
+  if ("diagnostics" in value) return { ...value, diagnostics: stripCheckpointDiagnostics(value.diagnostics) };
+  if ("checkpoints" in value) {
+    const { checkpoints: _checkpoints, ...diagnostics } = value;
+    return diagnostics;
+  }
+  return value;
 }
 
 function runWorkload(eventCount) {

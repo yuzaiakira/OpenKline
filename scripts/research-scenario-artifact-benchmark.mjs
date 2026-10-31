@@ -96,6 +96,7 @@ function sessionOptions(tape) {
     execution: { maxParticipationRate: 1, allowPartialFills: true, passivePolicy: "no-inferred-passive-fill" },
     maxJournalEntries: 64,
     maxDepth: 100,
+    checkpoints: { enabled: false },
   };
 }
 

@@ -87,6 +87,40 @@ export interface ResearchExecutionOptions {
   readonly corporateActionSource?: MarketReplaySource;
   readonly maxJournalEntries?: number;
   readonly maxDepth?: number;
+  /** Internal bounded acceleration controls; never persisted in scenario artifacts. */
+  readonly checkpoints?: ResearchCheckpointOptions;
+}
+
+export interface ResearchCheckpointOptions {
+  readonly enabled?: boolean;
+  readonly interval?: number;
+  readonly maxCheckpoints?: number;
+  /** Approximate retained checkpoint bytes, not a measured JavaScript heap bound. */
+  readonly memoryBudgetBytes?: number;
+}
+
+export type ResearchCheckpointFallbackCode =
+  | "order-book-state-not-restorable"
+  | "checkpoint-over-budget"
+  | "checkpoint-incompatible"
+  | "checkpoint-restore-rejected";
+
+export interface ResearchCheckpointFallback {
+  readonly code: ResearchCheckpointFallbackCode;
+  readonly eventIndex: number;
+  readonly reason: string;
+}
+
+export interface ResearchCheckpointDiagnostics {
+  readonly enabled: boolean;
+  readonly interval: number;
+  readonly maxCheckpoints: number;
+  readonly memoryBudgetBytes: number;
+  readonly retainedCheckpoints: number;
+  readonly estimatedRetainedBytes: number;
+  readonly evictions: number;
+  readonly invalidations: number;
+  readonly fallbacks: readonly ResearchCheckpointFallback[];
 }
 
 export interface ResearchOrderRequest {
@@ -251,6 +285,7 @@ export interface ResearchDiagnostics {
   readonly observedTradeCount: number;
   readonly observedOrderBookEventCount: number;
   readonly simulatedFillCount: number;
+  readonly checkpoints: ResearchCheckpointDiagnostics;
 }
 
 export interface ResearchSnapshot {

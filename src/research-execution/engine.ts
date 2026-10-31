@@ -1,6 +1,6 @@
 import { applyAdverseSlippage, calculateLongGrossPnl, calculateTransactionCost } from "../financial.js";
 import type { CorporateAction, CashDividendAction, StockSplitAction } from "../corporate-actions.js";
-import { OrderBookController, type OrderBookState } from "../order-book.js";
+import { OrderBookController, type OrderBookSnapshot, type OrderBookState } from "../order-book.js";
 import { marketTradeLogicalIdentity, type MarketTrade } from "../market-trades.js";
 import { corporateActionLogicalIdentity } from "../replay/market-replay-identity.js";
 import {
@@ -18,6 +18,9 @@ import type {
   ResearchExecutionOptions,
   ResearchExecutionPolicy,
   ResearchExecutionSession,
+  ResearchCheckpointFallback,
+  ResearchCheckpointOptions,
+  ResearchCheckpointDiagnostics,
   ResearchFill,
   ResearchJsonValue,
   ResearchLatencyPolicy,
@@ -55,6 +58,13 @@ const EPSILON = 1e-10;
 const DEFAULT_MAX_QUOTE_AGE_MS = 60_000;
 const DEFAULT_MAX_JOURNAL_ENTRIES = 25_000;
 const DEFAULT_MAX_DEPTH = 100;
+const DEFAULT_RESEARCH_CHECKPOINT_INTERVAL = 250;
+const DEFAULT_RESEARCH_MAX_CHECKPOINTS = 32;
+const DEFAULT_RESEARCH_CHECKPOINT_MEMORY_BUDGET_BYTES = 32 * 1024 * 1024;
+const MAX_RESEARCH_CHECKPOINT_INTERVAL = 100_000;
+const MAX_RESEARCH_CHECKPOINTS = 1_000;
+const MAX_RESEARCH_CHECKPOINT_MEMORY_BUDGET_BYTES = 1_073_741_824;
+const RESEARCH_CHECKPOINT_FORMAT_VERSION = 1 as const;
 
 export class ResearchExecutionValidationError extends Error {
   public constructor(message: string) {
@@ -97,6 +107,7 @@ interface InternalOptions {
   readonly corporateActionSource: MarketReplaySource | null;
   readonly maxJournalEntries: number;
   readonly maxDepth: number;
+  readonly checkpoints: Required<ResearchCheckpointOptions>;
 }
 
 interface MutablePosition {
@@ -189,6 +200,60 @@ interface FillAttempt {
   readonly bookEventId: string | null;
 }
 
+interface ResearchCheckpointBook {
+  readonly key: string;
+  readonly instrumentId: string;
+  readonly venueId: string | null;
+  readonly source: MarketReplaySource;
+  readonly state: OrderBookState;
+  readonly lastEventId: string | null;
+  readonly lastSynchronizedClock: number | null;
+  readonly consumedEventId: string | null;
+  readonly consumedBidQuantity: number;
+  readonly consumedAskQuantity: number;
+  readonly observedEventCount: number;
+}
+
+interface ResearchCheckpoint {
+  readonly formatVersion: typeof RESEARCH_CHECKPOINT_FORMAT_VERSION;
+  readonly scenarioId: string;
+  readonly instrumentId: string;
+  readonly venueId: string | null;
+  readonly tapeFingerprint: string;
+  readonly tapeVersion: number;
+  readonly orderingVersion: number;
+  readonly clockPolicy: InternalOptions["clockPolicy"];
+  readonly knowledgePolicy: InternalOptions["knowledgePolicy"];
+  readonly eventIndex: number;
+  readonly eventId: string | null;
+  readonly clockTime: number | null;
+  readonly decisionFrontier: number;
+  readonly decisionHistoryRevision: number;
+  readonly ledger: MutableLedger;
+  readonly orders: readonly [string, MutableOrder][];
+  readonly fills: readonly [string, ResearchFill][];
+  readonly books: readonly ResearchCheckpointBook[];
+  readonly sourceStatuses: readonly [string, SourceStatusObservation][];
+  readonly observedTrades: readonly [string, MarketTrade][];
+  readonly dividendEntitlements: readonly [string, DividendEntitlement][];
+  readonly sessionStates: readonly [string, SessionObservation][];
+  readonly corporateActionRevisions: readonly [string, number][];
+  readonly journal: readonly ResearchSnapshot["journal"][number][];
+  readonly journalHead: number;
+  readonly warnings: readonly string[];
+  readonly quality: readonly ResearchSourceQuality[];
+  readonly nextOrderNumber: number;
+  readonly nextDecisionNumber: number;
+  readonly nextJournalSequence: number;
+  readonly journalEvictedEntries: number;
+  readonly lastEvent: MarketReplayEvent | null;
+  readonly lastMarkPrice: number | null;
+  readonly lastMarkTime: number | null;
+  readonly finalized: boolean;
+  readonly checkpointFallbacks: readonly ResearchCheckpointFallback[];
+  readonly estimatedBytes: number;
+}
+
 function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
   if (!options || typeof options !== "object") throw new ResearchExecutionValidationError("Research execution options are required");
   const instrumentId = boundedNonEmpty(options.instrumentId, "instrumentId");
@@ -213,6 +278,18 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
   const maxQuoteAgeMs = options.maxQuoteAgeMs === undefined ? DEFAULT_MAX_QUOTE_AGE_MS : finiteNonNegative(options.maxQuoteAgeMs, "maxQuoteAgeMs");
   const maxJournalEntries = options.maxJournalEntries === undefined ? DEFAULT_MAX_JOURNAL_ENTRIES : boundedPositiveInteger(options.maxJournalEntries, "maxJournalEntries", RESEARCH_MAX_JOURNAL_ENTRIES);
   const maxDepth = options.maxDepth === undefined ? DEFAULT_MAX_DEPTH : boundedPositiveInteger(options.maxDepth, "maxDepth", RESEARCH_MAX_DEPTH);
+  const checkpointInput = options.checkpoints ?? {};
+  const checkpoints = {
+    // Keep schema-1 artifact restoration and existing research runs on the
+    // deterministic full-replay path unless the internal acceleration is
+    // explicitly enabled.
+    enabled: checkpointInput.enabled ?? false,
+    interval: checkpointInput.interval === undefined ? DEFAULT_RESEARCH_CHECKPOINT_INTERVAL : boundedPositiveInteger(checkpointInput.interval, "checkpoints.interval", MAX_RESEARCH_CHECKPOINT_INTERVAL),
+    maxCheckpoints: checkpointInput.maxCheckpoints === undefined ? DEFAULT_RESEARCH_MAX_CHECKPOINTS : boundedPositiveInteger(checkpointInput.maxCheckpoints, "checkpoints.maxCheckpoints", MAX_RESEARCH_CHECKPOINTS),
+    memoryBudgetBytes: checkpointInput.memoryBudgetBytes === undefined
+      ? DEFAULT_RESEARCH_CHECKPOINT_MEMORY_BUDGET_BYTES
+      : boundedPositiveInteger(checkpointInput.memoryBudgetBytes, "checkpoints.memoryBudgetBytes", MAX_RESEARCH_CHECKPOINT_MEMORY_BUDGET_BYTES),
+  };
   const corporateActionSource = options.corporateActionSource === undefined ? null : cloneSource(options.corporateActionSource);
   validateCorporateActionSources(options.tape.events, corporateActionSource);
   validateCost(options.commission, "commission");
@@ -241,6 +318,7 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
     corporateActionSource,
     maxJournalEntries,
     maxDepth,
+    checkpoints,
   };
 }
 
@@ -411,6 +489,10 @@ function cloneDiagnostics(value: ResearchDiagnostics): ResearchDiagnostics {
     observedTradeCount: value.observedTradeCount,
     observedOrderBookEventCount: value.observedOrderBookEventCount,
     simulatedFillCount: value.simulatedFillCount,
+    checkpoints: {
+      ...value.checkpoints,
+      fallbacks: value.checkpoints.fallbacks.map((fallback) => ({ ...fallback })),
+    },
   };
 }
 
@@ -474,6 +556,16 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private snapshotRevision = 0;
   private cachedSnapshotRevision = -1;
   private cachedSnapshot: ResearchSnapshot | null = null;
+  private readonly researchCheckpoints = new Map<number, ResearchCheckpoint>();
+  private retainedResearchCheckpointBytes = 0;
+  private researchCheckpointEvictions = 0;
+  private researchCheckpointInvalidations = 0;
+  private researchCheckpointFallbacks: ResearchCheckpointFallback[] = [];
+  private researchCheckpointCaptureCount = 0;
+  private researchCheckpointCaptureTimeMs = 0;
+  private researchCheckpointRestoreCount = 0;
+  private researchCheckpointRestoreTimeMs = 0;
+  private decisionHistoryRevision = 0;
   private readonly unsubscribeController: () => void;
 
   public constructor(options: ResearchExecutionOptions) {
@@ -503,6 +595,17 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
 
   public getJournal(): readonly ResearchSnapshot["journal"][number][] {
     return this.canonicalSnapshot().journal.map(cloneJournalEntry);
+  }
+
+  /** Internal benchmark/diagnostic hook; intentionally absent from ResearchExecutionSession. */
+  public getResearchCheckpointRuntimeDiagnostics(): ResearchCheckpointDiagnostics & { readonly captureCount: number; readonly captureTimeMs: number; readonly restoreCount: number; readonly restoreTimeMs: number } {
+    return {
+      ...this.researchCheckpointDiagnostics(),
+      captureCount: this.researchCheckpointCaptureCount,
+      captureTimeMs: this.researchCheckpointCaptureTimeMs,
+      restoreCount: this.researchCheckpointRestoreCount,
+      restoreTimeMs: this.researchCheckpointRestoreTimeMs,
+    };
   }
 
   private canonicalSnapshot(): ResearchSnapshot {
@@ -779,6 +882,9 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.journalHead = 0;
     this.warnings = [];
     this.quality.clear();
+    this.researchCheckpoints.clear();
+    this.retainedResearchCheckpointBytes = 0;
+    this.researchCheckpointFallbacks = [];
     this.cachedSnapshot = null;
     this.cachedSnapshotRevision = -1;
     this.state = "disposed";
@@ -797,6 +903,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
           this.currentIndex = index;
           this.processEvent(event, index);
           this.activateDecisions(index);
+          this.saveResearchCheckpoint(index);
         }
         this.currentIndex = target;
       }
@@ -817,6 +924,20 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private rebuildSimulationTo(target: number): void {
+    const checkpoint = this.selectResearchCheckpoint(target);
+    if (checkpoint !== null && this.restoreResearchCheckpoint(checkpoint)) {
+      this.currentIndex = checkpoint.eventIndex;
+      for (let index = checkpoint.eventIndex + 1; index <= target; index += 1) {
+        const event = this.controller.getEligibleEvent(index);
+        if (event === null) throw new ResearchExecutionValidationError(`Replay event ${index} is unavailable during checkpoint reconstruction`);
+        this.currentIndex = index;
+        this.processEvent(event, index);
+        this.activateDecisions(index);
+        this.saveResearchCheckpoint(index);
+      }
+      this.currentIndex = target;
+      return;
+    }
     this.resetRuntime();
     for (let index = 0; index <= target; index += 1) {
       const event = this.controller.getEligibleEvent(index);
@@ -824,8 +945,254 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       this.currentIndex = index;
       this.processEvent(event, index);
       this.activateDecisions(index);
+      this.saveResearchCheckpoint(index);
     }
     this.currentIndex = target;
+  }
+
+  private selectResearchCheckpoint(target: number): ResearchCheckpoint | null {
+    if (!this.options.checkpoints.enabled) return null;
+    const candidates = [...this.researchCheckpoints.values()]
+      .filter((checkpoint) => checkpoint.eventIndex <= target && checkpoint.decisionHistoryRevision === this.decisionHistoryRevision)
+      .sort((left, right) => right.eventIndex - left.eventIndex);
+    return candidates[0] ?? null;
+  }
+
+  private saveResearchCheckpoint(eventIndex: number): void {
+    if (!this.options.checkpoints.enabled || (eventIndex + 1) % this.options.checkpoints.interval !== 0) return;
+    const startedAt = checkpointNow();
+    this.researchCheckpointCaptureCount += 1;
+    const finish = (): void => { this.researchCheckpointCaptureTimeMs += checkpointNow() - startedAt; };
+    const books = [...this.books.values()].map((book) => ({ book, state: book.controller.getState(this.options.maxDepth) }));
+    const unsupportedBook = books.find(({ state }) => state.status !== "live");
+    if (unsupportedBook !== undefined) {
+      this.recordCheckpointFallback({
+        code: "order-book-state-not-restorable",
+        eventIndex,
+        reason: `Order-book ${unsupportedBook.book.key} is ${unsupportedBook.state.status}; full causal reconstruction remains required`,
+      });
+      finish();
+      return;
+    }
+    const estimatedCandidateBytes = estimateRetainedBytes({
+      eventIndex,
+      eventId: this.lastEvent?.id ?? null,
+      clockTime: this.currentClock(),
+      decisionFrontier: eventIndex,
+      decisionHistoryRevision: this.decisionHistoryRevision,
+      ledger: this.ledger,
+      orders: [...this.orders.entries()],
+      fills: [...this.fills.entries()],
+      books: books.map(({ book, state }) => ({
+        key: book.key,
+        instrumentId: book.instrumentId,
+        venueId: book.venueId,
+        source: book.source,
+        state,
+        lastEventId: book.lastEventId,
+        lastSynchronizedClock: book.lastSynchronizedClock,
+        consumedEventId: book.consumedEventId,
+        consumedBidQuantity: book.consumedBidQuantity,
+        consumedAskQuantity: book.consumedAskQuantity,
+        observedEventCount: book.observedEventCount,
+      })),
+      sourceStatuses: [...this.sourceStatuses.entries()],
+      observedTrades: [...this.observedTrades.entries()],
+      dividendEntitlements: [...this.dividendEntitlements.entries()],
+      sessionStates: [...this.sessionStates.entries()],
+      corporateActionRevisions: [...this.corporateActionRevisions.entries()],
+      journal: this.journal,
+      journalHead: this.journalHead,
+      warnings: this.warnings,
+      quality: [...this.quality],
+      nextOrderNumber: this.nextOrderNumber,
+      nextDecisionNumber: this.nextDecisionNumber,
+      nextJournalSequence: this.nextJournalSequence,
+      journalEvictedEntries: this.journalEvictedEntries,
+      lastEvent: this.lastEvent,
+      lastMarkPrice: this.lastMarkPrice,
+      lastMarkTime: this.lastMarkTime,
+      finalized: this.finalized,
+      checkpointFallbacks: this.researchCheckpointFallbacks,
+    });
+    if (estimatedCandidateBytes > this.options.checkpoints.memoryBudgetBytes) {
+      this.recordCheckpointFallback({
+        code: "checkpoint-over-budget",
+        eventIndex,
+        reason: `Checkpoint estimate ${estimatedCandidateBytes} bytes exceeds the approximate ${this.options.checkpoints.memoryBudgetBytes}-byte budget`,
+      });
+      finish();
+      return;
+    }
+    const checkpointWithoutSize = {
+      formatVersion: RESEARCH_CHECKPOINT_FORMAT_VERSION,
+      scenarioId: this.options.scenarioId,
+      instrumentId: this.options.instrumentId,
+      venueId: this.options.venueId,
+      tapeFingerprint: this.options.tape.fingerprint,
+      tapeVersion: this.options.tape.version,
+      orderingVersion: this.options.tape.ordering.version,
+      clockPolicy: this.options.clockPolicy,
+      knowledgePolicy: this.options.knowledgePolicy,
+      eventIndex,
+      eventId: this.lastEvent?.id ?? null,
+      clockTime: this.currentClock(),
+      decisionFrontier: eventIndex,
+      decisionHistoryRevision: this.decisionHistoryRevision,
+      ledger: cloneMutableLedger(this.ledger),
+      orders: [...this.orders.entries()].map(([key, value]) => [key, cloneMutableOrder(value)] as [string, MutableOrder]),
+      fills: [...this.fills.entries()].map(([key, value]) => [key, cloneFill(value)] as [string, ResearchFill]),
+      books: books.map(({ book, state }) => ({
+        key: book.key,
+        instrumentId: book.instrumentId,
+        venueId: book.venueId,
+        source: cloneSource(book.source),
+        state: cloneOrderBookStateForCheckpoint(state),
+        lastEventId: book.lastEventId,
+        lastSynchronizedClock: book.lastSynchronizedClock,
+        consumedEventId: book.consumedEventId,
+        consumedBidQuantity: book.consumedBidQuantity,
+        consumedAskQuantity: book.consumedAskQuantity,
+        observedEventCount: book.observedEventCount,
+      })),
+      sourceStatuses: [...this.sourceStatuses.entries()].map(([key, value]) => [key, { ...value }] as [string, SourceStatusObservation]),
+      observedTrades: [...this.observedTrades.entries()].map(([key, value]) => [key, cloneMarketTrade(value)] as [string, MarketTrade]),
+      dividendEntitlements: [...this.dividendEntitlements.entries()].map(([key, value]) => [key, { quantity: value.quantity, action: cloneCorporateAction(value.action) }] as [string, DividendEntitlement]),
+      sessionStates: [...this.sessionStates.entries()].map(([key, value]) => [key, { ...value }] as [string, SessionObservation]),
+      corporateActionRevisions: [...this.corporateActionRevisions.entries()],
+      journal: this.journal.map(cloneJournalEntry),
+      journalHead: this.journalHead,
+      warnings: [...this.warnings],
+      quality: [...this.quality],
+      nextOrderNumber: this.nextOrderNumber,
+      nextDecisionNumber: this.nextDecisionNumber,
+      nextJournalSequence: this.nextJournalSequence,
+      journalEvictedEntries: this.journalEvictedEntries,
+      lastEvent: this.lastEvent === null ? null : cloneMarketReplayEvent(this.lastEvent),
+      lastMarkPrice: this.lastMarkPrice,
+      lastMarkTime: this.lastMarkTime,
+      finalized: this.finalized,
+      checkpointFallbacks: this.researchCheckpointFallbacks.map((fallback) => ({ ...fallback })),
+    };
+    const estimatedBytes = estimateRetainedBytes(checkpointWithoutSize);
+    if (estimatedBytes > this.options.checkpoints.memoryBudgetBytes) {
+      this.recordCheckpointFallback({
+        code: "checkpoint-over-budget",
+        eventIndex,
+        reason: `Checkpoint estimate ${estimatedBytes} bytes exceeds the approximate ${this.options.checkpoints.memoryBudgetBytes}-byte budget`,
+      });
+      finish();
+      return;
+    }
+    const checkpoint: ResearchCheckpoint = { ...checkpointWithoutSize, estimatedBytes };
+    const previous = this.researchCheckpoints.get(eventIndex);
+    if (previous !== undefined) this.retainedResearchCheckpointBytes -= previous.estimatedBytes;
+    this.researchCheckpoints.set(eventIndex, checkpoint);
+    this.retainedResearchCheckpointBytes += estimatedBytes;
+    while (this.researchCheckpoints.size > this.options.checkpoints.maxCheckpoints || this.retainedResearchCheckpointBytes > this.options.checkpoints.memoryBudgetBytes) {
+      const oldest = [...this.researchCheckpoints.keys()].sort((left, right) => left - right)[0];
+      if (oldest === undefined) break;
+      const removed = this.researchCheckpoints.get(oldest);
+      this.researchCheckpoints.delete(oldest);
+      this.retainedResearchCheckpointBytes -= removed?.estimatedBytes ?? 0;
+      this.researchCheckpointEvictions += 1;
+    }
+    finish();
+  }
+
+  private restoreResearchCheckpoint(checkpoint: ResearchCheckpoint): boolean {
+    const startedAt = checkpointNow();
+    this.researchCheckpointRestoreCount += 1;
+    if (checkpoint.formatVersion !== RESEARCH_CHECKPOINT_FORMAT_VERSION
+      || checkpoint.scenarioId !== this.options.scenarioId
+      || checkpoint.instrumentId !== this.options.instrumentId
+      || checkpoint.venueId !== this.options.venueId
+      || checkpoint.tapeFingerprint !== this.options.tape.fingerprint
+      || checkpoint.tapeVersion !== this.options.tape.version
+      || checkpoint.orderingVersion !== this.options.tape.ordering.version
+      || checkpoint.clockPolicy !== this.options.clockPolicy
+      || checkpoint.knowledgePolicy !== this.options.knowledgePolicy
+      || checkpoint.decisionFrontier !== checkpoint.eventIndex
+      || checkpoint.decisionHistoryRevision !== this.decisionHistoryRevision) {
+      this.recordCheckpointFallback({ code: "checkpoint-incompatible", eventIndex: checkpoint.eventIndex, reason: "Checkpoint identity, tape, policy, or decision revision is incompatible" });
+      this.researchCheckpointRestoreTimeMs += checkpointNow() - startedAt;
+      return false;
+    }
+    try {
+      for (const book of this.books.values()) book.controller.dispose();
+      this.resetRuntime();
+      this.ledger = cloneMutableLedger(checkpoint.ledger);
+      for (const [key, value] of checkpoint.orders) this.orders.set(key, cloneMutableOrder(value));
+      for (const [key, value] of checkpoint.fills) this.fills.set(key, cloneFill(value));
+      for (const saved of checkpoint.books) {
+        if (saved.state.status !== "live") throw new ResearchExecutionValidationError(`Checkpoint order-book ${saved.key} is not live`);
+        const controller = new OrderBookController({ instrumentId: saved.instrumentId, ...(saved.venueId === null ? {} : { venueId: saved.venueId }), source: saved.source, maxDepth: this.options.maxDepth, tickPolicy: "reject" });
+        const state = saved.state;
+        const snapshot: OrderBookSnapshot = {
+          version: 1,
+          instrumentId: saved.instrumentId,
+          ...(saved.venueId === null ? {} : { venueId: saved.venueId }),
+          time: state.lastEventTime ?? 0,
+          ...(state.lastSequence === null ? {} : { sequence: state.lastSequence }),
+          bids: state.bids.map((level) => ({ ...level })),
+          asks: state.asks.map((level) => ({ ...level })),
+          ...(state.tickSize === null ? {} : { tickSize: state.tickSize }),
+          source: cloneSource(saved.source),
+        };
+        if (controller.applySnapshot(snapshot).kind === "rejected") throw new ResearchExecutionValidationError(`Checkpoint order-book ${saved.key} rejected its exact state snapshot`);
+        this.books.set(saved.key, {
+          key: saved.key,
+          instrumentId: saved.instrumentId,
+          venueId: saved.venueId,
+          source: cloneSource(saved.source),
+          controller,
+          lastEventId: saved.lastEventId,
+          lastSynchronizedClock: saved.lastSynchronizedClock,
+          consumedEventId: saved.consumedEventId,
+          consumedBidQuantity: saved.consumedBidQuantity,
+          consumedAskQuantity: saved.consumedAskQuantity,
+          observedEventCount: saved.observedEventCount,
+        });
+      }
+      for (const [key, value] of checkpoint.sourceStatuses) this.sourceStatuses.set(key, { ...value });
+      for (const [key, value] of checkpoint.observedTrades) this.observedTrades.set(key, cloneMarketTrade(value));
+      for (const [key, value] of checkpoint.dividendEntitlements) this.dividendEntitlements.set(key, { quantity: value.quantity, action: cloneCorporateAction(value.action) as CashDividendAction });
+      for (const [key, value] of checkpoint.sessionStates) this.sessionStates.set(key, { ...value });
+      for (const [key, value] of checkpoint.corporateActionRevisions) this.corporateActionRevisions.set(key, value);
+      this.journal = checkpoint.journal.map(cloneJournalEntry);
+      this.journalHead = checkpoint.journalHead;
+      this.warnings = [...checkpoint.warnings];
+      this.quality = new Set(checkpoint.quality);
+      this.nextOrderNumber = checkpoint.nextOrderNumber;
+      this.nextDecisionNumber = checkpoint.nextDecisionNumber;
+      this.nextJournalSequence = checkpoint.nextJournalSequence;
+      this.journalEvictedEntries = checkpoint.journalEvictedEntries;
+      this.lastEvent = checkpoint.lastEvent === null ? null : cloneMarketReplayEvent(checkpoint.lastEvent);
+      this.lastMarkPrice = checkpoint.lastMarkPrice;
+      this.lastMarkTime = checkpoint.lastMarkTime;
+      this.finalized = checkpoint.finalized;
+      this.researchCheckpointFallbacks = checkpoint.checkpointFallbacks.map((fallback) => ({ ...fallback }));
+      return true;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.resetRuntime();
+      this.recordCheckpointFallback({ code: "checkpoint-restore-rejected", eventIndex: checkpoint.eventIndex, reason });
+      return false;
+    } finally {
+      this.researchCheckpointRestoreTimeMs += checkpointNow() - startedAt;
+    }
+  }
+
+  private recordCheckpointFallback(fallback: ResearchCheckpointFallback): void {
+    const existing = this.researchCheckpointFallbacks.find((candidate) => candidate.code === fallback.code && candidate.eventIndex === fallback.eventIndex && candidate.reason === fallback.reason);
+    if (existing !== undefined) return;
+    this.researchCheckpointFallbacks = [...this.researchCheckpointFallbacks, { ...fallback }].slice(-64);
+  }
+
+  private invalidateResearchCheckpoints(): void {
+    this.researchCheckpoints.clear();
+    this.retainedResearchCheckpointBytes = 0;
+    this.researchCheckpointInvalidations += 1;
   }
 
   private resetRuntime(): void {
@@ -1588,6 +1955,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       this.orderIds.add(decision.orderId);
     }
     this.decisions.push(decision);
+    this.decisionHistoryRevision += 1;
+    this.invalidateResearchCheckpoints();
     const bucket = this.decisionsByCursor.get(decision.decisionCursor);
     if (bucket === undefined) this.decisionsByCursor.set(decision.decisionCursor, [decision]);
     else bucket.push(decision);
@@ -1660,6 +2029,21 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       observedTradeCount: this.observedTrades.size,
       observedOrderBookEventCount: [...this.books.values()].reduce((count, book) => count + book.observedEventCount, 0),
       simulatedFillCount: this.fills.size,
+      checkpoints: this.researchCheckpointDiagnostics(),
+    };
+  }
+
+  private researchCheckpointDiagnostics(): ResearchCheckpointDiagnostics {
+    return {
+      enabled: this.options.checkpoints.enabled,
+      interval: this.options.checkpoints.interval,
+      maxCheckpoints: this.options.checkpoints.maxCheckpoints,
+      memoryBudgetBytes: this.options.checkpoints.memoryBudgetBytes,
+      retainedCheckpoints: this.researchCheckpoints.size,
+      estimatedRetainedBytes: this.retainedResearchCheckpointBytes,
+      evictions: this.researchCheckpointEvictions,
+      invalidations: this.researchCheckpointInvalidations,
+      fallbacks: this.researchCheckpointFallbacks.map((fallback) => ({ ...fallback })),
     };
   }
 
@@ -1709,6 +2093,44 @@ function sameRequest(decision: ResearchSubmitDecision, request: ResearchOrderReq
   return decision.side === request.side && decision.type === request.type && decision.quantity === request.quantity && decision.limitPrice === request.limitPrice;
 }
 
+function cloneMutablePosition(value: MutablePosition | null): MutablePosition | null {
+  return value === null ? null : { ...value };
+}
+
+function cloneMutableLedger(value: MutableLedger): MutableLedger {
+  return { ...value, position: cloneMutablePosition(value.position) };
+}
+
+function cloneMutableOrder(value: MutableOrder): MutableOrder {
+  return {
+    ...value,
+    fills: [...value.fills],
+    ...(value.reason === undefined ? {} : { reason: value.reason }),
+    ...(value.limitPrice === undefined ? {} : { limitPrice: value.limitPrice }),
+  };
+}
+
+function cloneOrderBookStateForCheckpoint(value: OrderBookState): OrderBookState {
+  return {
+    ...value,
+    source: value.source === null ? null : cloneSource(value.source),
+    bids: value.bids.map((level) => ({ ...level })),
+    asks: value.asks.map((level) => ({ ...level })),
+  };
+}
+
+function cloneMarketTrade(value: MarketTrade): MarketTrade {
+  return { ...value, source: cloneSource(value.source) };
+}
+
+function cloneCorporateAction(value: CorporateAction): CorporateAction {
+  return JSON.parse(JSON.stringify(value)) as CorporateAction;
+}
+
+function cloneMarketReplayEvent(value: MarketReplayEvent): MarketReplayEvent {
+  return JSON.parse(JSON.stringify(value)) as MarketReplayEvent;
+}
+
 function cloneLatency(value: ResearchLatencyPolicy): ResearchLatencyPolicy {
   return value.type === "bounded" ? { type: "bounded", delaysMs: [...value.delaysMs] } : { ...value };
 }
@@ -1721,4 +2143,17 @@ function cloneJson<T extends ResearchJsonValue>(value: T): T {
 
 function normalizeZero(value: number): number {
   return Math.abs(value) <= EPSILON ? 0 : Number(value.toPrecision(15));
+}
+
+function estimateRetainedBytes(value: unknown): number {
+  if (value === null || value === undefined) return 8;
+  if (typeof value === "string") return 16 + value.length * 2;
+  if (typeof value === "number" || typeof value === "boolean") return 8;
+  if (Array.isArray(value)) return 24 + value.reduce((sum, item) => sum + estimateRetainedBytes(item), 0);
+  if (typeof value === "object") return 32 + Object.entries(value as Record<string, unknown>).reduce((sum, [key, item]) => sum + estimateRetainedBytes(key) + estimateRetainedBytes(item), 0);
+  return 16;
+}
+
+function checkpointNow(): number {
+  return typeof globalThis.performance?.now === "function" ? globalThis.performance.now() : Date.now();
 }
