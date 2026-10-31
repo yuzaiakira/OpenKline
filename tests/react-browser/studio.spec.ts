@@ -1,4 +1,4 @@
-import { expect, placeVisibleChartPoint, test, type Page } from "./studio-test.js";
+import { expect, placeVisibleChartPoint, studioChartCanvas, STUDIO_CHART_CANVAS_SELECTOR, test, type Page } from "./studio-test.js";
 
 /**
  * Exercise the product's touch fallback without relying on WebKit's optional
@@ -6,8 +6,8 @@ import { expect, placeVisibleChartPoint, test, type Page } from "./studio-test.j
  * event, not a claim of native browser input.
  */
 async function dispatchTouchFallbackPoint(page: Page, x: number, y: number, identifier: number): Promise<void> {
-  await page.evaluate(({ clientX, clientY, touchIdentifier }) => {
-    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+  await page.evaluate(({ clientX, clientY, touchIdentifier, selector }) => {
+    const canvas = document.querySelector<HTMLCanvasElement>(selector);
     if (canvas === null) throw new Error("Chart canvas is missing");
     const touch = Object.freeze({
       identifier: touchIdentifier,
@@ -39,7 +39,7 @@ async function dispatchTouchFallbackPoint(page: Page, x: number, y: number, iden
       changedTouches: { configurable: true, value: list([touch]) },
     });
     canvas.dispatchEvent(end);
-  }, { clientX: x, clientY: y, touchIdentifier: identifier });
+  }, { clientX: x, clientY: y, touchIdentifier: identifier, selector: STUDIO_CHART_CANVAS_SELECTOR });
 }
 
 test("Studio preserves chart type, price scale, indicator, and drawing state through a workspace reload", async ({ page }) => {
@@ -47,7 +47,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Objects" })).toBeVisible();
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(studioChartCanvas(page)).toHaveCount(1);
   await expect(page.getByText("Series (10)", { exact: true })).toBeVisible();
   await expect(page.getByText("Indicators (2)", { exact: true })).toBeVisible();
 
@@ -103,7 +103,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   expect(anchors).toEqual(anchorsBeforeLinear);
 
   await page.reload();
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(studioChartCanvas(page)).toHaveCount(1);
   await page.getByRole("button", { name: "Load", exact: true }).first().click();
   await expect(page.getByRole("button", { name: "Heikin-Ashi", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Price scale")).toHaveValue("linear");
@@ -114,7 +114,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   expect(restored.drawings.drawings[0]?.points).toEqual(anchors);
 
   await page.setViewportSize({ width: 800, height: 700 });
-  await expect(page.locator("canvas")).toBeVisible();
+  await expect(studioChartCanvas(page)).toBeVisible();
   await page.getByRole("button", { name: "Fit", exact: true }).click();
   await expect(page.getByLabel("Price scale")).toHaveValue("linear");
   expect(errors).toEqual([]);
@@ -124,7 +124,7 @@ test("Studio remains operable at a touch-sized viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", /width=device-width/);
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(studioChartCanvas(page)).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Fit", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Area", exact: true }).click();
   await expect(page.getByRole("button", { name: "Area", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -143,11 +143,11 @@ test("Studio remains operable at a touch-sized viewport", async ({ page }) => {
 test("Studio accepts drawing anchors from touch events without pointer compatibility events", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.locator("canvas")).toHaveCount(1);
-  await expect.poll(() => page.evaluate(() => document.querySelector<HTMLCanvasElement>("canvas")?.height ?? 0)).toBeGreaterThan(200);
+  await expect(studioChartCanvas(page)).toHaveCount(1);
+  await expect.poll(() => page.evaluate((selector) => document.querySelector<HTMLCanvasElement>(selector)?.height ?? 0, STUDIO_CHART_CANVAS_SELECTOR)).toBeGreaterThan(200);
   await page.getByRole("button", { name: "Trend", exact: true }).click();
   await expect(page.getByText(/trend-line is active in chart-1/)).toBeVisible();
-  const canvas = page.locator("canvas");
+  const canvas = studioChartCanvas(page);
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
@@ -167,8 +167,8 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(page.locator("canvas")).toHaveCount(1);
-  const canvas = page.locator("canvas");
+  await expect(studioChartCanvas(page)).toHaveCount(1);
+  const canvas = studioChartCanvas(page);
   await page.getByLabel("Indicator").selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
@@ -198,11 +198,13 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   await page.getByRole("button", { name: "Area", exact: true }).click();
   await expect(page.getByRole("button", { name: "Area", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Price scale").selectOption("percentage");
-  await page.getByLabel("Replay speed").selectOption("5");
-  await expect(page.getByLabel("Replay speed")).toHaveValue("5");
-  await page.getByRole("button", { name: "Play", exact: true }).click();
+  const chartReplayControls = page.getByRole("region", { name: "Chart replay controls" });
+  await chartReplayControls.getByLabel("Replay speed").selectOption("5");
+  await expect(chartReplayControls.getByLabel("Replay speed")).toHaveValue("5");
+  const chartSettings = page.getByRole("complementary", { name: "Active chart settings" });
+  await chartSettings.getByRole("button", { name: "Play", exact: true }).click();
   await expect(page.getByText("Replay: playing", { exact: true })).toBeVisible();
-  await page.getByRole("complementary", { name: "Chart settings" }).getByRole("button", { name: "Pause", exact: true }).click();
+  await chartSettings.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.getByText("Replay: paused", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Exit replay", exact: true }).click();
   await expect(page.getByText("Replay: idle", { exact: true })).toBeVisible();
@@ -226,7 +228,7 @@ test("Studio creates, pauses, persists, and removes a local alert", async ({ pag
   await page.getByRole("button", { name: "Create alert", exact: true }).click();
   await expect(page.getByText("Alerts (1)", { exact: true })).toBeVisible();
   await expect(page.getByText("Studio close alert", { exact: false })).toBeVisible();
-  await page.getByRole("complementary", { name: "Chart settings" }).getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("complementary", { name: "Active chart settings" }).getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.getByRole("button", { name: "Enable", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as { alerts?: { alerts: Array<{ name: string }> } });

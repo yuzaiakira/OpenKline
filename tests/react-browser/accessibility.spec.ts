@@ -1,4 +1,4 @@
-import { expect, test } from "./studio-test.js";
+import { expect, studioChartCanvas, test } from "./studio-test.js";
 
 test("Studio interactive controls expose names, keyboard focus, status, and dialog semantics", async ({ page }) => {
   await page.goto("/");
@@ -38,7 +38,7 @@ test("Studio interactive controls expose names, keyboard focus, status, and dial
 
 test("Canvas charts expose a text summary and dialogs restore focus on Escape", async ({ page }) => {
   await page.goto("/");
-  const canvas = page.locator("canvas").first();
+  const canvas = studioChartCanvas(page).first();
   await expect(canvas).toHaveRole("img");
   await expect(canvas).toHaveAttribute("tabindex", "0");
   await expect(canvas).toHaveAttribute("aria-label", /Financial price chart; .*visible bars/);

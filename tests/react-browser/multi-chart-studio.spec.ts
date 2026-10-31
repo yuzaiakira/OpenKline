@@ -1,4 +1,4 @@
-import { expect, placeVisibleChartPoint, test, type Locator } from "./studio-test.js";
+import { expect, placeVisibleChartPoint, studioChartCanvas, test, type Locator } from "./studio-test.js";
 
 async function expectHitTestTarget(locator: Locator): Promise<void> {
   await locator.scrollIntoViewIfNeeded();
@@ -19,7 +19,7 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   await test.step("configure four-grid layout", async () => {
     await page.getByLabel("Chart layout").selectOption("four-grid");
     await expect(page.locator("[data-panel-id]")).toHaveCount(4);
-    await expect(page.locator("canvas")).toHaveCount(4);
+    await expect(studioChartCanvas(page)).toHaveCount(4);
   });
 
   await page.getByLabel("Active chart panel").selectOption("chart-2");
@@ -142,7 +142,7 @@ test("Studio synchronizes crosshair and visible UTC ranges across different time
   await page.getByRole("button", { name: "Remove chart", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.locator("[data-panel-id]")).toHaveCount(1);
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(studioChartCanvas(page)).toHaveCount(1);
 });
 
 test("Studio comparison mode preserves presentation state, normalizes assets, and persists settings", async ({ page }) => {

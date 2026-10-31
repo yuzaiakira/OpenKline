@@ -43,6 +43,17 @@ const POINTER_DIAGNOSTICS_KEY = "__openklinePointerDiagnostics";
 const DRAWING_DIAGNOSTICS_KEY = "__openklineDrawingDiagnostics";
 const INPUT_DIAGNOSTICS_KEY = "__openklineInputDiagnostics";
 
+/**
+ * Studio now contains an independent Market Replay Lab chart. Keep existing
+ * chart interaction assertions scoped to the primary multi-chart workspace so
+ * they do not accidentally target the Lab's research visualization.
+ */
+export const STUDIO_CHART_CANVAS_SELECTOR = 'section[aria-label="OpenKline multi-chart workspace"] canvas';
+
+export function studioChartCanvas(page: Page): Locator {
+  return page.locator(STUDIO_CHART_CANVAS_SELECTOR);
+}
+
 type MainPaneFractions = {
   readonly topFraction: number;
   readonly bottomFraction: number;
@@ -59,7 +70,7 @@ type MainPaneFractions = {
  * Mobile Studio charts keep volume/RSI panes below the main pane, so full-canvas
  * fractions such as 0.24 can land outside the drawable region after Phase 8.8.14.
  */
-export async function placeVisibleChartPoint(page: Page, xFraction: number, yFraction: number, canvasSelector = "canvas"): Promise<void> {
+export async function placeVisibleChartPoint(page: Page, xFraction: number, yFraction: number, canvasSelector = STUDIO_CHART_CANVAS_SELECTOR): Promise<void> {
   const point = await page.evaluate(({ x, y, selector, diagnosticsKey }) => {
     const canvas = document.querySelector<HTMLCanvasElement>(selector);
     if (canvas === null) throw new Error(`Chart canvas is missing for selector ${selector}`);
