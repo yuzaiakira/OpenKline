@@ -60,6 +60,22 @@ function options(tape: ReturnType<typeof createMarketReplayTape>): ResearchExecu
   };
 }
 
+test("snapshot reads stay defensive across cache hits", () => {
+  const session = createResearchExecutionSession(options(createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("trade", 1_001)] })));
+  session.start();
+  session.step();
+  const first = session.getSnapshot();
+  const second = session.getSnapshot();
+  assert.notStrictEqual(first, second);
+  assert.notStrictEqual(first.orders, second.orders);
+  assert.equal(first.orders.length, 0);
+  (first.journal as unknown as Array<ResearchSnapshot["journal"][number]>).length = 0;
+  assert.equal(session.getSnapshot().journal.length, second.journal.length);
+  assert.deepEqual(session.getSnapshot(), second);
+  session.dispose();
+  session.dispose();
+});
+
 test("cancellation survives backward and forward replay with exact financial parity", () => {
   const tape = createMarketReplayTape({ events: [sourceStatus("status", 1_000), book("book", 1_000, 1), trade("later-trade", 1_001), trade("latest-trade", 1_002)] });
   const session = createResearchExecutionSession(options(tape));
@@ -172,6 +188,8 @@ test("bounded journals retain unique deterministic identities and honest complet
   const ids = original.journal.map((entry) => entry.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(original.journal.length, 4);
+  const sequenceNumbers = ids.map((id) => Number(id.slice(id.lastIndexOf("-journal-") + 9)));
+  assert.deepEqual(sequenceNumbers, [...sequenceNumbers].sort((left, right) => left - right));
   assert.ok(original.journalRetention.totalEmittedEntries > 10);
   assert.ok(original.journalRetention.evictedEntries > 0);
   assert.equal(original.journalRetention.complete, false);

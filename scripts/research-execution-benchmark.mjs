@@ -201,11 +201,20 @@ function runSample(eventCount) {
   assert.equal(order.status, "pending");
 
   const processingStart = now();
-  while (session.getSnapshot().state !== "completed") session.step();
+  // start() plus the two setup steps leave the scenario at event index one.
+  // Keep the hot-path measurement free of a
+  // snapshot allocation on every event; snapshot reads are measured below.
+  for (let index = 2; index < eventCount; index += 1) session.step();
   const processingMs = now() - processingStart;
   const completed = session.getSnapshot();
   assert.equal(completed.fills.length, 1);
   assert.equal(completed.fills[0]?.simulated, true);
+
+  const snapshotStart = now();
+  let snapshotCursorChecksum = 0;
+  for (let index = 0; index < 25; index += 1) snapshotCursorChecksum += session.getSnapshot().cursor.eventIndex ?? -1;
+  const snapshotReadMs = now() - snapshotStart;
+  assert.equal(snapshotCursorChecksum, 25 * (eventCount - 1));
 
   const reference = new ReferenceExecutionLedger(1_000_000);
   const firstFill = completed.fills[0];
@@ -249,6 +258,7 @@ function runSample(eventCount) {
     submissionMs,
     processingMs,
     processingMsPerEvent: processingMs / Math.max(1, eventCount - 2),
+    snapshotReadMs,
     seekMs,
     serializationMs,
     serializedBytes: Buffer.byteLength(serialized),
@@ -291,6 +301,7 @@ for (const eventCount of sizes) {
       "submissionMs",
       "processingMs",
       "processingMsPerEvent",
+      "snapshotReadMs",
       "seekMs",
       "serializationMs",
       "serializedBytes",
@@ -326,7 +337,7 @@ try {
 }
 
 console.log(JSON.stringify({
-  schemaVersion: 2,
+  schemaVersion: 3,
   gitSha,
   node: process.version,
   platform: process.platform,

@@ -141,6 +141,7 @@ interface MutableBook {
   consumedEventId: string | null;
   consumedBidQuantity: number;
   consumedAskQuantity: number;
+  observedEventCount: number;
 }
 
 interface SourceStatusObservation {
@@ -361,6 +362,48 @@ function cloneFill(fill: ResearchFill): ResearchFill {
   return { ...fill, referenceEventIds: [...fill.referenceEventIds], quality: cloneQuality(fill.quality) };
 }
 
+function cloneJournalEntry(entry: ResearchSnapshot["journal"][number]): ResearchSnapshot["journal"][number] {
+  return {
+    ...entry,
+    ...(entry.source === undefined ? {} : { source: cloneSource(entry.source) }),
+    ...(entry.quality === undefined ? {} : { quality: cloneQuality(entry.quality) }),
+    ...(entry.payload === undefined ? {} : { payload: cloneJson(entry.payload) }),
+  };
+}
+
+function cloneResearchOrder(order: ResearchOrder): ResearchOrder {
+  return { ...order, fills: [...order.fills] };
+}
+
+function cloneLedgerSnapshot(value: ResearchLedgerSnapshot): ResearchLedgerSnapshot {
+  return { ...value, position: value.position === null ? null : { ...value.position } };
+}
+
+function cloneDiagnostics(value: ResearchDiagnostics): ResearchDiagnostics {
+  return {
+    quality: [...value.quality],
+    warnings: [...value.warnings],
+    sourceCoverage: value.sourceCoverage.map((entry) => ({ ...entry, source: cloneSource(entry.source) })),
+    observedTradeCount: value.observedTradeCount,
+    observedOrderBookEventCount: value.observedOrderBookEventCount,
+    simulatedFillCount: value.simulatedFillCount,
+  };
+}
+
+function cloneResearchSnapshot(value: ResearchSnapshot): ResearchSnapshot {
+  return {
+    ...value,
+    cursor: { ...value.cursor },
+    ledger: cloneLedgerSnapshot(value.ledger),
+    orders: value.orders.map(cloneResearchOrder),
+    fills: value.fills.map(cloneFill),
+    journal: value.journal.map(cloneJournalEntry),
+    journalRetention: { ...value.journalRetention },
+    diagnostics: cloneDiagnostics(value.diagnostics),
+    ...(value.error === undefined ? {} : { error: value.error }),
+  };
+}
+
 function cloneDecision(decision: ResearchDecisionRecord): ResearchDecisionRecord {
   if (decision.decisionType === "cancel-order") return { ...decision };
   return { ...decision, ...(decision.limitPrice === undefined ? {} : { limitPrice: decision.limitPrice }), ...(decision.reason === undefined ? {} : { reason: decision.reason }) };
@@ -375,6 +418,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private readonly controller: MarketReplayController;
   private readonly listeners = new Set<(snapshot: ResearchSnapshot) => void>();
   private readonly decisions: ResearchDecisionRecord[] = [];
+  private readonly decisionsByCursor = new Map<number, ResearchDecisionRecord[]>();
+  private readonly nextDecisionOrdinalByCursor = new Map<number, number>();
   private readonly orders = new Map<string, MutableOrder>();
   private readonly fills = new Map<string, ResearchFill>();
   private readonly books = new Map<string, MutableBook>();
@@ -383,7 +428,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private readonly dividendEntitlements = new Map<string, DividendEntitlement>();
   private readonly sessionStates = new Map<string, SessionObservation>();
   private readonly corporateActionRevisions = new Map<string, number>();
-  private journal: ResearchSnapshot["journal"] = [];
+  private journal: ResearchSnapshot["journal"][number][] = [];
+  private journalHead = 0;
   private warnings: string[] = [];
   private quality = new Set<ResearchSourceQuality>();
   private ledger: MutableLedger;
@@ -399,6 +445,9 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private lastEvent: MarketReplayEvent | null = null;
   private lastMarkPrice: number | null = null;
   private lastMarkTime: number | null = null;
+  private snapshotRevision = 0;
+  private cachedSnapshotRevision = -1;
+  private cachedSnapshot: ResearchSnapshot | null = null;
   private readonly unsubscribeController: () => void;
 
   public constructor(options: ResearchExecutionOptions) {
@@ -415,8 +464,25 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   public getSnapshot(): ResearchSnapshot {
+    return cloneResearchSnapshot(this.canonicalSnapshot());
+  }
+
+  public getOrders(): readonly ResearchOrder[] {
+    return this.canonicalSnapshot().orders.map(cloneResearchOrder);
+  }
+
+  public getFills(): readonly ResearchFill[] {
+    return this.canonicalSnapshot().fills.map(cloneFill);
+  }
+
+  public getJournal(): readonly ResearchSnapshot["journal"][number][] {
+    return this.canonicalSnapshot().journal.map(cloneJournalEntry);
+  }
+
+  private canonicalSnapshot(): ResearchSnapshot {
+    if (this.cachedSnapshot !== null && this.cachedSnapshotRevision === this.snapshotRevision) return this.cachedSnapshot;
     const controllerState = this.controller.getState();
-    return {
+    this.cachedSnapshot = {
       version: OPENKLINE_RESEARCH_EXECUTION_VERSION,
       scenarioId: this.options.scenarioId,
       state: this.state,
@@ -431,23 +497,13 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       ledger: this.ledgerSnapshot(controllerState.clockTimestamp),
       orders: [...this.orders.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneOrder),
       fills: [...this.fills.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneFill),
-      journal: this.journal.map((entry) => ({ ...entry, ...(entry.source === undefined ? {} : { source: cloneSource(entry.source) }), ...(entry.quality === undefined ? {} : { quality: cloneQuality(entry.quality) }), ...(entry.payload === undefined ? {} : { payload: cloneJson(entry.payload) }) })),
+      journal: this.journalEntries().map(cloneJournalEntry),
       journalRetention: this.journalRetention(),
       diagnostics: this.diagnostics(),
       ...(this.error === null ? {} : { error: this.error.message }),
     };
-  }
-
-  public getOrders(): readonly ResearchOrder[] {
-    return [...this.orders.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneOrder);
-  }
-
-  public getFills(): readonly ResearchFill[] {
-    return [...this.fills.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneFill);
-  }
-
-  public getJournal(): readonly ResearchSnapshot["journal"][number][] {
-    return this.journal.map((entry) => ({ ...entry, ...(entry.source === undefined ? {} : { source: cloneSource(entry.source) }), ...(entry.quality === undefined ? {} : { quality: cloneQuality(entry.quality) }), ...(entry.payload === undefined ? {} : { payload: cloneJson(entry.payload) }) }));
+    this.cachedSnapshotRevision = this.snapshotRevision;
+    return this.cachedSnapshot;
   }
 
   public submitOrder(request: ResearchOrderRequest): ResearchOrder {
@@ -480,12 +536,13 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       decisionClockTime: eventClock,
       eligibleClockTime: eventClock === null ? null : eventClock + delay,
     };
-    this.decisions.push(decision);
+    this.recordDecision(decision);
     const order = this.createOrderFromDecision(decision);
     if (this.controller.getState().state === "completed") {
       this.finalizePendingOrders();
       this.finalized = true;
     }
+    this.invalidateSnapshot();
     this.emit();
     return cloneOrder(order);
   }
@@ -510,12 +567,13 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       eligibleClockTime: null,
       reason: nonEmpty(reason, "reason"),
     };
-    this.decisions.push(cancellation);
+    this.recordDecision(cancellation);
     this.releaseReservation(order);
     order.status = "cancelled";
     order.reason = cancellation.reason;
     this.recordJournal("decision", this.lastEvent, "order-cancelled", order.id, undefined, { reason: cancellation.reason, decisionId: cancellation.decisionId });
     this.assertFinancialInvariants();
+    this.invalidateSnapshot();
     this.emit();
     return cloneOrder(order);
   }
@@ -607,11 +665,22 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.listeners.clear();
     this.books.forEach((book) => book.controller.dispose());
     this.books.clear();
+    this.decisions.length = 0;
+    this.decisionsByCursor.clear();
+    this.nextDecisionOrdinalByCursor.clear();
+    this.sourceStatuses.clear();
+    this.observedTrades.clear();
+    this.dividendEntitlements.clear();
     this.sessionStates.clear();
     this.corporateActionRevisions.clear();
     this.orders.clear();
     this.fills.clear();
     this.journal = [];
+    this.journalHead = 0;
+    this.warnings = [];
+    this.quality.clear();
+    this.cachedSnapshot = null;
+    this.cachedSnapshotRevision = -1;
     this.state = "disposed";
     this.error = null;
   }
@@ -637,10 +706,12 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       }
       this.state = mapSessionState(state.state);
       this.error = null;
+      this.invalidateSnapshot();
       this.emit();
     } catch (error) {
       this.state = "error";
       this.error = error instanceof Error ? error : new Error(String(error));
+      this.invalidateSnapshot();
       this.emit();
     }
   }
@@ -668,6 +739,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.orders.clear();
     this.fills.clear();
     this.journal = [];
+    this.journalHead = 0;
     this.nextJournalSequence = 0;
     this.journalEvictedEntries = 0;
     this.warnings = [];
@@ -678,6 +750,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.lastMarkPrice = null;
     this.lastMarkTime = null;
     this.finalized = false;
+    this.invalidateSnapshot();
   }
 
   private processEvent(event: MarketReplayEvent, index: number): void {
@@ -687,9 +760,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private activateDecisions(index: number): void {
-    const decisions = this.decisions
-      .filter((candidate) => candidate.decisionCursor === index)
-      .sort((left, right) => left.decisionOrdinal - right.decisionOrdinal || left.decisionId.localeCompare(right.decisionId));
+    const decisions = this.decisionsByCursor.get(index) ?? [];
     for (const decision of decisions) {
       if (decision.decisionType === "submit-order") {
         if (this.orders.has(decision.orderId)) continue;
@@ -735,12 +806,14 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     const book = this.getOrCreateBook(event.instrumentId, event.venueId, event.source);
     const result = book.controller.applySnapshot(event.snapshot);
     if (result.kind === "applied") {
+      book.observedEventCount += 1;
       book.lastEventId = event.id;
       book.lastSynchronizedClock = replayEventClock(event, this.options.clockPolicy);
       book.consumedEventId = null;
       book.consumedBidQuantity = 0;
       book.consumedAskQuantity = 0;
     }
+    if (result.kind === "buffered") book.observedEventCount += 1;
     if (result.kind === "rejected") this.addQuality("indeterminate", `Order-book snapshot rejected: ${result.reason ?? "unknown reason"}`);
   }
 
@@ -748,12 +821,14 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     const book = this.getOrCreateBook(event.instrumentId, event.venueId, event.source);
     const result = book.controller.applyDelta(event.delta);
     if (result.kind === "applied") {
+      book.observedEventCount += 1;
       book.lastEventId = event.id;
       book.lastSynchronizedClock = replayEventClock(event, this.options.clockPolicy);
       book.consumedEventId = null;
       book.consumedBidQuantity = 0;
       book.consumedAskQuantity = 0;
     }
+    if (result.kind === "buffered") book.observedEventCount += 1;
     if (result.kind === "rejected") this.addQuality("indeterminate", `Order-book delta rejected: ${result.reason ?? "unknown reason"}`);
   }
 
@@ -1274,6 +1349,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       consumedEventId: null,
       consumedBidQuantity: 0,
       consumedAskQuantity: 0,
+      observedEventCount: 0,
     };
     this.books.set(key, book);
     return book;
@@ -1379,11 +1455,19 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private nextDecisionMetadata(cursor: number): Pick<ResearchSubmitDecision, "decisionId" | "decisionOrdinal"> {
-    const decisionOrdinal = this.decisions.filter((decision) => decision.decisionCursor === cursor).length + 1;
+    const decisionOrdinal = (this.nextDecisionOrdinalByCursor.get(cursor) ?? 0) + 1;
+    this.nextDecisionOrdinalByCursor.set(cursor, decisionOrdinal);
     return {
       decisionId: `${this.options.scenarioId}-decision-${this.nextDecisionNumber++}`,
       decisionOrdinal,
     };
+  }
+
+  private recordDecision(decision: ResearchDecisionRecord): void {
+    this.decisions.push(decision);
+    const bucket = this.decisionsByCursor.get(decision.decisionCursor);
+    if (bucket === undefined) this.decisionsByCursor.set(decision.decisionCursor, [decision]);
+    else bucket.push(decision);
   }
 
   private orderedDecisions(): readonly ResearchDecisionRecord[] {
@@ -1415,10 +1499,16 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       ...(payload === undefined ? {} : { payload: cloneJson(payload) }),
     };
     if (this.journal.length >= this.options.maxJournalEntries) {
-      this.journal = [...this.journal.slice(1), entry];
+      this.journal[this.journalHead] = entry;
+      this.journalHead = (this.journalHead + 1) % this.options.maxJournalEntries;
       this.journalEvictedEntries += 1;
       if (!this.warnings.includes("Journal retention limit reached; oldest entries were evicted")) this.warnings.push("Journal retention limit reached; oldest entries were evicted");
-    } else this.journal = [...this.journal, entry];
+    } else this.journal.push(entry);
+  }
+
+  private journalEntries(): readonly ResearchSnapshot["journal"][number][] {
+    if (this.journalHead === 0 || this.journal.length < this.options.maxJournalEntries) return this.journal;
+    return [...this.journal.slice(this.journalHead), ...this.journal.slice(0, this.journalHead)];
   }
 
   private journalRetention(): ResearchJournalRetention {
@@ -1445,7 +1535,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       warnings: [...this.warnings],
       sourceCoverage: coverage,
       observedTradeCount: this.observedTrades.size,
-      observedOrderBookEventCount: [...this.books.values()].reduce((count, book) => count + book.controller.getHistory().length, 0),
+      observedOrderBookEventCount: [...this.books.values()].reduce((count, book) => count + book.observedEventCount, 0),
       simulatedFillCount: this.fills.size,
     };
   }
@@ -1460,6 +1550,12 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     if (this.disposed) return;
     const snapshot = this.getSnapshot();
     for (const listener of [...this.listeners]) listener(snapshot);
+  }
+
+  private invalidateSnapshot(): void {
+    this.snapshotRevision += 1;
+    this.cachedSnapshot = null;
+    this.cachedSnapshotRevision = -1;
   }
 
   private assertNotDisposed(): void {
