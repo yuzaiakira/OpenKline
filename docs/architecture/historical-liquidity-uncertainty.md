@@ -1,6 +1,6 @@
 # Historical liquidity and execution uncertainty
 
-Status: **PROPOSED — INTERNAL DESIGN ONLY**
+Status: **INTERNAL DESIGN AND IMPLEMENTATION VERIFIED — NOT PUBLIC**
 
 Historical prices and displayed Level-2 records are observations. They do not
 prove that a hypothetical order could access inventory, obtain queue priority,
@@ -103,6 +103,35 @@ effective event and must preserve aggregate economic cost. Pending-order
 handling must be an explicit policy. Dividend entitlement and payment are
 separate. No future action, calendar state, or session close may affect an
 earlier decision. Unsupported action mechanics fail closed.
+
+The Phase 16.0.1 implementation applies the same provenance rule to every
+corporate-action observation: the action logical identity is scoped by
+instrument and action ID, and the source generation is retained. Conflicting
+source generations are rejected unless an exact authoritative source is
+selected. Duplicate deliveries of one source revision are idempotent; a later
+revision after application is a quality failure rather than a silent rewrite.
+Dividend entitlement is recorded at the ex-dividend boundary and a later split
+does not retroactively change that entitlement. A known closed or unresolved
+session makes execution indeterminate until a causal reopen boundary is
+observed.
+
+## Reservation and audit invariants
+
+The internal spot ledger asserts after every reserve, release, rejection,
+cancellation, fill, split, or dividend transition:
+
+- `availableCash = cash - reservedCash`;
+- cash, reserved cash, quantity, reserved quantity, and cost basis are finite
+  and non-negative;
+- reserved quantity never exceeds held quantity; and
+- a cancellation or terminal rejection releases its reservation once, even
+  after deterministic reconstruction.
+
+The decision journal records submit and cancel decisions as distinct typed
+records with stable IDs and canonical same-cursor ordering. Bounded retention
+uses monotonic journal sequence numbers and reports whether the retained
+window is complete. An incomplete retained window is not a complete audit
+trail and must not be presented as one.
 
 ## Contamination prevention
 

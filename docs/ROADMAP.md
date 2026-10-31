@@ -69,8 +69,9 @@ offline Studio Market Replay Lab are present.
   absent. The isolated offline consumer gate passes after its registry cache
   is populated, while the default cloud run remains `BLOCKED` when the
   Playwright-managed Chromium executable is absent. Phase 15 commits are
-  synchronized with `origin/main`; Phase 16.0 internal implementation is
-  verified while Phase 15.5 acceptance remains open.
+  synchronized with `origin/main`; Phase 16.0 and its Phase 16.0.1
+  correctness-hardening increment are verified internally while Phase 15.5
+  acceptance remains open.
 - [Implemented / Verified internally — Phase 16.0 replay-causal execution
   research foundation] Owner authorization covers only the unexported,
   deterministic spot/long-only simulator, its causal Level-2 liquidity model,
@@ -84,6 +85,19 @@ offline Studio Market Replay Lab are present.
   integration, broker connectivity, npm publication, tag, release, or live
   execution is authorized. See `docs/reports/phase-16-0-foundation.md` and
   `docs/reviews/phase-16-public-api-proposal.md`.
+- [Implemented / Verified internally — Phase 16.0.1 correctness hardening]
+  The authorized corrective increment makes submit/cancel decisions durable
+  across backward/forward replay, orders same-cursor decisions canonically,
+  rejects future-branch edits, fixes the pending-order capacity boundary, and
+  makes bounded journal retention explicit. Financial reservation invariants,
+  corporate-action source identity and revision handling, ex-dividend
+  entitlement, and known session closures now fail closed with focused parity
+  tests. The deterministic corrective benchmark and full 345-test Node suite
+  pass at `origin/main`; package, distribution, stress, and local Chromium
+  checks remain passing. This remains an internal, unexported research
+  simulator; API baseline approval, managed Firefox/WebKit/Mobile Safari,
+  physical-device, legal, accessibility, and release gates remain open. See
+  `docs/reports/phase-16-0-1-correctness-hardening.md`.
 
 ## Current milestone
 

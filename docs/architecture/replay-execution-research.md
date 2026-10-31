@@ -1,13 +1,14 @@
 # Replay-causal execution research foundation
 
-Status: **INTERNAL IMPLEMENTATION — NOT PUBLIC**
+Status: **INTERNAL IMPLEMENTATION VERIFIED — NOT PUBLIC**
 
 The owner has authorized internal Phase 16.0 engineering based on the reviewed
 design at commit `76ad54525958e5689b752b49855209beacdb37ee`. The current
 implementation is an unexported research simulator; it is not a supported
 package API, broker integration, live execution path, or claim of historical
 exchange fills. Phase 15.5 compatibility, legal, accessibility, and release
-gates remain independent and open.
+gates remain independent and open. Phase 16.0.1 corrective hardening is
+verified by focused and full local tests, but does not expand that boundary.
 
 ## Boundary
 
@@ -115,13 +116,47 @@ the historical information cannot establish the modeled outcome; it is not a
 rejected live-exchange order. Order IDs and idempotency keys must include the
 scenario identity and must not collide across source generations.
 
+## Phase 16.0.1 correctness hardening
+
+The internal implementation now treats interactive decisions as durable,
+ordered scenario records rather than transient mutations:
+
+- submissions and cancellations are a discriminated decision union with a
+  stable `decisionId`, monotonic `decisionOrdinal`, cursor, clock, and event
+  identity; cancellation records survive backward/forward reconstruction and
+  release a reservation at most once;
+- same-cursor decisions are replayed in canonical ordinal/ID order, while
+  edits against a future branch are rejected instead of being silently moved
+  earlier;
+- `maxPendingOrders` counts the candidate being submitted (`>=` capacity is
+  full), and rejected, cancelled, and terminal orders do not consume future
+  capacity;
+- bounded journals use a monotonic sequence for unique IDs and expose retained
+  count, total emitted count, eviction count, and an explicit completeness
+  flag. An evicted journal is not described as a complete audit trail;
+- every reservation and fill path asserts finite, non-negative cash/position
+  state and the available-cash and reserved-position identities. These are
+  fail-closed research invariants, not exchange guarantees; and
+- corporate actions are keyed by instrument/action logical identity and source
+  generation. Ambiguous source generations fail closed unless an exact
+  authoritative source is selected. Dividend entitlement is fixed at the
+  ex-dividend boundary and is not retroactively rescaled by a later split.
+  Observed session boundaries also fail closed while a venue is closed or its
+  boundary state is indeterminate.
+
+The corresponding fixtures compare complete orders, fills, ledger, journal,
+and retention metadata against the independent reference ledger. No internal
+research type is re-exported through the root package.
+
 ## Replay seek and reconstruction
 
 Interactive decisions are scenario records, not mutable market history. On a
 backward seek, the engine reconstructs from the tape start or a validated
 checkpoint using only decisions whose recorded availability frontier is at or
 before the new cursor. Decisions made later are excluded from the visible
-scenario state, not silently moved earlier. A user changing a historical
+scenario state, not silently moved earlier. Durable cancellation records are
+replayed through the same decision activation path, so a cancelled order
+cannot become executable after reconstruction. A user changing a historical
 decision must create a new scenario branch or explicitly reset the scenario.
 
 Forward seek, step, pause, reset, cancellation, and disposal must use the
@@ -170,6 +205,12 @@ current owner instruction. The implementation milestones are:
 7. Re-run API inventory/diagnostics and confirm no public surface changed.
 8. Update the Phase 16 report with executable results and keep all Phase 15.5
    acceptance gates open.
+
+Phase 16.0.1 completed the corrective verification increment for the
+decision journal, pending-capacity boundary, bounded-audit metadata,
+financial reservations, corporate-action provenance, and session eligibility.
+Its benchmark adds a deterministic cancellation/reconstruction scenario and
+does not replace the separate chart or Order Flow performance gates.
 
 The source remains internal until a separate public API decision; no npm
 publication, release, live broker connectivity, or license change is covered

@@ -3,8 +3,9 @@
 Status: **VERIFIED INTERNAL BENCHMARK — NOT A PUBLIC PERFORMANCE CLAIM**
 
 This document records the reproducible benchmark protocol and the latest
-internal measurements for the Phase 16.0 simulator. It does not establish
-public API support, exchange execution performance, or a chart FPS claim.
+internal measurements for the Phase 16.0.1 corrective implementation. It does
+not establish public API support, exchange execution performance, or a chart
+FPS claim.
 
 ## Workloads
 
@@ -30,6 +31,11 @@ and optimized implementation:
 - fixed latency;
 - corporate-action/session boundary;
 - forward processing and backward/forward reconstruction.
+
+The corrective scenario additionally submits a partial market order, records
+a durable cancellation, exercises the pending-order capacity boundary, emits
+bounded journal entries, seeks backward and forward, and compares complete
+orders/fills/ledger/journal state with `ReferenceExecutionLedger`.
 
 ## Measurements
 
@@ -81,30 +87,48 @@ npm run benchmark:research
 ```
 
 The command builds the internal source and runs
-`node --expose-gc scripts/research-execution-benchmark.mjs`. The workload is
-deterministic: one complete source-status event, one synchronized Level-2
+`node --expose-gc scripts/research-execution-benchmark.mjs`. The base workload
+is deterministic: one complete source-status event, one synchronized Level-2
 snapshot, and unique observed trades for the remaining events. Each sample
 submits one market buy after the initial book, processes the complete tape,
 performs a midpoint and end seek, compares the first fill with the independent
 reference ledger, serializes the JSON scenario, disposes the session, and
-forces GC before the retained-heap reading.
+forces GC before the retained-heap reading. The corrective scenario uses a
+small deterministic tape to validate cancellation persistence, reservation
+release, journal retention metadata, and complete reconstruction parity.
 
 Environment: Linux x64, Node `v24.19.0`, forced GC available. Results were
-measured at implementation commit `5dc6ab99997d1f8c5ef510fffc23e00f34209521`
-before this benchmark/documentation commit. Times are milliseconds; heap
+measured at corrective benchmark commit
+`0b980ed1ef8d6807f51e1f7f553de5f9d2395d53`. Times are milliseconds; heap
 values are MiB. `p95` is the sample percentile from five samples for 1k/10k
 and three samples for 100k.
 
 | Events | Samples | Processing median/p95 | Processing ms/event median/p95 | Construction median/p95 | Seek median/p95 | Serialization median/p95 | Heap before dispose median/p95 | Retained after dispose median/p95 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 5 | 43.66 / 46.25 | 0.04375 / 0.04634 | 28.44 / 39.96 | 11.97 / 12.39 | 0.091 / 0.312 | 7.74 / 7.82 | 0.103 / 0.612 |
-| 10,000 | 5 | 530.25 / 568.68 | 0.05304 / 0.05688 | 253.97 / 257.82 | 311.75 / 365.48 | 0.097 / 0.128 | 34.12 / 34.48 | 0.217 / 0.247 |
-| 100,000 | 3 | 3,856.63 / 3,932.73 | 0.03857 / 0.03933 | 2,636.97 / 2,661.19 | 1,353.45 / 1,355.37 | 0.086 / 0.142 | 141.97 / 142.00 | 0.212 / 0.231 |
+| 1,000 | 5 | 41.84 / 45.13 | 0.04192 / 0.04522 | 34.48 / 41.49 | 12.52 / 13.34 | 0.086 / 0.276 | 7.92 / 7.99 | 0.109 / 0.627 |
+| 10,000 | 5 | 558.41 / 576.17 | 0.05585 / 0.05763 | 262.72 / 268.82 | 331.03 / 376.16 | 0.076 / 0.080 | 34.35 / 34.66 | 0.253 / 0.275 |
+| 100,000 | 3 | 3,958.32 / 4,004.49 | 0.03958 / 0.04005 | 2,681.97 / 2,684.06 | 1,399.19 / 1,493.43 | 0.092 / 0.096 | 142.05 / 142.11 | 0.235 / 0.241 |
+
+Corrective scenario results (same run, four retained journal entries and 21
+evictions in every sample) were:
+
+| Events | Construction median/p95 (ms) | Processing median/p95 (ms) | Cancellation median/p95 (ms) | Seek median/p95 (ms) | Retained entries | Journal evictions | Retained heap after correction median/p95 (bytes) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 0.886 / 1.025 | 0.213 / 0.356 | 0.424 / 0.907 | 0.435 / 0.797 | 4 | 21 | 73,768 / 135,752 |
+| 10,000 | 0.787 / 0.950 | 0.181 / 0.210 | 0.456 / 0.504 | 0.559 / 0.584 | 4 | 21 | 0 / 0 |
+| 100,000 | 0.825 / 0.890 | 0.151 / 0.152 | 0.426 / 0.459 | 0.573 / 0.842 | 4 | 21 | 0 / 0 |
 
 Tape construction, order submission, and disposal were measured separately in
-the JSON output. The 100k scenario serialized to approximately 4.6 KiB
+the JSON output. The 100k scenario serialized to approximately 4.7 KiB
 because the export contains assumptions, decisions, fills, ledger, journal,
 and diagnostics, not the source tape. No 500k run was performed.
+
+The previous Phase 16.0 base measurements were 43.66 ms, 530.25 ms, and
+3,856.63 ms processing medians for 1k/10k/100k. The corrected run is not a
+controlled before/after performance comparison: it includes changed
+correctness work, a changed benchmark schema/scenario, and a different
+process state. These values document reproducibility and lifecycle behavior,
+not a supported performance regression or improvement claim.
 
 ## Interpretation and limits
 
@@ -117,6 +141,7 @@ and diagnostics, not the source tape. No 500k run was performed.
   further use in the targeted test suite and released replay/order-book
   runtime references; the residual heap figures are process-level readings,
   not a claim of zero V8 heap.
-- The required benchmark row is now **PASS** for 1k/10k/100k under this
-  documented environment and workload. Cross-browser and physical-device
+- The required benchmark row is **PASS** for 1k/10k/100k under this documented
+  environment and workload. Corrective reconstruction parity and journal
+  retention checks are also **PASS**. Cross-browser and physical-device
   acceptance remains outside this result.
