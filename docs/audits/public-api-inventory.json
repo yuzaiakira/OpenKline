@@ -829,7 +829,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "5a25728f1ab9e5443a44c9d32bfd7952d2aaff261c9240e5443d67b17e9507dd"
+      "signatureHash": "c302edb4f198091b97cd126895e45c4ba9166c45b97bd1f95b98df5293c0d4e1"
     },
     {
       "package": "openkline",
@@ -879,6 +879,13 @@
       "kind": "type",
       "module": "./types.js",
       "signatureHash": "de5065743499cf9d0efcc609c82a03edda99772062221e25f3002b0b5b3214ff"
+    },
+    {
+      "package": "openkline",
+      "name": "ChartMarketReplayOptions",
+      "kind": "type",
+      "module": "./chart.js",
+      "signatureHash": "a68efe0194123a6de00bfb988545a8075a8d8a4388e052acaa2c8cb1db779680"
     },
     {
       "package": "openkline",
@@ -1442,6 +1449,34 @@
     },
     {
       "package": "openkline",
+      "name": "createMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fc4026cd78901bf3b8e75819b4606623d700e2b3c23950f2f093a1dc30a7dea8"
+    },
+    {
+      "package": "openkline",
+      "name": "CreateMarketReplayTapeOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "9e42b6cc5aa4077ab91828163e39b5bd8dac354590e6e95214b111d69c1ce94c"
+    },
+    {
+      "package": "openkline",
+      "name": "createMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "60f5293be5c78442545356f27352e110773bc76644e1cf39bb8112f9bf4bbf78"
+    },
+    {
+      "package": "openkline",
+      "name": "CreateMarketReplayWorkspaceOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5a034e06ca1bf7fa33d485de0e075b9294fbbb49b2fb21e25016e557c304561f"
+    },
+    {
+      "package": "openkline",
       "name": "createOptimizationWorker",
       "kind": "runtime",
       "module": "./optimization/index.js",
@@ -1939,6 +1974,13 @@
     },
     {
       "package": "openkline",
+      "name": "fingerprintMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "358f469f3373e94dcbeb9a55fbbbdb3e561321987c1f74f71aeea09b28180ad7"
+    },
+    {
+      "package": "openkline",
       "name": "FixedParameter",
       "kind": "type",
       "module": "./optimization/index.js",
@@ -2258,6 +2300,13 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "abe956f77f1ff3ba831b5472c694fe774997b5f5456428a8558daea58336e37d"
+    },
+    {
+      "package": "openkline",
+      "name": "isMarketReplayEventKind",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "2edbca3eb71444ac130ff6fa3415e17498414fb0662cdef850d038d9e7add2f0"
     },
     {
       "package": "openkline",
@@ -2702,6 +2751,342 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplayCandleEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "77742996074b13e6600404c5dce86cf22bbd901f7c2ea8925ac262ae3252cec8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCheckpoint",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "a54b86cdf9e67d3e733a90e882c899a341d3eb9bf58857f45449cdb9f57792e3"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayClockPolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e1f41c4b9bbf57e4f79bef9fdcf1fe05bbcbd42c3287739400a184e7d31fd01e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCompletedCandle",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "c687d12f40251c0b8b3682a49caf0366c483c53293e4d76e49b0f9e50cd52058"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayController",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "144d0cb4fa0fcc3ea800b3fee0de98f13f73accd46400b9a293c2e12a60eabb9"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayControllerOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "4ac7503ccf870da7edf4e08ee204105a67fdad3371d0b134ff549c9b02665746"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCoordinator",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "8285885ec7770513bfb0c89ae3ad0c88b47d14af2884f4c37e85e3660fd96720"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCorporateActionEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "0add34a6d8a467cf84fbab56348a5a6ec6c7dd8c7a227c9a4f19fc945bd081e1"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCursor",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "23d259c33e8d45b6d55dd3da1d0bfac8dc2b254de7268755c48de1735728e326"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCvdState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3edc0c4ffbb2805e2df74591b0bf2d28ad5fa74fa89587c4d5b9df71462cfb4c"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayDisplaySettings",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "1b83dbe6762027dbde49319986e7d3a57435e621839e6582ed633511c85c793e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "05f0853c7dd52e389a14d9f4dfd1f01cc5d3d2a7f35f631480573f9cbe953e2d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEventBase",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3c81b4cfa96884c4ce56a19abb6a82dffe082ba888df4f7ea86edf4397ce9942"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEventKind",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7f6cc1fe63a8216f7320f49dfee3de6b6c08b8e03b57376b33db3a6db1de870e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayFootprintCell",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7799762f37524bcb7dab7505b90d8161a2fa2074a32eccfed1e6698c5cf3e2a8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayFormingCandle",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6850304921d18129c617c15b6dbd218388aa36f9c0be6698c8899cdbb1e60f9d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayIntegrityState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e4221e2d372e2fbf1a1c0ec7b05f72a4c420f87be4e144b8c8ecbf805c6cf536"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayKnowledgePolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7223edfb44e96eeb561afa3a0726409639cb88cf6fbeac2b9223eddce9056e30"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayLifecycleError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "b67329e6bb241a9a710295b77c8e360a8c7fd837333dc037576503f6491c2157"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookDeltaEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "9d974114f9dc80464ce16d205a981b7c5f28e2772d2152c9cd461cc998dcf0c6"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookSnapshotEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e12b43be213691d99244ec28f29b4da157b054406327584ec0e68270f364bd7e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "ba770fbb40345c637248505df0ace0f76fffe4e1b09e19cfe0be52b5f0ce8042"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderingPolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e6ffd56d3161347204858683a140dcee551cfc3d48b24cd45165de5895987904"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelConfiguration",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "c7da471c48d2b8d58928627346d3b642e07f814cd69713b9b7e13d904bc6e8bf"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelListener",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "edd4d0d96a1f09a6f3572204216954f9de8b85917ac876db4315fd3e12caf5af"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelRegistration",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5c92b386919a5a62e5c988e301738c15aa03127379a626ed32cb31be894f0b95"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelSnapshot",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "022dda43d8447fd5b3ceee56e1ee437bf9043a1024f7b7e9cfb63f659095dcbb"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPlaybackState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6a783cafaa2229c547e22be295bb295342c8863c313348b555a6ec4bc067ba1f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayProgress",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fe7eff075d1726838d38910da1f73656a7cbcae660e87b62d65902470d9b1af5"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionBoundary",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "11ffcbeb679ce3625585177ad0d551dd08574515d7ea00a522c6ac56109289b0"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionBoundaryEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7f0bd8c6edd2ec15fc01639dd88899fb2137b384ffe60b58336edb07f72a0943"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "1d700d40f22de2243e2fb7531b47c015fcfb9ff2747847d39cce8706e84fff46"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySnapshot",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fa598ca78b60374b6ce88c93277aa94dbc2bace556120007258d76497705fec4"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySource",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "955d34353b6a89124705cc786b9813c23c644f220afbc182fdf6c4ed30ccda8b"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceCoverage",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "02d779ead699cee3f5e5e19582d39ce49d2e5908751a8a17dc35cd0bff0da054"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceCoverageState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "396092ddf2977f57acf9ae9e75ba439b808dd3286f3f30ab09d4def5ac3bb397"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceStatus",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e209cb4bf88fdb3b96d4795eee37d4e1521b1a3ed4354acec08034eef7bd346f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceStatusEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "237b7e435b9c43ad3a9c60a37ab1559b571dd96dcaf0ae27f5689919a88bb871"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3a0a9e833b4e41d91c626245e5b3dfa7997eed1b8eef9828ced6a54079303da7"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayStateListener",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6fdd026d57bc106f70a4e0aa9375a1100446001600abdda71e32edf9e8c16a6d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTape",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "77cc17844fefedea0834ab16f4676ae349fcf5be7a2bff663a5c27a765be5302"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTapeValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "843b2bac59015ef22dfba53e37329f45d8dba24e8b5958d21a2982ae0b0fa275"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "23ffc35adcf3bac41867aae8de9821d314cbda0852c22d4f52c8c8d1be1e7efc"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeSummary",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "f6eeadfb439afe44262f44c91265afeb14bf5f73e0e417fa95e36935a8c05024"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "86c5d328bfea1d770e34759c36385d96684f0a9f2f293a33449a4809e3525304"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceCursor",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "980c52e3a1cc7a5ae6194e7e3a79d24526542048aad34a7e4c02985662424ca8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceDocument",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fa172b167ab99f348b84a02063b47fd9539981d50643c57cf0a8cf0c7076189d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fb9dab6ea6aa6da253339309d7c802efcd3ac831d020e7f0531bb3b33842db17"
+    },
+    {
+      "package": "openkline",
       "name": "MarketTrade",
       "kind": "type",
       "module": "./market-trades.js",
@@ -3049,6 +3434,27 @@
       "kind": "runtime",
       "module": "./extensions/index.js",
       "signatureHash": "1d3ad8d02707d3c590549509835b690ddf78792675571f31b48523438f1946e3"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_ORDERING_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "f27a64944c653a9e6810ec72c42e7df10e589befd99efcccb34abe5a612bee14"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "a9ceccfdebc618ba2f8a9d1aab041d4e324a1bf12c7d4f7fac4e9bd513cb037c"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_WORKSPACE_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "91db6694274db004bc5615513888f1429f08339f89c2846bbc8ecaae8ead37c8"
     },
     {
       "package": "openkline",
@@ -4022,6 +4428,27 @@
       "kind": "runtime",
       "module": "./multi-timeframe.js",
       "signatureHash": "e10efca4c8056391cccdab786b868907813b058e82be5ff0ddbfb6bd1aac70b3"
+    },
+    {
+      "package": "openkline",
+      "name": "parseMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fad30048ed165f604b831b10d719c83b77c0b48df7dc9b2f695e98da40470087"
+    },
+    {
+      "package": "openkline",
+      "name": "ParseMarketReplayTapeOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5982907aa46ef667296796db03e8106ee5c15481380ec2a58c8aa9996dacbc3b"
+    },
+    {
+      "package": "openkline",
+      "name": "parseMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "52f4be1a6d16fcfdcb4f1c2b87793d76f96327ae0e2c4568ad003125dca8552e"
     },
     {
       "package": "openkline",
@@ -4851,6 +5278,13 @@
     },
     {
       "package": "openkline",
+      "name": "replayEventClock",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "1cc35b3c8486a33a0c73d11032799c60844530767c4938d7b0a948c513481882"
+    },
+    {
+      "package": "openkline",
       "name": "ReplayLifecycleError",
       "kind": "runtime",
       "module": "./replay/index.js",
@@ -5604,6 +6038,20 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "d88091155f71a4978b649ffe0e3d050331980495a41cef3a079c47869637151f"
+    },
+    {
+      "package": "openkline",
+      "name": "serializeMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "1b0a3cdf7e7fb784cc0566bc8961de8730d41cc6052537fa39fb8f89cb114d45"
+    },
+    {
+      "package": "openkline",
+      "name": "serializeMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "6661e609f01a6eebc6574440c87e50a42d88c4a903908dfb3b31124b1af77939"
     },
     {
       "package": "openkline",
@@ -6426,6 +6874,13 @@
     },
     {
       "package": "openkline",
+      "name": "validateMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "f7baca82fcf187bbcab32c81e5757ec17ca7a575bd8735e1d8c7eb0ccaf55b0e"
+    },
+    {
+      "package": "openkline",
       "name": "validatePaperTradingMarkers",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -7215,7 +7670,7 @@
       "name": "Chart",
       "kind": "runtime",
       "module": "./chart.js",
-      "signatureHash": "5a25728f1ab9e5443a44c9d32bfd7952d2aaff261c9240e5443d67b17e9507dd"
+      "signatureHash": "c302edb4f198091b97cd126895e45c4ba9166c45b97bd1f95b98df5293c0d4e1"
     },
     {
       "package": "openkline",
@@ -7356,6 +7811,20 @@
       "kind": "runtime",
       "module": "./trading-calendar.js",
       "signatureHash": "15445e6fb02b80d30eeda274f10ac37f8ab96f97b5f87fcfa12580b7a7f7fbff"
+    },
+    {
+      "package": "openkline",
+      "name": "createMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fc4026cd78901bf3b8e75819b4606623d700e2b3c23950f2f093a1dc30a7dea8"
+    },
+    {
+      "package": "openkline",
+      "name": "createMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "60f5293be5c78442545356f27352e110773bc76644e1cf39bb8112f9bf4bbf78"
     },
     {
       "package": "openkline",
@@ -7618,6 +8087,13 @@
     },
     {
       "package": "openkline",
+      "name": "fingerprintMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "358f469f3373e94dcbeb9a55fbbbdb3e561321987c1f74f71aeea09b28180ad7"
+    },
+    {
+      "package": "openkline",
       "name": "FootprintCalculator",
       "kind": "runtime",
       "module": "./order-flow.js",
@@ -7741,6 +8217,13 @@
       "kind": "runtime",
       "module": "./core/candle-series.js",
       "signatureHash": "abe956f77f1ff3ba831b5472c694fe774997b5f5456428a8558daea58336e37d"
+    },
+    {
+      "package": "openkline",
+      "name": "isMarketReplayEventKind",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "2edbca3eb71444ac130ff6fa3415e17498414fb0662cdef850d038d9e7add2f0"
     },
     {
       "package": "openkline",
@@ -7898,6 +8381,48 @@
     },
     {
       "package": "openkline",
+      "name": "MarketReplayController",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "144d0cb4fa0fcc3ea800b3fee0de98f13f73accd46400b9a293c2e12a60eabb9"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCoordinator",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "8285885ec7770513bfb0c89ae3ad0c88b47d14af2884f4c37e85e3660fd96720"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayLifecycleError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "b67329e6bb241a9a710295b77c8e360a8c7fd837333dc037576503f6491c2157"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTapeValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "843b2bac59015ef22dfba53e37329f45d8dba24e8b5958d21a2982ae0b0fa275"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "86c5d328bfea1d770e34759c36385d96684f0a9f2f293a33449a4809e3525304"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceValidationError",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fb9dab6ea6aa6da253339309d7c802efcd3ac831d020e7f0531bb3b33842db17"
+    },
+    {
+      "package": "openkline",
       "name": "MarketTradeDatafeedError",
       "kind": "runtime",
       "module": "./market-trades.js",
@@ -8014,6 +8539,27 @@
       "kind": "runtime",
       "module": "./extensions/index.js",
       "signatureHash": "1d3ad8d02707d3c590549509835b690ddf78792675571f31b48523438f1946e3"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_ORDERING_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "f27a64944c653a9e6810ec72c42e7df10e589befd99efcccb34abe5a612bee14"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "a9ceccfdebc618ba2f8a9d1aab041d4e324a1bf12c7d4f7fac4e9bd513cb037c"
+    },
+    {
+      "package": "openkline",
+      "name": "OPENKLINE_MARKET_REPLAY_WORKSPACE_VERSION",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "91db6694274db004bc5615513888f1429f08339f89c2846bbc8ecaae8ead37c8"
     },
     {
       "package": "openkline",
@@ -8304,6 +8850,20 @@
     },
     {
       "package": "openkline",
+      "name": "parseMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "fad30048ed165f604b831b10d719c83b77c0b48df7dc9b2f695e98da40470087"
+    },
+    {
+      "package": "openkline",
+      "name": "parseMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "52f4be1a6d16fcfdcb4f1c2b87793d76f96327ae0e2c4568ad003125dca8552e"
+    },
+    {
+      "package": "openkline",
       "name": "parsePaperTradingDocument",
       "kind": "runtime",
       "module": "./paper-trading/index.js",
@@ -8493,6 +9053,13 @@
     },
     {
       "package": "openkline",
+      "name": "replayEventClock",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "1cc35b3c8486a33a0c73d11032799c60844530767c4938d7b0a948c513481882"
+    },
+    {
+      "package": "openkline",
       "name": "ReplayLifecycleError",
       "kind": "runtime",
       "module": "./replay/index.js",
@@ -8679,6 +9246,20 @@
       "kind": "runtime",
       "module": "./backtesting/index.js",
       "signatureHash": "d88091155f71a4978b649ffe0e3d050331980495a41cef3a079c47869637151f"
+    },
+    {
+      "package": "openkline",
+      "name": "serializeMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "1b0a3cdf7e7fb784cc0566bc8961de8730d41cc6052537fa39fb8f89cb114d45"
+    },
+    {
+      "package": "openkline",
+      "name": "serializeMarketReplayWorkspace",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "6661e609f01a6eebc6574440c87e50a42d88c4a903908dfb3b31124b1af77939"
     },
     {
       "package": "openkline",
@@ -8910,6 +9491,13 @@
       "kind": "runtime",
       "module": "./corporate-actions.js",
       "signatureHash": "ed62064fbf5c424640611266ab54b19220f079376ee13b9c46248dd1109a7cbf"
+    },
+    {
+      "package": "openkline",
+      "name": "validateMarketReplayTape",
+      "kind": "runtime",
+      "module": "./replay/index.js",
+      "signatureHash": "f7baca82fcf187bbcab32c81e5757ec17ca7a575bd8735e1d8c7eb0ccaf55b0e"
     },
     {
       "package": "openkline",
@@ -9566,6 +10154,13 @@
     },
     {
       "package": "openkline",
+      "name": "ChartMarketReplayOptions",
+      "kind": "type",
+      "module": "./chart.js",
+      "signatureHash": "a68efe0194123a6de00bfb988545a8075a8d8a4388e052acaa2c8cb1db779680"
+    },
+    {
+      "package": "openkline",
       "name": "ChartOptions",
       "kind": "type",
       "module": "./types.js",
@@ -9990,6 +10585,20 @@
       "kind": "type",
       "module": "./corporate-actions.js",
       "signatureHash": "891349c457e97429bd70965d1ce658a25948e296dde3e258f0d9dc317ccc70a9"
+    },
+    {
+      "package": "openkline",
+      "name": "CreateMarketReplayTapeOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "9e42b6cc5aa4077ab91828163e39b5bd8dac354590e6e95214b111d69c1ce94c"
+    },
+    {
+      "package": "openkline",
+      "name": "CreateMarketReplayWorkspaceOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5a034e06ca1bf7fa33d485de0e075b9294fbbb49b2fb21e25016e557c304561f"
     },
     {
       "package": "openkline",
@@ -10711,6 +11320,300 @@
       "kind": "type",
       "module": "./session-aggregation.js",
       "signatureHash": "13effc4f2109cc7115cdf988bd5afbf48b57ed0d0bbd4375a952a806d58bcef8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCandleEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "77742996074b13e6600404c5dce86cf22bbd901f7c2ea8925ac262ae3252cec8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCheckpoint",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "a54b86cdf9e67d3e733a90e882c899a341d3eb9bf58857f45449cdb9f57792e3"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayClockPolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e1f41c4b9bbf57e4f79bef9fdcf1fe05bbcbd42c3287739400a184e7d31fd01e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCompletedCandle",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "c687d12f40251c0b8b3682a49caf0366c483c53293e4d76e49b0f9e50cd52058"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayControllerOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "4ac7503ccf870da7edf4e08ee204105a67fdad3371d0b134ff549c9b02665746"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCorporateActionEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "0add34a6d8a467cf84fbab56348a5a6ec6c7dd8c7a227c9a4f19fc945bd081e1"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCursor",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "23d259c33e8d45b6d55dd3da1d0bfac8dc2b254de7268755c48de1735728e326"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayCvdState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3edc0c4ffbb2805e2df74591b0bf2d28ad5fa74fa89587c4d5b9df71462cfb4c"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayDisplaySettings",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "1b83dbe6762027dbde49319986e7d3a57435e621839e6582ed633511c85c793e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "05f0853c7dd52e389a14d9f4dfd1f01cc5d3d2a7f35f631480573f9cbe953e2d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEventBase",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3c81b4cfa96884c4ce56a19abb6a82dffe082ba888df4f7ea86edf4397ce9942"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayEventKind",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7f6cc1fe63a8216f7320f49dfee3de6b6c08b8e03b57376b33db3a6db1de870e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayFootprintCell",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7799762f37524bcb7dab7505b90d8161a2fa2074a32eccfed1e6698c5cf3e2a8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayFormingCandle",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6850304921d18129c617c15b6dbd218388aa36f9c0be6698c8899cdbb1e60f9d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayIntegrityState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e4221e2d372e2fbf1a1c0ec7b05f72a4c420f87be4e144b8c8ecbf805c6cf536"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayKnowledgePolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7223edfb44e96eeb561afa3a0726409639cb88cf6fbeac2b9223eddce9056e30"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookDeltaEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "9d974114f9dc80464ce16d205a981b7c5f28e2772d2152c9cd461cc998dcf0c6"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookSnapshotEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e12b43be213691d99244ec28f29b4da157b054406327584ec0e68270f364bd7e"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderBookState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "ba770fbb40345c637248505df0ace0f76fffe4e1b09e19cfe0be52b5f0ce8042"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayOrderingPolicy",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e6ffd56d3161347204858683a140dcee551cfc3d48b24cd45165de5895987904"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelConfiguration",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "c7da471c48d2b8d58928627346d3b642e07f814cd69713b9b7e13d904bc6e8bf"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelListener",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "edd4d0d96a1f09a6f3572204216954f9de8b85917ac876db4315fd3e12caf5af"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelRegistration",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5c92b386919a5a62e5c988e301738c15aa03127379a626ed32cb31be894f0b95"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPanelSnapshot",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "022dda43d8447fd5b3ceee56e1ee437bf9043a1024f7b7e9cfb63f659095dcbb"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayPlaybackState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6a783cafaa2229c547e22be295bb295342c8863c313348b555a6ec4bc067ba1f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayProgress",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fe7eff075d1726838d38910da1f73656a7cbcae660e87b62d65902470d9b1af5"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionBoundary",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "11ffcbeb679ce3625585177ad0d551dd08574515d7ea00a522c6ac56109289b0"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionBoundaryEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "7f0bd8c6edd2ec15fc01639dd88899fb2137b384ffe60b58336edb07f72a0943"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySessionState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "1d700d40f22de2243e2fb7531b47c015fcfb9ff2747847d39cce8706e84fff46"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySnapshot",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fa598ca78b60374b6ce88c93277aa94dbc2bace556120007258d76497705fec4"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySource",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "955d34353b6a89124705cc786b9813c23c644f220afbc182fdf6c4ed30ccda8b"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceCoverage",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "02d779ead699cee3f5e5e19582d39ce49d2e5908751a8a17dc35cd0bff0da054"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceCoverageState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "396092ddf2977f57acf9ae9e75ba439b808dd3286f3f30ab09d4def5ac3bb397"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceStatus",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "e209cb4bf88fdb3b96d4795eee37d4e1521b1a3ed4354acec08034eef7bd346f"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplaySourceStatusEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "237b7e435b9c43ad3a9c60a37ab1559b571dd96dcaf0ae27f5689919a88bb871"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayState",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "3a0a9e833b4e41d91c626245e5b3dfa7997eed1b8eef9828ced6a54079303da7"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayStateListener",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "6fdd026d57bc106f70a4e0aa9375a1100446001600abdda71e32edf9e8c16a6d"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTape",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "77cc17844fefedea0834ab16f4676ae349fcf5be7a2bff663a5c27a765be5302"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeEvent",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "23ffc35adcf3bac41867aae8de9821d314cbda0852c22d4f52c8c8d1be1e7efc"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayTradeSummary",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "f6eeadfb439afe44262f44c91265afeb14bf5f73e0e417fa95e36935a8c05024"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceCursor",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "980c52e3a1cc7a5ae6194e7e3a79d24526542048aad34a7e4c02985662424ca8"
+    },
+    {
+      "package": "openkline",
+      "name": "MarketReplayWorkspaceDocument",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "fa172b167ab99f348b84a02063b47fd9539981d50643c57cf0a8cf0c7076189d"
     },
     {
       "package": "openkline",
@@ -11628,6 +12531,13 @@
       "kind": "type",
       "module": "./optimization/index.js",
       "signatureHash": "8f684cc88a04b0eec38a31f8e48337d67171ea8178d3a6b5100fdbf93b80bfe4"
+    },
+    {
+      "package": "openkline",
+      "name": "ParseMarketReplayTapeOptions",
+      "kind": "type",
+      "module": "./replay/index.js",
+      "signatureHash": "5982907aa46ef667296796db03e8106ee5c15481380ec2a58c8aa9996dacbc3b"
     },
     {
       "package": "openkline",
@@ -13819,5 +14729,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "9df096745f77a8d3f11c9eb086a2802ac5bb4f59"
+  "generatedFrom": "bd5d13ab21b590b1e097cbe13c7f508cbe953932"
 }
