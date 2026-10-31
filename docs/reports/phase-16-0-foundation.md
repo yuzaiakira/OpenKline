@@ -62,7 +62,7 @@ protected API inventory were not extended.
 | Corrected/source-generation observations | **PASS** |
 | Receive-time missing receipt handling | **PASS** |
 | Public API baseline | **NOT YET RECHECKED** — root exports unchanged by inspection |
-| 1k/10k/100k benchmark | **NOT VERIFIED** — next milestone |
+| 1k/10k/100k benchmark | **PASS** — 5/5/3 samples with reference-ledger parity and forced-GC disposal readings |
 | Full repository regression suite | **NOT VERIFIED** — next milestone |
 
 The displayed-depth test deliberately places a candle between two book
@@ -86,7 +86,7 @@ entitlements and cancels pending orders before reserve normalization.
 | Canonical observed-data isolation | **PASS by architecture** — no store/tape mutation path; broader regression pending |
 | Serialization/export determinism | **PARTIAL** — JSON-safe export exercised through reconstruction; dedicated benchmark/round-trip pending |
 | Lifecycle/resource safety | **PASS** — session disposal and controller cleanup fixture |
-| Required 1k/10k/100k benchmark | **NOT VERIFIED** |
+| Required 1k/10k/100k benchmark | **PASS** — synthetic internal workload; measurements in `docs/benchmarks/replay-execution-research.md` |
 | Existing chart/order-flow performance regression | **NOT VERIFIED** |
 | Public API exposure | **PASS** — intentionally not exposed; proposal remains NOT PUBLIC |
 
