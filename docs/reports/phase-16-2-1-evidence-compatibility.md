@@ -79,7 +79,8 @@ diagnostic shape. This establishes backward compatibility without changing the
 artifact schema or silently accepting arbitrary mismatches.
 
 The new focused artifact/checkpoint set passes **17/17**. The full Node suite
-passes **366/366** after the checkpoint parity test is included in `npm test`.
+passes **369/369** after the three evidence-compatibility tests are included in
+`npm test`.
 The Phase 16.2 performance benchmark is unchanged; its final 100k backward-seek
 medians remain:
 
