@@ -56,3 +56,14 @@ Chart integration owns the cursor application callback. This separation lets
 the engine be tested independently while the existing ChartModel remains the
 single owner of viewport, series, indicator, drawing, scale, and renderer
 state.
+
+## Phase 16 execution-research boundary
+
+The proposed Phase 16.0 execution-research simulator is not part of this
+engine and is not authorized for implementation yet. If approved, it must
+consume this controller's validated event ordering, clock policy, cursor,
+seek, reset, cancellation, and disposal lifecycle rather than creating a
+second market clock. Historical order decisions must be recorded with their
+availability frontier and reconstructed on backward seek; they must not be
+silently moved earlier. See
+[`replay-execution-research.md`](./replay-execution-research.md).

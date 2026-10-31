@@ -70,6 +70,15 @@ offline Studio Market Replay Lab are present.
   is populated, while the default cloud run remains `BLOCKED` when the
   Playwright-managed Chromium executable is absent. Phase 15 commits are
   synchronized with `origin/main`; Phase 16 has not started.
+- [Proposed / Awaiting owner authorization — Phase 16.0] The replay-causal
+  execution-research foundation has a reviewable internal design covering
+  deterministic simulated orders, historical liquidity uncertainty, causal
+  eligibility, ledger parity, replay reconstruction, and bounded benchmarks.
+  No Phase 16 source, public export, Studio integration, benchmark result, or
+  release claim exists. The owner must explicitly authorize internal
+  engineering while Phase 15.5 acceptance remains open. See
+  `docs/reports/phase-16-0-foundation.md` and
+  `docs/reviews/phase-16-public-api-proposal.md`.
 
 ## Current milestone
 

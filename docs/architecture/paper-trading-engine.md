@@ -60,3 +60,17 @@ Risk controls are safety gates for a simulation, not financial advice or a
 broker risk guarantee. A host must apply its own account, regulatory, and
 operational controls before any real integration.
 
+## Phase 16 separation boundary
+
+Phase 16.0 proposes a separate internal historical execution-research engine;
+it is not an extension of this public Paper Trading account. The existing
+single-symbol market-order semantics, replay-event isolation, later-event
+eligibility, and accounting invariants remain unchanged. The research engine
+may reuse compatible pure cost and ledger mathematics, but its simulated
+fills, Level-2 assumptions, journals, and scenario exports must remain outside
+`PaperTradingDocument`, `MarketTradeStore`, CVD, and Footprint. The proposal
+is not authorized until the owner records an explicit internal-engineering
+decision. See
+[`replay-execution-research.md`](./replay-execution-research.md) and
+[`historical-liquidity-uncertainty.md`](./historical-liquidity-uncertainty.md).
+
