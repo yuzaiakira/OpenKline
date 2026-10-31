@@ -18,16 +18,24 @@ import type {
   ResearchScenarioResultEvidence,
 } from "./types.js";
 import { OPENKLINE_RESEARCH_SCENARIO_ARTIFACT_VERSION } from "./types.js";
+import {
+  RESEARCH_MAX_DECISIONS,
+  RESEARCH_MAX_DEPTH,
+  RESEARCH_MAX_JOURNAL_ENTRIES,
+  RESEARCH_MAX_LATENCY_DELAYS,
+  RESEARCH_MAX_PENDING_ORDERS,
+  RESEARCH_MAX_STRING_LENGTH,
+} from "./limits.js";
 
 const DEFAULT_MAX_SERIALIZED_BYTES = 2 * 1024 * 1024;
 const DEFAULT_MAX_DECISIONS = 100_000;
 const DEFAULT_MAX_STRING_LENGTH = 256;
 const DEFAULT_MAX_NESTING_DEPTH = 32;
 const ABSOLUTE_MAX_SERIALIZED_BYTES = 8 * 1024 * 1024;
-const ABSOLUTE_MAX_DECISIONS = 100_000;
-const ABSOLUTE_MAX_STRING_LENGTH = 4_096;
+const ABSOLUTE_MAX_DECISIONS = RESEARCH_MAX_DECISIONS;
+const ABSOLUTE_MAX_STRING_LENGTH = RESEARCH_MAX_STRING_LENGTH;
 const ABSOLUTE_MAX_NESTING_DEPTH = 64;
-const MAX_ARRAY_LENGTH = 100_000;
+const MAX_ARRAY_LENGTH = RESEARCH_MAX_DECISIONS;
 const MAX_FINANCIAL_VALUE = 1e18;
 
 export type ResearchScenarioArtifactErrorCode =
@@ -249,8 +257,8 @@ function validateAssumptions(value: unknown, limits: NormalizedValidationLimits)
   finiteNonNegative(assumptions.maxQuoteAgeMs, "assumptions.maxQuoteAgeMs");
   validateRisk(assumptions.risk);
   if (assumptions.corporateActionSource !== null) validateSource(assumptions.corporateActionSource, "assumptions.corporateActionSource", limits);
-  positiveSafeInteger(assumptions.maxJournalEntries, "assumptions.maxJournalEntries");
-  positiveSafeInteger(assumptions.maxDepth, "assumptions.maxDepth");
+  boundedPositiveSafeInteger(assumptions.maxJournalEntries, "assumptions.maxJournalEntries", RESEARCH_MAX_JOURNAL_ENTRIES);
+  boundedPositiveSafeInteger(assumptions.maxDepth, "assumptions.maxDepth", RESEARCH_MAX_DEPTH);
 }
 
 function validateLatency(value: unknown, limits: NormalizedValidationLimits): void {
@@ -268,7 +276,8 @@ function validateLatency(value: unknown, limits: NormalizedValidationLimits): vo
   if (type !== "bounded") fail("INVALID_ARTIFACT", "assumptions.latency.type is unsupported");
   exactKeys(latency, ["type", "delaysMs"], [], "assumptions.latency");
   const delays = arrayValue(latency.delaysMs, "assumptions.latency.delaysMs", limits);
-  if (delays.length === 0 || delays.length > 10_000) fail("INVALID_ARTIFACT", "bounded latency must contain 1..10000 delays");
+  if (delays.length === 0) fail("INVALID_ARTIFACT", "bounded latency must contain at least one delay");
+  if (delays.length > RESEARCH_MAX_LATENCY_DELAYS) fail("SIZE_LIMIT", `bounded latency must not exceed ${RESEARCH_MAX_LATENCY_DELAYS} delays`);
   delays.forEach((delay, index) => finiteNonNegative(delay, `assumptions.latency.delaysMs[${index}]`));
 }
 
@@ -297,7 +306,7 @@ function validateRisk(value: unknown): void {
   if (risk.maxOrderNotional !== undefined) finiteNonNegative(risk.maxOrderNotional, "assumptions.risk.maxOrderNotional");
   if (risk.maxOrderQuantity !== undefined) finitePositive(risk.maxOrderQuantity, "assumptions.risk.maxOrderQuantity");
   if (risk.maxPositionQuantity !== undefined) finitePositive(risk.maxPositionQuantity, "assumptions.risk.maxPositionQuantity");
-  if (risk.maxPendingOrders !== undefined) positiveSafeInteger(risk.maxPendingOrders, "assumptions.risk.maxPendingOrders");
+  if (risk.maxPendingOrders !== undefined) boundedPositiveSafeInteger(risk.maxPendingOrders, "assumptions.risk.maxPendingOrders", RESEARCH_MAX_PENDING_ORDERS);
   if (risk.maxDrawdown !== undefined) finiteNonNegative(risk.maxDrawdown, "assumptions.risk.maxDrawdown");
 }
 
@@ -513,12 +522,28 @@ function scanValue(value: unknown, depth: number, ancestors: Set<object>, limits
   if (ancestors.has(value)) fail("CYCLIC_VALUE", "cyclic artifact data is not allowed");
   if (!Array.isArray(value) && !isPlainRecord(value)) fail("INVALID_ARTIFACT", "artifact objects must be plain records");
   if (Array.isArray(value) && value.length > MAX_ARRAY_LENGTH) fail("SIZE_LIMIT", `array exceeds ${MAX_ARRAY_LENGTH} entries`);
-  for (const key of Object.keys(value)) if (key === "__proto__" || key === "prototype" || key === "constructor") fail("INVALID_ARTIFACT", `prototype-pollution key ${key} is not allowed`);
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  if (Object.getOwnPropertySymbols(value).length > 0) fail("INVALID_ARTIFACT", "symbol keys are not allowed in artifact data");
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    if ("get" in descriptor || "set" in descriptor) fail("INVALID_ARTIFACT", `${key} accessor properties are not allowed; use JSON data`);
+    if (key !== "length" && descriptor.enumerable !== true) fail("INVALID_ARTIFACT", `${key} non-enumerable properties are not allowed; use JSON data`);
+    if (key === "__proto__" || key === "prototype" || key === "constructor") fail("INVALID_ARTIFACT", `prototype-pollution key ${key} is not allowed`);
+    if (Array.isArray(value) && key !== "length" && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) fail("INVALID_ARTIFACT", `array property ${key} is not allowed`);
+  }
   ancestors.add(value);
   if (Array.isArray(value)) {
-    for (const entry of value) scanValue(entry, depth + 1, ancestors, limits);
+    for (let index = 0; index < value.length; index += 1) {
+      const key = String(index);
+      const descriptor = descriptors[key];
+      if (descriptor === undefined || !("value" in descriptor)) fail("INVALID_ARTIFACT", `sparse array entry ${key} is not allowed`);
+      scanValue(descriptor.value, depth + 1, ancestors, limits);
+    }
   } else {
-    for (const entry of Object.values(value)) scanValue(entry, depth + 1, ancestors, limits);
+    for (const key of Object.keys(value)) {
+      const descriptor = descriptors[key];
+      if (descriptor === undefined || !("value" in descriptor)) fail("INVALID_ARTIFACT", `${key} accessor properties are not allowed; use JSON data`);
+      scanValue(descriptor.value, depth + 1, ancestors, limits);
+    }
   }
   ancestors.delete(value);
 }
@@ -599,6 +624,12 @@ function positiveFinancial(value: unknown, label: string): void {
 function positiveSafeInteger(value: unknown, label: string): number {
   if (!Number.isSafeInteger(value) || (value as number) <= 0) fail("INVALID_NUMBER", `${label} must be a positive safe integer`);
   return value as number;
+}
+
+function boundedPositiveSafeInteger(value: unknown, label: string, maximum: number): number {
+  const normalized = positiveSafeInteger(value, label);
+  if (normalized > maximum) fail("SIZE_LIMIT", `${label} must be between 1 and ${maximum}`);
+  return normalized;
 }
 
 function nonNegativeSafeInteger(value: unknown, label: string): number {

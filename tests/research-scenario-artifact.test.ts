@@ -5,6 +5,8 @@ import {
   createResearchScenarioArtifact,
   createResearchExecutionSession,
   parseResearchScenarioArtifact,
+  ResearchExecutionSessionImpl,
+  ResearchExecutionValidationError,
   ResearchScenarioArtifactValidationError,
   ResearchScenarioRestoreError,
   restoreResearchScenario,
@@ -220,4 +222,166 @@ test("receive-time artifacts fail closed when the bound tape lacks receipt histo
   const artifact = session.exportScenarioArtifact();
   assert.throws(() => restoreResearchScenario({ artifact, tape }), (error: unknown) => error instanceof ResearchScenarioRestoreError && error.code === "RECEIVE_TIME_UNAVAILABLE");
   session.dispose();
+});
+
+test("restored paused frontiers continue without colliding with imported identities", () => {
+  const tape = baseTape([trade("trade-3", 1_003), trade("trade-4", 1_004)]);
+  const originalSession = createResearchExecutionSession(options(tape));
+  atBook(originalSession);
+  originalSession.submitOrder({ idempotencyKey: "imported-order", side: "buy", type: "market", quantity: 1 });
+  originalSession.pause();
+  const originalArtifact = originalSession.exportScenarioArtifact({ includeExpectedResult: false });
+  const originalScenario = originalSession.exportScenario();
+  const importedScenario = {
+    ...originalScenario,
+    decisions: originalScenario.decisions.map((decision, index) => index === 0
+      ? {
+        ...decision,
+        decisionId: "artifact-scenario-decision-2",
+        ...(decision.decisionType === "submit-order" ? { orderId: "artifact-scenario-order-2" } : {}),
+      }
+      : decision),
+  };
+  const importedArtifact = createResearchScenarioArtifact({
+    scenario: importedScenario,
+    tape,
+    frontier: originalArtifact.replay.frontier,
+    options: { includeExpectedResult: false },
+  });
+  const left = restoreResearchScenario({ artifact: importedArtifact, tape });
+  const right = restoreResearchScenario({ artifact: importedArtifact, tape });
+  assert.equal(left.status, "no-expected-result");
+  assert.equal(right.status, "no-expected-result");
+  assert.equal(left.actual.decisions[0]?.decisionId, "artifact-scenario-decision-2");
+  assert.equal(left.actual.orders[0]?.id, "artifact-scenario-order-2");
+
+  for (const restored of [left.session, right.session]) {
+    const imported = restored.submitOrder({ idempotencyKey: "imported-order", side: "buy", type: "market", quantity: 1 });
+    assert.equal(imported.id, "artifact-scenario-order-2");
+    const continued = restored.submitOrder({ idempotencyKey: "continued-order", side: "buy", type: "limit", quantity: 1, limitPrice: 98 });
+    assert.equal(continued.id, "artifact-scenario-order-3");
+    assert.equal(restored.getOrders().length, 2);
+    restored.step();
+    restored.cancelOrder(continued.id, "continuation-cancel");
+    restored.seekToEvent("book");
+    restored.seekToEvent("trade-2");
+  }
+  assert.deepEqual(left.session.exportScenario(), right.session.exportScenario());
+  assert.deepEqual(left.session.exportScenario().decisions.map((decision) => decision.decisionId), [
+    "artifact-scenario-decision-2",
+    "artifact-scenario-decision-3",
+    "artifact-scenario-decision-4",
+  ]);
+
+  const secondArtifact = left.session.exportScenarioArtifact({ includeExpectedResult: false });
+  const secondRestore = restoreResearchScenario({ artifact: secondArtifact, tape });
+  assert.equal(secondRestore.status, "no-expected-result");
+  assert.deepEqual(secondRestore.actual, left.session.exportScenario());
+  secondRestore.session.dispose();
+  left.session.dispose();
+  right.session.dispose();
+  originalSession.dispose();
+});
+
+test("research resource ceilings and data-only artifact validation fail before unsafe construction", () => {
+  const tape = baseTape();
+  const { session } = completeBuySellScenario();
+  const artifact = session.exportScenarioArtifact({ includeExpectedResult: false });
+  assert.throws(() => createResearchExecutionSession({ ...options(tape), maxJournalEntries: 100_001 }), ResearchExecutionValidationError);
+  assert.throws(() => createResearchExecutionSession({ ...options(tape), maxDepth: 10_001 }), ResearchExecutionValidationError);
+  assert.throws(() => createResearchExecutionSession({ ...options(tape), risk: { maxPendingOrders: 100_001 } }), ResearchExecutionValidationError);
+  assert.throws(() => createResearchExecutionSession({
+    ...options(tape),
+    latency: { type: "bounded", delaysMs: new Array(10_001).fill(0) },
+  }), ResearchExecutionValidationError);
+  assert.throws(() => parseResearchScenarioArtifact({ ...artifact, assumptions: { ...artifact.assumptions, maxJournalEntries: 100_001 } }), /SIZE_LIMIT/);
+  assert.throws(() => parseResearchScenarioArtifact({ ...artifact, assumptions: { ...artifact.assumptions, maxDepth: 10_001 } }), /SIZE_LIMIT/);
+  assert.throws(() => parseResearchScenarioArtifact({
+    ...artifact,
+    assumptions: { ...artifact.assumptions, risk: { ...artifact.assumptions.risk, maxPendingOrders: 100_001 } },
+  }), /SIZE_LIMIT/);
+  assert.throws(() => parseResearchScenarioArtifact({
+    ...artifact,
+    assumptions: { ...artifact.assumptions, latency: { type: "bounded", delaysMs: new Array(10_001).fill(0) } },
+  }), /SIZE_LIMIT/);
+  assert.throws(() => parseResearchScenarioArtifact(artifact, { maxStringLength: 4_097 }), /SIZE_LIMIT/);
+
+  let getterCalls = 0;
+  const accessor = { ...artifact } as Record<string, unknown>;
+  Object.defineProperty(accessor, "scenarioId", {
+    enumerable: true,
+    get: () => {
+      getterCalls += 1;
+      return artifact.scenarioId;
+    },
+  });
+  assert.throws(() => parseResearchScenarioArtifact(accessor), /accessor/);
+  assert.equal(getterCalls, 0);
+  const sparse = { ...artifact, decisions: new Array(1) };
+  assert.throws(() => parseResearchScenarioArtifact(sparse), /sparse/);
+  const inherited = Object.create({ inherited: true }) as Record<string, unknown>;
+  Object.assign(inherited, artifact);
+  assert.throws(() => parseResearchScenarioArtifact(inherited), /plain/);
+  session.dispose();
+
+  const unicodeSession = createResearchExecutionSession(options(tape, { scenarioId: "سناریو-α" }));
+  atBook(unicodeSession);
+  const unicodeArtifact = unicodeSession.exportScenarioArtifact({ includeExpectedResult: false });
+  const serialized = serializeResearchScenarioArtifact(unicodeArtifact);
+  const parsed = parseResearchScenarioArtifact(serialized);
+  assert.equal(parsed.integrity.contentHash, unicodeArtifact.integrity.contentHash);
+  assert.equal(serializeResearchScenarioArtifact(parsed), serialized);
+  unicodeSession.dispose();
+});
+
+test("restore disposes partially constructed sessions on failure but preserves mismatch sessions", () => {
+  const { tape, session } = completeBuySellScenario();
+  const scenario = session.exportScenario();
+  const snapshot = session.getSnapshot();
+  if (snapshot.state !== "completed") throw new Error(`fixture did not complete: ${snapshot.state}`);
+  const frontier: ResearchScenarioFrontier = { ...snapshot.cursor, state: snapshot.state };
+  const artifact = createResearchScenarioArtifact({ scenario, tape, frontier, options: { includeExpectedResult: false } });
+  const invalidDecisionArtifact = createResearchScenarioArtifact({
+    scenario: {
+      ...scenario,
+      decisions: scenario.decisions.map((decision, index) => index === 0 ? { ...decision, decisionEventId: "missing-event" } : decision),
+    },
+    tape,
+    frontier,
+    options: { includeExpectedResult: false },
+  });
+  const mismatchArtifact = createResearchScenarioArtifact({
+    scenario: { ...scenario, ledger: { ...scenario.ledger, cash: 123 } },
+    tape,
+    frontier,
+  });
+  let disposeCalls = 0;
+  const originalDispose = ResearchExecutionSessionImpl.prototype.dispose;
+  ResearchExecutionSessionImpl.prototype.dispose = function disposeForTest(this: ResearchExecutionSessionImpl): void {
+    disposeCalls += 1;
+    originalDispose.call(this);
+  };
+  try {
+    const mismatch = restoreResearchScenario({ artifact: mismatchArtifact, tape });
+    assert.equal(mismatch.status, "mismatch");
+    assert.equal(disposeCalls, 0, "a normal expected-result mismatch returns a usable session");
+    mismatch.session.dispose();
+    assert.equal(disposeCalls, 1);
+    assert.throws(() => restoreResearchScenario({ artifact: invalidDecisionArtifact, tape }), /incompatible replay event/);
+    assert.equal(disposeCalls, 2, "load failure disposes the constructed session");
+
+    const originalExport = ResearchExecutionSessionImpl.prototype.exportScenario;
+    ResearchExecutionSessionImpl.prototype.exportScenario = function exportForTest(): never {
+      throw new Error("forced export failure");
+    };
+    try {
+      assert.throws(() => restoreResearchScenario({ artifact, tape }), /forced export failure/);
+    } finally {
+      ResearchExecutionSessionImpl.prototype.exportScenario = originalExport;
+    }
+    assert.equal(disposeCalls, 3, "post-replay failure disposes the constructed session");
+  } finally {
+    ResearchExecutionSessionImpl.prototype.dispose = originalDispose;
+    session.dispose();
+  }
 });

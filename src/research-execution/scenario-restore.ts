@@ -63,38 +63,36 @@ export function restoreResearchScenario(options: ResearchScenarioRestoreOptions)
     ...(assumptions.priceImpact === null ? {} : { priceImpact: assumptions.priceImpact }),
     ...(assumptions.corporateActionSource === null ? {} : { corporateActionSource: assumptions.corporateActionSource }),
   };
-  const session = createResearchExecutionSession(sessionOptions);
-  const implementation = session as ResearchExecutionSessionImpl;
+  let implementation: ResearchExecutionSessionImpl | null = null;
   try {
+    implementation = createResearchExecutionSession(sessionOptions) as ResearchExecutionSessionImpl;
     implementation.loadScenarioDecisions(artifact.decisions);
     restoreFrontier(implementation, artifact);
+    const actualSnapshot = implementation.getSnapshot();
+    const frontier = artifact.replay.frontier;
+    if (actualSnapshot.state !== frontier.state
+      || actualSnapshot.cursor.eventIndex !== frontier.eventIndex
+      || actualSnapshot.cursor.eventId !== frontier.eventId
+      || actualSnapshot.cursor.time !== frontier.time
+      || actualSnapshot.cursor.clockTime !== frontier.clockTime) {
+      throw new ResearchScenarioRestoreError("FRONTIER_MISMATCH", "reconstructed session did not reach the recorded causal frontier");
+    }
+
+    const actual = implementation.exportScenario();
+    const actualResult = createResearchScenarioResultEvidence(actual, frontier);
+    const expectedResult = artifact.expectedResult === undefined ? null : cloneEvidence(artifact.expectedResult);
+    const status = expectedResult === null
+      ? "no-expected-result"
+      : expectedResult.fingerprint === actualResult.fingerprint
+        && expectedResult.state === actualResult.state
+        && sameCursor(expectedResult.cursor, actualResult.cursor)
+        ? "verified"
+        : "mismatch";
+    return { status, artifact, session: implementation, actual, actualResult, expectedResult };
   } catch (error) {
-    implementation.dispose();
+    implementation?.dispose();
     throw error;
   }
-
-  const actualSnapshot = implementation.getSnapshot();
-  const frontier = artifact.replay.frontier;
-  if (actualSnapshot.state !== frontier.state
-    || actualSnapshot.cursor.eventIndex !== frontier.eventIndex
-    || actualSnapshot.cursor.eventId !== frontier.eventId
-    || actualSnapshot.cursor.time !== frontier.time
-    || actualSnapshot.cursor.clockTime !== frontier.clockTime) {
-    implementation.dispose();
-    throw new ResearchScenarioRestoreError("FRONTIER_MISMATCH", "reconstructed session did not reach the recorded causal frontier");
-  }
-
-  const actual = implementation.exportScenario();
-  const actualResult = createResearchScenarioResultEvidence(actual, frontier);
-  const expectedResult = artifact.expectedResult === undefined ? null : cloneEvidence(artifact.expectedResult);
-  const status = expectedResult === null
-    ? "no-expected-result"
-    : expectedResult.fingerprint === actualResult.fingerprint
-      && expectedResult.state === actualResult.state
-      && sameCursor(expectedResult.cursor, actualResult.cursor)
-      ? "verified"
-      : "mismatch";
-  return { status, artifact, session: implementation, actual, actualResult, expectedResult };
 }
 
 function validateCompatibleTape(artifact: ResearchScenarioArtifact, tape: MarketReplayTape): void {

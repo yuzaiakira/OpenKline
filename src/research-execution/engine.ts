@@ -42,6 +42,14 @@ import type {
 } from "./types.js";
 import { OPENKLINE_RESEARCH_EXECUTION_VERSION } from "./types.js";
 import { createResearchScenarioArtifact } from "./scenario-artifact.js";
+import {
+  RESEARCH_MAX_DECISIONS,
+  RESEARCH_MAX_DEPTH,
+  RESEARCH_MAX_JOURNAL_ENTRIES,
+  RESEARCH_MAX_LATENCY_DELAYS,
+  RESEARCH_MAX_PENDING_ORDERS,
+  RESEARCH_MAX_STRING_LENGTH,
+} from "./limits.js";
 
 const EPSILON = 1e-10;
 const DEFAULT_MAX_QUOTE_AGE_MS = 60_000;
@@ -183,8 +191,8 @@ interface FillAttempt {
 
 function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
   if (!options || typeof options !== "object") throw new ResearchExecutionValidationError("Research execution options are required");
-  const instrumentId = nonEmpty(options.instrumentId, "instrumentId");
-  const currency = nonEmpty(options.currency, "currency");
+  const instrumentId = boundedNonEmpty(options.instrumentId, "instrumentId");
+  const currency = boundedNonEmpty(options.currency, "currency");
   const initialCapital = finiteNonNegative(options.initialCapital, "initialCapital");
   const precisionInput = options.precision ?? {};
   const precision: ResearchPrecisionPolicy = {
@@ -203,8 +211,8 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
     passivePolicy: "no-inferred-passive-fill",
   });
   const maxQuoteAgeMs = options.maxQuoteAgeMs === undefined ? DEFAULT_MAX_QUOTE_AGE_MS : finiteNonNegative(options.maxQuoteAgeMs, "maxQuoteAgeMs");
-  const maxJournalEntries = options.maxJournalEntries === undefined ? DEFAULT_MAX_JOURNAL_ENTRIES : positiveInteger(options.maxJournalEntries, "maxJournalEntries");
-  const maxDepth = options.maxDepth === undefined ? DEFAULT_MAX_DEPTH : positiveInteger(options.maxDepth, "maxDepth");
+  const maxJournalEntries = options.maxJournalEntries === undefined ? DEFAULT_MAX_JOURNAL_ENTRIES : boundedPositiveInteger(options.maxJournalEntries, "maxJournalEntries", RESEARCH_MAX_JOURNAL_ENTRIES);
+  const maxDepth = options.maxDepth === undefined ? DEFAULT_MAX_DEPTH : boundedPositiveInteger(options.maxDepth, "maxDepth", RESEARCH_MAX_DEPTH);
   const corporateActionSource = options.corporateActionSource === undefined ? null : cloneSource(options.corporateActionSource);
   validateCorporateActionSources(options.tape.events, corporateActionSource);
   validateCost(options.commission, "commission");
@@ -212,12 +220,12 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
   if (options.priceImpact !== undefined) validateCost(options.priceImpact, "priceImpact");
   const scenarioId = options.scenarioId === undefined
     ? `research-${options.tape.fingerprint}-${stableHash(JSON.stringify([instrumentId, options.venueId ?? null, initialCapital, currency]))}`
-    : nonEmpty(options.scenarioId, "scenarioId");
+    : boundedNonEmpty(options.scenarioId, "scenarioId");
   return {
     scenarioId,
     tape: options.tape,
     instrumentId,
-    venueId: options.venueId === undefined ? null : nonEmpty(options.venueId, "venueId"),
+    venueId: options.venueId === undefined ? null : boundedNonEmpty(options.venueId, "venueId"),
     initialCapital,
     currency,
     clockPolicy: options.clockPolicy ?? "event-time",
@@ -239,7 +247,7 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
 function normalizeLatency(value: ResearchLatencyPolicy): ResearchLatencyPolicy {
   if (value.type === "zero") return { type: "zero" };
   if (value.type === "fixed") return { type: "fixed", delayMs: finiteNonNegative(value.delayMs, "latency.delayMs") };
-  if (value.type !== "bounded" || value.delaysMs.length === 0) throw new ResearchExecutionValidationError("Bounded latency requires at least one delay");
+  if (value.type !== "bounded" || !Array.isArray(value.delaysMs) || value.delaysMs.length === 0 || value.delaysMs.length > RESEARCH_MAX_LATENCY_DELAYS) throw new ResearchExecutionValidationError(`Bounded latency requires 1..${RESEARCH_MAX_LATENCY_DELAYS} delays`);
   const delaysMs = value.delaysMs.map((delay, index) => finiteNonNegative(delay, `latency.delaysMs[${index}]`));
   return { type: "bounded", delaysMs };
 }
@@ -257,7 +265,7 @@ function normalizeRisk(value: ResearchRiskLimits | undefined): ResearchRiskLimit
     ...(value.maxOrderNotional === undefined ? {} : { maxOrderNotional: finiteNonNegative(value.maxOrderNotional, "maxOrderNotional") }),
     ...(value.maxOrderQuantity === undefined ? {} : { maxOrderQuantity: positiveFinite(value.maxOrderQuantity, "maxOrderQuantity") }),
     ...(value.maxPositionQuantity === undefined ? {} : { maxPositionQuantity: positiveFinite(value.maxPositionQuantity, "maxPositionQuantity") }),
-    ...(value.maxPendingOrders === undefined ? {} : { maxPendingOrders: positiveInteger(value.maxPendingOrders, "maxPendingOrders") }),
+    ...(value.maxPendingOrders === undefined ? {} : { maxPendingOrders: boundedPositiveInteger(value.maxPendingOrders, "maxPendingOrders", RESEARCH_MAX_PENDING_ORDERS) }),
     ...(value.maxDrawdown === undefined ? {} : { maxDrawdown: finiteNonNegative(value.maxDrawdown, "maxDrawdown") }),
   };
   return result;
@@ -270,6 +278,12 @@ function validateCost(value: { readonly type: "percent" | "fixed"; readonly valu
 function nonEmpty(value: string, label: string): string {
   if (typeof value !== "string" || value.trim().length === 0) throw new ResearchExecutionValidationError(`${label} must be non-empty`);
   return value.trim();
+}
+
+function boundedNonEmpty(value: string, label: string): string {
+  const normalized = nonEmpty(value, label);
+  if (normalized.length > RESEARCH_MAX_STRING_LENGTH) throw new ResearchExecutionValidationError(`${label} must not exceed ${RESEARCH_MAX_STRING_LENGTH} characters`);
+  return normalized;
 }
 
 function finiteNonNegative(value: number, label: string): number {
@@ -285,6 +299,12 @@ function positiveFinite(value: number, label: string): number {
 function positiveInteger(value: number, label: string): number {
   if (!Number.isSafeInteger(value) || value <= 0) throw new ResearchExecutionValidationError(`${label} must be a positive safe integer`);
   return value;
+}
+
+function boundedPositiveInteger(value: number, label: string, maximum: number): number {
+  const normalized = positiveInteger(value, label);
+  if (normalized > maximum) throw new ResearchExecutionValidationError(`${label} must be between 1 and ${maximum}`);
+  return normalized;
 }
 
 function stableHash(value: string): string {
@@ -424,6 +444,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private readonly decisions: ResearchDecisionRecord[] = [];
   private readonly decisionsByCursor = new Map<number, ResearchDecisionRecord[]>();
   private readonly nextDecisionOrdinalByCursor = new Map<number, number>();
+  private readonly decisionIds = new Set<string>();
+  private readonly orderIds = new Set<string>();
   private readonly orders = new Map<string, MutableOrder>();
   private readonly fills = new Map<string, ResearchFill>();
   private readonly books = new Map<string, MutableBook>();
@@ -524,10 +546,11 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       throw new ResearchExecutionOrderError("IDEMPOTENCY_FUTURE", "Idempotency key belongs to a future scenario decision; use a new scenario key after seeking");
     }
     this.assertNoFutureScenarioBranch();
+    this.assertDecisionCapacity();
     const eventClock = replayEventClock(this.lastEvent, this.options.clockPolicy);
     const delay = this.latencyDelay(this.currentIndex);
     const decisionMetadata = this.nextDecisionMetadata(this.currentIndex);
-    const orderId = `${this.options.scenarioId}-order-${this.nextOrderNumber++}`;
+    const orderId = this.nextOrderIdentity();
     const decision: ResearchSubmitDecision = {
       ...normalized,
       ...decisionMetadata,
@@ -554,10 +577,11 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   public cancelOrder(orderId: string, reason = "Cancelled by research scenario"): ResearchOrder {
     this.assertActive();
     if (this.currentIndex < 0 || this.lastEvent === null) throw new ResearchExecutionOrderError("NO_REPLAY_FRONTIER", "A replay event must be visible before cancelling a research order");
-    const order = this.orders.get(nonEmpty(orderId, "orderId"));
+    const order = this.orders.get(boundedNonEmpty(orderId, "orderId"));
     if (order === undefined) throw new ResearchExecutionOrderError("UNKNOWN_ORDER", `Unknown research order: ${orderId}`);
     if (order.status !== "pending" && order.status !== "partially-simulated") throw new ResearchExecutionOrderError("TERMINAL_ORDER", `Order ${orderId} is already ${order.status}`);
     this.assertNoFutureScenarioBranch();
+    this.assertDecisionCapacity();
     const decisionMetadata = this.nextDecisionMetadata(this.currentIndex);
     const cancellation: ResearchCancelDecision = {
       ...decisionMetadata,
@@ -569,7 +593,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       decisionTime: this.lastEvent.time,
       decisionClockTime: replayEventClock(this.lastEvent, this.options.clockPolicy),
       eligibleClockTime: null,
-      reason: nonEmpty(reason, "reason"),
+      reason: boundedNonEmpty(reason, "reason"),
     };
     this.recordDecision(cancellation);
     this.releaseReservation(order);
@@ -723,6 +747,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       }
       validated.push(decision);
     }
+    if (validated.length > RESEARCH_MAX_DECISIONS) throw new ResearchExecutionValidationError(`Scenario decisions exceed ${RESEARCH_MAX_DECISIONS} records`);
     for (const decision of validated) this.recordDecision(decision);
     this.nextDecisionNumber = validated.length + 1;
     this.nextOrderNumber = validated.filter((decision) => decision.decisionType === "submit-order").length + 1;
@@ -741,6 +766,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.decisions.length = 0;
     this.decisionsByCursor.clear();
     this.nextDecisionOrdinalByCursor.clear();
+    this.decisionIds.clear();
+    this.orderIds.clear();
     this.sourceStatuses.clear();
     this.observedTrades.clear();
     this.dividendEntitlements.clear();
@@ -1185,6 +1212,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
 
   private createOrderFromDecision(decision: ResearchDecisionRecord): MutableOrder {
     if (decision.decisionType !== "submit-order") throw new ResearchExecutionValidationError(`Cannot create an order from ${decision.decisionType} decision ${decision.decisionId}`);
+    if (this.orders.has(decision.orderId)) throw new ResearchExecutionValidationError(`Duplicate active scenario order ${decision.orderId}`);
     const order: MutableOrder = {
       id: decision.orderId,
       idempotencyKey: decision.idempotencyKey,
@@ -1286,7 +1314,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     if (!request || typeof request !== "object") throw new ResearchExecutionOrderError("INVALID_ORDER", "Order request is required");
     if (request.side !== "buy" && request.side !== "sell") throw new ResearchExecutionOrderError("INVALID_SIDE", "Order side is invalid");
     if (request.type !== "market" && request.type !== "limit") throw new ResearchExecutionOrderError("INVALID_TYPE", "Order type is invalid");
-    const idempotencyKey = nonEmpty(request.idempotencyKey, "idempotencyKey");
+    const idempotencyKey = boundedNonEmpty(request.idempotencyKey, "idempotencyKey");
     const quantity = this.normalizeQuantity(request.quantity, true);
     if (request.type === "limit" && (request.limitPrice === undefined || !Number.isFinite(request.limitPrice) || request.limitPrice <= 0)) throw new ResearchExecutionOrderError("INVALID_LIMIT_PRICE", "A limit order requires a positive finite limitPrice");
     const limitPrice = request.limitPrice === undefined ? undefined : this.normalizePrice(request.limitPrice, request.side);
@@ -1296,7 +1324,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       type: request.type,
       quantity,
       ...(limitPrice === undefined ? {} : { limitPrice }),
-      ...(request.reason === undefined ? {} : { reason: request.reason }),
+      ...(request.reason === undefined ? {} : { reason: boundedNonEmpty(request.reason, "reason") }),
     };
   }
 
@@ -1530,13 +1558,35 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private nextDecisionMetadata(cursor: number): Pick<ResearchSubmitDecision, "decisionId" | "decisionOrdinal"> {
     const decisionOrdinal = (this.nextDecisionOrdinalByCursor.get(cursor) ?? 0) + 1;
     this.nextDecisionOrdinalByCursor.set(cursor, decisionOrdinal);
+    let decisionId: string;
+    do {
+      decisionId = `${this.options.scenarioId}-decision-${this.nextDecisionNumber++}`;
+    } while (this.decisionIds.has(decisionId));
     return {
-      decisionId: `${this.options.scenarioId}-decision-${this.nextDecisionNumber++}`,
+      decisionId,
       decisionOrdinal,
     };
   }
 
+  private nextOrderIdentity(): string {
+    let orderId: string;
+    do {
+      orderId = `${this.options.scenarioId}-order-${this.nextOrderNumber++}`;
+    } while (this.orderIds.has(orderId));
+    return orderId;
+  }
+
+  private assertDecisionCapacity(): void {
+    if (this.decisions.length >= RESEARCH_MAX_DECISIONS) throw new ResearchExecutionOrderError("DECISION_LIMIT", `A research scenario cannot contain more than ${RESEARCH_MAX_DECISIONS} decisions`);
+  }
+
   private recordDecision(decision: ResearchDecisionRecord): void {
+    if (this.decisionIds.has(decision.decisionId)) throw new ResearchExecutionValidationError(`Duplicate scenario decision ${decision.decisionId}`);
+    this.decisionIds.add(decision.decisionId);
+    if (decision.decisionType === "submit-order") {
+      if (this.orderIds.has(decision.orderId)) throw new ResearchExecutionValidationError(`Duplicate scenario order ${decision.orderId}`);
+      this.orderIds.add(decision.orderId);
+    }
     this.decisions.push(decision);
     const bucket = this.decisionsByCursor.get(decision.decisionCursor);
     if (bucket === undefined) this.decisionsByCursor.set(decision.decisionCursor, [decision]);
