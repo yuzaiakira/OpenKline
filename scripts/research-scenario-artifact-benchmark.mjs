@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import { createMarketReplayTape } from "../dist/src/replay/market-event-tape.js";
 import {
+  createResearchScenarioArtifact,
   createResearchExecutionSession,
   parseResearchScenarioArtifact,
   restoreResearchScenario,
@@ -98,7 +99,7 @@ function sessionOptions(tape) {
   };
 }
 
-function runSample(eventCount) {
+function runSample(eventCount, sampleIndex) {
   gc();
   const heapBeforeBytes = process.memoryUsage().heapUsed;
   const tapeStart = now();
@@ -116,6 +117,8 @@ function runSample(eventCount) {
     session.cancelOrder(order.id, `bounded-cancel-${index}`);
   }
   const decisionMs = now() - decisionStart;
+  const continuationScenario = session.exportScenario();
+  const continuationArtifact = session.exportScenarioArtifact({ includeExpectedResult: false });
   const processingStart = now();
   for (let index = 2; index < eventCount; index += 1) session.step();
   const processingMs = now() - processingStart;
@@ -146,11 +149,54 @@ function runSample(eventCount) {
   assert.deepEqual(restored.actual, original);
   assert.equal(restored.actual.decisions.length, decisionCount * 2);
   assert.equal(restored.actual.journalRetention.complete, false);
+  const continuationParseStart = now();
+  const continuationParsed = parseResearchScenarioArtifact(serializeResearchScenarioArtifact(continuationArtifact));
+  const continuationValidationMs = now() - continuationParseStart;
+  const continuationRestoreStart = now();
+  const continued = restoreResearchScenario({ artifact: continuationParsed, tape });
+  const continuationRestoreMs = now() - continuationRestoreStart;
+  assert.equal(continued.status, "no-expected-result");
+  const continuationSubmitStart = now();
+  const continuedOrder = continued.session.submitOrder({
+    idempotencyKey: `continued-${eventCount}`,
+    side: "buy",
+    type: "limit",
+    quantity: 1,
+    limitPrice: 98,
+  });
+  const continuedSubmitMs = now() - continuationSubmitStart;
+  assert.equal(continuedOrder.status, "pending");
+  continued.session.step();
+  const continuationReexportStart = now();
+  const continuedArtifact = continued.session.exportScenarioArtifact({ includeExpectedResult: false });
+  const continuedReexportMs = now() - continuationReexportStart;
+  assert.equal(continuedArtifact.decisions.length, decisionCount * 2 + 1);
+  const invalidContinuationArtifact = createResearchScenarioArtifact({
+    scenario: {
+      ...continuationScenario,
+      decisions: continuationScenario.decisions.map((decision, index) => index === 0
+        ? { ...decision, decisionEventId: "missing-continuation-event" }
+        : decision),
+    },
+    tape,
+    frontier: continuationArtifact.replay.frontier,
+    options: { includeExpectedResult: false },
+  });
+  const failedRestoreStart = now();
+  let failedRestoreRejected = false;
+  try {
+    restoreResearchScenario({ artifact: invalidContinuationArtifact, tape });
+  } catch {
+    failedRestoreRejected = true;
+  }
+  const failedRestoreDisposalMs = now() - failedRestoreStart;
+  assert.equal(failedRestoreRejected, true);
   const tapeEvents = tape.events.length;
   const journalRetention = { ...artifact.journalRetention };
   const artifactBytes = Buffer.byteLength(serialized, "utf8");
   const heapBeforeDisposeBytes = process.memoryUsage().heapUsed;
   restored.session.dispose();
+  continued.session.dispose();
   session.dispose();
   restored.session.dispose();
   restored = null;
@@ -164,6 +210,7 @@ function runSample(eventCount) {
   const heapAfterDisposeBytes = process.memoryUsage().heapUsed;
   return {
     eventCount,
+    sampleRole: sampleIndex === 0 ? "cold" : "warm",
     decisionCount: decisionCount * 2,
     tapeEvents,
     tapeBuildMs,
@@ -175,6 +222,11 @@ function runSample(eventCount) {
     validationMs,
     reconstructionMs,
     failedValidationMs,
+    continuationValidationMs,
+    continuationRestoreMs,
+    continuedSubmitMs,
+    continuedReexportMs,
+    failedRestoreDisposalMs,
     artifactBytes,
     journalRetention,
     heapBeforeBytes,
@@ -187,14 +239,21 @@ function runSample(eventCount) {
 function summarize(samples, key) {
   const values = samples.map((sample) => sample[key]).sort((left, right) => left - right);
   const p95Index = Math.min(values.length - 1, Math.max(0, Math.ceil(values.length * 0.95) - 1));
-  return { median: values[Math.floor(values.length / 2)], p95: values[p95Index], min: values[0], max: values.at(-1) };
+  return {
+    median: values[Math.floor(values.length / 2)],
+    p95: values[p95Index],
+    min: values[0],
+    max: values.at(-1),
+    p95Method: "nearest-rank-ceil",
+    p95SampleCount: values.length,
+  };
 }
 
 const workloads = {};
 for (const eventCount of sizes) {
   const samples = [];
   const sampleCount = sampleCounts.get(eventCount) ?? 1;
-  for (let index = 0; index < sampleCount; index += 1) samples.push(runSample(eventCount));
+  for (let index = 0; index < sampleCount; index += 1) samples.push(runSample(eventCount, index));
   workloads[eventCount] = {
     eventCount,
     sampleCount,
@@ -208,7 +267,14 @@ for (const eventCount of sizes) {
     validationMs: summarize(samples, "validationMs"),
     reconstructionMs: summarize(samples, "reconstructionMs"),
     failedValidationMs: summarize(samples, "failedValidationMs"),
+    continuationValidationMs: summarize(samples, "continuationValidationMs"),
+    continuationRestoreMs: summarize(samples, "continuationRestoreMs"),
+    continuedSubmitMs: summarize(samples, "continuedSubmitMs"),
+    continuedReexportMs: summarize(samples, "continuedReexportMs"),
+    failedRestoreDisposalMs: summarize(samples, "failedRestoreDisposalMs"),
     heapRetainedAfterDisposeBytes: summarize(samples, "heapRetainedAfterDisposeBytes"),
+    sampleRoles: samples.map((sample) => sample.sampleRole),
+    p95Caveat: sampleCount < 3 ? "p95 is the maximum observed value for this two-sample workload; it is not a stable tail estimate" : "p95 is a nearest-rank estimate over the recorded samples",
     journalRetention: samples[0]?.journalRetention,
   };
 }
