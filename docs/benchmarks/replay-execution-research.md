@@ -295,3 +295,40 @@ rows above remain the durable comparison set; both runs use the same schema,
 workload sizes, decision counts, and forced-GC protocol. This variance is why
 the benchmark is reported as reproducibility evidence rather than a universal
 performance promise.
+
+## Phase 16.1.1 continuation and bounded-resource benchmark addendum
+
+The Phase 16.1.1 rerun used the same deterministic 1k/10k/100k workloads and
+the updated `npm run benchmark:research-scenario` protocol at commit
+`403ac9249bbd89c7b5d4fa694944b8d97e865372`. It keeps the prior 3/3/2 sample
+budget: the first sample is labelled `cold`, later samples `warm`, and all
+samples remain in the summaries. P95 uses a nearest-rank ceiling; for the
+100k two-sample workload the reported p95 is only the maximum observed value
+and is explicitly not a stable tail estimate.
+
+In addition to the original tape/decision/export/serialize/validate/restore
+measurements, each sample now validates and restores a paused continuation
+artifact, submits one new order after restore, steps once, re-exports the
+continued artifact, and attempts a deliberately invalid continuation restore.
+The latter must fail after construction and exercise temporary-session
+disposal. The continuation artifact has no expected result, so a successful
+restore is reported as `no-expected-result` rather than being presented as an
+exchange observation.
+
+Times are milliseconds; heap values are bytes. Values are median / reported
+p95 for the stated sample count.
+
+| Events | Samples | Decisions | Artifact bytes | Processing | Validate | Full restore | Continuation restore | Continued submit | Continued re-export | Failed restore/cleanup | Retained heap delta |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 3 (1 cold, 2 warm) | 64 | 25,094 | 24.610 / 26.394 | 2.130 / 3.364 | 94.608 / 100.611 | 61.259 / 67.343 | 0.083 / 0.092 | 3.469 / 3.724 | 54.965 / 58.471 | 887,472 / 1,776,128 |
+| 10,000 | 3 (1 cold, 2 warm) | 198 | 75,278 | 501.815 / 514.385 | 6.063 / 6.728 | 1,030.819 / 1,120.049 | 570.145 / 598.455 | 0.130 / 0.141 | 8.981 / 9.426 | 535.625 / 544.359 | 6,189,352 / 6,300,848 |
+| 100,000 | 2 (1 cold, 1 warm) | 1,998 | 759,182 | 13,322.826 / 13,322.826 | 61.764 / 61.764 | 20,376.884 / 20,376.884 | 6,445.149 / 6,445.149 | 0.850 / 0.850 | 100.136 / 100.136 | 6,316.162 / 6,316.162 | 61,888,696 / 61,888,696 |
+
+The updated run also recorded continuation-artifact validation medians/p95s
+of 4.222/5.863 ms, 14.626/34.862 ms, and 143.789/143.789 ms for 1k/10k/100k.
+Journal retention remained bounded at 64 entries; total emitted entries were
+128, 396, and 3,996 respectively. The post-disposal heap column is a
+process-level delta after forced GC and released local references; it is not a
+zero-leak proof or a universal memory claim. The raw command capture was
+retained outside the repository at
+`/tmp/openkline-phase16-1-1-scenario-benchmark-403ac92.txt`.

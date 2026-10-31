@@ -316,6 +316,38 @@ The artifact and restoration contracts are exported only from the internal
 `src/research-execution` boundary. They are not exported from the root
 package, React package, Studio, worker runtime, or broker integrations.
 
+## Phase 16.1.1 continuation and resource hardening
+
+Schema-1 restoration is also a continuation boundary. Imported decision and
+order identifiers are treated as occupied identities even when an artifact
+was created by a legitimate producer with non-canonical identifiers. New
+decisions and orders skip those occupied identities rather than deriving
+their next values solely from an ordinal count. This preserves the original
+decision records, same-cursor idempotency, cancellation references, and
+deterministic replay while preventing map overwrites during continuation.
+The identity sets remain across seek/reset reconstruction and are cleared on
+disposal; they are not public state.
+
+The internal hard limits are shared by the live session and artifact parser:
+100,000 decisions, journal entries, and pending-order capacity values;
+10,000 depth and bounded-latency entries; and 4,096 characters for direct
+session identifiers/reasons. Artifact validation additionally applies its
+configurable lower defaults and absolute limits for serialized bytes, strings,
+arrays, and nesting. Restore validates those limits before constructing a
+session. It also walks direct object inputs through own data descriptors,
+rejecting accessors, symbols, sparse arrays, non-enumerable fields, unexpected
+prototypes, and prototype-pollution keys. This is a strict JSON-data contract;
+callers must materialize data before validation and must not treat a Proxy as
+safe input merely because it can be passed as an object.
+
+Restoration owns the fresh session from construction through frontier replay.
+Any load, frontier, export, or evidence-comparison exception disposes it. A
+normal expected-result mismatch is not an exception and returns the session
+for inspection. The schema-1 FNV-1a content hash remains unchanged for
+compatibility and consumes canonical JavaScript UTF-16 code units in
+`charCodeAt` order; it detects ordinary corruption but provides no
+authentication, provenance, or authorization.
+
 ## Phase 16.0.3 headless dispatch and observer integrity
 
 The session dispatch path now checks the observer set before constructing a

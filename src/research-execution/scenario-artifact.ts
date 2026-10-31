@@ -658,6 +658,9 @@ function canonicalStringify(value: unknown): string {
 }
 
 function fnv1a64(value: string): string {
+  // Schema-1 compatibility intentionally hashes JavaScript UTF-16 code units
+  // (`charCodeAt`) in canonical string order. This is an integrity check, not
+  // authentication or a cryptographic signature.
   let hash = BigInt("14695981039346656037");
   const prime = BigInt("1099511628211");
   const mask = BigInt("18446744073709551615");

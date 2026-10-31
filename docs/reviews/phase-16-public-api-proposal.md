@@ -148,3 +148,22 @@ and result schemas; and the security, documentation, licensing, and support
 obligations of exposing deterministic reconstruction. Phase 16.2, Studio,
 worker, broker, live-execution, publication, and release work remain outside
 the current authorization.
+
+### Phase 16.1.1 review boundary
+
+The continuation hardening remains internal maintenance, not an API proposal.
+Restoration treats imported decision and order identifiers as occupied and
+allocates collision-free identities for new decisions; this behavior is not a
+promise that any identifier format is stable for public consumers. The
+validator's direct-object input is deliberately a strict data-only contract:
+accessors, sparse arrays, unexpected prototypes, symbols, forbidden keys,
+unsupported numbers, and bounded-resource violations are rejected. Proxy
+objects are not represented as a supported safe-input type. The schema-1
+FNV-1a hash continues to consume canonical JavaScript UTF-16 code units and
+is not authentication.
+
+No root export, React export, package metadata, protected API baseline change,
+Studio contract, or consumer documentation is authorized by this increment.
+Any future public API review must separately decide whether continuation
+identity semantics, resource ceilings, and data-only validation are stable
+enough to document as compatibility commitments.

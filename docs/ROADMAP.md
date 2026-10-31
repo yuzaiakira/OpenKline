@@ -139,6 +139,22 @@ offline Studio Market Replay Lab are present.
   API-baseline approval, browser/device acceptance, publication, or release
   authorization is included. See
   `docs/reports/phase-16-1-scenario-reproducibility.md`.
+- [Implemented / Verified internally — Phase 16.1.1 continuation and resource
+  hardening] Restored sessions now retain imported decision/order identities as
+  occupied namespaces and allocate collision-free identities for new submit
+  and cancel decisions, while preserving schema-1 artifact compatibility,
+  same-cursor idempotency, seek/replay, and second export/restore behavior.
+  Artifact validation now rejects accessors, sparse arrays, unexpected
+  prototypes, unsupported numeric values, oversized strings/nesting/bytes,
+  and bounded-policy values above the internal ceilings before reconstruction.
+  Restore failures dispose temporary sessions, ordinary expected-result
+  mismatches return a usable session, and the schema-1 FNV-1a hash remains
+  unchanged with its UTF-16 code-unit semantics documented. The benchmark now
+  records cold/warm samples, continuation restore/submit/re-export, failed
+  restore cleanup, and the statistical limitation of two-sample 100k p95
+  values. No public export, API-baseline approval, Studio/worker/broker/live
+  integration, publication, or release authorization is included. See
+  `docs/reports/phase-16-1-1-scenario-continuation-hardening.md`.
 
 ## Current milestone
 
