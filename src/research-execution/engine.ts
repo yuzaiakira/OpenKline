@@ -30,7 +30,10 @@ import type {
   ResearchPositionSnapshot,
   ResearchPrecisionPolicy,
   ResearchRiskLimits,
+  ResearchScenarioArtifact,
+  ResearchScenarioArtifactCreateOptions,
   ResearchScenarioExport,
+  ResearchScenarioFrontier,
   ResearchSessionState,
   ResearchJournalRetention,
   ResearchSubmitDecision,
@@ -38,6 +41,7 @@ import type {
   ResearchSourceQuality,
 } from "./types.js";
 import { OPENKLINE_RESEARCH_EXECUTION_VERSION } from "./types.js";
+import { createResearchScenarioArtifact } from "./scenario-artifact.js";
 
 const EPSILON = 1e-10;
 const DEFAULT_MAX_QUOTE_AGE_MS = 60_000;
@@ -646,6 +650,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
         maxQuoteAgeMs: this.options.maxQuoteAgeMs,
         risk: { ...this.options.risk },
         corporateActionSource: this.options.corporateActionSource === null ? null : cloneSource(this.options.corporateActionSource),
+        maxJournalEntries: this.options.maxJournalEntries,
+        maxDepth: this.options.maxDepth,
       },
       decisions: this.orderedDecisions().map(cloneDecision),
       orders: snapshot.orders,
@@ -655,6 +661,73 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       journalRetention: snapshot.journalRetention,
       diagnostics: snapshot.diagnostics,
     };
+  }
+
+  public exportScenarioArtifact(options: ResearchScenarioArtifactCreateOptions = {}): ResearchScenarioArtifact {
+    this.assertNotDisposed();
+    const snapshot = this.getSnapshot();
+    if (snapshot.state === "playing" || snapshot.state === "error" || snapshot.state === "disposed") {
+      throw new ResearchExecutionValidationError(`Scenario artifact cannot be exported from ${snapshot.state} state`);
+    }
+    const frontier: ResearchScenarioFrontier = {
+      eventIndex: snapshot.cursor.eventIndex,
+      eventId: snapshot.cursor.eventId,
+      time: snapshot.cursor.time,
+      clockTime: snapshot.cursor.clockTime,
+      state: snapshot.state,
+    };
+    return createResearchScenarioArtifact({ scenario: this.exportScenario(), tape: this.options.tape, frontier, options });
+  }
+
+  /** Internal-only restore hook used after an artifact has passed strict validation. */
+  public loadScenarioDecisions(decisions: readonly ResearchDecisionRecord[]): void {
+    this.assertNotDisposed();
+    if (this.state !== "idle" || this.currentIndex !== -1 || this.decisions.length > 0) {
+      throw new ResearchExecutionLifecycleError("Scenario decisions can only be loaded into a fresh idle session");
+    }
+    const validated: ResearchDecisionRecord[] = [];
+    const decisionIds = new Set<string>();
+    const orderIds = new Set<string>();
+    const submittedOrders = new Set<string>();
+    const ordinals = new Map<number, number>();
+    for (const candidate of decisions) {
+      const decision = cloneDecision(candidate);
+      if (decision.scenarioId !== this.options.scenarioId) throw new ResearchExecutionValidationError(`Scenario decision ${decision.decisionId} belongs to a different scenario`);
+      if (decisionIds.has(decision.decisionId)) throw new ResearchExecutionValidationError(`Duplicate scenario decision ${decision.decisionId}`);
+      decisionIds.add(decision.decisionId);
+      const event = this.controller.getEligibleEvent(decision.decisionCursor);
+      if (event === null || event.id !== decision.decisionEventId) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} references an incompatible replay event`);
+      if (event.time !== decision.decisionTime) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} time does not match its replay event`);
+      const decisionClockTime = replayEventClock(event, this.options.clockPolicy);
+      if (decision.decisionClockTime !== decisionClockTime) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} clock time does not match its replay event`);
+      const previousOrdinal = ordinals.get(decision.decisionCursor) ?? 0;
+      if (decision.decisionOrdinal <= previousOrdinal) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} ordinal is not strictly increasing at its replay cursor`);
+      ordinals.set(decision.decisionCursor, decision.decisionOrdinal);
+      if (decision.decisionType === "submit-order") {
+        const normalized = this.normalizeRequest({
+          idempotencyKey: decision.idempotencyKey,
+          side: decision.side,
+          type: decision.type,
+          quantity: decision.quantity,
+          ...(decision.limitPrice === undefined ? {} : { limitPrice: decision.limitPrice }),
+          ...(decision.reason === undefined ? {} : { reason: decision.reason }),
+        });
+        if (!sameRequest(decision, normalized)) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} does not match the active precision policy`);
+        if (orderIds.has(decision.orderId)) throw new ResearchExecutionValidationError(`Duplicate scenario order ${decision.orderId}`);
+        orderIds.add(decision.orderId);
+        submittedOrders.add(decision.orderId);
+        const expectedEligibleClockTime = decisionClockTime === null ? null : decisionClockTime + this.latencyDelay(decision.decisionCursor);
+        if (decision.eligibleClockTime !== expectedEligibleClockTime) throw new ResearchExecutionValidationError(`Decision ${decision.decisionId} eligibility time does not match the active latency policy`);
+      } else {
+        if (!submittedOrders.has(decision.orderId)) throw new ResearchExecutionValidationError(`Cancellation ${decision.decisionId} references an unavailable order`);
+      }
+      validated.push(decision);
+    }
+    for (const decision of validated) this.recordDecision(decision);
+    this.nextDecisionNumber = validated.length + 1;
+    this.nextOrderNumber = validated.filter((decision) => decision.decisionType === "submit-order").length + 1;
+    for (const [cursor, ordinal] of ordinals) this.nextDecisionOrdinalByCursor.set(cursor, ordinal);
+    this.invalidateSnapshot();
   }
 
   public dispose(): void {

@@ -3,6 +3,8 @@ import type { TransactionCost } from "../backtesting/types.js";
 
 /** Internal Phase 16.0 scenario schema. It is intentionally not exported from the root package. */
 export const OPENKLINE_RESEARCH_EXECUTION_VERSION = 1 as const;
+/** Versioned internal artifact schema; intentionally absent from public package exports. */
+export const OPENKLINE_RESEARCH_SCENARIO_ARTIFACT_VERSION = 1 as const;
 
 export type ResearchOrderSide = "buy" | "sell";
 export type ResearchOrderType = "market" | "limit";
@@ -267,28 +269,118 @@ export interface ResearchSnapshot {
   readonly error?: string;
 }
 
+export interface ResearchScenarioAssumptions {
+  readonly instrumentId: string;
+  readonly venueId: string | null;
+  readonly currency: string;
+  readonly initialCapital: number;
+  readonly clockPolicy: MarketReplayClockPolicy;
+  readonly knowledgePolicy: MarketReplayKnowledgePolicy;
+  readonly latency: ResearchLatencyPolicy;
+  readonly execution: ResearchExecutionPolicy;
+  readonly precision: ResearchPrecisionPolicy;
+  readonly commission: TransactionCost;
+  readonly slippage: TransactionCost;
+  readonly priceImpact: TransactionCost | null;
+  readonly maxQuoteAgeMs: number;
+  readonly risk: ResearchRiskLimits;
+  readonly corporateActionSource: MarketReplaySource | null;
+  readonly maxJournalEntries: number;
+  readonly maxDepth: number;
+}
+
+export interface ResearchScenarioCursor {
+  readonly eventIndex: number | null;
+  readonly eventId: string | null;
+  readonly time: number | null;
+  readonly clockTime: number | null;
+}
+
+export type ResearchScenarioRestorableState = "idle" | "ready" | "paused" | "completed";
+
+export interface ResearchScenarioFrontier extends ResearchScenarioCursor {
+  readonly state: ResearchScenarioRestorableState;
+}
+
+export interface ResearchScenarioResultEvidence {
+  readonly algorithm: "fnv1a64";
+  readonly fingerprint: string;
+  readonly state: ResearchSessionState;
+  readonly cursor: ResearchScenarioCursor;
+}
+
+export interface ResearchScenarioArtifactIntegrity {
+  /** This is a content hash only; it is not an authenticated signature. */
+  readonly algorithm: "fnv1a64";
+  readonly contentHash: string;
+  readonly authenticated: false;
+}
+
+export interface ResearchScenarioArtifact {
+  readonly artifactType: "openkline-research-scenario";
+  readonly schemaVersion: typeof OPENKLINE_RESEARCH_SCENARIO_ARTIFACT_VERSION;
+  readonly scenarioId: string;
+  readonly tape: {
+    readonly id: string;
+    readonly fingerprint: string;
+    readonly version: number;
+    readonly orderingVersion: number;
+    readonly instrumentIds: readonly string[];
+    readonly sources: readonly MarketReplaySource[];
+  };
+  readonly replay: {
+    readonly tapeVersion: number;
+    readonly orderingVersion: number;
+    readonly clockPolicy: MarketReplayClockPolicy;
+    readonly knowledgePolicy: MarketReplayKnowledgePolicy;
+    readonly frontier: ResearchScenarioFrontier;
+  };
+  readonly assumptions: ResearchScenarioAssumptions;
+  readonly decisions: readonly ResearchDecisionRecord[];
+  readonly decisionHistory: {
+    readonly complete: boolean;
+    readonly count: number;
+    readonly lastDecisionOrdinal: number | null;
+  };
+  readonly journalRetention: ResearchJournalRetention;
+  readonly expectedResult?: ResearchScenarioResultEvidence;
+  readonly integrity: ResearchScenarioArtifactIntegrity;
+}
+
+export interface ResearchScenarioArtifactCreateOptions {
+  readonly includeExpectedResult?: boolean;
+}
+
+export interface ResearchScenarioArtifactValidationOptions {
+  readonly maxSerializedBytes?: number;
+  readonly maxDecisions?: number;
+  readonly maxStringLength?: number;
+  readonly maxNestingDepth?: number;
+}
+
+export interface ResearchScenarioRestoreOptions {
+  readonly artifact: ResearchScenarioArtifact | string | unknown;
+  readonly tape: MarketReplayTape;
+  readonly validation?: ResearchScenarioArtifactValidationOptions;
+}
+
+export type ResearchScenarioReconstructionStatus = "verified" | "mismatch" | "no-expected-result";
+
+export interface ResearchScenarioReconstructionResult {
+  readonly status: ResearchScenarioReconstructionStatus;
+  readonly artifact: ResearchScenarioArtifact;
+  readonly session: ResearchExecutionSession;
+  readonly actual: ResearchScenarioExport;
+  readonly actualResult: ResearchScenarioResultEvidence;
+  readonly expectedResult: ResearchScenarioResultEvidence | null;
+}
+
 export interface ResearchScenarioExport {
   readonly version: typeof OPENKLINE_RESEARCH_EXECUTION_VERSION;
   readonly scenarioId: string;
   readonly tapeFingerprint: string;
   readonly tapeId: string;
-  readonly assumptions: {
-    readonly instrumentId: string;
-    readonly venueId: string | null;
-    readonly currency: string;
-    readonly initialCapital: number;
-    readonly clockPolicy: MarketReplayClockPolicy;
-    readonly knowledgePolicy: MarketReplayKnowledgePolicy;
-    readonly latency: ResearchLatencyPolicy;
-    readonly execution: ResearchExecutionPolicy;
-    readonly precision: ResearchPrecisionPolicy;
-    readonly commission: TransactionCost;
-    readonly slippage: TransactionCost;
-    readonly priceImpact: TransactionCost | null;
-    readonly maxQuoteAgeMs: number;
-    readonly risk: ResearchRiskLimits;
-    readonly corporateActionSource: MarketReplaySource | null;
-  };
+  readonly assumptions: ResearchScenarioAssumptions;
   readonly decisions: readonly ResearchDecisionRecord[];
   readonly orders: readonly ResearchOrder[];
   readonly fills: readonly ResearchFill[];
@@ -314,5 +406,6 @@ export interface ResearchExecutionSession {
   reset(): void;
   subscribe(listener: (snapshot: ResearchSnapshot) => void): () => void;
   exportScenario(): ResearchScenarioExport;
+  exportScenarioArtifact(options?: ResearchScenarioArtifactCreateOptions): ResearchScenarioArtifact;
   dispose(): void;
 }
