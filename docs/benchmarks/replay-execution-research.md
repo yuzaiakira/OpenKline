@@ -145,3 +145,29 @@ not a supported performance regression or improvement claim.
   environment and workload. Corrective reconstruction parity and journal
   retention checks are also **PASS**. Cross-browser and physical-device
   acceptance remains outside this result.
+
+## Phase 16.0.2 snapshot/lifecycle addendum
+
+The Phase 16.0.2 implementation at
+`21372f17ccfd135abe05c16fe0f8f066a6b6a5fe` keeps the prior benchmark as
+historical evidence and adds schema version `3`. The event-processing loop no
+longer polls `getSnapshot()` merely to determine completion; it performs the
+known replay steps and measures 25 repeated snapshot reads separately. This
+isolates the cache-hit/defensive-copy path from the event hot path without
+changing replay ordering or financial semantics.
+
+Environment: Linux x64, Node `v24.19.0`, forced GC available. Values below are
+median/p95 from five samples for 1k/10k and three samples for 100k. Times are
+milliseconds and heap values are bytes.
+
+| Events | Processing | Snapshot read | Seek | Serialization | Heap before dispose | Retained after dispose |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 34.921 / 42.194 | 0.051 / 0.058 | 12.117 / 13.806 | 0.079 / 0.200 | 5,740,128 / 5,859,640 | 118,784 / 660,920 |
+| 10,000 | 453.253 / 508.314 | 0.051 / 0.077 | 313.385 / 349.279 | 0.085 / 0.119 | 6,114,296 / 6,162,880 | 152,920 / 288,344 |
+| 100,000 | 3,096.729 / 3,101.842 | 0.055 / 0.056 | 1,332.838 / 1,346.145 | 0.075 / 0.105 | 5,235,808 / 5,266,808 | 142,224 / 202,832 |
+
+The current processing numbers are not a controlled comparison with the
+schema-2 numbers above because the measurement protocol changed. They are
+reproducible internal evidence for the new path, not a universal performance
+claim. The full Phase 16.0.2 report records the acceptance matrix and remaining
+full-reconstruction seek limitation.

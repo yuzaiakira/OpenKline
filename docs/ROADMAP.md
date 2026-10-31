@@ -98,6 +98,17 @@ offline Studio Market Replay Lab are present.
   simulator; API baseline approval, managed Firefox/WebKit/Mobile Safari,
   physical-device, legal, accessibility, and release gates remain open. See
   `docs/reports/phase-16-0-1-correctness-hardening.md`.
+- [Implemented / Verified internally — Phase 16.0.2 scalability and lifecycle
+  hardening] Snapshot reads now use revisioned canonical state with defensive
+  clones, bounded journals append through a ring buffer, decisions are indexed
+  by replay cursor, order-book diagnostics avoid retained-history cloning, and
+  disposal clears research runtime references. Focused research tests (21/21),
+  full Node tests (346/346), typecheck, package smoke, distribution checks,
+  and the schema-3 1k/10k/100k benchmark pass at
+  `21372f17ccfd135abe05c16fe0f8f066a6b6a5fe`. Full seek checkpointing remains
+  open; public API, managed-browser, physical-device, licensing, and release
+  gates remain open. See
+  `docs/reports/phase-16-0-2-scalability-hardening.md`.
 
 ## Current milestone
 

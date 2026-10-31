@@ -212,6 +212,37 @@ financial reservations, corporate-action provenance, and session eligibility.
 Its benchmark adds a deterministic cancellation/reconstruction scenario and
 does not replace the separate chart or Order Flow performance gates.
 
+## Phase 16.0.2 scalability and lifecycle hardening
+
+The internal runtime now separates canonical state construction from defensive
+consumer reads. A runtime revision invalidates one canonical `ResearchSnapshot`
+cache; `getSnapshot()` and listener delivery receive cloned data, while
+`getOrders()`, `getFills()`, and `getJournal()` reuse the canonical snapshot
+without rebuilding unrelated state. This preserves the immutable boundary
+without making repeated inspection pay for repeated map sorting, diagnostics,
+or ledger projection.
+
+Bounded journal storage is an in-place ring buffer. The retained export is
+still chronological and journal IDs remain monotonic, but an append at the
+retention limit does not allocate a second full retained array. Decision
+records are indexed by replay cursor, so event reconstruction activates the
+small cursor-local decision list rather than filtering the complete scenario
+history on every event.
+
+Order-book diagnostic counts are maintained by the research adapter instead of
+calling `OrderBookController.getHistory()` for each snapshot. This avoids a
+defensive clone solely for a count and keeps the public order-book contract
+unchanged. Disposal clears the research decision indexes, observation maps,
+journal ring, warning/quality state, and snapshot cache after unsubscribing and
+disposing replay and order-book controllers.
+
+The Phase 16.0.2 benchmark records repeated snapshot-read latency separately
+from event processing. It deliberately does not claim that the simulator is a
+broker, matching engine, or exchange-capacity measurement. Full historical seek
+still reconstructs from the event tape; introducing a checkpoint format remains
+an open, measured follow-up because order-book gap state and causal decisions
+must be restored exactly.
+
 The source remains internal until a separate public API decision; no npm
 publication, release, live broker connectivity, or license change is covered
 by this authorization.
