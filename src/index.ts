@@ -128,6 +128,7 @@ export {
   MarketTradeStore,
   MarketTradeValidationError,
   OPENKLINE_MARKET_TRADES_VERSION,
+  marketTradeLogicalIdentity,
   normalizeMarketTrade,
 } from "./market-trades.js";
 export {

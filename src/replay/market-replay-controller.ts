@@ -18,6 +18,7 @@ import {
   type MarketReplayOrderBookSnapshotEvent,
   type MarketReplaySessionBoundaryEvent,
   type MarketReplaySourceCoverage,
+  type MarketReplaySource,
   type MarketReplaySourceStatus,
   type MarketReplaySourceStatusEvent,
   type MarketReplayTape,
@@ -71,6 +72,8 @@ export interface MarketReplayTradeSummary {
 
 export interface MarketReplayCvdState {
   readonly instrumentId: string;
+  readonly venueId?: string;
+  readonly source: MarketReplaySource;
   readonly value: number;
   readonly knownVolume: number;
   readonly unknownVolume: number;
@@ -78,6 +81,8 @@ export interface MarketReplayCvdState {
 
 export interface MarketReplayFootprintCell {
   readonly instrumentId: string;
+  readonly venueId?: string;
+  readonly source: MarketReplaySource;
   readonly time: number;
   readonly price: number;
   readonly buyVolume: number;
@@ -193,7 +198,7 @@ export interface MarketReplayCheckpointDiagnostics {
 export interface MarketReplaySnapshotOptions {
   /** Restrict materialization to one instrument without changing replay state. */
   readonly instrumentId?: string;
-  /** Optional lower bound for defensive trade materialization. */
+  /** Optional upper bound for defensive trade materialization. */
   readonly maxMaterializedTrades?: number;
 }
 
@@ -239,6 +244,9 @@ type OpeningCandleEvent = Omit<MarketReplayCandleEvent, "kind" | "finality"> & {
 type CompletedCandleEvent = Omit<MarketReplayCandleEvent, "kind" | "finality"> & { readonly kind: "candle-complete"; readonly finality: "completed" };
 
 interface MutableCvd {
+  readonly instrumentId: string;
+  readonly venueId?: string;
+  readonly source: MarketReplaySource;
   value: number;
   knownVolume: number;
   unknownVolume: number;
@@ -246,6 +254,8 @@ interface MutableCvd {
 
 interface MutableCell {
   readonly instrumentId: string;
+  readonly venueId?: string;
+  readonly source: MarketReplaySource;
   readonly time: number;
   readonly price: number;
   buyVolume: number;
@@ -422,13 +432,13 @@ export class MarketReplayController {
     const trades = scopedTrades.slice(-tradeLimit).map(cloneTrade);
     const tradeSummary = summarizeTrades(scopedTrades);
     const cvd = [...this.runtime.cvd.entries()]
-      .filter(([key]) => instrumentId === undefined || key === instrumentId)
+      .filter(([, value]) => instrumentId === undefined || value.instrumentId === instrumentId)
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([instrumentId, value]) => ({ instrumentId, ...value }));
+      .map(([, value]) => ({ ...value, source: { ...value.source } }));
     const footprint = [...this.runtime.footprint.values()]
       .filter((cell) => instrumentId === undefined || cell.instrumentId === instrumentId)
-      .sort((left, right) => left.time - right.time || left.price - right.price || left.instrumentId.localeCompare(right.instrumentId))
-      .map((cell) => ({ ...cell }));
+      .sort((left, right) => left.time - right.time || left.price - right.price || left.instrumentId.localeCompare(right.instrumentId) || left.source.id.localeCompare(right.source.id) || left.source.version.localeCompare(right.source.version) || (left.venueId ?? "").localeCompare(right.venueId ?? ""))
+      .map((cell) => ({ ...cell, source: { ...cell.source } }));
     const orderBooks = [...this.runtime.books.entries()]
       .map(([key, controller]) => ({ key, state: cloneOrderBookState(controller.getState(this.maxDepth)) }))
       .filter(({ state }) => instrumentId === undefined || state.instrumentId === instrumentId)
@@ -769,7 +779,15 @@ export class MarketReplayController {
   }
 
   private addTradeDerived(trade: MarketTrade): void {
-    const cvd = this.runtime.cvd.get(trade.instrumentId) ?? { value: 0, knownVolume: 0, unknownVolume: 0 };
+    const streamKey = replayStreamIdentity(trade);
+    const cvd = this.runtime.cvd.get(streamKey) ?? {
+      instrumentId: trade.instrumentId,
+      ...(trade.venueId === undefined ? {} : { venueId: trade.venueId }),
+      source: { ...trade.source },
+      value: 0,
+      knownVolume: 0,
+      unknownVolume: 0,
+    };
     if (trade.aggressorSide === "buy") {
       cvd.value += trade.quantity;
       cvd.knownVolume += trade.quantity;
@@ -779,10 +797,19 @@ export class MarketReplayController {
     } else {
       cvd.unknownVolume += trade.quantity;
     }
-    this.runtime.cvd.set(trade.instrumentId, cvd);
+    this.runtime.cvd.set(streamKey, cvd);
     const tickPrice = Number(trade.price.toPrecision(15));
-    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, time: trade.time, price: tickPrice });
-    const cell = this.runtime.footprint.get(key) ?? { instrumentId: trade.instrumentId, time: trade.time, price: tickPrice, buyVolume: 0, sellVolume: 0, unknownVolume: 0 };
+    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, ...(trade.venueId === undefined ? {} : { venueId: trade.venueId }), source: trade.source, time: trade.time, price: tickPrice });
+    const cell = this.runtime.footprint.get(key) ?? {
+      instrumentId: trade.instrumentId,
+      ...(trade.venueId === undefined ? {} : { venueId: trade.venueId }),
+      source: { ...trade.source },
+      time: trade.time,
+      price: tickPrice,
+      buyVolume: 0,
+      sellVolume: 0,
+      unknownVolume: 0,
+    };
     if (trade.aggressorSide === "buy") cell.buyVolume += trade.quantity;
     else if (trade.aggressorSide === "sell") cell.sellVolume += trade.quantity;
     else cell.unknownVolume += trade.quantity;
@@ -795,14 +822,15 @@ export class MarketReplayController {
   }
 
   private removeTradeDerived(trade: MarketTrade): void {
-    const cvd = this.runtime.cvd.get(trade.instrumentId);
+    const streamKey = replayStreamIdentity(trade);
+    const cvd = this.runtime.cvd.get(streamKey);
     if (cvd !== undefined) {
       if (trade.aggressorSide === "buy") { cvd.value -= trade.quantity; cvd.knownVolume -= trade.quantity; }
       else if (trade.aggressorSide === "sell") { cvd.value += trade.quantity; cvd.knownVolume -= trade.quantity; }
       else cvd.unknownVolume -= trade.quantity;
-      this.runtime.cvd.set(trade.instrumentId, cvd);
+      this.runtime.cvd.set(streamKey, cvd);
     }
-    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, time: trade.time, price: Number(trade.price.toPrecision(15)) });
+    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, ...(trade.venueId === undefined ? {} : { venueId: trade.venueId }), source: trade.source, time: trade.time, price: Number(trade.price.toPrecision(15)) });
     const cell = this.runtime.footprint.get(key);
     if (cell === undefined) return;
     if (trade.aggressorSide === "buy") cell.buyVolume -= trade.quantity;
@@ -863,6 +891,10 @@ export class MarketReplayController {
   }
 
   private saveCheckpoint(eventIndex: number): void {
+    if (estimateRuntimeStateBytes(this.runtime, this.maxDepth) > this.checkpointMemoryBudgetBytes) {
+      this.runtime.notes.add(`Checkpoint retention budget ${this.checkpointMemoryBudgetBytes} bytes reached; larger checkpoints use full reconstruction fallback`);
+      return;
+    }
     const checkpointWithoutSize: Omit<RuntimeCheckpoint, "estimatedBytes"> = {
       eventIndex,
       eventId: this.projectedEvents[eventIndex]?.event.id ?? null,
@@ -1170,8 +1202,8 @@ function snapshotFromCheckpoint(checkpoint: RuntimeCheckpoint, tape: MarketRepla
       limit: checkpoint.trades.length,
     },
     tradeSummary: summarizeTrades(checkpoint.trades.map(([, value]) => value)),
-    cvd: checkpoint.cvd.map(([instrumentId, value]) => ({ instrumentId, ...value })),
-    footprint: checkpoint.footprint.map(([, value]) => ({ ...value })),
+    cvd: checkpoint.cvd.map(([, value]) => ({ ...value, source: { ...value.source } })),
+    footprint: checkpoint.footprint.map(([, value]) => ({ ...value, source: { ...value.source } })),
     orderBooks: checkpoint.books.map(([key, state]) => ({ key, state: cloneOrderBookState(state) })),
     effectiveCorporateActions: checkpoint.effectiveActions.map(([, value]) => cloneAction(value.action)),
     paymentCorporateActions: checkpoint.paymentActions.map(([, value]) => cloneAction(value.action)),
@@ -1210,6 +1242,23 @@ function estimateRetainedBytes(value: unknown): number {
     return 32 + Object.entries(value as Record<string, unknown>).reduce((sum, [key, item]) => sum + estimateRetainedBytes(key) + estimateRetainedBytes(item), 0);
   }
   return 16;
+}
+
+function estimateRuntimeStateBytes(runtime: MutableRuntime, maxDepth: number): number {
+  // This conservative preflight prevents an over-budget checkpoint from
+  // allocating a full deep copy just to reject it a moment later. The final
+  // retained value still uses estimateRetainedBytes on the copied checkpoint.
+  return 64 * 1024
+    + runtime.completedCandles.size * 320
+    + runtime.formingCandles.size * 240
+    + runtime.trades.size * 4_096
+    + runtime.cvd.size * 192
+    + runtime.footprint.size * 256
+    + runtime.books.size * (2_048 + maxDepth * 96)
+    + (runtime.effectiveActions.size + runtime.paymentActions.size) * 512
+    + runtime.sessions.size * 256
+    + runtime.coverage.size * 320
+    + (runtime.sequenceGaps.size + runtime.staleOrderBooks.size + runtime.rejectedEventIds.size + runtime.notes.size) * 96;
 }
 
 const defaultScheduler: ReplayScheduler = {

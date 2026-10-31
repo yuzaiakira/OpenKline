@@ -40,11 +40,28 @@ function stats(values) {
 
 function measure(action, samples) {
   action();
+  return measureSamples(action, samples);
+}
+
+function measureSamples(action, samples) {
   const values = [];
   for (let index = 0; index < samples; index += 1) {
     const started = performance.now();
     action(index);
     values.push(performance.now() - started);
+  }
+  return stats(values);
+}
+
+function measureIndependent(factory, action, samples) {
+  const values = [];
+  for (let index = 0; index < samples; index += 1) {
+    const subject = factory(index);
+    const started = performance.now();
+    action(subject, index);
+    values.push(performance.now() - started);
+    subject.dispose?.();
+    if (globalThis.gc) globalThis.gc();
   }
   return stats(values);
 }
@@ -87,10 +104,18 @@ function makeEvents(size) {
   return events;
 }
 
-function makeController(tape, checkpointInterval) {
-  const controller = new MarketReplayController({ tape, checkpointInterval, maxCheckpoints: 16, maxMaterializedTrades: 2_000, maxFootprintCells: 20_000 });
+function makeController(tape, checkpointInterval = undefined) {
+  const controller = new MarketReplayController({ tape, ...(checkpointInterval === undefined ? {} : { checkpointInterval }), maxMaterializedTrades: 2_000, maxFootprintCells: 20_000 });
   controller.start();
   return controller;
+}
+
+function timestampForIndex(index) {
+  return start + Math.max(0, index) * 1_000;
+}
+
+function advanceToIndex(controller, index) {
+  for (let current = 0; current <= index; current += 1) controller.stepNextEvent();
 }
 
 function runSize(size) {
@@ -99,37 +124,85 @@ function runSize(size) {
   const tape = createMarketReplayTape({ id: `phase-15-${size}`, events: makeEvents(size), maxEvents });
   const tapeBuildMs = performance.now() - eventBuildStart;
   const samples = size >= 100_000 ? 3 : 5;
-  const checkpointInterval = size >= 500_000 ? size + 1 : Math.max(25, Math.floor(size / 8));
+  const checkpointInterval = 250;
   const validation = measure(() => validateMarketReplayTape(tape), samples);
   const construction = measure(() => {
-    const controller = makeController(tape, checkpointInterval);
+    const controller = makeController(tape);
     sink += controller.getState().eligibleEvents;
     controller.dispose();
   }, samples);
-  const stepNext = measure(() => {
-    const controller = makeController(tape, checkpointInterval);
+  const firstEvent = measureIndependent(() => makeController(tape), (controller) => {
     controller.stepNextEvent();
     sink += controller.getState().processedEvents;
-    controller.dispose();
   }, samples);
-  const coldSeek = measure(() => {
-    const controller = makeController(tape, checkpointInterval);
-    controller.seekToTimestamp(start + Math.floor(size * 0.65) * 1_000);
-    sink += controller.getSnapshot().tradeSummary[0]?.totalVolume ?? 0;
-    controller.dispose();
+  const steady = makeController(tape);
+  advanceToIndex(steady, Math.min(100, Math.max(0, size - samples - 2)));
+  const steadyEvent = measureSamples(() => {
+    steady.stepNextEvent();
+    sink += steady.getState().processedEvents;
   }, samples);
-  const warmController = makeController(tape, checkpointInterval);
-  warmController.seekToTimestamp(start + Math.floor(size * 0.9) * 1_000);
-  const warmSeek = measure(() => {
-    warmController.seekToTimestamp(start + Math.floor(size * 0.4) * 1_000);
+  steady.dispose();
+  const checkpointBoundaryStep = measureIndependent(() => {
+    const controller = makeController(tape);
+    advanceToIndex(controller, Math.min(checkpointInterval - 2, Math.max(0, size - 2)));
+    return controller;
+  }, (controller) => {
+    controller.stepNextEvent();
+    sink += controller.getCheckpointDiagnostics().retainedCheckpoints;
+  }, samples);
+  const stateController = makeController(tape);
+  stateController.seekToTimestamp(timestampForIndex(Math.floor(size * 0.5)));
+  const stateRead = measureSamples(() => {
+    sink += stateController.getState().processedEvents;
+  }, samples);
+  stateController.dispose();
+  const snapshotController = makeController(tape);
+  snapshotController.seekToTimestamp(timestampForIndex(Math.floor(size * 0.5)));
+  const snapshotRead = measureSamples(() => {
+    sink += snapshotController.getSnapshot().tradeSummary[0]?.totalVolume ?? 0;
+  }, samples);
+  snapshotController.dispose();
+  const panelController = makeController(tape);
+  panelController.seekToTimestamp(timestampForIndex(Math.floor(size * 0.5)));
+  const panelCoordinator = new MarketReplayCoordinator(panelController);
+  panelCoordinator.registerPanel({ id: "primary", instrumentId });
+  const panelSnapshotRead = measureSamples(() => {
+    sink += panelCoordinator.getPanelSnapshot("primary").replay.tradeMaterialization.materializedTrades;
+  }, samples);
+  panelCoordinator.dispose();
+  panelController.dispose();
+  const coldSeek = measureIndependent(() => makeController(tape), (controller, index) => {
+    controller.seekToTimestamp(timestampForIndex(Math.floor(size * (0.2 + (index % 3) * 0.3))));
+    sink += controller.getState().processedEvents;
+  }, samples);
+  const warmController = makeController(tape);
+  warmController.seekToTimestamp(timestampForIndex(Math.floor(size * 0.9)));
+  const warmSeek = measureSamples((index) => {
+    warmController.seekToTimestamp(timestampForIndex(Math.floor(size * (0.25 + (index % 4) * 0.15))));
     sink += warmController.getSnapshot().cvd[0]?.value ?? 0;
-    warmController.seekToTimestamp(start + Math.floor(size * 0.9) * 1_000);
   }, Math.max(2, Math.min(samples, 4)));
-  const checkpointCount = warmController.getCheckpoints().length;
+  const repeatTarget = timestampForIndex(Math.floor(size * 0.6));
+  warmController.seekToTimestamp(repeatTarget);
+  const repeatSeek = measureSamples(() => {
+    warmController.seekToTimestamp(repeatTarget);
+    sink += warmController.getState().eventIndex ?? 0;
+  }, Math.max(2, Math.min(samples, 4)));
+  const checkpointDiagnostics = warmController.getCheckpointDiagnostics();
   warmController.dispose();
-  const previous = makeController(tape, checkpointInterval);
-  previous.seekToTimestamp(start + Math.floor(size * 0.8) * 1_000);
-  const previousStep = measure(() => {
+  if (globalThis.gc) globalThis.gc();
+  const checkpointProfileController = makeController(tape);
+  const checkpointHeapBeforeBytes = process.memoryUsage().heapUsed;
+  const checkpointStarted = performance.now();
+  checkpointProfileController.seekToTimestamp(timestampForIndex(Math.floor(size * 0.9)));
+  const checkpointCreationMs = performance.now() - checkpointStarted;
+  const checkpointHeapAfterBytes = process.memoryUsage().heapUsed;
+  const checkpointProfile = checkpointProfileController.getCheckpointDiagnostics();
+  checkpointProfileController.dispose();
+  if (globalThis.gc) globalThis.gc();
+  const checkpointHeapAfterDisposeBytes = process.memoryUsage().heapUsed;
+  const previous = makeController(tape);
+  previous.seekToTimestamp(timestampForIndex(Math.floor(size * 0.8)));
+  const previousEvent = measureSamples(() => {
     previous.stepPreviousEvent();
     sink += previous.getState().eventIndex ?? 0;
     previous.stepNextEvent();
@@ -140,11 +213,11 @@ function runSize(size) {
     const restored = parseMarketReplayTape(serialized, { maxEvents });
     sink += restored.events.length;
   }, Math.max(2, Math.min(samples, 3)));
-  const multiController = makeController(tape, checkpointInterval);
+  const multiController = makeController(tape);
   const coordinator = new MarketReplayCoordinator(multiController);
   coordinator.registerPanel({ id: "primary", instrumentId });
   coordinator.registerPanel({ id: "empty", instrumentId: "MISSING" });
-  const multiChart = measure(() => {
+  const multiChart = measureSamples(() => {
     multiController.stepNextEvent();
     sink += coordinator.getPanelSnapshot("primary").replay.integrity.complete ? 1 : 0;
   }, Math.max(2, Math.min(samples, 4)));
@@ -156,13 +229,26 @@ function runSize(size) {
     tapeBuildMs: Number(tapeBuildMs.toFixed(3)),
     tapeBytes: Buffer.byteLength(serialized),
     checkpointInterval,
-    checkpointCount,
+    checkpointDiagnostics,
     validation,
     controllerConstruction: construction,
-    nextEvent: stepNext,
+    firstEvent,
+    steadyEvent,
+    checkpointBoundaryStep,
+    stateRead,
+    snapshotRead,
+    panelSnapshotRead,
     coldSeek,
     warmCheckpointSeek: warmSeek,
-    previousEvent: previousStep,
+    repeatSeek,
+    previousEvent,
+    checkpointProfile: {
+      checkpointCreationMs: Number(checkpointCreationMs.toFixed(3)),
+      heapBeforeBytes: checkpointHeapBeforeBytes,
+      heapAfterBytes: checkpointHeapAfterBytes,
+      heapAfterDisposeBytes: checkpointHeapAfterDisposeBytes,
+      diagnostics: checkpointProfile,
+    },
     exportImport,
     multiChartSynchronization: multiChart,
     heapUsedBytes: process.memoryUsage().heapUsed,

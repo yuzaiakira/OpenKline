@@ -11,7 +11,7 @@ import type {
 } from "../order-book.js";
 import { OPENKLINE_ORDER_BOOK_VERSION } from "../order-book.js";
 import type { Candle } from "../types.js";
-import { corporateActionLogicalIdentity, marketTradeLogicalIdentity, replayStreamIdentity } from "./market-replay-identity.js";
+import { corporateActionLogicalIdentity, marketTradeLogicalIdentity, replayCandleIdentity, replayStreamIdentity } from "./market-replay-identity.js";
 
 /** Version of the provider-neutral unified historical event tape. */
 export const OPENKLINE_MARKET_REPLAY_VERSION = 1 as const;
@@ -484,6 +484,7 @@ function toOrderBookSource(source: MarketReplaySource): OrderBookSource {
 function revisionIdentity(event: MarketReplayEvent): string {
   if (event.kind === "trade") return `${marketTradeLogicalIdentity(event.trade)}:revision:${event.trade.revision}`;
   if (event.kind === "corporate-action-effective" || event.kind === "corporate-action-payment") return `${corporateActionLogicalIdentity(event.action)}:revision:${event.action.revision}:${event.kind}`;
+  if (event.kind === "candle-open" || event.kind === "candle-complete") return `${event.kind}:${replayCandleIdentity({ ...event, time: event.candle.time })}:revision:${event.revision}`;
   return `event:${event.id}`;
 }
 

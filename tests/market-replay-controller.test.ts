@@ -143,9 +143,38 @@ test("replay corrections remain isolated by instrument and source generation", (
   assert.equal(all.tradeMaterialization.complete, true);
   assert.equal(all.tradeSummary.find((item) => item.instrumentId === "ASSET-A")?.tradeCount, 2);
   assert.equal(all.tradeSummary.find((item) => item.instrumentId === "ASSET-A")?.totalVolume, 8);
-  assert.equal(all.cvd.find((item) => item.instrumentId === "ASSET-A")?.value, -2);
+  assert.deepEqual(all.cvd.filter((item) => item.instrumentId === "ASSET-A").map((item) => [item.source.version, item.value]), [["generation-a", -5], ["generation-b", 3]]);
+  assert.deepEqual(all.footprint.filter((item) => item.instrumentId === "ASSET-A").map((item): [string, number, number] => [item.source.version, item.buyVolume, item.sellVolume]).sort((left, right) => left[0].localeCompare(right[0])), [["generation-a", 0, 5], ["generation-b", 3, 0]]);
   assert.equal(controller.getSnapshot({ instrumentId: "ASSET-A" }).trades.length, 2);
   assert.equal(controller.getSnapshot({ instrumentId: "ASSET-B" }).trades.length, 1);
+});
+
+test("candle timeframes and corporate-action streams do not silently merge", () => {
+  const sourceA = { id: "calendar-feed", version: "1" } as const;
+  const sourceB = { id: "calendar-feed", version: "2" } as const;
+  const split = (id: string, instrumentId: string, source: { readonly id: string; readonly version: string }): MarketReplayEvent => ({
+    id,
+    kind: "corporate-action-effective",
+    instrumentId,
+    time: 3_000,
+    revision: 1,
+    source,
+    action: { id: "same-action-id", instrumentId, kind: "stock-split", effectiveTime: 3_000, newShares: 2, oldShares: 1, revision: 1, source },
+  });
+  const tape = createMarketReplayTape({ events: [
+    { id: "candle-1m", kind: "candle-complete", instrumentId: "ASSET-A", time: 2_000, revision: 0, source: sourceA, intervalMs: 60_000, candle: { time: 1_000, open: 10, high: 11, low: 9, close: 10.5, volume: 1 }, finality: "completed" },
+    { id: "candle-5m", kind: "candle-complete", instrumentId: "ASSET-A", time: 2_000, revision: 0, source: sourceA, intervalMs: 300_000, candle: { time: 1_000, open: 10, high: 12, low: 8, close: 11, volume: 5 }, finality: "completed" },
+    { id: "candle-source-generation", kind: "candle-complete", instrumentId: "ASSET-A", time: 2_000, revision: 0, source: sourceB, intervalMs: 60_000, candle: { time: 1_000, open: 10, high: 13, low: 7, close: 12, volume: 2 }, finality: "completed" },
+    split("split-a", "ASSET-A", sourceA),
+    split("split-b", "ASSET-B", sourceA),
+  ] });
+  const controller = new MarketReplayController({ tape });
+  controller.start();
+  controller.seekToTimestamp(3_000);
+  const snapshot = controller.getSnapshot();
+  assert.equal(snapshot.completedCandles.length, 3);
+  assert.equal(snapshot.effectiveCorporateActions.length, 2);
+  assert.deepEqual(snapshot.effectiveCorporateActions.map((action) => action.instrumentId).sort(), ["ASSET-A", "ASSET-B"]);
 });
 
 test("checkpoint retention is bounded and checkpoint identity includes replay policy", () => {
@@ -154,11 +183,11 @@ test("checkpoint retention is bounded and checkpoint identity includes replay po
     return { ...base, trade: { ...(base as Extract<MarketReplayEvent, { kind: "trade" }>).trade, id: `bounded-trade-${index}` } } as MarketReplayEvent;
   });
   const tape = createMarketReplayTape({ events });
-  const controller = new MarketReplayController({ tape, checkpointInterval: 1, maxCheckpoints: 100, checkpointMemoryBudgetBytes: 20_000 });
+  const controller = new MarketReplayController({ tape, checkpointInterval: 1, maxCheckpoints: 3, checkpointMemoryBudgetBytes: 20_000_000 });
   controller.start();
   controller.seekToTimestamp(10_000);
   const diagnostics = controller.getCheckpointDiagnostics();
-  assert.ok(diagnostics.retainedCheckpoints <= 100);
+  assert.ok(diagnostics.retainedCheckpoints <= 3);
   assert.ok(diagnostics.estimatedRetainedBytes <= diagnostics.memoryBudgetBytes);
   assert.ok(diagnostics.evictions > 0);
   assert.ok(controller.getCheckpoints().every((checkpoint) => checkpoint.knowledgePolicy === "strict-causal" && checkpoint.id.includes(":strict-causal:")));

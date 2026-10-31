@@ -16,10 +16,15 @@ estimate. An estimate must still be produced by an explicitly supplied host
 algorithm; the core never derives it from candles.
 
 `MarketTradeStore` is correction-aware and bounded. A higher `revision`
-replaces an earlier print with the same stable ID; an exact duplicate is
-ignored. Reads are defensive, sorted by event time/sequence/ID, and can be
-bounded by an as-of timestamp. `InMemoryMarketTradeDatafeed` is a deterministic
-offline provider for tests and examples.
+replaces an earlier print with the same logical identity, not merely the
+provider ID. The collision-safe identity is
+`(instrumentId, venueId, source.id, source.version, trade.id)` and is exposed
+as `marketTradeLogicalIdentity` for adapters that need the same key. A source
+version denotes a dataset generation; changing it starts a separate identity
+namespace. An exact duplicate is ignored. Reads are defensive, sorted by
+event time/sequence/ID, and can be bounded by an as-of timestamp.
+`InMemoryMarketTradeDatafeed` is a deterministic offline provider for tests and
+examples.
 
 Range reads use a lazily maintained chronological index and binary time bounds.
 This keeps the defensive-copy contract while avoiding a full-history filter and
@@ -88,7 +93,9 @@ callers cannot mutate the calculator's cached state.
 `MarketReplayController` reuses these trade semantics at a historical cursor.
 Stable trade revisions replace earlier records only when their correction
 event is eligible; unknown-side volume remains separate from known buy/sell
-volume. CVD and Footprint state therefore cannot see trades beyond the cursor.
+volume. Replay CVD and Footprint accumulators retain source-generation and
+venue identity, so overlapping streams are not silently merged. CVD and
+Footprint state therefore cannot see trades beyond the cursor.
 The replay snapshot is bounded for materialized Time & Sales and Footprint
 cells while its summaries remain deterministic. A source coverage flag is
 required before a host describes the historical result as exhaustive.

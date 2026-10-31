@@ -1,4 +1,5 @@
 import type { CorporateAction } from "../corporate-actions.js";
+import { marketTradeLogicalIdentity as marketTradeIdentity } from "../market-trades.js";
 import type { MarketTrade } from "../market-trades.js";
 
 /**
@@ -10,7 +11,7 @@ import type { MarketTrade } from "../market-trades.js";
  * a record from another generation.
  */
 export function marketTradeLogicalIdentity(trade: Pick<MarketTrade, "id" | "instrumentId" | "venueId" | "source">): string {
-  return tupleIdentity("trade", [trade.instrumentId, trade.venueId ?? null, trade.source.id, trade.source.version, trade.id]);
+  return marketTradeIdentity(trade);
 }
 
 export function corporateActionLogicalIdentity(action: Pick<CorporateAction, "id" | "instrumentId" | "source">): string {
@@ -25,8 +26,8 @@ export function replayCandleIdentity(value: { readonly instrumentId: string; rea
   return tupleIdentity("candle", [value.instrumentId, value.venueId ?? null, value.source.id, value.source.version, value.intervalMs ?? null, value.time]);
 }
 
-export function replayFootprintIdentity(value: { readonly instrumentId: string; readonly time: number; readonly price: number }): string {
-  return tupleIdentity("footprint", [value.instrumentId, value.time, Number(value.price.toPrecision(15))]);
+export function replayFootprintIdentity(value: { readonly instrumentId: string; readonly venueId?: string; readonly source: { readonly id: string; readonly version: string }; readonly time: number; readonly price: number }): string {
+  return tupleIdentity("footprint", [value.instrumentId, value.venueId ?? null, value.source.id, value.source.version, value.time, Number(value.price.toPrecision(15))]);
 }
 
 function tupleIdentity(namespace: string, values: readonly (string | number | null)[]): string {

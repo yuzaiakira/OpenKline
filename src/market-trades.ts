@@ -39,6 +39,14 @@ export interface MarketTrade {
   readonly source: MarketTradeSource;
 }
 
+/**
+ * Collision-safe logical identity for a provider-owned trade record.
+ * `source.version` is a dataset generation, not a mutable display label.
+ */
+export function marketTradeLogicalIdentity(trade: Pick<MarketTrade, "id" | "instrumentId" | "venueId" | "source">): string {
+  return `trade:${JSON.stringify([trade.instrumentId, trade.venueId ?? null, trade.source.id, trade.source.version, trade.id])}`;
+}
+
 export interface MarketTradeDataset {
   readonly version: typeof OPENKLINE_MARKET_TRADES_VERSION;
   readonly instrumentId: string;
@@ -247,7 +255,10 @@ export class MarketTradeStore {
 
   public get(id: string): MarketTrade | undefined {
     this.assertAlive();
-    const trade = this.trades.get(id);
+    const identity = this.source === undefined || this.instrumentId === undefined
+      ? undefined
+      : marketTradeLogicalIdentity({ id, instrumentId: this.instrumentId, ...(this.venueId === undefined ? {} : { venueId: this.venueId }), source: this.source });
+    const trade = identity === undefined ? [...this.trades.values()].find((candidate) => candidate.id === id) : this.trades.get(identity);
     return trade === undefined ? undefined : { ...trade, source: { ...trade.source } };
   }
 
@@ -321,16 +332,17 @@ export class MarketTradeStore {
     this.source ??= normalized.source;
     this.instrumentId ??= normalized.instrumentId;
     this.venueId ??= normalized.venueId;
-    const previous = this.trades.get(normalized.id);
+    const identity = marketTradeLogicalIdentity(normalized);
+    const previous = this.trades.get(identity);
     if (previous !== undefined) {
       if (normalized.revision < previous.revision) return "duplicate";
       if (normalized.revision === previous.revision && JSON.stringify(previous) === JSON.stringify(normalized)) return "duplicate";
-      this.trades.set(normalized.id, normalized);
+      this.trades.set(identity, normalized);
       this.sortedTradesDirty = true;
       this.trim();
       return "revised";
     }
-    this.trades.set(normalized.id, normalized);
+    this.trades.set(identity, normalized);
     this.sortedTradesDirty = true;
     this.trim();
     return "inserted";
@@ -341,7 +353,7 @@ export class MarketTradeStore {
     const ordered = [...this.trades.values()].sort(compareTrades);
     const keep = ordered.slice(-this.maxTrades);
     this.trades.clear();
-    for (const trade of keep) this.trades.set(trade.id, trade);
+    for (const trade of keep) this.trades.set(marketTradeLogicalIdentity(trade), trade);
     this.sortedTrades = keep;
     this.sortedTradesDirty = false;
   }

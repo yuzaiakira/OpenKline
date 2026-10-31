@@ -4,6 +4,7 @@ import {
   InMemoryMarketTradeDatafeed,
   MarketTradeStore,
   MarketTradeValidationError,
+  marketTradeLogicalIdentity,
   normalizeMarketTrade,
   type MarketTrade,
 } from "../src/index.js";
@@ -30,6 +31,16 @@ test("market trades validate explicit unknown aggression and source provenance",
   assert.throws(() => normalizeMarketTrade({ ...normalized, aggressorSide: "unknown", sideQuality: "observed" }), MarketTradeValidationError);
   assert.throws(() => normalizeMarketTrade({ ...normalized, quantity: -1 }), MarketTradeValidationError);
   assert.throws(() => normalizeMarketTrade({ ...normalized, time: 1.5 }), MarketTradeValidationError);
+});
+
+test("trade logical identity is scoped by instrument, venue, and source generation", () => {
+  const first = trade("same-id", 1_000, 1, "buy");
+  const second = { ...first, instrumentId: "OTHER/USD" };
+  const third = { ...first, venueId: "other-venue" };
+  const fourth = { ...first, source: { ...source, version: "2.0.0" } };
+  assert.notEqual(marketTradeLogicalIdentity(first), marketTradeLogicalIdentity(second));
+  assert.notEqual(marketTradeLogicalIdentity(first), marketTradeLogicalIdentity(third));
+  assert.notEqual(marketTradeLogicalIdentity(first), marketTradeLogicalIdentity(fourth));
 });
 
 test("trade store deduplicates stable IDs, accepts higher revisions, sorts out of order, and bounds memory", () => {

@@ -24,6 +24,15 @@ cells, per-stream `OrderBookController` state, corporate-action frontiers,
 session boundaries, and source coverage. All public values are defensive
 copies. No execution or broker model is present.
 
+Provider-owned records have separate identities. A trade correction is scoped
+to `(instrumentId, venueId, source.id, source.version, trade.id)`; the source
+version is a dataset generation. Replay event IDs remain the tape-level
+identity, while source IDs are used for logical correction/replacement. Candle
+keys additionally include timeframe, and actions/order books use the same
+instrument/venue/source-generation boundary. Replay CVD and Footprint output
+retains source and venue metadata, so overlapping source streams are not
+silently merged.
+
 ## Causality
 
 Opening events expose only the opening price in the public forming-candle

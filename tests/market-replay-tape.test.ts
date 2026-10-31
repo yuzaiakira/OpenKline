@@ -58,6 +58,10 @@ test("market replay tape rejects malformed and conflicting records", () => {
   const malformed = { ...event({ id: "bad", kind: "trade" }), trade: { id: "bad" } as never } as MarketReplayEvent;
   assert.throws(() => createMarketReplayTape({ events: [malformed] }), /instrumentId/);
   assert.throws(() => createMarketReplayTape({ events: [event({ id: "same", kind: "trade" }), event({ id: "same", kind: "trade" })] }), /Duplicate market replay event id/);
+  assert.throws(() => createMarketReplayTape({ events: [
+    event({ id: "candle-a", kind: "candle-complete" }),
+    event({ id: "candle-b", kind: "candle-complete" }),
+  ] }), /Duplicate revision/);
   const tape = createMarketReplayTape({ events: [event({ id: "trade", kind: "trade" })] });
   const tampered = JSON.parse(serializeMarketReplayTape(tape)) as { fingerprint: string };
   tampered.fingerprint = "0000000000000000";
@@ -67,24 +71,24 @@ test("market replay tape rejects malformed and conflicting records", () => {
 test("market replay tape keeps identical source trade IDs isolated by logical stream", () => {
   const sourceA = { id: "venue-feed", version: "2026-01" } as const;
   const sourceB = { id: "venue-feed", version: "2026-02" } as const;
-  const makeTrade = (instrumentId: string, source: { readonly id: string; readonly version: string }, eventId: string): MarketReplayEvent => ({
+  const makeTrade = (instrumentId: string, source: { readonly id: string; readonly version: string }, eventId: string, venueId = "primary", revision = 0, time = 2_000): MarketReplayEvent => ({
     id: eventId,
     kind: "trade",
     instrumentId,
-    venueId: "primary",
-    time: 2_000,
-    revision: 0,
+    venueId,
+    time,
+    revision,
     source,
     trade: {
       id: "same-provider-trade-id",
       instrumentId,
-      venueId: "primary",
-      time: 2_000,
+      venueId,
+      time,
       price: 100,
       quantity: 1,
       aggressorSide: "buy",
       sideQuality: "observed",
-      revision: 0,
+      revision,
       source,
     },
   });
@@ -92,8 +96,11 @@ test("market replay tape keeps identical source trade IDs isolated by logical st
   const tape = createMarketReplayTape({ events: [
     makeTrade("ASSET-A", sourceA, "trade-a"),
     makeTrade("ASSET-B", sourceB, "trade-b"),
+    makeTrade("ASSET-A", sourceA, "trade-a-venue", "secondary"),
+    makeTrade("ASSET-A", { id: "other-feed", version: "2026-01" }, "trade-a-source"),
+    makeTrade("ASSET-A", sourceA, "trade-a-generation", "primary", 1, 2_001),
   ] });
 
-  assert.equal(tape.events.length, 2);
-  assert.deepEqual(tape.events.map((item) => item.instrumentId).sort(), ["ASSET-A", "ASSET-B"]);
+  assert.equal(tape.events.length, 5);
+  assert.deepEqual(tape.events.map((item) => item.instrumentId).sort(), ["ASSET-A", "ASSET-A", "ASSET-A", "ASSET-A", "ASSET-B"]);
 });
