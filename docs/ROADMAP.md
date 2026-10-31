@@ -35,14 +35,31 @@ offline Studio Market Replay Lab are present.
   (38/38), production Next/Chromium (1/1), stress, package, and local
   benchmark gates. The final evidence is in
   `docs/reports/phase-15-5-replay-hardening.md`.
+- [Implemented / Verified — Phase 15.5.1 consumer diagnostics] The
+  independent developer-preview consumer gate now selects Core and React
+  tarballs by package identity and version, validates packed peer metadata,
+  resolves React/React DOM/TypeScript from the lockfiles with npm's normal
+  peer resolver, and tests installed-package Vanilla ESM, TypeScript, React
+  SSR, Next.js App Router, and browser-chart consumers. The previous
+  `ERESOLVE` was reproduced and classified as an incomplete isolated offline
+  cache because npm reported `Found: react@undefined`; the same package
+  metadata passed with normal online resolution and after the cache was
+  populated. No `--force` or `--legacy-peer-deps` bypass was used.
+- [Implemented / Verified — Phase 15.5.1 readiness policy] Release
+  readiness now requires clean `main` with synchronized `origin/main`.
+  Stale `work`/`origin/work` assumptions are rejected. The consumer and
+  release-gate diagnostics distinguish product failures from environmental
+  `BLOCKED` results, and the evidence is recorded in
+  `docs/reports/phase-15-5-1-consumer-release-gates.md`.
 - [Open] Protected API baseline approval; official Firefox/WebKit/Mobile
   Safari, physical-device, formal accessibility, visual, licensing, and
   release gates remain open. The available compatibility run verified
   Chromium and mobile-Chrome emulation but blocked Firefox, WebKit, and
   mobile-Safari before assertions because Playwright-managed binaries are
-  absent. The offline release consumer preview also remains blocked by npm
-  peer-resolution in this environment. Phase 15 commits are synchronized
-  with `origin/main`; Phase 16 has not started.
+  absent. The isolated offline consumer gate passes after its registry cache
+  is populated, while the default cloud run remains `BLOCKED` when the
+  Playwright-managed Chromium executable is absent. Phase 15 commits are
+  synchronized with `origin/main`; Phase 16 has not started.
 
 ## Current milestone
 
