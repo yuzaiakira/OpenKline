@@ -85,6 +85,35 @@ function makeTape(eventCount) {
   return createMarketReplayTape({ id: `research-benchmark-${eventCount}`, events });
 }
 
+function makeCorrectnessTape() {
+  const events = [sourceStatus(), { ...initialBook(), id: "correctness-book", snapshot: { ...initialBook().snapshot, asks: [{ price: 101, quantity: 1 }] } }];
+  for (let index = 0; index < 12; index += 1) {
+    const time = 1_001 + index;
+    events.push({
+      id: `correctness-trade-${index}`,
+      kind: "trade",
+      instrumentId,
+      venueId,
+      time,
+      revision: 0,
+      source,
+      trade: {
+        id: `correctness-trade-${index}`,
+        instrumentId,
+        venueId,
+        time,
+        price: 100,
+        quantity: 1,
+        aggressorSide: "buy",
+        sideQuality: "observed",
+        revision: 0,
+        source,
+      },
+    });
+  }
+  return createMarketReplayTape({ id: "research-correctness-scenario", events });
+}
+
 function options(tape) {
   return {
     scenarioId: `benchmark-${tape.id}`,
@@ -97,6 +126,59 @@ function options(tape) {
     slippage: { type: "fixed", value: 0 },
     maxJournalEntries: 10_000,
   };
+}
+
+function runCorrectnessScenario() {
+  gc();
+  const heapBeforeBytes = process.memoryUsage().heapUsed;
+  const tape = makeCorrectnessTape();
+  const constructionStart = now();
+  const session = createResearchExecutionSession({ ...options(tape), scenarioId: "benchmark-correctness", maxJournalEntries: 4 });
+  const constructionMs = now() - constructionStart;
+  session.start();
+  session.step();
+  session.step();
+  const decisionStart = now();
+  const partial = session.submitOrder({ idempotencyKey: "partial", side: "buy", type: "market", quantity: 2 });
+  const submissionMs = now() - decisionStart;
+  const processingStart = now();
+  session.step();
+  const processingMs = now() - processingStart;
+  const cancelStart = now();
+  session.cancelOrder(partial.id);
+  for (let index = 0; index < 5; index += 1) {
+    const pending = session.submitOrder({ idempotencyKey: `cancel-${index}`, side: "buy", type: "limit", quantity: 1, limitPrice: 98 });
+    session.cancelOrder(pending.id);
+  }
+  const cancellationMs = now() - cancelStart;
+  const beforeSeek = session.exportScenario();
+  assert.equal(beforeSeek.fills.length, 1);
+  assert.equal(beforeSeek.orders.find((order) => order.id === partial.id)?.status, "cancelled");
+  assert.ok(beforeSeek.journalRetention.evictedEntries > 0);
+  const reference = new ReferenceExecutionLedger(1_000_000);
+  reference.apply({ side: "buy", price: 101, quantity: 1, fee: 1 });
+  assert.equal(beforeSeek.ledger.cash, reference.snapshot().cash);
+  assert.equal(beforeSeek.ledger.position?.costBasis, reference.snapshot().costBasis);
+
+  const seekStart = now();
+  session.seekToEvent("correctness-book");
+  session.seekToTimestamp(2_000);
+  const seekMs = now() - seekStart;
+  const afterSeek = session.exportScenario();
+  assert.deepEqual(afterSeek.orders, beforeSeek.orders);
+  assert.deepEqual(afterSeek.fills, beforeSeek.fills);
+  assert.deepEqual(afterSeek.ledger, beforeSeek.ledger);
+  assert.deepEqual(afterSeek.journal, beforeSeek.journal);
+  assert.deepEqual(afterSeek.journalRetention, beforeSeek.journalRetention);
+
+  const journalEntries = afterSeek.journalRetention.retainedEntries;
+  const journalEvictions = afterSeek.journalRetention.evictedEntries;
+  gc();
+  const heapBeforeDisposeBytes = process.memoryUsage().heapUsed;
+  session.dispose();
+  gc();
+  const heapAfterDisposeBytes = process.memoryUsage().heapUsed;
+  return { constructionMs, processingMs, submissionMs, cancellationMs, seekMs, journalEntries, journalEvictions, heapBeforeBytes, heapBeforeDisposeBytes, heapAfterDisposeBytes, heapRetainedAfterDisposeBytes: Math.max(0, heapAfterDisposeBytes - heapBeforeBytes) };
 }
 
 function runSample(eventCount) {
@@ -158,6 +240,7 @@ function runSample(eventCount) {
   tape = null;
   gc();
   const heapAfterDispose = process.memoryUsage().heapUsed;
+  const correctnessScenario = runCorrectnessScenario();
 
   return {
     eventCount,
@@ -174,6 +257,7 @@ function runSample(eventCount) {
     heapAfterDisposeBytes: heapAfterDispose,
     heapRetainedAfterDisposeBytes: Math.max(0, heapAfterDispose - heapBefore),
     forcedGc: typeof globalThis.gc === "function",
+    correctnessScenario,
   };
 }
 
@@ -214,7 +298,23 @@ for (const eventCount of sizes) {
       "heapBeforeDisposeBytes",
       "heapAfterDisposeBytes",
       "heapRetainedAfterDisposeBytes",
-    ].map((key) => [key, summarize(samples, key)])),
+      "correctnessScenario.constructionMs",
+      "correctnessScenario.processingMs",
+      "correctnessScenario.submissionMs",
+      "correctnessScenario.cancellationMs",
+      "correctnessScenario.seekMs",
+      "correctnessScenario.journalEntries",
+      "correctnessScenario.journalEvictions",
+      "correctnessScenario.heapBeforeBytes",
+      "correctnessScenario.heapBeforeDisposeBytes",
+      "correctnessScenario.heapAfterDisposeBytes",
+      "correctnessScenario.heapRetainedAfterDisposeBytes",
+    ].map((key) => {
+      const values = key.startsWith("correctnessScenario.")
+        ? samples.map((sample) => sample.correctnessScenario[key.slice("correctnessScenario.".length)])
+        : samples.map((sample) => sample[key]);
+      return [key, { median: percentile(values, 0.5), p95: percentile(values, 0.95), min: Math.min(...values), max: Math.max(...values) }];
+    })),
   };
 }
 
@@ -226,7 +326,7 @@ try {
 }
 
 console.log(JSON.stringify({
-  schemaVersion: 1,
+  schemaVersion: 2,
   gitSha,
   node: process.version,
   platform: process.platform,
