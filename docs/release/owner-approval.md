@@ -84,6 +84,12 @@ The owner must explicitly decide whether the limited alpha scope is acceptable:
 Approval of this narrow preview scope must not waive the stable 1.0 browser,
 security, licensing, or attribution gates. Record the decision:
 
+The Phase 15.5.2 review confirms that this support boundary is source-scoped:
+the current revision `dc8dad5a10e36ee975e63d000d9e3cf10e3b7914` has a blocked
+managed-browser run in the Cloud environment, while the committed five-browser
+packs describe earlier source revisions. See
+[`docs/reviews/phase-15-5-2-browser-evidence-status.md`](../reviews/phase-15-5-2-browser-evidence-status.md).
+
 | Required decision | Owner record | Date | Reference |
 | --- | --- | --- | --- |
 | Studio visual baselines required for library-only developer preview | **APPROVE POLICY: STUDIO_VISUAL_NOT_REQUIRED_FOR_LIBRARY_PREVIEW** — V1–V3 remain NOT REVIEWED; Stable 1.0 visual/device/a11y gates preserved | 2026-10-29 | `docs/reports/phase-8-8-22-owner-acceptance.md` |

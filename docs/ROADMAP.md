@@ -51,6 +51,16 @@ offline Studio Market Replay Lab are present.
   release-gate diagnostics distinguish product failures from environmental
   `BLOCKED` results, and the evidence is recorded in
   `docs/reports/phase-15-5-1-consumer-release-gates.md`.
+- [Implemented / Handoff — Phase 15.5.2] The current public API inventory and
+  diagnostics are recorded in
+  `docs/reviews/public-api-owner-review-phase-15-5-2.md`. The protected
+  baseline remains unchanged and the strict API gate is open pending owner
+  approval of the exact additive `Chart`, workspace, and calendar-resolver
+  declarations. The current five-project managed-browser run for
+  `dc8dad5a10e36ee975e63d000d9e3cf10e3b7914` is blocked by missing official
+  browser executables; the system-Chromium run is diagnostic only. Historical
+  browser packs remain source-scoped. See the browser status and owner decision
+  handoff under `docs/reviews/`.
 - [Open] Protected API baseline approval; official Firefox/WebKit/Mobile
   Safari, physical-device, formal accessibility, visual, licensing, and
   release gates remain open. The available compatibility run verified

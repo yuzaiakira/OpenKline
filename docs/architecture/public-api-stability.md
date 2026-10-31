@@ -68,3 +68,16 @@ replay workspace helpers as additive exports. The protected baseline remains
 unchanged. Review these declarations with `npm run api:inventory` and
 `npm run api:diagnostics`; a strict `npm run api:check` failure is not silently
 converted into approval.
+
+## Phase 15.5.2 owner-review boundary
+
+At review revision `dc8dad5a10e36ee975e63d000d9e3cf10e3b7914`, the protected
+baseline from `3e7a889a94c40255bbcce210a672856cfc98b32b` remains unchanged.
+Diagnostics found no removed exports, changed existing signatures, or required
+property additions, but the strict check remains open because the `Chart`,
+`WorkspaceDocument`, and `WorkspaceRestoreOptions` declaration hashes changed.
+The exact 46 additive `Chart` methods, six optional workspace members, and
+optional calendar resolver are recorded in
+[`docs/reviews/public-api-owner-review-phase-15-5-2.md`](../reviews/public-api-owner-review-phase-15-5-2.md).
+They require an explicit owner decision before the protected baseline is
+updated or the surface is described as release-stable.

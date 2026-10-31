@@ -79,3 +79,21 @@ block release:
 Firefox/WebKit/Mobile Safari managed executables are no longer “blocked by
 environment” for the verified `bb3f1ca` revision; physical-device and legal
 gates still are.
+
+## Phase 15.5.2 current-revision boundary
+
+The current review source is `dc8dad5a10e36ee975e63d000d9e3cf10e3b7914`.
+The managed-only five-project run in the Cloud environment is **BLOCKED**:
+all Playwright-managed executable paths are absent. The system-Chromium
+diagnostic is **PASS** but is non-portable evidence and does not clear the
+managed-browser gate. Historical five-browser packs remain valid only for the
+source revisions recorded in their manifests.
+
+The protected API baseline is also **REQUIRES OWNER APPROVAL**. The additive
+declaration review and exact before/after contracts are in
+[`docs/reviews/public-api-owner-review-phase-15-5-2.md`](../reviews/public-api-owner-review-phase-15-5-2.md).
+The owner-approved distribution scope remains `APPROVED: CORE_AND_REACT_ONLY`;
+that scope decision does not authorize license adoption, npm publication, a
+tag, or a release. Studio visual baselines remain not required for the
+library-only preview under the existing owner policy, while Stable 1.0 visual,
+accessibility, and physical-device gates remain preserved.

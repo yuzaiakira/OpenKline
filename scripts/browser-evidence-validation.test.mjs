@@ -73,6 +73,68 @@ test("duplicate or malformed records are rejected", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+test("trusted browser evidence rejects provenance, identity, completeness, and status contradictions", () => {
+  const mutations = [
+    {
+      name: "source SHA mismatch",
+      file: "manifest.json",
+      edit: (document) => { document.sourceCommit = "0".repeat(40); },
+      expected: "source SHA does not match",
+    },
+    {
+      name: "wrong Playwright version",
+      file: "manifest.json",
+      edit: (document) => { document.playwright.testPackageVersion = "0.0.0"; },
+      expected: "Playwright test package version mismatch",
+    },
+    {
+      name: "missing project identity",
+      file: "browser-matrix.json",
+      edit: (document) => { document.projects = document.projects.filter((project) => project.project !== "firefox"); },
+      expected: "browser project list mismatch",
+    },
+    {
+      name: "untrusted provenance",
+      file: "manifest.json",
+      edit: (document) => { document.execution.notCloudWorkspace = false; },
+      expected: "must not claim cloud execution",
+    },
+    {
+      name: "blocked browser reclassified as pass",
+      file: "browser-matrix.json",
+      edit: (document) => { document.projects.find((project) => project.project === "firefox").status = "blocked"; },
+      expected: "browser provenance/status mismatch",
+    },
+    {
+      name: "truncated records",
+      file: "test-cases.json",
+      edit: (document) => { document.byBrowser.chromium.pop(); },
+      expected: "chromium: expected 14 test records",
+    },
+    {
+      name: "contradictory totals",
+      file: "browser-matrix.json",
+      edit: (document) => { document.overall.unexpected = 1; },
+      expected: "overall browser totals mismatch",
+    },
+    {
+      name: "invalid source artifact hash",
+      file: "manifest.json",
+      edit: (document) => { document.sourceArtifactHashes["environment.json"].sha256 = "not-a-sha"; },
+      expected: "invalid source artifact SHA-256",
+    },
+  ];
+
+  for (const mutation of mutations) {
+    const root = copyPack("8.6.1");
+    editJson(root, "8.6.1", mutation.file, mutation.edit);
+    const result = validateEvidencePack({ evidenceRoot: root, policy: EVIDENCE_PACK_POLICIES["8.6.1"] });
+    assert.equal(result.status, "FAIL", mutation.name);
+    assert.ok(result.failures.some((failure) => failure.includes(mutation.expected)), mutation.name);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("failed Studio evidence is integrity-valid but falsified failure details are rejected", () => {
   const root = copyPack("8.8.3");
   editJson(root, "8.8.3", "studio-failures.json", (document) => {

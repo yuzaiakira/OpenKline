@@ -130,3 +130,22 @@ ran the historical matrix for commit
 above. Both are automated emulation only—not native iOS or physical-device
 verification. See
 [`browser-compatibility-matrix.md`](./browser-compatibility-matrix.md).
+
+## Phase 15.5.2 current-source handoff
+
+For source `dc8dad5a10e36ee975e63d000d9e3cf10e3b7914`, the managed-only Cloud
+run is **BLOCKED** because Chromium, Firefox, and WebKit Playwright-managed
+executables are absent. The complete report is preserved under
+`artifacts/browser-verification/2026-10-31T08-44-19-940Z/` with status
+`blocked-missing-official-browser`; it must not be reclassified as a pass.
+The local system-Chromium diagnostic at
+`artifacts/browser-diagnostic/2026-10-31T08-47-46-982Z/` is a separate
+non-portable `verified-local-diagnostic` and does not verify the other engines.
+
+A trusted-host handoff must use Playwright `1.64.1` and the official image
+`mcr.microsoft.com/playwright:v1.64.1-noble` at digest
+`sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea`,
+run the existing `npm ci`, `npm run build`, and `npm run browser:verify`
+workflow, and preserve environment, summary, result, stderr, and
+`test-results/` artifacts with SHA-256 values. Historical evidence packs are
+source-scoped and cannot clear this current-revision gate.
