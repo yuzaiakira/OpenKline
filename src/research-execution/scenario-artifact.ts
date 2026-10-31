@@ -6,6 +6,7 @@ import type {
 } from "../replay/market-event-tape.js";
 import type {
   ResearchDecisionRecord,
+  ResearchDiagnostics,
   ResearchLatencyPolicy,
   ResearchScenarioArtifact,
   ResearchScenarioArtifactCreateOptions,
@@ -186,9 +187,25 @@ export function fingerprintResearchScenarioResult(
     ledger: scenario.ledger,
     journal: scenario.journal,
     journalRetention: scenario.journalRetention,
-    diagnostics: scenario.diagnostics,
+    diagnostics: causalResearchDiagnostics(scenario.diagnostics),
     frontier,
   }));
+}
+
+/**
+ * Result evidence covers causal observations and derived execution state only.
+ * Checkpoint retention, timing, and fallback fields are operational cache
+ * diagnostics and are intentionally excluded from the schema-1 fingerprint.
+ */
+function causalResearchDiagnostics(value: ResearchDiagnostics): Omit<ResearchDiagnostics, "checkpoints"> {
+  return {
+    quality: value.quality,
+    warnings: value.warnings,
+    sourceCoverage: value.sourceCoverage,
+    observedTradeCount: value.observedTradeCount,
+    observedOrderBookEventCount: value.observedOrderBookEventCount,
+    simulatedFillCount: value.simulatedFillCount,
+  };
 }
 
 function validateTapeBinding(value: unknown, limits: NormalizedValidationLimits): void {
