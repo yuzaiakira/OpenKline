@@ -155,6 +155,24 @@ offline Studio Market Replay Lab are present.
   values. No public export, API-baseline approval, Studio/worker/broker/live
   integration, publication, or release authorization is included. See
   `docs/reports/phase-16-1-1-scenario-continuation-hardening.md`.
+- [Implemented / Verified internally — Phase 16.2 bounded causal research
+  checkpoints] The unexported research session now captures a versioned,
+  defensive copy of complete causal execution state, restores only compatible
+  live order-book states, and falls back to deterministic full replay for
+  gapped, stale, recovering, over-budget, or incompatible checkpoints. New
+  decisions invalidate retained state; same-cursor ordering, no-lookahead,
+  schema-1 artifact reconstruction, financial/reference-ledger parity, journal
+  retention, corporate-action state, and disposal remain intact. Internal
+  1k/10k/100k ordinary, decision-heavy, and order-book-heavy enabled/disabled
+  benchmarks record capture cost, estimated bytes, eviction, cold/warm seek,
+  and post-disposal observations. Decision-heavy and large ordinary rows show
+  capture overhead, so no universal speedup claim is made. The optional 500k
+  workload is NOT VERIFIED. This increment adds no root/React export, Studio,
+  Worker, broker, live execution, publication, tag, release, or GitHub Actions;
+  protected API, managed-browser, device, accessibility, licensing, and release
+  gates remain open. See
+  `docs/reports/phase-16-2-causal-checkpoints.md` and
+  `docs/architecture/research-execution-checkpoints.md`.
 
 ## Current milestone
 

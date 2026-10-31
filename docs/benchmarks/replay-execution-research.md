@@ -332,3 +332,45 @@ process-level delta after forced GC and released local references; it is not a
 zero-leak proof or a universal memory claim. The raw command capture was
 retained outside the repository at
 `/tmp/openkline-phase16-1-1-scenario-benchmark-403ac92.txt`.
+
+## Phase 16.2 bounded checkpoint and warm-seek benchmark
+
+Phase 16.2 adds `npm run benchmark:research-checkpoints`, which builds the
+internal engine and runs
+`node --expose-gc scripts/research-execution-checkpoint-benchmark.mjs`. Each
+size uses the same deterministic tape for enabled and disabled controls, then
+measures event processing, the first backward seek, forward seek, three repeated
+backward/forward warm pairs, checkpoint capture time, approximate retained
+bytes, retained count, evictions, and a forced-GC post-disposal heap delta.
+Workloads are ordinary trade, decision-heavy submit/cancel, and absolute
+Level-2-delta-heavy tapes at 1k, 10k, and 100k events. There are three samples
+at 1k/10k and two at 100k. P95 is nearest-rank; the two-sample 100k values are
+weak tail observations and are not stable percentile estimates.
+
+Environment: Linux x64, Node `v24.19.0`, forced GC available. The structural
+estimate is intentionally separate from process heap. It copies complete
+execution state, so ordinary 100k captures exceed the 128 MiB benchmark policy
+when accumulated and deterministic oldest eviction leaves one retained
+checkpoint. This is safe bounded behavior, not a measured JavaScript heap
+bound.
+
+| Events / workload | Enabled cold backward median/p95 | Disabled median/p95 | Controlled ratio | Capture median ms | Estimate bytes / retained / evictions |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1k ordinary | 0.738 / 1.690 | 3.016 / 3.379 | 4.09× | 33.158 | 10,154,044 / 20 / 0 |
+| 1k decision-heavy | 10.949 / 12.553 | 6.330 / 6.535 | 0.58× | 54.399 | 13,004,270 / 20 / 0 |
+| 1k order-book-heavy | 0.389 / 1.446 | 2.192 / 2.512 | 5.63× | 2.927 | 296,384 / 20 / 0 |
+| 10k ordinary | 83.815 / 93.463 | 96.593 / 107.338 | 1.15× | 283.465 | 99,704,644 / 20 / 0 |
+| 10k decision-heavy | 131.376 / 151.627 | 115.903 / 117.485 | 0.88× | 327.232 | 102,427,148 / 20 / 0 |
+| 10k order-book-heavy | 0.342 / 0.404 | 14.689 / 15.591 | 42.98× | 4.814 | 297,384 / 20 / 0 |
+| 100k ordinary | 642.656 / 642.656 | 420.714 / 420.714 | 0.65× | 4,303.943 | 95,168,172 / 1 / 95 |
+| 100k decision-heavy | 939.633 / 939.633 | 694.086 / 694.086 | 0.74× | 4,650.881 | 95,377,556 / 1 / 76 |
+| 100k order-book-heavy | 211.155 / 211.155 | 367.006 / 367.006 | 1.74× | 8.130 | 298,384 / 20 / 0 |
+
+The ratio is disabled median divided by enabled median for the first backward
+seek; it is a controlled warm-seek comparison, not a cold-restore claim. The
+decision-heavy rows demonstrate that capture cost can dominate and that the
+engine must retain full replay as the safe fallback. No 500k run was executed;
+500k remains **NOT VERIFIED**. The focused parity suite and
+`ReferenceExecutionLedger` fixtures, rather than timing alone, determine
+correctness. No chart, Worker, Studio, broker, or public API performance is
+represented by these measurements.

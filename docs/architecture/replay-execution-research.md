@@ -233,15 +233,18 @@ Order-book diagnostic counts are maintained by the research adapter instead of
 calling `OrderBookController.getHistory()` for each snapshot. This avoids a
 defensive clone solely for a count and keeps the public order-book contract
 unchanged. Disposal clears the research decision indexes, observation maps,
-journal ring, warning/quality state, and snapshot cache after unsubscribing and
-disposing replay and order-book controllers.
+journal ring, warning/quality state, snapshot cache, and internal checkpoint
+copies after unsubscribing and disposing replay and order-book controllers.
 
 The Phase 16.0.2 benchmark records repeated snapshot-read latency separately
 from event processing. It deliberately does not claim that the simulator is a
-broker, matching engine, or exchange-capacity measurement. Full historical seek
-still reconstructs from the event tape; introducing a checkpoint format remains
-an open, measured follow-up because order-book gap state and causal decisions
-must be restored exactly.
+broker, matching engine, or exchange-capacity measurement. Phase 16.2 adds a
+separate bounded research checkpoint format for compatible live order-book
+states and complete causal execution state. Gapped, recovering, stale, or
+otherwise non-live books reject warm restoration and use deterministic full
+reconstruction. The state contract, fallback codes, and benchmark evidence are
+recorded in `docs/architecture/research-execution-checkpoints.md` and
+`docs/reports/phase-16-2-causal-checkpoints.md`.
 
 The source remains internal until a separate public API decision; no npm
 publication, release, live broker connectivity, or license change is covered
