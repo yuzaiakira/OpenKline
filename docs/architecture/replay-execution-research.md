@@ -246,3 +246,34 @@ must be restored exactly.
 The source remains internal until a separate public API decision; no npm
 publication, release, live broker connectivity, or license change is covered
 by this authorization.
+
+## Phase 16.0.3 headless dispatch and observer integrity
+
+The session dispatch path now checks the observer set before constructing a
+defensive `ResearchSnapshot`. A headless replay still advances the same
+`MarketReplayController`, decision journal, order lifecycle, ledger, quality
+diagnostics, and cache invalidation paths, but `emit()` returns before calling
+`getSnapshot()` when `listeners.size === 0`. This is a dispatch allocation
+optimization only; it does not change the synchronous state transition or
+financial semantics.
+
+When observers exist, the established contract remains explicit and tested:
+one canonical snapshot is materialized for each dispatch and the same snapshot
+object is delivered to every listener in that notification. Listener iteration
+uses a shallow copy, so a listener removed during notification still receives
+the in-flight snapshot but receives no later notifications. `Set` semantics
+make repeated registration of one callback idempotent; a late observer receives
+subsequent event and seek notifications; callback exceptions still propagate
+to the caller. Disposal clears the observer set and replay/controller
+references.
+
+The immutable boundary remains defensive. `getSnapshot()` and
+`exportScenario()` clone nested ledger, order, fill-quality, journal,
+diagnostic, and decision records. Runtime revisions invalidate the canonical
+cache before submit/cancel and replay transitions, so headless dispatch cannot
+expose stale state merely because it avoided an observer snapshot.
+
+The implementation and focused regression coverage are intentionally internal
+to `src/research-execution/`; the root package and React package do not export
+these contracts. The benchmark protocol and results are recorded in
+`docs/benchmarks/replay-execution-research.md` and the Phase 16.0.3 report.

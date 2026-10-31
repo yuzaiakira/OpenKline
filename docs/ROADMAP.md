@@ -109,6 +109,20 @@ offline Studio Market Replay Lab are present.
   open; public API, managed-browser, physical-device, licensing, and release
   gates remain open. See
   `docs/reports/phase-16-0-2-scalability-hardening.md`.
+- [Implemented / Verified internally — Phase 16.0.3 headless dispatch and
+  benchmark integrity] The research session now skips snapshot materialization
+  entirely when no observer is registered, while preserving the existing
+  shared-snapshot observer contract for one or many listeners. Focused tests
+  cover headless/subscribed financial parity, nested defensive reads,
+  subscribe/unsubscribe mutation, callback errors, repeated registration,
+  late observers, backward seek, disposal, and cache invalidation behavior.
+  The schema-4 benchmark separates tape construction, headless/one/multiple
+  observers, full snapshot reads, decision-heavy and Level-2-heavy workloads,
+  and a fixed 14-event corrective microbenchmark at 1k/10k/100k. The final
+  implementation commit passes 15 focused tests and the full 352-test Node
+  suite. No public export, API-baseline approval, browser/device acceptance,
+  publication, or Phase 16.1 work is included; those gates remain open. See
+  `docs/reports/phase-16-0-3-headless-benchmark-integrity.md`.
 
 ## Current milestone
 

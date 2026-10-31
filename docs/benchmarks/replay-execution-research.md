@@ -3,8 +3,8 @@
 Status: **VERIFIED INTERNAL BENCHMARK — NOT A PUBLIC PERFORMANCE CLAIM**
 
 This document records the reproducible benchmark protocol and the latest
-internal measurements for the Phase 16.0.1 corrective implementation. It does
-not establish public API support, exchange execution performance, or a chart
+internal measurements for the Phase 16.0.3 headless-dispatch implementation.
+It does not establish public API support, exchange execution performance, or a chart
 FPS claim.
 
 ## Workloads
@@ -171,3 +171,82 @@ schema-2 numbers above because the measurement protocol changed. They are
 reproducible internal evidence for the new path, not a universal performance
 claim. The full Phase 16.0.2 report records the acceptance matrix and remaining
 full-reconstruction seek limitation.
+
+## Phase 16.0.3 schema-4 dispatch and benchmark-integrity addendum
+
+The Phase 16.0.3 benchmark is schema `4` and must not be compared directly
+with the schema-2 or schema-3 processing rows above. Its purpose is to isolate
+observer-dispatch cost and verify that removing an unnecessary headless
+snapshot does not change replay state. It records separate profiles for:
+
+| Profile | Observer configuration and purpose |
+| --- | --- |
+| `headless` | Zero observers; validates the no-snapshot `emit()` fast path. |
+| `oneSubscriber` | One observer; validates the existing notification contract. |
+| `multiSubscriber` | Four observers; validates fan-out and shared snapshot identity. |
+| `decisionHeavy` | Headless replay with deterministic limit-order submit/cancel decisions. |
+| `bookHeavy` | Headless replay with one absolute Level-2 delta per event. |
+| `fullSnapshotReads` | 25 explicit `getSnapshot()` calls after each completed workload, measured separately from processing. |
+| `correctnessMicrobenchmark14` | A fixed 14-event corrective scenario, independent of the size-workload summaries. |
+
+The three size workloads contain one source-status event, one Level-2
+snapshot, and the remaining trade events. The 1,000 and 10,000 workloads use
+five samples; the 100,000 workload uses three samples. The corrective
+microbenchmark uses seven samples. The deterministic benchmark was run at
+commit `a50fea743432b6d859c9ba2692155d3fd0042ef6` on Linux x64 with Node
+`v24.19.0`, `--expose-gc`, and forced GC available.
+
+Processing and full-seek medians/p95 (milliseconds) were:
+
+| Events | Samples | Headless processing | One observer | Four observers | Decision-heavy | Book-heavy | Headless full seek |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 5 | 19.967 / 21.526 | 33.772 / 35.737 | 33.159 / 37.952 | 21.789 / 22.761 | 13.829 / 14.395 | 10.400 / 11.339 |
+| 10,000 | 5 | 363.095 / 369.929 | 458.752 / 496.063 | 451.914 / 459.400 | 457.101 / 460.987 | 82.696 / 101.529 | 363.011 / 382.546 |
+| 100,000 | 3 | 2,252.135 / 2,265.118 | 3,110.085 / 3,188.885 | 3,090.442 / 3,229.818 | 8,241.392 / 8,737.376 | 807.513 / 912.118 | 1,404.189 / 1,437.085 |
+
+The explicit full-snapshot-read and decision-heavy rows are intentionally
+separate. Full `getSnapshot()` reads were 0.037 / 0.250 ms at 1k, 0.043 /
+0.188 ms at 10k, and 0.055 / 0.070 ms at 100k for the headless profile; the
+decision-heavy profile was 0.276 / 0.360 ms, 5.601 / 6.184 ms, and 36.743 /
+42.468 ms respectively. The one-observer and four-observer notification
+counts were 1,004/4,016 at 1k, 10,004/40,016 at 10k, and 100,004/400,016 at
+100k. Headless notification counts were zero, and one/multiple-observer final
+exports matched the headless export at every size.
+
+The independent fixed 14-event correctness microbenchmark contained one
+source-status event, one Level-2 snapshot, and twelve trades. Median/p95
+results were:
+
+| Metric | Median / p95 |
+| --- | ---: |
+| Construction | 1.067 / 2.203 ms |
+| Processing | 0.512 / 1.586 ms |
+| Cancellation and repeated submit/cancel | 0.278 / 0.913 ms |
+| Backward/forward seek reconstruction | 0.860 / 1.814 ms |
+| Serialized scenario size | 10,954 / 10,954 bytes |
+| Retained journal entries | 4 / 4 |
+| Journal evictions | 21 / 21 |
+| Retained heap after disposal delta | 124,784 / 508,064 bytes |
+
+The corrective scenario compared complete orders, fills, ledger, journal,
+diagnostics, and lifecycle state before and after reconstruction against the
+independent reference ledger. All parity assertions passed. The benchmark
+also unsubscribed observers, disposed every session (including repeated
+disposal), rejected post-disposal use, and retained no simulator-owned
+subscriptions or Workers. These are internal Node-session checks; chart
+canvas cleanup remains covered by the separate browser benchmarks.
+
+Before the implementation fix, an instrumented six-event session with zero
+observers called `getSnapshot()` eight times while starting, stepping,
+submitting one order, and completing replay. After the fix, the equivalent
+headless correctness test observed zero snapshot calls. This is a direct
+allocation-path measurement, not a claim that all replay work is constant
+time.
+
+The complete machine-readable result is retained outside the repository at
+`/tmp/openkline-phase16-0-3-benchmark-final.json` for this verification run;
+the tables above are the durable, reviewable summary. No stochastic sampling,
+external market data, broker connection, chart consumer, or public performance
+claim is implied. Full reconstruction remains an intentionally measured
+limitation, and official Firefox/WebKit/mobile-browser evidence remains a
+separate environment-gated acceptance criterion.
