@@ -69,16 +69,20 @@ offline Studio Market Replay Lab are present.
   absent. The isolated offline consumer gate passes after its registry cache
   is populated, while the default cloud run remains `BLOCKED` when the
   Playwright-managed Chromium executable is absent. Phase 15 commits are
-  synchronized with `origin/main`; Phase 16.0 internal implementation is in
-  progress while Phase 15.5 acceptance remains open.
-- [In progress — Phase 16.0 internal execution-research foundation] Owner
-  authorization is recorded for an unexported, deterministic spot/long-only
-  replay-causal simulator. The initial internal contracts, reference ledger,
-  Level-2 eligibility, passive uncertainty, cost/risk handling, corporate
-  action handling, reconstruction, and lifecycle tests are implemented. The
-  benchmark and full acceptance evidence remain in progress. No public export,
-  Studio integration, broker connectivity, npm publication, tag, or release is
-  authorized. See `docs/reports/phase-16-0-foundation.md` and
+  synchronized with `origin/main`; Phase 16.0 internal implementation is
+  verified while Phase 15.5 acceptance remains open.
+- [Implemented / Verified internally — Phase 16.0 replay-causal execution
+  research foundation] Owner authorization covers only the unexported,
+  deterministic spot/long-only simulator, its causal Level-2 liquidity model,
+  passive uncertainty scenarios, accounting, corporate-action boundaries,
+  reconstruction, lifecycle tests, internal benchmarks, and documentation.
+  The internal 1k/10k/100k benchmark, full Node regression, package checks,
+  stress profile, and local Chromium evidence pass. Firefox, WebKit, and
+  Mobile Safari remain environment-blocked because Playwright-managed
+  executables are unavailable; the protected additive API gate and inherited
+  legal/accessibility/release gates remain open. No public export, Studio
+  integration, broker connectivity, npm publication, tag, release, or live
+  execution is authorized. See `docs/reports/phase-16-0-foundation.md` and
   `docs/reviews/phase-16-public-api-proposal.md`.
 
 ## Current milestone
