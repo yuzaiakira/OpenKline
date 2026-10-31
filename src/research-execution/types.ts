@@ -81,6 +81,8 @@ export interface ResearchExecutionOptions {
   readonly priceImpact?: TransactionCost;
   readonly maxQuoteAgeMs?: number;
   readonly risk?: ResearchRiskLimits;
+  /** Optional authoritative corporate-action source. Without it, conflicting provider identities fail closed. */
+  readonly corporateActionSource?: MarketReplaySource;
   readonly maxJournalEntries?: number;
   readonly maxDepth?: number;
 }
@@ -94,7 +96,12 @@ export interface ResearchOrderRequest {
   readonly reason?: string;
 }
 
-export interface ResearchDecisionRecord extends ResearchOrderRequest {
+export type ResearchDecisionType = "submit-order" | "cancel-order";
+
+export interface ResearchSubmitDecision extends ResearchOrderRequest {
+  readonly decisionId: string;
+  readonly decisionType: "submit-order";
+  readonly decisionOrdinal: number;
   readonly orderId: string;
   readonly scenarioId: string;
   readonly decisionEventId: string;
@@ -103,6 +110,22 @@ export interface ResearchDecisionRecord extends ResearchOrderRequest {
   readonly decisionClockTime: number | null;
   readonly eligibleClockTime: number | null;
 }
+
+export interface ResearchCancelDecision {
+  readonly decisionId: string;
+  readonly decisionType: "cancel-order";
+  readonly decisionOrdinal: number;
+  readonly orderId: string;
+  readonly scenarioId: string;
+  readonly decisionEventId: string;
+  readonly decisionCursor: number;
+  readonly decisionTime: number;
+  readonly decisionClockTime: number | null;
+  readonly eligibleClockTime: null;
+  readonly reason: string;
+}
+
+export type ResearchDecisionRecord = ResearchSubmitDecision | ResearchCancelDecision;
 
 export interface ResearchLiquidityQuality {
   readonly status: ResearchSourceQuality;
@@ -208,6 +231,13 @@ export interface ResearchJournalEntry {
   readonly payload?: { readonly [key: string]: ResearchJsonValue };
 }
 
+export interface ResearchJournalRetention {
+  readonly retainedEntries: number;
+  readonly totalEmittedEntries: number;
+  readonly evictedEntries: number;
+  readonly complete: boolean;
+}
+
 export interface ResearchDiagnostics {
   readonly quality: ResearchSourceQuality[];
   readonly warnings: readonly string[];
@@ -232,6 +262,7 @@ export interface ResearchSnapshot {
   readonly orders: readonly ResearchOrder[];
   readonly fills: readonly ResearchFill[];
   readonly journal: readonly ResearchJournalEntry[];
+  readonly journalRetention: ResearchJournalRetention;
   readonly diagnostics: ResearchDiagnostics;
   readonly error?: string;
 }
@@ -256,12 +287,14 @@ export interface ResearchScenarioExport {
     readonly priceImpact: TransactionCost | null;
     readonly maxQuoteAgeMs: number;
     readonly risk: ResearchRiskLimits;
+    readonly corporateActionSource: MarketReplaySource | null;
   };
   readonly decisions: readonly ResearchDecisionRecord[];
   readonly orders: readonly ResearchOrder[];
   readonly fills: readonly ResearchFill[];
   readonly ledger: ResearchLedgerSnapshot;
   readonly journal: readonly ResearchJournalEntry[];
+  readonly journalRetention: ResearchJournalRetention;
   readonly diagnostics: ResearchDiagnostics;
 }
 

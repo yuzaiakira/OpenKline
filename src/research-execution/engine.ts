@@ -2,6 +2,7 @@ import { applyAdverseSlippage, calculateLongGrossPnl, calculateTransactionCost }
 import type { CorporateAction, CashDividendAction, StockSplitAction } from "../corporate-actions.js";
 import { OrderBookController, type OrderBookState } from "../order-book.js";
 import { marketTradeLogicalIdentity, type MarketTrade } from "../market-trades.js";
+import { corporateActionLogicalIdentity } from "../replay/market-replay-identity.js";
 import {
   replayEventClock,
   type MarketReplayEvent,
@@ -12,6 +13,7 @@ import {
 import { MarketReplayController, type MarketReplayControllerOptions, type MarketReplayState } from "../replay/market-replay-controller.js";
 import type {
   ResearchDecisionRecord,
+  ResearchCancelDecision,
   ResearchDiagnostics,
   ResearchExecutionOptions,
   ResearchExecutionPolicy,
@@ -30,6 +32,8 @@ import type {
   ResearchRiskLimits,
   ResearchScenarioExport,
   ResearchSessionState,
+  ResearchJournalRetention,
+  ResearchSubmitDecision,
   ResearchSnapshot,
   ResearchSourceQuality,
 } from "./types.js";
@@ -78,6 +82,7 @@ interface InternalOptions {
   readonly priceImpact: NonNullable<ResearchExecutionOptions["priceImpact"]> | null;
   readonly maxQuoteAgeMs: number;
   readonly risk: ResearchRiskLimits;
+  readonly corporateActionSource: MarketReplaySource | null;
   readonly maxJournalEntries: number;
   readonly maxDepth: number;
 }
@@ -149,6 +154,13 @@ interface DividendEntitlement {
   readonly action: CashDividendAction;
 }
 
+interface SessionObservation {
+  readonly sessionId: string;
+  readonly boundary: "open" | "close" | "break-start" | "break-end";
+  readonly eventId: string;
+  readonly time: number;
+}
+
 interface BookCandidate {
   readonly book: MutableBook;
   readonly state: OrderBookState;
@@ -188,6 +200,8 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
   const maxQuoteAgeMs = options.maxQuoteAgeMs === undefined ? DEFAULT_MAX_QUOTE_AGE_MS : finiteNonNegative(options.maxQuoteAgeMs, "maxQuoteAgeMs");
   const maxJournalEntries = options.maxJournalEntries === undefined ? DEFAULT_MAX_JOURNAL_ENTRIES : positiveInteger(options.maxJournalEntries, "maxJournalEntries");
   const maxDepth = options.maxDepth === undefined ? DEFAULT_MAX_DEPTH : positiveInteger(options.maxDepth, "maxDepth");
+  const corporateActionSource = options.corporateActionSource === undefined ? null : cloneSource(options.corporateActionSource);
+  validateCorporateActionSources(options.tape.events, corporateActionSource);
   validateCost(options.commission, "commission");
   validateCost(options.slippage, "slippage");
   if (options.priceImpact !== undefined) validateCost(options.priceImpact, "priceImpact");
@@ -211,6 +225,7 @@ function normalizeOptions(options: ResearchExecutionOptions): InternalOptions {
     priceImpact: options.priceImpact === undefined ? null : { ...options.priceImpact },
     maxQuoteAgeMs,
     risk: normalizeRisk(options.risk),
+    corporateActionSource,
     maxJournalEntries,
     maxDepth,
   };
@@ -280,8 +295,32 @@ function sourceKey(source: MarketReplaySource): string {
   return `${source.id}\u0000${source.version}`;
 }
 
+function corporateActionEconomicKey(action: CorporateAction): string {
+  return JSON.stringify([action.instrumentId, action.id]);
+}
+
+function validateCorporateActionSources(events: readonly MarketReplayEvent[], authoritativeSource: MarketReplaySource | null): void {
+  const selected = authoritativeSource === null ? null : sourceKey(authoritativeSource);
+  const sourcesByEconomicAction = new Map<string, string>();
+  for (const event of events) {
+    if (event.kind !== "corporate-action-effective" && event.kind !== "corporate-action-payment") continue;
+    const actionSource = sourceKey(event.action.source);
+    if (selected !== null && actionSource !== selected) continue;
+    const economicKey = corporateActionEconomicKey(event.action);
+    const existingSource = sourcesByEconomicAction.get(economicKey);
+    if (existingSource !== undefined && existingSource !== actionSource) {
+      throw new ResearchExecutionValidationError(`AMBIGUOUS_CORPORATE_ACTION_SOURCE: ${event.action.instrumentId}/${event.action.id} is reported by multiple source generations`);
+    }
+    sourcesByEconomicAction.set(economicKey, actionSource);
+  }
+}
+
 function streamKey(instrumentId: string, venueId: string | undefined, source: MarketReplaySource): string {
   return JSON.stringify([instrumentId, venueId ?? null, source.id, source.version]);
+}
+
+function sessionKey(instrumentId: string, venueId: string | undefined): string {
+  return JSON.stringify([instrumentId, venueId ?? null]);
 }
 
 function cloneSource(source: MarketReplaySource): MarketReplaySource {
@@ -323,6 +362,7 @@ function cloneFill(fill: ResearchFill): ResearchFill {
 }
 
 function cloneDecision(decision: ResearchDecisionRecord): ResearchDecisionRecord {
+  if (decision.decisionType === "cancel-order") return { ...decision };
   return { ...decision, ...(decision.limitPrice === undefined ? {} : { limitPrice: decision.limitPrice }), ...(decision.reason === undefined ? {} : { reason: decision.reason }) };
 }
 
@@ -341,6 +381,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private readonly sourceStatuses = new Map<string, SourceStatusObservation>();
   private readonly observedTrades = new Map<string, MarketTrade>();
   private readonly dividendEntitlements = new Map<string, DividendEntitlement>();
+  private readonly sessionStates = new Map<string, SessionObservation>();
+  private readonly corporateActionRevisions = new Map<string, number>();
   private journal: ResearchSnapshot["journal"] = [];
   private warnings: string[] = [];
   private quality = new Set<ResearchSourceQuality>();
@@ -351,6 +393,9 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   private disposed = false;
   private finalized = false;
   private nextOrderNumber = 1;
+  private nextDecisionNumber = 1;
+  private nextJournalSequence = 0;
+  private journalEvictedEntries = 0;
   private lastEvent: MarketReplayEvent | null = null;
   private lastMarkPrice: number | null = null;
   private lastMarkTime: number | null = null;
@@ -387,6 +432,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       orders: [...this.orders.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneOrder),
       fills: [...this.fills.values()].sort((left, right) => left.id.localeCompare(right.id)).map(cloneFill),
       journal: this.journal.map((entry) => ({ ...entry, ...(entry.source === undefined ? {} : { source: cloneSource(entry.source) }), ...(entry.quality === undefined ? {} : { quality: cloneQuality(entry.quality) }), ...(entry.payload === undefined ? {} : { payload: cloneJson(entry.payload) }) })),
+      journalRetention: this.journalRetention(),
       diagnostics: this.diagnostics(),
       ...(this.error === null ? {} : { error: this.error.message }),
     };
@@ -408,7 +454,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.assertActive();
     if (this.currentIndex < 0 || this.lastEvent === null) throw new ResearchExecutionOrderError("NO_REPLAY_FRONTIER", "A replay event must be visible before submitting a research order");
     const normalized = this.normalizeRequest(request);
-    const existingDecision = this.decisions.find((decision) => decision.idempotencyKey === normalized.idempotencyKey);
+    const existingDecision = this.decisions.find((decision): decision is ResearchSubmitDecision => decision.decisionType === "submit-order" && decision.idempotencyKey === normalized.idempotencyKey);
     if (existingDecision !== undefined) {
       const existing = this.orders.get(existingDecision.orderId);
       if (existingDecision.decisionCursor <= this.currentIndex && existing !== undefined) {
@@ -417,11 +463,15 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       }
       throw new ResearchExecutionOrderError("IDEMPOTENCY_FUTURE", "Idempotency key belongs to a future scenario decision; use a new scenario key after seeking");
     }
+    this.assertNoFutureScenarioBranch();
     const eventClock = replayEventClock(this.lastEvent, this.options.clockPolicy);
     const delay = this.latencyDelay(this.currentIndex);
+    const decisionMetadata = this.nextDecisionMetadata(this.currentIndex);
     const orderId = `${this.options.scenarioId}-order-${this.nextOrderNumber++}`;
-    const decision: ResearchDecisionRecord = {
+    const decision: ResearchSubmitDecision = {
       ...normalized,
+      ...decisionMetadata,
+      decisionType: "submit-order",
       orderId,
       scenarioId: this.options.scenarioId,
       decisionEventId: this.lastEvent.id,
@@ -442,13 +492,30 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
 
   public cancelOrder(orderId: string, reason = "Cancelled by research scenario"): ResearchOrder {
     this.assertActive();
+    if (this.currentIndex < 0 || this.lastEvent === null) throw new ResearchExecutionOrderError("NO_REPLAY_FRONTIER", "A replay event must be visible before cancelling a research order");
     const order = this.orders.get(nonEmpty(orderId, "orderId"));
     if (order === undefined) throw new ResearchExecutionOrderError("UNKNOWN_ORDER", `Unknown research order: ${orderId}`);
     if (order.status !== "pending" && order.status !== "partially-simulated") throw new ResearchExecutionOrderError("TERMINAL_ORDER", `Order ${orderId} is already ${order.status}`);
+    this.assertNoFutureScenarioBranch();
+    const decisionMetadata = this.nextDecisionMetadata(this.currentIndex);
+    const cancellation: ResearchCancelDecision = {
+      ...decisionMetadata,
+      decisionType: "cancel-order",
+      orderId: order.id,
+      scenarioId: this.options.scenarioId,
+      decisionEventId: this.lastEvent.id,
+      decisionCursor: this.currentIndex,
+      decisionTime: this.lastEvent.time,
+      decisionClockTime: replayEventClock(this.lastEvent, this.options.clockPolicy),
+      eligibleClockTime: null,
+      reason: nonEmpty(reason, "reason"),
+    };
+    this.decisions.push(cancellation);
     this.releaseReservation(order);
     order.status = "cancelled";
-    order.reason = reason;
-    this.recordJournal("decision", this.lastEvent, "order-cancelled", order.id, undefined, { reason });
+    order.reason = cancellation.reason;
+    this.recordJournal("decision", this.lastEvent, "order-cancelled", order.id, undefined, { reason: cancellation.reason, decisionId: cancellation.decisionId });
+    this.assertFinancialInvariants();
     this.emit();
     return cloneOrder(order);
   }
@@ -520,12 +587,14 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
         priceImpact: this.options.priceImpact === null ? null : { ...this.options.priceImpact },
         maxQuoteAgeMs: this.options.maxQuoteAgeMs,
         risk: { ...this.options.risk },
+        corporateActionSource: this.options.corporateActionSource === null ? null : cloneSource(this.options.corporateActionSource),
       },
-      decisions: this.decisions.map(cloneDecision),
+      decisions: this.orderedDecisions().map(cloneDecision),
       orders: snapshot.orders,
       fills: snapshot.fills,
       ledger: snapshot.ledger,
       journal: snapshot.journal,
+      journalRetention: snapshot.journalRetention,
       diagnostics: snapshot.diagnostics,
     };
   }
@@ -538,6 +607,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.listeners.clear();
     this.books.forEach((book) => book.controller.dispose());
     this.books.clear();
+    this.sessionStates.clear();
+    this.corporateActionRevisions.clear();
     this.orders.clear();
     this.fills.clear();
     this.journal = [];
@@ -592,9 +663,13 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.sourceStatuses.clear();
     this.observedTrades.clear();
     this.dividendEntitlements.clear();
+    this.sessionStates.clear();
+    this.corporateActionRevisions.clear();
     this.orders.clear();
     this.fills.clear();
     this.journal = [];
+    this.nextJournalSequence = 0;
+    this.journalEvictedEntries = 0;
     this.warnings = [];
     this.quality.clear();
     this.ledger = createLedger(this.options.initialCapital);
@@ -612,10 +687,29 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private activateDecisions(index: number): void {
-    for (const decision of this.decisions.filter((candidate) => candidate.decisionCursor === index).sort((left, right) => left.orderId.localeCompare(right.orderId))) {
-      if (this.orders.has(decision.orderId)) continue;
-      this.createOrderFromDecision(decision);
+    const decisions = this.decisions
+      .filter((candidate) => candidate.decisionCursor === index)
+      .sort((left, right) => left.decisionOrdinal - right.decisionOrdinal || left.decisionId.localeCompare(right.decisionId));
+    for (const decision of decisions) {
+      if (decision.decisionType === "submit-order") {
+        if (this.orders.has(decision.orderId)) continue;
+        this.createOrderFromDecision(decision);
+      } else {
+        this.applyCancellationDecision(decision);
+      }
     }
+  }
+
+  private applyCancellationDecision(decision: ResearchCancelDecision): void {
+    const order = this.orders.get(decision.orderId);
+    if (order === undefined) throw new ResearchExecutionValidationError(`Cancellation ${decision.decisionId} references an unavailable order ${decision.orderId}`);
+    if (order.status === "cancelled" && order.reason === decision.reason) return;
+    if (order.status !== "pending" && order.status !== "partially-simulated") throw new ResearchExecutionValidationError(`Cancellation ${decision.decisionId} reached terminal order ${decision.orderId}`);
+    this.releaseReservation(order);
+    order.status = "cancelled";
+    order.reason = decision.reason;
+    this.recordJournal("decision", this.lastEvent, "order-cancelled", order.id, undefined, { reason: decision.reason, decisionId: decision.decisionId });
+    this.assertFinancialInvariants();
   }
 
   private applyObservation(event: MarketReplayEvent): void {
@@ -632,8 +726,8 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       case "corporate-action-effective": this.applyCorporateAction(event.action, event.id, false); break;
       case "corporate-action-payment": this.applyCorporateAction(event.action, event.id, true); break;
       case "candle-open":
-      case "session-boundary":
         break;
+      case "session-boundary": this.applySessionBoundary(event); break;
     }
   }
 
@@ -663,6 +757,15 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     if (result.kind === "rejected") this.addQuality("indeterminate", `Order-book delta rejected: ${result.reason ?? "unknown reason"}`);
   }
 
+  private applySessionBoundary(event: Extract<MarketReplayEvent, { readonly kind: "session-boundary" }>): void {
+    this.sessionStates.set(sessionKey(event.instrumentId, event.venueId), {
+      sessionId: event.sessionId,
+      boundary: event.boundary,
+      eventId: event.id,
+      time: event.time,
+    });
+  }
+
   private applyTrade(event: Extract<MarketReplayEvent, { readonly kind: "trade" }>): void {
     const identity = marketTradeLogicalIdentity(event.trade);
     const previous = this.observedTrades.get(identity);
@@ -677,6 +780,16 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private applyCorporateAction(action: CorporateAction, eventId: string, payment: boolean): void {
+    if (this.options.corporateActionSource !== null && sourceKey(action.source) !== sourceKey(this.options.corporateActionSource)) return;
+    const actionIdentity = corporateActionLogicalIdentity(action);
+    const phase = payment ? "payment" : "effective";
+    const revisionKey = `${phase}:${actionIdentity}`;
+    const previousRevision = this.corporateActionRevisions.get(revisionKey);
+    if (previousRevision !== undefined) {
+      if (action.revision > previousRevision) this.addQuality("unsupported-corporate-action", `Corporate action revision cannot be applied after ${phase}: ${actionIdentity}`);
+      return;
+    }
+    this.corporateActionRevisions.set(revisionKey, action.revision);
     if (action.knowledgeTime !== undefined && action.knowledgeTime > action.effectiveTime) {
       this.addQuality("unsupported-corporate-action", `Corporate action ${action.id} has a future knowledge frontier`);
       this.recordJournal("system", this.lastEvent, "corporate-action-indeterminate", undefined, undefined, { actionId: action.id, eventId });
@@ -689,19 +802,20 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     }
     if (action.kind !== "cash-dividend") return;
     if (!payment) {
-      if (this.ledger.position !== null) this.dividendEntitlements.set(action.id, { quantity: this.ledger.position.quantity, action });
-      this.recordJournal("system", this.lastEvent, "dividend-entitlement", undefined, undefined, { actionId: action.id, quantity: this.ledger.position?.quantity ?? 0 });
+      if (this.ledger.position !== null) this.dividendEntitlements.set(actionIdentity, { quantity: this.ledger.position.quantity, action });
+      this.recordJournal("system", this.lastEvent, "dividend-entitlement", undefined, undefined, { actionId: action.id, actionIdentity, quantity: this.ledger.position?.quantity ?? 0 });
       return;
     }
-    const entitlement = this.dividendEntitlements.get(action.id);
+    const entitlement = this.dividendEntitlements.get(actionIdentity);
     if (entitlement === undefined) {
       this.addQuality("unsupported-corporate-action", `Dividend payment has no causal entitlement: ${action.id}`);
       return;
     }
     const amount = entitlement.quantity * action.amountPerShare;
     this.ledger.cash = normalizeZero(this.ledger.cash + amount);
-    this.dividendEntitlements.delete(action.id);
-    this.recordJournal("system", this.lastEvent, "dividend-paid", undefined, undefined, { actionId: action.id, amount });
+    this.dividendEntitlements.delete(actionIdentity);
+    this.assertFinancialInvariants();
+    this.recordJournal("system", this.lastEvent, "dividend-paid", undefined, undefined, { actionId: action.id, actionIdentity, amount });
   }
 
   private applySplit(action: StockSplitAction, eventId: string): void {
@@ -719,11 +833,12 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       this.releaseReservation(order);
       order.status = "cancelled";
       order.reason = `Pending order cancelled at split ${action.id}`;
-      this.recordJournal("system", this.lastEvent, "order-cancelled-corporate-action", order.id, undefined, { actionId: action.id, eventId });
+      this.recordJournal("system", this.lastEvent, "order-cancelled-corporate-action", order.id, undefined, { actionId: action.id, actionIdentity: corporateActionLogicalIdentity(action), eventId });
     }
-    this.ledger.reservedPositionQuantity = normalizeZero(this.ledger.reservedPositionQuantity * ratio);
-    for (const entitlement of this.dividendEntitlements.values()) entitlement.quantity = normalizeZero(entitlement.quantity * ratio);
-    this.recordJournal("system", this.lastEvent, "split-applied", undefined, undefined, { actionId: action.id, ratio });
+    // Dividend entitlements are fixed at the ex-dividend boundary declared by
+    // CashDividendAction. A later split must not retroactively change them.
+    this.assertFinancialInvariants();
+    this.recordJournal("system", this.lastEvent, "split-applied", undefined, undefined, { actionId: action.id, actionIdentity: corporateActionLogicalIdentity(action), ratio });
   }
 
   private evaluatePendingOrders(event: MarketReplayEvent, index: number): void {
@@ -743,6 +858,12 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private findFillAttempt(order: MutableOrder, event: MarketReplayEvent, clock: number): FillAttempt | null {
+    const sessionReason = this.sessionEligibilityReason(event);
+    if (sessionReason !== null) {
+      this.addQuality("indeterminate", sessionReason);
+      this.recordJournal("system", event, "session-eligibility-indeterminate", order.id, undefined, { reason: sessionReason });
+      return null;
+    }
     const touchPrice = observedTouchPrice(event);
     const book = this.findBook(clock);
     const quality = this.bookQuality(book, event, clock);
@@ -799,6 +920,14 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     };
   }
 
+  private sessionEligibilityReason(event: MarketReplayEvent): string | null {
+    if (this.sessionStates.size === 0) return null;
+    const observation = this.sessionStates.get(sessionKey(event.instrumentId, event.venueId));
+    if (observation === undefined) return "No session boundary is available for the execution event";
+    if (observation.boundary === "close" || observation.boundary === "break-start") return `Trading session ${observation.sessionId} is closed at ${observation.eventId}`;
+    return null;
+  }
+
   private applyFillAttempt(order: MutableOrder, attempt: FillAttempt, event: MarketReplayEvent): void {
     const referencePrice = this.normalizePrice(attempt.price, order.side);
     const afterSlippage = applyAdverseSlippage(referencePrice, this.options.slippage, order.side === "buy");
@@ -817,6 +946,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
         order.status = "rejected";
         order.reason = "INSUFFICIENT_FUNDS_AT_EXECUTION";
         this.recordJournal("system", event, "order-rejected", order.id, undefined, { reason: order.reason }, attempt.quality);
+        this.assertFinancialInvariants();
         return;
       }
       this.ledger.cash = normalizeZero(this.ledger.cash - notional - fee);
@@ -827,6 +957,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
         order.status = "rejected";
         order.reason = "POSITION_NOT_AVAILABLE_AT_EXECUTION";
         this.recordJournal("system", event, "order-rejected", order.id, undefined, { reason: order.reason }, attempt.quality);
+        this.assertFinancialInvariants();
         return;
       }
       this.reducePosition(quantity, executionPrice, fee);
@@ -871,6 +1002,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     }
     this.recordJournal("system", event, "order-filled", order.id, fillId, { quantity, executionPrice, fee, simulated: true }, attempt.quality);
     this.updateHighWaterMark(event.time);
+    this.assertFinancialInvariants();
   }
 
   private addPosition(quantity: number, notional: number, fee: number, time: number): void {
@@ -904,6 +1036,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
   }
 
   private createOrderFromDecision(decision: ResearchDecisionRecord): MutableOrder {
+    if (decision.decisionType !== "submit-order") throw new ResearchExecutionValidationError(`Cannot create an order from ${decision.decisionType} decision ${decision.decisionId}`);
     const order: MutableOrder = {
       id: decision.orderId,
       idempotencyKey: decision.idempotencyKey,
@@ -934,6 +1067,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       order.status = "rejected";
       order.reason = rejection;
       this.recordJournal("decision", this.lastEvent, "order-rejected", order.id, undefined, { reason: rejection });
+      this.assertFinancialInvariants();
       return order;
     }
     order.status = "accepted";
@@ -941,12 +1075,13 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     this.reserveInitial(order);
     order.status = "pending";
     this.recordJournal("decision", this.lastEvent, "order-pending", order.id, undefined, { eligibleClockTime: order.eligibleClockTime });
+    this.assertFinancialInvariants();
     return order;
   }
 
   private submissionRejection(order: MutableOrder): string | null {
     const pendingCount = [...this.orders.values()].filter((candidate) => candidate.status === "pending" || candidate.status === "partially-simulated").length;
-    if (this.options.risk.maxPendingOrders !== undefined && pendingCount > this.options.risk.maxPendingOrders) return "MAX_PENDING_ORDERS";
+    if (this.options.risk.maxPendingOrders !== undefined && pendingCount >= this.options.risk.maxPendingOrders) return "MAX_PENDING_ORDERS";
     if (this.options.risk.maxOrderQuantity !== undefined && order.requestedQuantity > this.options.risk.maxOrderQuantity + EPSILON) return "MAX_ORDER_QUANTITY";
     if (order.side === "sell") {
       const available = (this.ledger.position?.quantity ?? 0) - this.ledger.reservedPositionQuantity;
@@ -973,6 +1108,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     } else if (order.side === "sell") {
       this.ledger.reservedPositionQuantity = normalizeZero(this.ledger.reservedPositionQuantity + order.remainingQuantity);
     }
+    this.assertFinancialInvariants();
   }
 
   private reserveRemaining(order: MutableOrder): void {
@@ -980,6 +1116,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       order.reservedCash = this.reservationFor(order, order.remainingQuantity);
       this.ledger.reservedCash = normalizeZero(this.ledger.reservedCash + order.reservedCash);
     } else if (order.side === "sell") this.ledger.reservedPositionQuantity = normalizeZero(this.ledger.reservedPositionQuantity + order.remainingQuantity);
+    this.assertFinancialInvariants();
   }
 
   private releaseReservation(order: MutableOrder): void {
@@ -988,6 +1125,7 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
       order.reservedCash = 0;
     }
     if (order.side === "sell" && order.remainingQuantity > 0) this.ledger.reservedPositionQuantity = normalizeZero(this.ledger.reservedPositionQuantity - order.remainingQuantity);
+    this.assertFinancialInvariants();
   }
 
   private reservationFor(order: MutableOrder, quantity: number): number {
@@ -1204,6 +1342,22 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     return this.ledger.cash - this.ledger.reservedCash;
   }
 
+  private assertFinancialInvariants(): void {
+    const { cash, reservedCash, reservedPositionQuantity, position } = this.ledger;
+    if (![cash, reservedCash, reservedPositionQuantity].every(Number.isFinite)) throw new ResearchExecutionValidationError("Financial invariant violated: non-finite ledger value");
+    if (cash < -EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: cash is negative");
+    if (reservedCash < -EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: reserved cash is negative");
+    if (this.availableCash() < -EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: available cash is negative");
+    if (reservedPositionQuantity < -EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: reserved position is negative");
+    if (position === null) {
+      if (reservedPositionQuantity > EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: position is absent while quantity is reserved");
+      return;
+    }
+    if (![position.quantity, position.costBasis, position.openEntryFees, position.averageEntryPrice].every(Number.isFinite)) throw new ResearchExecutionValidationError("Financial invariant violated: non-finite position value");
+    if (position.quantity < -EPSILON || position.costBasis < -EPSILON || position.openEntryFees < -EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: negative position value");
+    if (reservedPositionQuantity > position.quantity + EPSILON) throw new ResearchExecutionValidationError("Financial invariant violated: reserved position exceeds held position");
+  }
+
   private finalizePendingOrders(): void {
     for (const order of this.orders.values()) {
       if (order.status !== "pending" && order.status !== "partially-simulated") continue;
@@ -1224,9 +1378,28 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     }
   }
 
+  private nextDecisionMetadata(cursor: number): Pick<ResearchSubmitDecision, "decisionId" | "decisionOrdinal"> {
+    const decisionOrdinal = this.decisions.filter((decision) => decision.decisionCursor === cursor).length + 1;
+    return {
+      decisionId: `${this.options.scenarioId}-decision-${this.nextDecisionNumber++}`,
+      decisionOrdinal,
+    };
+  }
+
+  private orderedDecisions(): readonly ResearchDecisionRecord[] {
+    return [...this.decisions].sort((left, right) => left.decisionCursor - right.decisionCursor || left.decisionOrdinal - right.decisionOrdinal || left.decisionId.localeCompare(right.decisionId));
+  }
+
+  private assertNoFutureScenarioBranch(): void {
+    if (this.decisions.some((decision) => decision.decisionCursor > this.currentIndex)) {
+      throw new ResearchExecutionOrderError("FUTURE_DECISIONS", "The scenario has recorded future decisions; reset or use an explicit scenario fork before changing it");
+    }
+  }
+
   private recordJournal(kind: ResearchSnapshot["journal"][number]["eventKind"], event: MarketReplayEvent | null, transition: string, orderId?: string, fillId?: string, payload?: Record<string, ResearchJsonValue>, quality?: ResearchLiquidityQuality): void {
+    this.nextJournalSequence += 1;
     const entry: ResearchSnapshot["journal"][number] = {
-      id: `${this.options.scenarioId}-journal-${this.journal.length + 1}`,
+      id: `${this.options.scenarioId}-journal-${this.nextJournalSequence}`,
       scenarioId: this.options.scenarioId,
       cursor: this.currentIndex,
       eventId: event?.id ?? null,
@@ -1243,8 +1416,18 @@ export class ResearchExecutionSessionImpl implements ResearchExecutionSession {
     };
     if (this.journal.length >= this.options.maxJournalEntries) {
       this.journal = [...this.journal.slice(1), entry];
+      this.journalEvictedEntries += 1;
       if (!this.warnings.includes("Journal retention limit reached; oldest entries were evicted")) this.warnings.push("Journal retention limit reached; oldest entries were evicted");
     } else this.journal = [...this.journal, entry];
+  }
+
+  private journalRetention(): ResearchJournalRetention {
+    return {
+      retainedEntries: this.journal.length,
+      totalEmittedEntries: this.nextJournalSequence,
+      evictedEntries: this.journalEvictedEntries,
+      complete: this.journalEvictedEntries === 0,
+    };
   }
 
   private addQuality(value: ResearchSourceQuality, warning: string): void {
@@ -1303,7 +1486,7 @@ function observedTouchPrice(event: MarketReplayEvent): number | null {
   return null;
 }
 
-function sameRequest(decision: ResearchDecisionRecord, request: ResearchOrderRequest): boolean {
+function sameRequest(decision: ResearchSubmitDecision, request: ResearchOrderRequest): boolean {
   return decision.side === request.side && decision.type === request.type && decision.quantity === request.quantity && decision.limitPrice === request.limitPrice;
 }
 
