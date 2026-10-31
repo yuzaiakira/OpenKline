@@ -250,3 +250,48 @@ external market data, broker connection, chart consumer, or public performance
 claim is implied. Full reconstruction remains an intentionally measured
 limitation, and official Firefox/WebKit/mobile-browser evidence remains a
 separate environment-gated acceptance criterion.
+
+## Phase 16.1 schema-1 scenario persistence benchmark
+
+The Phase 16.1 benchmark measures the complete offline artifact path rather
+than chart or Order Flow rendering. Each workload constructs a deterministic
+market replay tape, processes it in a fresh internal research session, exports
+and validates a schema-1 artifact, restores it into another fresh session,
+checks the derived-result fingerprint, executes a deliberately invalid import,
+and disposes both sessions. The 1k and 10k workloads use three samples; the
+100k workload uses two samples. Forced GC was available on Linux x64 with Node
+`v24.19.0`. Results were collected after commit
+`7b0733f24fadd716e84f954604e26202a77d319a` with `npm run
+benchmark:research-scenario`.
+
+Times are milliseconds and heap values are bytes. They are medians/p95s from
+the stated samples and are not broker throughput or public performance claims.
+
+| Events | Samples | Decisions | Artifact bytes | Tape build | Decision setup | Processing | Artifact export | Serialize | Validate | Reconstruction | Failed validation | Retained heap delta |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 3 | 64 | 25,094 | 35.097 / 50.604 | 0.949 / 2.606 | 24.152 / 25.736 | 9.082 / 11.784 | 2.568 / 2.971 | 2.238 / 2.578 | 88.350 / 93.377 | 0.110 / 0.184 | 636,280 / 1,324,840 |
+| 10,000 | 3 | 198 | 75,278 | 267.845 / 287.232 | 2.586 / 2.951 | 462.560 / 466.345 | 22.736 / 22.960 | 5.262 / 7.750 | 5.060 / 5.966 | 977.980 / 1,001.896 | 0.203 / 0.225 | 5,008,024 / 5,009,072 |
+| 100,000 | 2 | 1,998 | 759,182 | 2,606.511 / 2,606.511 | 42.031 / 42.031 | 12,064.573 / 12,064.573 | 185.082 / 185.082 | 53.746 / 53.746 | 59.753 / 59.753 | 17,551.162 / 17,551.162 | 1.029 / 1.029 | 48,658,448 / 48,658,448 |
+
+The retained heap column is a process-level post-disposal delta after local
+references are released and forced GC is requested. It is evidence for this
+benchmark process, not a claim of zero process heap growth. Every workload
+retained 64 journal entries and reported the remainder as evicted
+presentation history (64/128 at 1k, 64/396 at 10k, and 64/3,996 at 100k).
+The benchmark also confirms that a tampered artifact is rejected before
+restoration and that the restored derived result matches the original result
+when no fabricated expected result is supplied.
+
+These schema-1 rows are not directly comparable with the schema-4
+Phase 16.0.3 dispatch rows above: they include tape construction, artifact
+validation, serialization, and a second full reconstruction, while schema 4
+isolated observer dispatch and snapshot allocation. Browser, Canvas2D, worker,
+and external-datafeed performance remain separate gates.
+
+A later same-checkout rerun also passed but produced host-variable medians of
+23.578 ms processing / 94.684 ms reconstruction at 1k, 501.609 ms / 1,059.950
+ms at 10k, and 12,610.947 ms / 18,835.960 ms at 100k. The earlier captured
+rows above remain the durable comparison set; both runs use the same schema,
+workload sizes, decision counts, and forced-GC protocol. This variance is why
+the benchmark is reported as reproducibility evidence rather than a universal
+performance promise.

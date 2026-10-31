@@ -247,6 +247,75 @@ The source remains internal until a separate public API decision; no npm
 publication, release, live broker connectivity, or license change is covered
 by this authorization.
 
+## Phase 16.1 deterministic scenario artifacts and trusted reconstruction
+
+Phase 16.1 adds an internal, versioned scenario artifact for offline research
+reproduction. It is deliberately separate from the public package surface and
+does not change the protected API baseline. The artifact is a JSON-safe record
+of the inputs needed to reconstruct a research run, not a snapshot of trusted
+execution results.
+
+### Artifact boundary
+
+The schema-1 artifact has the following top-level contract:
+
+- `artifactType`, `schemaVersion`, and a scenario identifier identify the
+  format and the research scenario.
+- `tape` binds the artifact to the exact replay tape identity, fingerprint,
+  tape version, ordering version, instrument set, and source generations.
+- `replay` records the clock and knowledge policies, cursor frontier, current
+  state, and whether the decision history is complete for that frontier.
+- `assumptions` records the instrument, venue, capital, currency, latency,
+  execution, cost, precision, risk, passive-liquidity, journal-retention, and
+  resource-limit assumptions used by the internal session.
+- `decisions` and `decisionHistory` contain the durable submit/cancel inputs,
+  including decision cursor, event identity, receive/decision time, ordinal,
+  idempotency key, and the relevant order fields.
+- `journalRetention` records retained capacity, total entries, and evictions;
+  it does not claim that evicted presentation entries can be reconstructed
+  from the artifact alone.
+- `expectedResult`, when supplied by an offline verifier, is evidence only. It
+  is compared with the newly derived result fingerprint and is never loaded as
+  orders, fills, journals, diagnostics, or ledger state.
+- `integrity` contains a deterministic FNV-1a 64-bit content hash over the
+  canonical artifact body. It detects accidental or ordinary tampering but is
+  explicitly unauthenticated and is not a signature or provenance authority.
+
+The canonical serializer sorts object keys, preserves the schema's array
+order, rejects unsupported values, and emits stable JSON. The internal
+validator rejects unknown fields, non-plain objects, cycles, prototype
+pollution keys, non-finite or out-of-range numbers, excessive string/array
+sizes, excessive nesting, duplicate identifiers, invalid decision references,
+future decisions beyond the frontier, unsupported schema versions, and
+inconsistent journal metadata. Absolute limits are enforced in addition to
+the configurable defaults so a caller cannot raise limits without bound.
+
+### Trusted restoration pipeline
+
+`restoreResearchScenario` validates the artifact and the supplied
+`MarketReplayTape`, then requires exact tape identity, fingerprint, version,
+ordering version, instrument set, venue, and source-generation agreement. A
+receive-time replay cannot be restored when the tape lacks receive times. The
+fresh internal session is created from the artifact's assumptions and the
+validated decisions are loaded only into its decision journal. The existing
+replay controller and execution engine then replay the tape to the recorded
+frontier and derive orders, fills, presentation journal entries, diagnostics,
+and financial ledger state again.
+
+Restoration compares the resulting cursor and state against the artifact's
+frontier. If expected evidence is present, its result fingerprint is compared
+with the newly derived result and the outcome is `verified` or `mismatch`; with
+no expected evidence the outcome is `no-expected-result`. Imported orders,
+fills, ledger values, diagnostics, and journal contents are not accepted as
+authoritative input. A failed restore disposes the fresh session before the
+error is returned. This preserves source isolation, no-lookahead behavior,
+financial reservation/cash/position invariants, and existing corporate-action
+and session-boundary rules.
+
+The artifact and restoration contracts are exported only from the internal
+`src/research-execution` boundary. They are not exported from the root
+package, React package, Studio, worker runtime, or broker integrations.
+
 ## Phase 16.0.3 headless dispatch and observer integrity
 
 The session dispatch path now checks the observer set before constructing a

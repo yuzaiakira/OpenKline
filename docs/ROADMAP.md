@@ -123,6 +123,22 @@ offline Studio Market Replay Lab are present.
   suite. No public export, API-baseline approval, browser/device acceptance,
   publication, or Phase 16.1 work is included; those gates remain open. See
   `docs/reports/phase-16-0-3-headless-benchmark-integrity.md`.
+- [Implemented / Verified internally — Phase 16.1 deterministic scenario
+  persistence and trusted reconstruction] Added a bounded, versioned internal
+  scenario artifact containing assumptions, exact tape/source binding, replay
+  policy, durable submit/cancel decisions, causal frontier, decision-history
+  completeness, presentation-journal retention metadata, optional expected
+  result evidence, and an unauthenticated content-integrity hash. Strict
+  validation rejects unknown fields, non-finite values, prototype-pollution
+  keys, cycles, excessive size/depth, invalid decisions, duplicate IDs,
+  invalid cancellation order, and unsupported schemas. Restoration recomputes
+  orders, fills, journals, diagnostics, and ledgers through the existing
+  internal engine; imported derived results are never injected. Focused
+  round-trip/adversarial tests and schema-1 1k/10k/100k benchmarks pass. No
+  root export, Studio integration, Worker/broker integration, Phase 16.2,
+  API-baseline approval, browser/device acceptance, publication, or release
+  authorization is included. See
+  `docs/reports/phase-16-1-scenario-reproducibility.md`.
 
 ## Current milestone
 

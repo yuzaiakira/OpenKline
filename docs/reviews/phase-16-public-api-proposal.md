@@ -123,3 +123,28 @@ orders, and serialized bytes.
 Until each decision is recorded by the authorized owner, these declarations
 remain **PROPOSED — NOT PUBLIC** and `npm run api:check` must continue to use
 the protected historical baseline.
+
+## Phase 16.1 implementation boundary
+
+The internal Phase 16.1 implementation adds a schema-1 scenario artifact,
+strict validator, canonical serializer, result fingerprint helper, and trusted
+reconstructor under `src/research-execution`. These are implementation
+research tools only. They do not change the proposal above, the root exports,
+the React exports, package metadata, Studio contracts, or the protected API
+inventory. No public consumer may rely on the artifact schema or reconstruction
+status until a separate owner decision approves an additive API.
+
+The artifact's optional expected-result evidence is intentionally not a public
+result-import API: restoration derives all orders, fills, journals,
+diagnostics, and ledger values through the internal engine and only compares a
+new fingerprint with supplied evidence. The content hash is unauthenticated,
+so it is not a signing, authorization, or exchange-provenance mechanism.
+
+The following decisions remain for a future API review: whether scenario files
+belong in Core or a separately versioned research package; whether tape/source
+generation references can be stabilized; whether any research artifact may be
+persisted by consumers; the compatibility and migration policy for assumption
+and result schemas; and the security, documentation, licensing, and support
+obligations of exposing deterministic reconstruction. Phase 16.2, Studio,
+worker, broker, live-execution, publication, and release work remain outside
+the current authorization.
