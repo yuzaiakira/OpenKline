@@ -3,6 +3,7 @@ import test from "node:test";
 import { createMarketReplayTape, type MarketReplayEvent } from "../src/replay/market-event-tape.js";
 import {
   createResearchScenarioArtifact,
+  createResearchScenarioResultEvidence,
   createResearchExecutionSession,
   parseResearchScenarioArtifact,
   ResearchExecutionSessionImpl,
@@ -12,7 +13,7 @@ import {
   restoreResearchScenario,
   serializeResearchScenarioArtifact,
 } from "../src/research-execution/index.js";
-import type { ResearchExecutionOptions, ResearchScenarioArtifact, ResearchScenarioFrontier } from "../src/research-execution/types.js";
+import type { ResearchExecutionOptions, ResearchScenarioArtifact, ResearchScenarioExport, ResearchScenarioFrontier } from "../src/research-execution/types.js";
 
 const source = { id: "artifact-fixture", version: "generation-1" } as const;
 const instrumentId = "ARTIFACT";
@@ -105,6 +106,109 @@ test("scenario artifact round-trips decisions and reconstructs complete financia
   assert.deepEqual(restored.actual.decisions, original.decisions);
   restored.session.dispose();
   session.dispose();
+});
+
+test("checkpoint operational diagnostics do not change schema-1 verification evidence", () => {
+  const tape = baseTape([trade("trade-3", 1_003), trade("trade-4", 1_004), trade("trade-5", 1_005)]);
+  const session = createResearchExecutionSession(options(tape, {
+    checkpoints: { enabled: true, interval: 1, maxCheckpoints: 16, memoryBudgetBytes: 2_000_000 },
+  }));
+  atBook(session);
+  const pending = session.submitOrder({ idempotencyKey: "checkpoint-evidence", side: "buy", type: "limit", quantity: 1, limitPrice: 98 });
+  session.step();
+  session.cancelOrder(pending.id, "checkpoint-evidence-cancel");
+  finish(session);
+  const artifact = session.exportScenarioArtifact();
+  const restored = restoreResearchScenario({ artifact, tape });
+  assert.equal(restored.status, "verified");
+  assert.equal(restored.actualResult.fingerprint, artifact.expectedResult?.fingerprint);
+  assert.deepEqual(restored.actual.orders, session.exportScenario().orders);
+  assert.deepEqual(restored.actual.fills, session.exportScenario().fills);
+  assert.deepEqual(restored.actual.ledger, session.exportScenario().ledger);
+  assert.deepEqual(restored.actual.journal, session.exportScenario().journal);
+  restored.session.dispose();
+  session.dispose();
+});
+
+test("schema-1 evidence from the pre-checkpoint diagnostic shape remains compatible", () => {
+  const { tape, session } = completeBuySellScenario();
+  const scenario = session.exportScenario();
+  const snapshot = session.getSnapshot();
+  if (snapshot.state !== "completed") throw new Error(`expected completed scenario, got ${snapshot.state}`);
+  const frontier: ResearchScenarioFrontier = { ...snapshot.cursor, state: snapshot.state };
+  const legacyScenario = {
+    ...scenario,
+    diagnostics: {
+      quality: scenario.diagnostics.quality,
+      warnings: scenario.diagnostics.warnings,
+      sourceCoverage: scenario.diagnostics.sourceCoverage,
+      observedTradeCount: scenario.diagnostics.observedTradeCount,
+      observedOrderBookEventCount: scenario.diagnostics.observedOrderBookEventCount,
+      simulatedFillCount: scenario.diagnostics.simulatedFillCount,
+    },
+  } as ResearchScenarioExport;
+  const legacyEvidence = createResearchScenarioResultEvidence(legacyScenario, frontier);
+  const artifact = session.exportScenarioArtifact();
+  assert.equal(artifact.expectedResult?.fingerprint, legacyEvidence.fingerprint);
+  const restored = restoreResearchScenario({ artifact, tape });
+  assert.equal(restored.status, "verified");
+  restored.session.dispose();
+  session.dispose();
+});
+
+test("identical causal scenarios keep one evidence fingerprint across cache configurations and seeks", () => {
+  const tape = baseTape([trade("trade-3", 1_003), trade("trade-4", 1_004), trade("trade-5", 1_005)]);
+  const configurations: readonly ResearchExecutionOptions["checkpoints"][] = [
+    { enabled: false },
+    { enabled: true, interval: 1, maxCheckpoints: 2, memoryBudgetBytes: 2_000_000 },
+    { enabled: true, interval: 250, maxCheckpoints: 32, memoryBudgetBytes: 32 * 1024 * 1024 },
+    { enabled: true, interval: 1, maxCheckpoints: 1, memoryBudgetBytes: 1 },
+  ];
+  const results = configurations.map((checkpoints) => {
+    const session = createResearchExecutionSession(options(tape, checkpoints === undefined ? {} : { checkpoints }));
+    atBook(session);
+    const pending = session.submitOrder({ idempotencyKey: "cache-independent", side: "buy", type: "limit", quantity: 1, limitPrice: 98 });
+    session.step();
+    session.cancelOrder(pending.id, "cache-independent-cancel");
+    finish(session);
+    session.seekToEvent("book");
+    session.seekToEvent("trade-5");
+    session.pause();
+    const scenario = session.exportScenario();
+    const snapshot = session.getSnapshot();
+    if (snapshot.state !== "paused") throw new Error(`expected paused seek frontier, got ${snapshot.state}`);
+    const frontier: ResearchScenarioFrontier = { ...snapshot.cursor, state: snapshot.state };
+    const evidence = createResearchScenarioResultEvidence(scenario, frontier);
+    const result = {
+      evidence,
+      orders: scenario.orders,
+      fills: scenario.fills,
+      ledger: scenario.ledger,
+      journal: scenario.journal,
+      journalRetention: scenario.journalRetention,
+      decisions: scenario.decisions,
+      diagnostics: {
+        quality: scenario.diagnostics.quality,
+        warnings: scenario.diagnostics.warnings,
+        sourceCoverage: scenario.diagnostics.sourceCoverage,
+        observedTradeCount: scenario.diagnostics.observedTradeCount,
+        observedOrderBookEventCount: scenario.diagnostics.observedOrderBookEventCount,
+        simulatedFillCount: scenario.diagnostics.simulatedFillCount,
+      },
+    };
+    session.dispose();
+    return result;
+  });
+  for (const result of results.slice(1)) {
+    assert.equal(result.evidence.fingerprint, results[0]?.evidence.fingerprint);
+    assert.deepEqual(result.orders, results[0]?.orders);
+    assert.deepEqual(result.fills, results[0]?.fills);
+    assert.deepEqual(result.ledger, results[0]?.ledger);
+    assert.deepEqual(result.journal, results[0]?.journal);
+    assert.deepEqual(result.journalRetention, results[0]?.journalRetention);
+    assert.deepEqual(result.decisions, results[0]?.decisions);
+    assert.deepEqual(result.diagnostics, results[0]?.diagnostics);
+  }
 });
 
 test("partial fill, cancellation, limit decisions, and bounded presentation journals restore without trusting results", () => {
