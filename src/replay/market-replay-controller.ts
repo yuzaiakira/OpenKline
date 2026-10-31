@@ -24,6 +24,13 @@ import {
   type MarketReplayTradeEvent,
   validateMarketReplayTape,
 } from "./market-event-tape.js";
+import {
+  corporateActionLogicalIdentity,
+  marketTradeLogicalIdentity,
+  replayCandleIdentity,
+  replayFootprintIdentity,
+  replayStreamIdentity,
+} from "./market-replay-identity.js";
 
 export type MarketReplayPlaybackState = "idle" | "ready" | "playing" | "paused" | "completed" | "error" | "disposed";
 
@@ -225,8 +232,8 @@ interface MutableCoverage {
 }
 
 interface MutableRuntime {
-  completedCandles: Map<string, { candle: Candle; revision: number }>;
-  formingCandles: Map<string, { open: number; intervalMs?: number; status: "opening" | "forming"; revision: number }>;
+  completedCandles: Map<string, { instrumentId: string; candle: Candle; revision: number }>;
+  formingCandles: Map<string, { instrumentId: string; time: number; open: number; intervalMs?: number; status: "opening" | "forming"; revision: number }>;
   trades: Map<string, MarketTrade>;
   cvd: Map<string, MutableCvd>;
   footprint: Map<string, MutableCell>;
@@ -245,8 +252,8 @@ interface RuntimeCheckpoint {
   readonly eventIndex: number;
   readonly eventId: string | null;
   readonly timestamp: number | null;
-  readonly completedCandles: readonly [string, { readonly candle: Candle; readonly revision: number }][];
-  readonly formingCandles: readonly [string, { readonly open: number; readonly intervalMs?: number; readonly status: "opening" | "forming"; readonly revision: number }][];
+  readonly completedCandles: readonly [string, { readonly instrumentId: string; readonly candle: Candle; readonly revision: number }][];
+  readonly formingCandles: readonly [string, { readonly instrumentId: string; readonly time: number; readonly open: number; readonly intervalMs?: number; readonly status: "opening" | "forming"; readonly revision: number }][];
   readonly trades: readonly [string, MarketTrade][];
   readonly cvd: readonly [string, MutableCvd][];
   readonly footprint: readonly [string, MutableCell][];
@@ -355,9 +362,9 @@ export class MarketReplayController {
     const current = this.projectedEvents[this.currentIndex];
     const completedCandles = [...this.runtime.completedCandles.entries()]
       .sort(([, left], [, right]) => left.candle.time - right.candle.time || left.candle.open - right.candle.open)
-      .map(([key, item]) => ({ instrumentId: key.split("\u0000")[0] ?? key, ...item.candle }));
+      .map(([, item]) => ({ instrumentId: item.instrumentId, ...item.candle }));
     const formingCandles = [...this.runtime.formingCandles.entries()]
-      .map(([key, item]) => ({ instrumentId: key.split("\u0000")[0] ?? key, time: Number(key.split("\u0000")[1] ?? 0), open: item.open, ...(item.intervalMs === undefined ? {} : { intervalMs: item.intervalMs }), status: item.status } as MarketReplayFormingCandle))
+      .map(([, item]) => ({ instrumentId: item.instrumentId, time: item.time, open: item.open, ...(item.intervalMs === undefined ? {} : { intervalMs: item.intervalMs }), status: item.status } as MarketReplayFormingCandle))
       .sort((left, right) => left.time - right.time || left.instrumentId.localeCompare(right.instrumentId));
     const trades = [...this.runtime.trades.values()].sort(compareTrades).slice(-this.maxMaterializedTrades).map(cloneTrade);
     const tradeSummary = summarizeTrades(this.runtime.trades);
@@ -634,26 +641,27 @@ export class MarketReplayController {
   }
 
   private applyCandleOpen(event: OpeningCandleEvent): void {
-    const key = `${event.instrumentId}\u0000${event.candle.time}`;
+    const key = replayCandleIdentity({ ...event, time: event.candle.time });
     const previous = this.runtime.formingCandles.get(key);
     if (previous !== undefined && previous.revision > event.revision) return;
-    this.runtime.formingCandles.set(key, { open: event.candle.open, ...(event.intervalMs === undefined ? {} : { intervalMs: event.intervalMs }), status: event.finality, revision: event.revision });
+    this.runtime.formingCandles.set(key, { instrumentId: event.instrumentId, time: event.candle.time, open: event.candle.open, ...(event.intervalMs === undefined ? {} : { intervalMs: event.intervalMs }), status: event.finality, revision: event.revision });
   }
 
   private applyCandleComplete(event: CompletedCandleEvent): void {
-    const key = `${event.instrumentId}\u0000${event.candle.time}`;
+    const key = replayCandleIdentity({ ...event, time: event.candle.time });
     const previous = this.runtime.completedCandles.get(key);
     if (previous !== undefined && previous.revision > event.revision) return;
     this.runtime.formingCandles.delete(key);
-    this.runtime.completedCandles.set(key, { candle: { ...event.candle }, revision: event.revision });
+    this.runtime.completedCandles.set(key, { instrumentId: event.instrumentId, candle: { ...event.candle }, revision: event.revision });
   }
 
   private applyTrade(event: MarketReplayTradeEvent): void {
-    const previous = this.runtime.trades.get(event.trade.id);
+    const identity = marketTradeLogicalIdentity(event.trade);
+    const previous = this.runtime.trades.get(identity);
     if (previous !== undefined && previous.revision >= event.trade.revision) return;
     if (previous !== undefined) this.removeTradeDerived(previous);
     const trade = cloneTrade(event.trade);
-    this.runtime.trades.set(trade.id, trade);
+    this.runtime.trades.set(identity, trade);
     this.addTradeDerived(trade);
   }
 
@@ -670,7 +678,7 @@ export class MarketReplayController {
     }
     this.runtime.cvd.set(trade.instrumentId, cvd);
     const tickPrice = Number(trade.price.toPrecision(15));
-    const key = `${trade.instrumentId}\u0000${trade.time}\u0000${tickPrice}`;
+    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, time: trade.time, price: tickPrice });
     const cell = this.runtime.footprint.get(key) ?? { instrumentId: trade.instrumentId, time: trade.time, price: tickPrice, buyVolume: 0, sellVolume: 0, unknownVolume: 0 };
     if (trade.aggressorSide === "buy") cell.buyVolume += trade.quantity;
     else if (trade.aggressorSide === "sell") cell.sellVolume += trade.quantity;
@@ -691,7 +699,7 @@ export class MarketReplayController {
       else cvd.unknownVolume -= trade.quantity;
       this.runtime.cvd.set(trade.instrumentId, cvd);
     }
-    const key = `${trade.instrumentId}\u0000${trade.time}\u0000${Number(trade.price.toPrecision(15))}`;
+    const key = replayFootprintIdentity({ instrumentId: trade.instrumentId, time: trade.time, price: Number(trade.price.toPrecision(15)) });
     const cell = this.runtime.footprint.get(key);
     if (cell === undefined) return;
     if (trade.aggressorSide === "buy") cell.buyVolume -= trade.quantity;
@@ -729,9 +737,10 @@ export class MarketReplayController {
 
   private applyCorporateAction(event: Extract<MarketReplayEvent, { readonly kind: "corporate-action-effective" | "corporate-action-payment" }>, phase: "effective" | "payment"): void {
     const target = phase === "effective" ? this.runtime.effectiveActions : this.runtime.paymentActions;
-    const previous = target.get(event.action.id);
+    const identity = corporateActionLogicalIdentity(event.action);
+    const previous = target.get(identity);
     if (previous !== undefined && previous.revision >= event.action.revision) return;
-    target.set(event.action.id, { action: cloneAction(event.action), revision: event.action.revision });
+    target.set(identity, { action: cloneAction(event.action), revision: event.action.revision });
   }
 
   private applySourceStatus(event: MarketReplaySourceStatusEvent): void {
@@ -742,7 +751,7 @@ export class MarketReplayController {
   }
 
   private coverageFor(event: MarketReplayEvent): MutableCoverage {
-    const key = `${event.source.id}\u0000${event.source.version}\u0000${event.instrumentId}`;
+    const key = replayStreamIdentity(event);
     const existing = this.runtime.coverage.get(key);
     if (existing !== undefined) return existing;
     const coverage: MutableCoverage = { source: { id: event.source.id, version: event.source.version }, instrumentId: event.instrumentId, status: "not-reported", coverage: "not-reported", observedEvents: 0 };
@@ -755,7 +764,7 @@ export class MarketReplayController {
       eventIndex,
       eventId: this.projectedEvents[eventIndex]?.event.id ?? null,
       timestamp: this.projectedEvents[eventIndex]?.clockTimestamp ?? null,
-      completedCandles: [...this.runtime.completedCandles.entries()].map(([key, value]) => [key, { candle: { ...value.candle }, revision: value.revision }]),
+      completedCandles: [...this.runtime.completedCandles.entries()].map(([key, value]) => [key, { instrumentId: value.instrumentId, candle: { ...value.candle }, revision: value.revision }]),
       formingCandles: [...this.runtime.formingCandles.entries()].map(([key, value]) => [key, { ...value }]),
       trades: [...this.runtime.trades.entries()].map(([key, value]) => [key, cloneTrade(value)]),
       cvd: [...this.runtime.cvd.entries()].map(([key, value]) => [key, { ...value }]),
@@ -783,7 +792,7 @@ export class MarketReplayController {
     if (checkpoint.books.some(([, state]) => state.status !== "live" && state.status !== "uninitialized")) return false;
     this.disposeRuntime();
     const runtime = createRuntime();
-    runtime.completedCandles = new Map(checkpoint.completedCandles.map(([key, value]) => [key, { candle: { ...value.candle }, revision: value.revision }]));
+    runtime.completedCandles = new Map(checkpoint.completedCandles.map(([key, value]) => [key, { instrumentId: value.instrumentId, candle: { ...value.candle }, revision: value.revision }]));
     runtime.formingCandles = new Map(checkpoint.formingCandles.map(([key, value]) => [key, { ...value }]));
     runtime.trades = new Map(checkpoint.trades.map(([key, value]) => [key, cloneTrade(value)] as const));
     runtime.cvd = new Map(checkpoint.cvd.map(([key, value]) => [key, { ...value }]));
@@ -917,7 +926,7 @@ function hasClockRegression(events: readonly ProjectedEvent[]): boolean {
 }
 
 function streamKey(event: MarketReplayEvent): string {
-  return `${event.instrumentId}\u0000${event.venueId ?? ""}\u0000${event.source.id}\u0000${event.source.version}`;
+  return replayStreamIdentity(event);
 }
 
 function sequenceStart(event: MarketReplayEvent): number | null {
@@ -966,7 +975,7 @@ function compareActionValues(left: { action: CorporateAction }, right: { action:
 }
 
 function bookKey(instrumentId: string, venueId: string | undefined, sourceId: string, sourceVersion: string): string {
-  return `${instrumentId}\u0000${venueId ?? ""}\u0000${sourceId}\u0000${sourceVersion}`;
+  return replayStreamIdentity({ instrumentId, ...(venueId === undefined ? {} : { venueId }), source: { id: sourceId, version: sourceVersion } });
 }
 
 function cloneTrade(trade: MarketTrade): MarketTrade {
@@ -1023,8 +1032,8 @@ function snapshotFromCheckpoint(checkpoint: RuntimeCheckpoint, tape: MarketRepla
     speed: 1,
     clockPolicy,
     knowledgePolicy,
-    completedCandles: checkpoint.completedCandles.map(([key, value]) => ({ instrumentId: key.split("\u0000")[0] ?? key, ...value.candle })),
-    formingCandles: checkpoint.formingCandles.map(([key, value]) => ({ instrumentId: key.split("\u0000")[0] ?? key, time: Number(key.split("\u0000")[1] ?? 0), open: value.open, ...(value.intervalMs === undefined ? {} : { intervalMs: value.intervalMs }), status: value.status })),
+    completedCandles: checkpoint.completedCandles.map(([, value]) => ({ instrumentId: value.instrumentId, ...value.candle })),
+    formingCandles: checkpoint.formingCandles.map(([, value]) => ({ instrumentId: value.instrumentId, time: value.time, open: value.open, ...(value.intervalMs === undefined ? {} : { intervalMs: value.intervalMs }), status: value.status })),
     trades: checkpoint.trades.map(([, value]) => cloneTrade(value)),
     tradeSummary: summarizeTrades(new Map(checkpoint.trades)),
     cvd: checkpoint.cvd.map(([instrumentId, value]) => ({ instrumentId, ...value })),

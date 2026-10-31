@@ -63,3 +63,37 @@ test("market replay tape rejects malformed and conflicting records", () => {
   tampered.fingerprint = "0000000000000000";
   assert.throws(() => parseMarketReplayTape(JSON.stringify(tampered)), /fingerprint/);
 });
+
+test("market replay tape keeps identical source trade IDs isolated by logical stream", () => {
+  const sourceA = { id: "venue-feed", version: "2026-01" } as const;
+  const sourceB = { id: "venue-feed", version: "2026-02" } as const;
+  const makeTrade = (instrumentId: string, source: { readonly id: string; readonly version: string }, eventId: string): MarketReplayEvent => ({
+    id: eventId,
+    kind: "trade",
+    instrumentId,
+    venueId: "primary",
+    time: 2_000,
+    revision: 0,
+    source,
+    trade: {
+      id: "same-provider-trade-id",
+      instrumentId,
+      venueId: "primary",
+      time: 2_000,
+      price: 100,
+      quantity: 1,
+      aggressorSide: "buy",
+      sideQuality: "observed",
+      revision: 0,
+      source,
+    },
+  });
+
+  const tape = createMarketReplayTape({ events: [
+    makeTrade("ASSET-A", sourceA, "trade-a"),
+    makeTrade("ASSET-B", sourceB, "trade-b"),
+  ] });
+
+  assert.equal(tape.events.length, 2);
+  assert.deepEqual(tape.events.map((item) => item.instrumentId).sort(), ["ASSET-A", "ASSET-B"]);
+});

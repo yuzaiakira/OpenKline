@@ -51,6 +51,13 @@ stream retain source sequence order even when their timestamps are delayed or
 duplicated. A sequence gap is represented in replay integrity; it is never
 filled by interpolation.
 
+Trade and corporate-action revisions use a canonical logical identity rather
+than the provider record ID alone. The identity includes instrument, venue
+when present, source ID, source version, and the stable provider ID. A source
+version is treated as a dataset generation: records from two generations are
+kept independent and cannot silently replace one another. Candle and order
+book stream keys follow the same instrument/venue/source-generation boundary.
+
 `event-time` uses exchange/event timestamps. `receive-time` uses only records
 with a recorded receive timestamp. Missing receive timestamps are excluded
 from that projection and reported as unknown coverage; the library never
@@ -60,7 +67,7 @@ state and checkpoint identity.
 ## Validation and provenance
 
 Tape creation rejects duplicate event identities, duplicate revisions for a
-stable trade/action record, unsafe timestamps, invalid prices/quantities,
+stable logical trade/action record, unsafe timestamps, invalid prices/quantities,
 contradictory OHLC, invalid L2 sequence ranges, unsupported source versions,
 and invalid corporate-action records. Imported JSON is treated as untrusted
 data and is validated before it is returned.
