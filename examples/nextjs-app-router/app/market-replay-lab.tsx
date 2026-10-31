@@ -16,48 +16,55 @@ import type {
 import styles from "./studio.module.css";
 
 const REPLAY_SOURCE = { id: "studio-market-replay-fixture", version: "1" } as const;
-const REPLAY_INSTRUMENT = "BTC-USD";
+const REPLAY_INSTRUMENTS = ["BTC-USD", "ETH-USD"] as const;
+type ReplayInstrument = typeof REPLAY_INSTRUMENTS[number];
 
 function createOfflineReplayTape() {
   const start = Date.UTC(2026, 0, 2, 14, 30);
   const events: MarketReplayEvent[] = [];
-  let sequence = 1;
-  for (let index = 0; index < 24; index += 1) {
-    const time = start + index * 60_000;
-    const close = 100 + Math.sin(index / 3) * 3 + index * 0.18;
-    const candle: Candle = { time, open: close - 0.5, high: close + 1.2, low: close - 1.4, close, volume: 100 + index * 4 };
-    events.push({ id: `open-${index}`, kind: "candle-open", instrumentId: REPLAY_INSTRUMENT, time, receiveTime: time + 2, revision: 0, source: REPLAY_SOURCE, candle, finality: "opening", intervalMs: 60_000 });
-    events.push({
-      id: `trade-buy-${index}`,
-      kind: "trade",
-      instrumentId: REPLAY_INSTRUMENT,
-      time: time + 10_000,
-      receiveTime: time + 12_000,
-      revision: 0,
-      source: REPLAY_SOURCE,
-      trade: { id: `trade-buy-${index}`, instrumentId: REPLAY_INSTRUMENT, time: time + 10_000, receiveTime: time + 12_000, price: close, quantity: 1 + index * 0.05, aggressorSide: index % 5 === 0 ? "unknown" : "buy", sideQuality: index % 5 === 0 ? "unknown" : "observed", revision: 0, source: REPLAY_SOURCE },
-    });
-    events.push({ id: `complete-${index}`, kind: "candle-complete", instrumentId: REPLAY_INSTRUMENT, time: time + 60_000, receiveTime: time + 61_000, revision: 0, source: REPLAY_SOURCE, candle, finality: "completed", intervalMs: 60_000 });
-    if (index === 0) {
-      events.push({ id: "book-snapshot", kind: "order-book-snapshot", instrumentId: REPLAY_INSTRUMENT, time, receiveTime: time + 3, sequence, revision: 0, source: REPLAY_SOURCE, snapshot: { version: 1, instrumentId: REPLAY_INSTRUMENT, time, receiveTime: time + 3, sequence, bids: [{ price: close - 0.1, quantity: 10 }], asks: [{ price: close + 0.1, quantity: 12 }], tickSize: 0.1, source: REPLAY_SOURCE } });
-    } else {
-      sequence += 1;
-      events.push({ id: `book-delta-${index}`, kind: "order-book-delta", instrumentId: REPLAY_INSTRUMENT, time, receiveTime: time + 3, sequence, revision: 0, source: REPLAY_SOURCE, delta: { version: 1, id: `book-delta-${index}`, instrumentId: REPLAY_INSTRUMENT, time, receiveTime: time + 3, sequence, previousSequence: sequence - 1, quantityMode: "absolute", bids: [{ price: close - 0.1, quantity: 10 + index }], asks: [{ price: close + 0.1, quantity: 12 + index }], source: REPLAY_SOURCE } });
+  for (const [instrumentIndex, instrumentId] of REPLAY_INSTRUMENTS.entries()) {
+    let sequence = 1;
+    for (let index = 0; index < 24; index += 1) {
+      const time = start + index * 60_000;
+      const close = 100 + instrumentIndex * 40 + Math.sin(index / 3) * 3 + index * 0.18;
+      const candle: Candle = { time, open: close - 0.5, high: close + 1.2, low: close - 1.4, close, volume: 100 + index * 4 };
+      const eventPrefix = `${instrumentId.toLowerCase()}-${index}`;
+      events.push({ id: `open-${eventPrefix}`, kind: "candle-open", instrumentId, time, receiveTime: time + 2, revision: 0, source: REPLAY_SOURCE, candle, finality: "opening", intervalMs: 60_000 });
+      events.push({
+        id: `trade-buy-${eventPrefix}`,
+        kind: "trade",
+        instrumentId,
+        time: time + 10_000,
+        receiveTime: time + 12_000,
+        revision: 0,
+        source: REPLAY_SOURCE,
+        // Deliberately identical provider IDs across instruments exercise the
+        // source-scoped replay identity contract in the real Studio consumer.
+        trade: { id: `trade-buy-${index}`, instrumentId, time: time + 10_000, receiveTime: time + 12_000, price: close, quantity: 1 + index * 0.05, aggressorSide: index % 5 === 0 ? "unknown" : "buy", sideQuality: index % 5 === 0 ? "unknown" : "observed", revision: 0, source: REPLAY_SOURCE },
+      });
+      events.push({ id: `complete-${eventPrefix}`, kind: "candle-complete", instrumentId, time: time + 60_000, receiveTime: time + 61_000, revision: 0, source: REPLAY_SOURCE, candle, finality: "completed", intervalMs: 60_000 });
+      if (index === 0) {
+        events.push({ id: `book-snapshot-${eventPrefix}`, kind: "order-book-snapshot", instrumentId, time, receiveTime: time + 3, sequence, revision: 0, source: REPLAY_SOURCE, snapshot: { version: 1, instrumentId, time, receiveTime: time + 3, sequence, bids: [{ price: close - 0.1, quantity: 10 }], asks: [{ price: close + 0.1, quantity: 12 }], tickSize: 0.1, source: REPLAY_SOURCE } });
+      } else {
+        sequence += 1;
+        events.push({ id: `book-delta-${eventPrefix}`, kind: "order-book-delta", instrumentId, time, receiveTime: time + 3, sequence, revision: 0, source: REPLAY_SOURCE, delta: { version: 1, id: `book-delta-${eventPrefix}`, instrumentId, time, receiveTime: time + 3, sequence, previousSequence: sequence - 1, quantityMode: "absolute", bids: [{ price: close - 0.1, quantity: 10 + index }], asks: [{ price: close + 0.1, quantity: 12 + index }], source: REPLAY_SOURCE } });
+      }
     }
   }
   return createMarketReplayTape({ id: "studio-offline-market-replay", events });
 }
 
 function displayCandles(snapshot: MarketReplaySnapshot): Candle[] {
-  return snapshot.completedCandles.filter((candle) => candle.instrumentId === REPLAY_INSTRUMENT).map(({ instrumentId: _instrumentId, ...candle }) => candle);
+  return snapshot.completedCandles.map(({ instrumentId: _instrumentId, ...candle }) => candle);
 }
 
 export function MarketReplayLab() {
   const tape = useMemo(() => createOfflineReplayTape(), []);
   const [clockPolicy, setClockPolicy] = useState<MarketReplayClockPolicy>("event-time");
+  const [selectedInstrument, setSelectedInstrument] = useState<ReplayInstrument>(REPLAY_INSTRUMENTS[0]);
   const controller = useMemo(() => new MarketReplayController({ tape, clockPolicy, checkpointInterval: 8, maxMaterializedTrades: 100 }), [clockPolicy, tape]);
   const [state, setState] = useState<MarketReplayState>(() => controller.getState());
-  const [snapshot, setSnapshot] = useState<MarketReplaySnapshot>(() => controller.getSnapshot());
+  const [snapshot, setSnapshot] = useState<MarketReplaySnapshot>(() => controller.getSnapshot({ instrumentId: selectedInstrument }));
   const pendingDispose = useRef<{ controller: MarketReplayController; timer: number } | null>(null);
 
   useEffect(() => {
@@ -69,9 +76,10 @@ export function MarketReplayLab() {
     }
     const unsubscribe = controller.subscribe((nextState) => {
       setState(nextState);
-      setSnapshot(controller.getSnapshot());
+      setSnapshot(controller.getSnapshot({ instrumentId: selectedInstrument }));
     });
     controller.start();
+    setSnapshot(controller.getSnapshot({ instrumentId: selectedInstrument }));
     return () => {
       unsubscribe();
       const timer = window.setTimeout(() => {
@@ -80,7 +88,7 @@ export function MarketReplayLab() {
       }, 0);
       pendingDispose.current = { controller, timer };
     };
-  }, [controller]);
+  }, [controller, selectedInstrument]);
 
   const run = (operation: () => void): void => {
     try {
@@ -93,14 +101,14 @@ export function MarketReplayLab() {
   const candles = displayCandles(snapshot);
   const max = Math.max(0, state.eligibleEvents - 1);
   const currentIndex = state.eventIndex ?? -1;
-  const currentBook = snapshot.orderBooks.find((book) => book.state.instrumentId === REPLAY_INSTRUMENT)?.state;
+  const currentBook = snapshot.orderBooks[0]?.state;
 
-  return <section className={styles.comparisonPanel} aria-label="Market Replay Lab" data-testid="market-replay-lab">
+  return <section className={styles.comparisonPanel} aria-label="Market Replay Lab" data-testid="market-replay-lab" data-replay-instrument={selectedInstrument}>
     <div className={styles.panelHeading}><div><h2>Market Replay Lab</h2><small>Unified offline candle, trade, CVD, Footprint, and Level-2 research timeline.</small></div><span data-replay-state={state.state}>{state.processedEvents}/{state.eligibleEvents}</span></div>
     <p className={styles.orderFlowDisclaimer}>Deterministic fixture only. Displayed liquidity is historical observation, not executable fill evidence.</p>
     <div className={styles.comparisonControls}>
       <label>Dataset<select aria-label="Replay dataset"><option>Offline BTC fixture · 24 bars</option></select></label>
-      <label>Instrument<select aria-label="Replay instrument"><option>{REPLAY_INSTRUMENT}</option></select></label>
+      <label>Instrument<select aria-label="Replay instrument" value={selectedInstrument} onChange={(event) => setSelectedInstrument(event.target.value as ReplayInstrument)}>{REPLAY_INSTRUMENTS.map((instrument) => <option key={instrument}>{instrument}</option>)}</select></label>
       <label>Clock<select aria-label="Replay clock policy" value={clockPolicy} onChange={(event) => setClockPolicy(event.target.value as MarketReplayClockPolicy)}><option value="event-time">Event time</option><option value="receive-time">Recorded receive time</option></select></label>
       <label>Speed<select aria-label="Replay speed" value={state.speed} onChange={(event) => run(() => controller.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label>
     </div>
