@@ -1,11 +1,13 @@
 # Replay-causal execution research foundation
 
-Status: **PROPOSED — INTERNAL DESIGN ONLY**
+Status: **INTERNAL IMPLEMENTATION — NOT PUBLIC**
 
-Phase 16.0 is not authorized for implementation at the current governance
-boundary. This document is the reviewable design and implementation plan; it
-does not describe an existing engine, supported API, broker integration, or
-historical fill reconstruction.
+The owner has authorized internal Phase 16.0 engineering based on the reviewed
+design at commit `76ad54525958e5689b752b49855209beacdb37ee`. The current
+implementation is an unexported research simulator; it is not a supported
+package API, broker integration, live execution path, or claim of historical
+exchange fills. Phase 15.5 compatibility, legal, accessibility, and release
+gates remain independent and open.
 
 ## Boundary
 
@@ -47,29 +49,27 @@ intentional difference.
 
 ## Proposed internal module boundary
 
-If owner authorization is granted, the implementation should live behind an
-internal module boundary such as `src/research-execution/` (final names must
-follow repository conventions). The planned responsibilities are:
+The implementation lives behind the internal `src/research-execution/`
+boundary. The current milestone keeps the cohesive runtime in a small number
+of files rather than prematurely splitting it into public-style subsystems:
 
 - `types.ts`: internal versioned assumptions, decisions, outcomes, quality,
   ledger, journal, and export records;
-- `identity.ts`: scenario/order/source logical identities;
-- `eligibility.ts`: replay frontier, latency, knowledge, source, and clock
-  checks;
-- `liquidity.ts`: synchronized Level-2 validation and conservative passive
-  policy;
-- `execution-model.ts`: marketable and passive scenario evaluation;
-- `ledger.ts`: cash, reserve, long position, costs, P&L, valuation, and risk;
-- `journal.ts`: immutable causal transitions with bounded retention/export;
-- `reference.ts`: small synchronous reference implementation for parity;
-- `session.ts`: replay controller adapter, seek reconstruction, reset, and
-  disposal;
-- `export.ts`: bounded JSON-only scenario export/import validation.
+- `engine.ts`: replay-controller session adapter, causal frontier and latency,
+  Level-2 eligibility, passive policy, execution, ledger, corporate actions,
+  reconstruction, journal retention, and disposal;
+- `reference.ts`: small synchronous reference implementation for numerical
+  parity; and
+- `index.ts`: internal-only module entry point, never imported by the root
+  package export.
 
-These names are a design proposal, not authorization to create source files.
-The root package, React package, Studio, and existing Paper Trading exports
-must not import or re-export this boundary during Phase 16.0 without a later
-owner-approved additive API decision.
+Future extraction into identity, eligibility, liquidity, ledger, journal, or
+serialization files is deliberately deferred until measured need justifies
+it.
+
+The root package, React package, Studio, and existing Paper Trading exports do
+not import or re-export this boundary. The public API proposal remains
+`PROPOSED — NOT PUBLIC` and requires a separate additive API decision.
 
 ## Causal event processing
 
@@ -154,7 +154,8 @@ selected policy. OHLCV never supplies an inferred executable bid/ask.
 
 ## Incremental authorization plan
 
-After written owner authorization for internal Phase 16 engineering:
+The owner authorization for internal Phase 16 engineering is recorded in the
+current owner instruction. The implementation milestones are:
 
 1. Freeze this design and record the exact approved internal scope.
 2. Add internal contracts and a synchronous reference ledger without changing
@@ -170,5 +171,6 @@ After written owner authorization for internal Phase 16 engineering:
 8. Update the Phase 16 report with executable results and keep all Phase 15.5
    acceptance gates open.
 
-Until step 1 is authorized, only this design and the associated review
-documents may be changed.
+The source remains internal until a separate public API decision; no npm
+publication, release, live broker connectivity, or license change is covered
+by this authorization.

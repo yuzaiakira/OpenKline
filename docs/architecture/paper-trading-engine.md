@@ -68,9 +68,9 @@ single-symbol market-order semantics, replay-event isolation, later-event
 eligibility, and accounting invariants remain unchanged. The research engine
 may reuse compatible pure cost and ledger mathematics, but its simulated
 fills, Level-2 assumptions, journals, and scenario exports must remain outside
-`PaperTradingDocument`, `MarketTradeStore`, CVD, and Footprint. The proposal
-is not authorized until the owner records an explicit internal-engineering
-decision. See
+`PaperTradingDocument`, `MarketTradeStore`, CVD, and Footprint. The owner has
+authorized internal Phase 16.0 engineering, but that decision does not
+authorize changes to this public account or any public research export. See
 [`replay-execution-research.md`](./replay-execution-research.md) and
 [`historical-liquidity-uncertainty.md`](./historical-liquidity-uncertainty.md).
 

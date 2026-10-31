@@ -2,10 +2,10 @@
 
 Status: **PROPOSED — NOT PUBLIC**
 
-This document is a future owner-review proposal only. No declaration here is
-implemented, exported from the root package, included in package metadata, or
-covered by a public compatibility promise. The protected API baseline remains
-unchanged.
+This document remains an owner-review proposal. Phase 16.0 now has an internal
+implementation, but no declaration here is exported from the root package,
+included in package metadata, or covered by a public compatibility promise.
+The protected API baseline remains unchanged.
 
 ## Proposed surface
 

@@ -59,11 +59,11 @@ state.
 
 ## Phase 16 execution-research boundary
 
-The proposed Phase 16.0 execution-research simulator is not part of this
-engine and is not authorized for implementation yet. If approved, it must
-consume this controller's validated event ordering, clock policy, cursor,
-seek, reset, cancellation, and disposal lifecycle rather than creating a
-second market clock. Historical order decisions must be recorded with their
-availability frontier and reconstructed on backward seek; they must not be
-silently moved earlier. See
+The Phase 16.0 execution-research simulator is an internal consumer of this
+controller, not a replacement for it. It consumes the validated event
+ordering, clock policy, cursor, seek, reset, cancellation, and disposal
+lifecycle rather than creating a second market clock. Historical order
+decisions are recorded with their availability frontier and reconstructed on
+backward seek; they are not silently moved earlier. The simulator remains
+unexported and does not change this public replay contract. See
 [`replay-execution-research.md`](./replay-execution-research.md).

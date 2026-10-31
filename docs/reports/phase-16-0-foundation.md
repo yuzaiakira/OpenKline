@@ -1,109 +1,115 @@
 # Phase 16.0 foundation status
 
-Status: **REQUIRES OWNER APPROVAL**
+Status: **IN PROGRESS — INTERNAL IMPLEMENTATION ONLY**
 
 ## Authorization boundary
 
-The Phase 15.5.2 acceptance handoff explicitly left Phase 16 unopened. The
-Phase 16.0 specification itself says not to infer permission from that
-handoff. No separate written owner authorization is present in the current
-repository record. Consequently, this delivery contains only an architecture
-plan and reviewable API proposal. No Phase 16 source, test, benchmark, public
-export, Studio panel, license change, publication, tag, or release was made.
+The owner explicitly authorized internal Phase 16.0 implementation in the
+current owner instruction, based on the reviewed design at commit
+`76ad54525958e5689b752b49855209beacdb37ee`. The authorization is limited to
+an internal replay-causal execution-research simulator, numerical/causal/
+lifecycle/regression tests, internal benchmarks, and technical documentation.
 
-## Git evidence
+It does not authorize public exports, API-baseline changes, licensing work,
+npm publication, tags, releases, broker connectivity, or live execution.
+Simulated results remain distinct from observed exchange records. Phase 15.5
+compatibility, legal, accessibility, and release gates remain open.
 
-| Item | Status |
+## Milestone 1 implementation
+
+The unexported `src/research-execution/` module now contains:
+
+- versioned internal assumptions, decision, order, fill, ledger, quality,
+  journal, diagnostic, and JSON-safe export contracts;
+- a deterministic session adapter over `MarketReplayController`, preserving
+  the existing event/receive clock, strict-causal eligibility, cursor, seek,
+  reset, and disposal lifecycle;
+- market and limit order decisions for one spot, long-only, unleveraged
+  instrument, with fixed/bounded latency, idempotency, cancellation, risk and
+  precision checks;
+- Level-2-only marketable execution using synchronized displayed depth,
+  source coverage, sequence-gap, stale, crossed, locked, invalid, and missing
+  liquidity diagnostics; OHLCV is never used as executable liquidity;
+- conservative passive-order uncertainty plus explicitly labelled hypothetical
+  scenario fills;
+- transaction costs, adverse slippage, optional price impact, partial fills,
+  cash/position/P&L accounting, split/dividend boundaries, and no synthetic
+  end-of-tape liquidation;
+- source-generation-safe observed trade revision tracking without writing
+  simulated fills into canonical trades, CVD, Footprint, or the replay tape;
+- deterministic backward reconstruction, forward replay, bounded journal
+  retention, scenario export, and disposal cleanup; and
+- an independent `ReferenceExecutionLedger` used by numerical parity tests.
+
+The root `src/index.ts`, React package exports, Studio, package metadata, and
+protected API inventory were not extended.
+
+## Verified milestone evidence
+
+| Check | Result |
 | --- | --- |
-| Starting revision reviewed | `7a80b7cefd53fe8cb5b70018d2fd1ba255b2c539` |
-| Protected API baseline | **PASS** — unchanged |
-| Phase 15.5 acceptance state | **REQUIRES OWNER APPROVAL** — remains open |
-| Phase 16 implementation | **NOT VERIFIED** — intentionally not started |
-| Final implementation revision | Same as starting revision for this review-only decision |
-| Public API change | **PASS** — no source export or package metadata changed |
-| License/publication state | **PASS** — no adoption or publication performed |
+| Research unit/causality suite | **PASS** — 12/12 |
+| TypeScript build (`npm run build:core`) | **PASS** |
+| Test TypeScript compilation | **PASS** |
+| Same-event lookahead prevention | **PASS** |
+| Missing/stale/crossed/locked/gapped L2 handling | **PASS** |
+| Displayed-depth budget and no reuse without a new book event | **PASS** |
+| Passive uncertainty and explicit scenario labels | **PASS** |
+| Latency and idempotency | **PASS** |
+| Precision, risk, cancellation, disposal | **PASS** |
+| Split/dividend causal accounting | **PASS** |
+| Backward/forward reconstruction parity | **PASS** |
+| Corrected/source-generation observations | **PASS** |
+| Receive-time missing receipt handling | **PASS** |
+| Public API baseline | **NOT YET RECHECKED** — root exports unchanged by inspection |
+| 1k/10k/100k benchmark | **NOT VERIFIED** — next milestone |
+| Full repository regression suite | **NOT VERIFIED** — next milestone |
 
-The review-only design documents are:
+The displayed-depth test deliberately places a candle between two book
+updates and verifies that one observed level cannot be consumed repeatedly by
+unrelated market events. Corporate-action fixtures verify that a split scales
+entitlements and cancels pending orders before reserve normalization.
 
-- `docs/architecture/replay-execution-research.md`;
-- `docs/architecture/historical-liquidity-uncertainty.md`;
-- `docs/benchmarks/replay-execution-research.md`; and
-- `docs/reviews/phase-16-public-api-proposal.md`.
+## Acceptance matrix at this milestone
 
-## Existing capability audit
+| Criterion | Status |
+| --- | --- |
+| Internal deterministic engine | **PASS** — implementation and targeted tests |
+| Causal order frontier and deterministic latency | **PASS** |
+| Marketable Level-2 uncertainty | **PASS** — targeted fixtures |
+| Passive-order uncertainty | **PASS** |
+| Tick, quantity, fees, slippage, and partial fills | **PASS** — targeted numerical fixtures |
+| Cash/position/risk invariants | **PASS** — targeted ledger assertions |
+| Corporate-action causality | **PASS** — split/dividend fixtures |
+| Replay reconstruction | **PASS** — order/fill/ledger/journal parity |
+| Source isolation and revisions | **PASS** — targeted fixture |
+| Canonical observed-data isolation | **PASS by architecture** — no store/tape mutation path; broader regression pending |
+| Serialization/export determinism | **PARTIAL** — JSON-safe export exercised through reconstruction; dedicated benchmark/round-trip pending |
+| Lifecycle/resource safety | **PASS** — session disposal and controller cleanup fixture |
+| Required 1k/10k/100k benchmark | **NOT VERIFIED** |
+| Existing chart/order-flow performance regression | **NOT VERIFIED** |
+| Public API exposure | **PASS** — intentionally not exposed; proposal remains NOT PUBLIC |
 
-The design reuses, rather than duplicates, the following verified foundations:
+## Remaining work before Phase 16.0 completion
 
-- `MarketReplayTape` and `MarketReplayController` for canonical ordering,
-  clock policy, strict-causal knowledge, cursor movement, seek, reset, and
-  disposal;
-- `market-replay-identity.ts` for source-generation-safe instrument, venue,
-  and trade identity;
-- `MarketTradeStore` and `order-flow.ts` for observed trade revisions,
-  coverage, CVD, and Footprint, with a hard prohibition on simulated-data
-  contamination;
-- `OrderBookController` and `market-depth.ts` for Level-2 synchronization,
-  sequence gaps, stale/recovering states, tick policy, and depth diagnostics;
-- `financial.ts`, Paper Trading accounting, and portfolio/backtesting ledger
-  semantics where their invariants are compatible;
-- existing corporate-action and calendar event boundaries; and
-- existing Worker protocols only if a later measured implementation requires
-  an isolated runtime.
-
-The existing single-symbol Paper Trading behavior remains unchanged. Its
-current replay isolation and later-event eligibility are reference constraints,
-not permission to mutate the public account API.
-
-## Planned acceptance evidence
-
-| Criterion | Status before authorization | Required evidence after authorization |
-| --- | --- | --- |
-| Deterministic internal engine | **NOT VERIFIED** | Source implementation and synchronous reference |
-| Causal order frontier and latency | **NOT VERIFIED** | Same-event/future-event negative tests |
-| Marketable Level-2 uncertainty | **NOT VERIFIED** | Valid, stale, crossed, gapped, missing, and partial-depth fixtures |
-| Passive-order uncertainty | **NOT VERIFIED** | No guaranteed fill on price touch; named scenario assumptions |
-| Tick, quantity, fees, slippage, partial fills | **NOT VERIFIED** | Exact numerical fixtures and weighted-average ledger parity |
-| Cash/position/risk invariants | **NOT VERIFIED** | Full ledger comparison, no negative available cash |
-| Corporate-action/session causality | **NOT VERIFIED** | Split/dividend/session boundary fixtures |
-| Replay backward/forward reconstruction | **NOT VERIFIED** | Full journal and ledger parity, not only final P&L |
-| Source isolation and corrected/out-of-order events | **NOT VERIFIED** | Logical identity and revision tests |
-| Canonical CVD/Footprint isolation | **NOT VERIFIED** | Store contamination regression test |
-| Serialization and deterministic export | **NOT VERIFIED** | Round-trip and identical-input fingerprint tests |
-| Lifecycle/resource safety | **NOT VERIFIED** | Disposal, subscription, Worker, journal-bound tests |
-| 1k/10k/100k benchmark | **NOT VERIFIED** | Median/p95 event, seek, serialization, heap, disposal measurements |
-| Optional 500k benchmark | **NOT VERIFIED** | Only report if actually executed |
-| Existing chart/order-flow regressions | **NOT VERIFIED** | Fresh supported benchmark comparison |
-| Public API exposure | **REQUIRES OWNER APPROVAL** | Separate additive contract decision and API diagnostics |
-
-## Required owner decision
-
-Before implementation, the authorized owner must record that internal Phase
-16.0 engineering may begin while Phase 15.5 acceptance remains open. The
-decision must also confirm that the work is limited to an unexported research
-component, does not authorize release or licensing changes, and does not
-represent historical fills as verified exchange outcomes.
-
-After that decision, implementation may proceed in small validated commits
-using the milestones and benchmark protocol in the architecture documents.
-Without it, the only acceptable next action is to revise this design in
-response to owner feedback.
+1. Add and run the deterministic 1k/10k/100k benchmark with median/p95
+   construction, processing, seek, serialization, heap, and disposal metrics.
+2. Run the complete local regression, API diagnostics, package/distribution,
+   stress, and supported browser checks; record unavailable official engines
+   accurately.
+3. Compare existing chart/order-flow baselines without changing those
+   subsystems.
+4. Complete documentation and final Git evidence after each verified
+   milestone.
 
 ## Open independent gates
 
-These remain unchanged from the Phase 15.5.2 handoff:
-
-- protected API baseline and additive public declarations:
-  **REQUIRES OWNER APPROVAL**;
-- current official Firefox/WebKit/mobile browser evidence: **BLOCKED**;
-- physical-device compatibility, formal accessibility, and visual approval:
-  **NOT VERIFIED**;
-- licensing, contributor/third-party notices, and effective license:
-  **REQUIRES OWNER APPROVAL**;
-- npm publication, tags, releases, and rollback/security authorization:
-  **REQUIRES OWNER APPROVAL**;
-- fresh offline-cache reproducibility: **NOT VERIFIED**; and
-- dense Fit Content performance limitation: remains open and must not be
-  removed from future reports.
-
-Phase 16.0 must not be described as implemented or release-ready until the
-owner authorization and the executable acceptance evidence exist.
+- protected API additive approval remains open;
+- official Firefox/WebKit/mobile browser evidence remains environment-blocked
+  unless compatible managed binaries are available;
+- physical-device, formal accessibility, visual approval, licensing, and
+  release gates remain open;
+- npm publication, tags, releases, and live broker execution are outside the
+  authorization; and
+- this internal simulator must not be described as exchange transaction
+  history or release-ready functionality.
