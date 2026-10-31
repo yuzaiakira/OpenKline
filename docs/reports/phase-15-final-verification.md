@@ -179,9 +179,10 @@ Phase 15 implementation commits pushed to `origin/main`:
 - `5ee7b197498e2f74456a704392184d0028d30c46` — Studio research Lab
 - `755dc5235ffc9b712ec8d4d111c3cd87b7ee9792` — causality verification
 - `bd5d13ab21b590b1e097cbe13c7f508cbe953932` — Studio harness isolation
+- `7f7f408` — final Phase 15 report, roadmap, API inventory, and distribution audit
 
-The final report/audit commit will be recorded below after it is created and
-pushed. No history was rewritten and no force-push was used.
+The report/audit commit above was pushed to `origin/main`; synchronization was
+verified after the push. No history was rewritten and no force-push was used.
 
 ## Phase 16 readiness
 
