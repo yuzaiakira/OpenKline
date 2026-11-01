@@ -34,6 +34,16 @@ export interface WidgetFeatureVisibility {
   readonly direction: boolean;
   readonly workspace: boolean;
   readonly status: boolean;
+  /** Internal Phase 16.4.1 professional indicator explorer. */
+  readonly indicatorExplorer: boolean;
+  /** Internal Phase 16.4.1 grouped drawing toolbar. */
+  readonly drawingToolbar: boolean;
+  /** Internal Phase 16.4.1 chart object/layer tree. */
+  readonly objectTree: boolean;
+  /** Internal Phase 16.4.1 selected-drawing property editor. */
+  readonly drawingProperties: boolean;
+  /** Internal Phase 16.4.1 chart settings panel. */
+  readonly chartSettings: boolean;
 }
 
 export interface WidgetStorage {
@@ -62,6 +72,18 @@ export interface WidgetLabels {
   readonly empty: string;
   readonly ready: string;
   readonly error: string;
+  readonly indicatorExplorer: string;
+  readonly drawingToolbar: string;
+  readonly objectTree: string;
+  readonly drawingProperties: string;
+  readonly chartSettings: string;
+  readonly close: string;
+  readonly cancel: string;
+  readonly undo: string;
+  readonly redo: string;
+  readonly update: string;
+  readonly remove: string;
+  readonly apply: string;
 }
 
 export interface WidgetOptions {

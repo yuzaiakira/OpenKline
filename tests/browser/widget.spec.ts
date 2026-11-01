@@ -251,7 +251,7 @@ test("widget scopes CSS and releases shared styles after independent instances a
         const cycleWidget = createOpenKlineWidget({ container: cycleHost, data: inputCandles, dataIdentity: { symbol: `CYCLE-${index}`, timeframe: "1m" } });
         cycleCounts.push({ during: document.querySelectorAll("style[data-openkline-widget-style]").length, after: -1 });
         cycleWidget.destroy();
-        cycleCounts[cycleCounts.length - 1].after = document.querySelectorAll("style[data-openkline-widget-style]").length;
+        cycleCounts[cycleCounts.length - 1]!.after = document.querySelectorAll("style[data-openkline-widget-style]").length;
         cycleHost.remove();
       }
       return { styleCountBefore, during, afterFirst, styleCountAfter: document.querySelectorAll("style[data-openkline-widget-style]").length, cycleCounts };

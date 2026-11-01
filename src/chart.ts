@@ -1953,11 +1953,22 @@ export class Chart {
     this.assertReplayStructureMutationAllowed();
     const tool = this.drawingEngine.getTool(type);
     if (options.snap !== undefined && options.snap !== "none" && options.snap !== "visible-ohlc") throw new Error(`Unsupported drawing snap mode: ${options.snap}`);
+    this.cancelDrawing();
     this.pendingDrawing = { type, options: { ...options }, points: [] };
     this.emit("toolActivation", { type, active: true });
     if (tool.minPoints === 0) {
       throw new Error(`Drawing tool must require at least one point: ${type}`);
     }
+  }
+
+  /** @internal Widget toolbar cancellation hook; intentionally not part of the public API surface. */
+  private cancelDrawing(): void {
+    this.assertAlive();
+    const pending = this.pendingDrawing;
+    if (pending === null) return;
+    this.pendingDrawing = null;
+    this.emit("toolActivation", { type: pending.type, active: false });
+    this.render();
   }
 
   public undoDrawing(): boolean {

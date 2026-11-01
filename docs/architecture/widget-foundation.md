@@ -1,7 +1,8 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.0.1 internal integrity hardening complete; public Widget API
-and package publication remain unapproved.
+Status: Phase 16.4.1 internal professional Widget UI implemented and verified
+in supported local Chromium environments; public Widget API and package
+publication remain unapproved.
 
 ## Boundary
 
@@ -52,6 +53,36 @@ duplicate viewport, price scale, crosshair, tooltip, or financial calculations.
 Workspace values are validated by the existing `parseWorkspace` contract before
 restoration. Symbol/timeframe metadata is restored when present. Plugins remain
 trusted host-supplied objects; workspace JSON cannot execute code.
+
+## Internal professional UI (Phase 16.4.1)
+
+The internal controller now composes five scoped UI surfaces over the same Chart
+handle:
+
+- **Indicator Explorer** searches the registered built-in metadata, renders
+  validated parameter controls, adds indicators to the appropriate pane, and
+  updates or removes Widget-owned instances. Invalid parameter submissions are
+  surfaced through the existing error state.
+- **Drawing Toolbar** exposes the supported drawing-tool registry, start and
+  cancel actions, and Chart-owned undo/redo. Cancellation clears the pending
+  interactive tool through an internal Chart lifecycle hook; no second drawing
+  state is maintained by the Widget.
+- **Object Tree** lists live price series, indicator groups, and drawings. Its
+  controls delegate visibility, selection, locking, and removal to Chart.
+- **Drawing Property Editor** edits the selected drawing's color, line width,
+  visibility, and lock state through `setDrawingStyle`; it never mutates a
+  drawing snapshot directly.
+- **Chart Settings** applies theme, direction, primary price-scale mode,
+  autoscale, axis visibility, and precision through existing Chart setters.
+
+All five surfaces use native controls, scoped `data-openkline-*` selectors,
+dialog semantics, focus restoration on Escape, and responsive/touch-sized
+controls. A panel refreshes from Chart events (`indicatorChange`,
+`drawingSelection`, and `toolActivation`) rather than keeping a duplicate
+financial or drawing model. The UI is deliberately internal: no root export,
+React export, package subpath, public Widget contract, or API baseline was
+changed. Provider-specific metadata, multi-chart UI, watchlists, replay UI,
+and a public customization/theming contract remain deferred.
 
 ## Data identity ownership
 

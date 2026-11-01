@@ -1,14 +1,25 @@
 # OpenKline Phase 16.4 — Professional Embeddable Charting Library Design
 
-**Status: INTERNAL PHASE 16.4.0 FOUNDATION IMPLEMENTED / PUBLIC API REVIEW REQUIRED**
+**Status: INTERNAL PHASE 16.4.1 PROFESSIONAL WIDGET UI IMPLEMENTED / PUBLIC API REVIEW REQUIRED**
 
 This document is an internal product-architecture and implementation-readiness
 design for Phase 16.4. The original design handoff was not an implementation,
-public API adoption, or release approval. The owner has since authorized the
-narrow Phase 16.4.0 internal foundation only. That implementation lives in
-`src/widget/` and its focused tests; it does not adopt a public Widget API,
-change root package exports, change license/release metadata, or close any
-release gate. Later Phase 16.4 increments remain unauthorized.
+public API adoption, or release approval. The owner authorized the narrow Phase
+16.4.0 internal foundation and subsequently authorized the bounded Phase
+16.4.1 professional UI increment. Both implementations live in `src/widget/`
+and focused tests; they do not adopt a public Widget API, change root package
+exports, change license/release metadata, or close any release gate. Later
+Phase 16.4 increments remain unauthorized.
+
+### Phase 16.4.1 implementation note
+
+The authorized UI increment adds five scoped, lifecycle-owned surfaces —
+Indicator Explorer, Drawing Toolbar, Object Tree, Drawing Property Editor,
+and Chart Settings — over the existing Chart handle. They delegate to Chart's
+indicator, drawing, series, price-scale, theme, direction, workspace, and event
+contracts; they do not create a second renderer or financial model. Behavioral
+evidence and remaining gates are recorded in
+`docs/reports/phase-16-4-1-professional-widget-ui.md`.
 
 The authoritative product vision is a professional, framework-independent,
 client-side financial charting library that application developers can embed as
@@ -785,9 +796,10 @@ an explicit owner decision before implementation:
 
 ## 17. Design-task acceptance and handoff
 
-The acceptance state for this task is:
+The acceptance state for the original design task was design-only. The current
+internal implementation state is:
 
-`PHASE 16.4 — DESIGN DOCUMENT CREATED / OWNER IMPLEMENTATION AUTHORIZATION REQUIRED`
+`PHASE 16.4.1 — INTERNAL PROFESSIONAL WIDGET UI IMPLEMENTED / PUBLIC API REVIEW REQUIRED`
 
 After this file is created, verification must confirm:
 
@@ -795,20 +807,20 @@ After this file is created, verification must confirm:
 - all required sections are present;
 - no files under `src/` were modified;
 - root/React public API files and protected baseline files were not modified;
-- no implementation benchmark or source change was performed for Phase 16.4;
-- the working tree contains only this intended untracked design document; and
-- the file checksum is recorded in the final handoff.
+- the Phase 16.4.0 and 16.4.1 implementation remained inside `src/widget/` and
+  did not change root exports or the protected API baseline; and
+- the current implementation and verification records are in the phase reports.
 
-The document must remain uncommitted and unpushed until the owner separately
-decides the documentation commit question. Phase 16.4 must not be described as
-implemented, and Phase 16.5 must not begin.
+The original document was later committed under owner authorization. The
+internal UI must not be described as a public package, and Phase 16.5 must not
+begin without separate authorization.
 
 ## 18. Current authoritative product direction
 
 The current Phase 16.4 direction is the **Professional Embeddable Charting
 Library**: a polished, framework-independent widget layer around the tested
-OpenKline core. This is a design target only. It does not authorize runtime
-source changes or a public package release.
+OpenKline core. Phase 16.4.0 and the bounded 16.4.1 UI increment are internal
+implementations; they do not authorize a public package release.
 
 The widget is intended for application developers who own their application,
 market-data permissions, persistence, and host UI policy. It must run entirely
@@ -849,10 +861,10 @@ claim that every inherited release gate is closed.
 | KlineScript compiler/runtime | Implemented and publicly available as restricted contracts; editor UI is private | Compiler, diagnostics, script indicators, optional worker path; private editor in Next example | Widget may expose a host-enabled editor later, but script execution remains restricted and explicitly configured |
 | Screener and watch workflows | Core contracts are public; UI is private/reference | Public universe/rules/snapshot/watch/worker contracts; Studio panel/example | Widget feature flag may host a panel but must not become a market-data service |
 | Backtesting, paper trading, optimization | Core contracts are public; Studio panels are private consumers | Public simulation/worker contracts and client-only Studio panels | Keep these optional and clearly simulated; do not make them required for chart embedding |
-| Standalone professional widget package | Missing | `docs/architecture/customization.md` explicitly states there is no separate UI widget/localization bundle in core | New optional browser package is the principal design target |
-| Programmatic UI command surface | Partially implemented | Chart commands/plugins are public, but there is no unified widget controller for menus, panels, templates, and feature visibility | Define a stable internal-first widget controller before public release |
-| Injected widget storage contract | Partially implemented | Workspace JSON is public; storage is intentionally outside OpenKline | Define an optional async storage adapter with cancellation and no default persistence |
-| Full UI accessibility and visual conformance | Partially implemented / not fully verified | Canvas summary and Studio labels/dialogs exist; formal screen-reader/WCAG gate remains open | Design accessible DOM controls and retain formal verification as a release gate |
+| Standalone professional widget package | Internal controller implemented; package missing | `src/widget/` contains the owner-authorized internal controller; no package subpath or public export exists | Separate package/public API approval remains required |
+| Programmatic UI command surface | Internal-first controller implemented | Internal Widget routes five UI surfaces through existing Chart methods/events; no public command contract is adopted | Stabilize and review a public controller contract before release |
+| Injected widget storage contract | Internal adapter implemented | Workspace JSON remains public and Widget storage is injected, cancellable, and has no default persistence | Public storage/type adoption remains a separate decision |
+| Full UI accessibility and visual conformance | Partially implemented / not fully verified | Native controls, dialog semantics, keyboard focus, RTL, and touch-emulation tests exist; formal screen-reader/WCAG gate remains open | Retain formal verification as a release gate |
 | Official all-browser and physical-device evidence | Blocked or open | Chromium evidence exists; inherited Firefox/WebKit/Mobile Safari and physical-device gates remain open in this environment | Do not claim universal compatibility from the design or Chromium runs |
 | Public API baseline and release readiness | Open | `api:check` retains inherited declaration-hash differences; legal/publication gates are open | No baseline rewrite, release, tag, or npm publication in this phase |
 | OpenKline backend/account/cloud infrastructure | Intentionally excluded | Library-first architecture assigns data, credentials, storage, and services to hosts | Do not treat this as missing product work |
@@ -1186,18 +1198,18 @@ These criteria are proposed gates, not current results:
 
 | Area | PASS requires | Current state |
 | --- | --- | --- |
-| Vanilla JS | Independent consumer installs the approved widget package, initializes with offline candles, controls chart state, exports/restores workspace, and destroys cleanly | Core consumer passes; widget package not implemented |
+| Vanilla JS | Independent consumer installs the approved widget package, initializes with offline candles, controls chart state, exports/restores workspace, and destroys cleanly | Internal offline Widget flow passes; package/public contract is not authorized |
 | React | Independent React consumer mounts/unmounts under Strict Mode and receives the same programmatic capabilities without leaks | Existing `FinancialChart` is covered; widget adapter not implemented |
 | Next.js | Client-only integration builds in production and does not import DOM-only widget code into server modules | Reference example exists; future widget path not verified |
-| Datafeed | Injected in-memory, REST, and WebSocket mocks cover pagination, cancellation, corrections, reconnect, stale responses, and unsubscribe | Core adapters and tests exist; widget wiring not implemented |
-| Offline/no backend | Network-deny consumer works from local data with no OpenKline service, account, auth, or telemetry | Core offline path verified; widget not implemented |
-| UI controls | Every enabled significant feature has an accessible UI path and a documented programmatic command/event | Private Studio demonstrates many controls; public widget missing |
+| Datafeed | Injected in-memory, REST, and WebSocket mocks cover pagination, cancellation, corrections, reconnect, stale responses, and unsubscribe | Core adapters and Widget datafeed transition tests exist; public Widget package remains unapproved |
+| Offline/no backend | Network-deny consumer works from local data with no OpenKline service, account, auth, or telemetry | Internal offline Widget initialization passes; public consumer package not authorized |
+| UI controls | Every enabled significant feature has an accessible UI path and a documented programmatic command/event | Five internal UI surfaces have Chromium behavior coverage; public Widget command/API contract remains open |
 | Accessibility | Keyboard, focus, semantic controls, RTL, localization, screen-reader/AT, contrast, and reduced-motion tests pass for supported browsers | Partial Studio/core evidence; formal gate open |
 | Responsive/touch | Narrow and wide layouts, pointer/touch pan/zoom, drawing gestures, dialogs, and panel changes pass in the supported browser matrix | Chromium diagnostic evidence exists; official/mobile/physical gates open |
-| Performance | 1k/10k/100k and interaction/realtime results meet approved budgets with median/p95/sample evidence | Core baselines exist; widget budgets/results not established |
-| Cleanup | Destroy/unmount leaves zero widget-owned canvases, listeners, subscriptions, timers, Workers, and pending storage tasks | Core/Studio cleanup evidence exists; widget not implemented |
+| Performance | 1k/10k/100k and interaction/realtime results meet approved budgets with median/p95/sample evidence | Internal Widget benchmark covers 1k/10k/100k, panels, lifecycle, and next-frame interaction timings; approved release budgets remain open |
+| Cleanup | Destroy/unmount leaves zero widget-owned canvases, listeners, subscriptions, timers, Workers, and pending storage tasks | Internal Widget diagnostics and browser tests show zero listeners/subscriptions/canvas after destroy; official cross-browser gate remains open |
 | API compatibility | Additive API review passes; no unapproved declaration hash changes or protected baseline rewrite | Inherited API gate remains open |
-| Documentation | Vanilla, React, Next.js, datafeed, storage, plugin, workspace, accessibility, RTL, and migration guides match shipped APIs | Existing core guides exist; widget guides not written |
+| Documentation | Vanilla, React, Next.js, datafeed, storage, plugin, workspace, accessibility, RTL, and migration guides match shipped APIs | Internal architecture and Phase 16.4.1 verification docs updated; public Widget guides are deferred |
 | Release/legal | Owner/legal approval, package audit, browser/device evidence, license and publication authorization are complete | Open and not authorized |
 
 No row may be marked PASS from design text alone. Browser compatibility must be
@@ -1260,26 +1272,26 @@ roadmap or public API adoption:
 > explicitly distinct from observed exchange transactions. Any scope change
 > requires separate explicit authorization.
 
-The current authorization covers source, focused tests, technical
-documentation, Conventional Commits, and direct pushes for Phase 16.4.0 only.
-It does not authorize public package exports, publication, releases, tags, or
-later Phase 16.4 workstreams.
+The current authorizations cover source, focused tests, technical
+documentation, Conventional Commits, and direct pushes for the bounded
+Phase 16.4.0 foundation and Phase 16.4.1 professional UI increments only. They
+do not authorize public package exports, publication, releases, tags, or later
+Phase 16.4 workstreams.
 
 ## 31. Final design-task state
 
 The current handoff state is:
 
-`PHASE 16.4 — PROFESSIONAL CHARTING LIBRARY DESIGN COMPLETE / OWNER IMPLEMENTATION AUTHORIZATION REQUIRED`
+`PHASE 16.4.1 — INTERNAL PROFESSIONAL WIDGET UI IMPLEMENTED / PUBLIC WIDGET API REVIEW REQUIRED`
 
 This revision provides the requested product vision, capability/gap matrix,
 widget architecture, package boundaries, UI inventory, developer API sketches,
 datafeed/storage contracts, accessibility/performance requirements,
 implementation dependencies, release acceptance criteria, exclusions, and exact
-owner authorization request. The subsequent owner authorization permits the
-internal Phase 16.4.0 foundation documented in
-`docs/reports/phase-16-4-0-widget-foundation.md`; it does not authorize the
-complete widget roadmap, public exports, or release readiness. No release gate
-is closed by this implementation.
+owner authorization request. The subsequent owner authorizations permit the
+internal Phase 16.4.0 foundation and Phase 16.4.1 UI documented in the phase
+reports; they do not authorize the complete widget roadmap, public exports, or
+release readiness. No release gate is closed by this implementation.
 
 ## 32. Phase 16.4.0 implementation reconciliation
 
@@ -1297,3 +1309,21 @@ root/subpath exports, locale catalogs beyond label injection, multi-panel
 watchlists/comparison/replay UI, formal assistive-technology verification, and
 official Firefox/WebKit/mobile-Safari evidence. The implementation does not
 copy the Next.js Studio or create a second renderer/calculation engine.
+
+## 33. Phase 16.4.1 UI reconciliation
+
+The internal controller now implements the five authorized UI workstreams:
+metadata-backed indicator discovery and parameter editing; grouped drawing
+tool activation/cancellation with undo/redo; a live object/layer tree; selected
+drawing style/visibility/lock editing; and Chart settings for theme, RTL,
+price-scale mode, autoscale, axis visibility, and precision. The panels are
+scoped to each Widget root, use native keyboard/touch-capable controls, and
+refresh from Chart events. The implementation does not expose these controls
+from `src/index.ts`, `@openkline/react`, the package export map, or a new public
+Widget package.
+
+Focused Chromium and Mobile Chrome emulation evidence is recorded in
+`docs/reports/phase-16-4-1-professional-widget-ui.md`. Firefox, WebKit, Mobile
+Safari, physical-device, formal assistive-technology, CSP, public API, legal,
+and release gates remain open. Phase 16.4.2 work is not authorized by this
+reconciliation.

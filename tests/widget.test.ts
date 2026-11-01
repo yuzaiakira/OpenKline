@@ -16,6 +16,11 @@ test("widget defaults are deterministic and feature visibility is additive", () 
     direction: true,
     workspace: true,
     status: true,
+    indicatorExplorer: true,
+    drawingToolbar: true,
+    objectTree: true,
+    drawingProperties: true,
+    chartSettings: true,
   });
   assert.deepEqual(normalizeWidgetFeatures({ header: false, workspace: false }), {
     header: false,
@@ -28,6 +33,11 @@ test("widget defaults are deterministic and feature visibility is additive", () 
     direction: true,
     workspace: false,
     status: true,
+    indicatorExplorer: true,
+    drawingToolbar: true,
+    objectTree: true,
+    drawingProperties: true,
+    chartSettings: true,
   });
   assert.equal(normalizeWidgetLabels({ symbol: "نماد" }).symbol, "نماد");
   assert.equal(normalizeWidgetLabels({}).timeframe, "Timeframe");
