@@ -205,6 +205,7 @@ export interface ResearchScenarioComparisonDifferences {
   readonly unrealizedPnl: ResearchScenarioMetricDelta;
   readonly equity: ResearchScenarioMetricDelta;
   readonly drawdown: ResearchScenarioMetricDelta;
+  readonly drawdownPercent: ResearchScenarioMetricDelta;
   readonly totalFees: ResearchScenarioMetricDelta;
   readonly simulatedQuantity: ResearchScenarioMetricDelta;
   readonly remainingOrderQuantity: ResearchScenarioMetricDelta;
@@ -511,12 +512,14 @@ function createDifferences(
 ): ResearchScenarioComparisonDifferences | null {
   if (compatibility === "incompatible-tape" || compatibility === "not-evaluated") return null;
   const mode = compatibility === "decision-history-different" ? "descriptive-different-history" : "controlled-fixed-history";
+  const valuationComparable = baseline.evaluationStatus === "complete" && candidate.evaluationStatus === "complete";
   return {
     mode,
     realizedPnl: metricDelta(baseline.metrics.realizedPnl, candidate.metrics.realizedPnl),
-    unrealizedPnl: metricDelta(baseline.metrics.unrealizedPnl, candidate.metrics.unrealizedPnl),
-    equity: metricDelta(baseline.metrics.equity, candidate.metrics.equity),
-    drawdown: metricDelta(baseline.metrics.drawdown, candidate.metrics.drawdown),
+    unrealizedPnl: metricDelta(baseline.metrics.unrealizedPnl, candidate.metrics.unrealizedPnl, valuationComparable),
+    equity: metricDelta(baseline.metrics.equity, candidate.metrics.equity, valuationComparable),
+    drawdown: metricDelta(baseline.metrics.drawdown, candidate.metrics.drawdown, valuationComparable),
+    drawdownPercent: metricDelta(baseline.metrics.drawdownPercent, candidate.metrics.drawdownPercent, valuationComparable),
     totalFees: metricDelta(baseline.metrics.totalFees, candidate.metrics.totalFees),
     simulatedQuantity: metricDelta(baseline.metrics.simulatedQuantity, candidate.metrics.simulatedQuantity),
     remainingOrderQuantity: metricDelta(baseline.metrics.remainingOrderQuantity, candidate.metrics.remainingOrderQuantity),
@@ -525,7 +528,8 @@ function createDifferences(
   };
 }
 
-function metricDelta(baseline: number | null, candidate: number | null): ResearchScenarioMetricDelta {
+function metricDelta(baseline: number | null, candidate: number | null, comparable = true): ResearchScenarioMetricDelta {
+  if (!comparable) return { status: "unknown", baseline, candidate, delta: null, reason: "One or both scenario valuations are indeterminate" };
   if (baseline === null || candidate === null) return { status: "unknown", baseline, candidate, delta: null, reason: "One or both valuations are unavailable or indeterminate" };
   return { status: "available", baseline, candidate, delta: candidate - baseline, reason: null };
 }

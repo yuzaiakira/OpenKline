@@ -1,6 +1,6 @@
 # Internal research scenario comparison
 
-Status: **INTERNAL IMPLEMENTATION IN PROGRESS — NOT PUBLIC**
+Status: **IMPLEMENTED / VERIFIED INTERNALLY — NOT PUBLIC**
 
 Phase 16.3 compares provider-neutral replay-causal research scenarios without
 turning simulated fills into observed exchange transactions. The implementation
@@ -73,9 +73,11 @@ cache metadata changing the result fingerprint.
 
 ## Verification boundary
 
-The focused and full Node suites cover baseline isolation, fee sensitivity,
-different decision histories, incompatible tape identity, fail-closed latency
-patches, event-visit limits, checkpoint-independent evidence, cancellation,
-and disposal. Browser, physical-device, accessibility, legal, publication,
-and release gates remain independent. A 500k event workload is not verified
-unless a controlled benchmark is actually run.
+The focused suite covers baseline isolation, fee sensitivity, different
+decision histories, incompatible tape identity, fail-closed latency patches,
+event-visit limits, checkpoint-independent evidence, cancellation, unsupported
+patch fields, and disposal. The full Node, Market Replay, Chromium, React/
+Studio Chromium, package, distribution, and stress checks are recorded in
+`docs/reports/phase-16-3-scenario-comparison.md`. Browser, physical-device,
+accessibility, legal, publication, and release gates remain independent. A
+500k event workload is not verified.

@@ -184,6 +184,29 @@ offline Studio Market Replay Lab are present.
   content hash, UTF-16 FNV-1a semantics, public boundary, and Phase 16.2
   benchmark are unchanged. See
   `docs/reports/phase-16-2-1-evidence-compatibility.md`.
+- [Implemented / Verified internally — Phase 16.3 scenario comparison and
+  execution-assumption sensitivity] Owner authorization enabled the internal,
+  unexported sequential comparator. It validates exact tape/source-generation
+  identity, supports bounded allowlisted patches for commission, slippage,
+  price impact, latency, displayed-depth participation, execution policy, risk,
+  and precision, reconstructs every candidate in a fresh session, emits stable
+  causal fingerprints and null-aware simulated-result deltas, classifies
+  different decision histories descriptively, and disposes sessions on every
+  terminal path. The comparator enforces eight scenarios, 1,000,000 aggregate
+  eligible event visits, bounded diagnostics/records, and an 8 MiB serialized
+  result budget; checkpoints remain disabled by default and their operational
+  metadata is excluded from causal evidence. Focused tests (9/9), full Node
+  tests (378/378), Market Replay (17/17), Chromium (35/35), React/Studio
+  Chromium (38/38), package/distribution checks, stress, and deterministic
+  1k/10k/100k comparison benchmarks pass locally. The benchmark reports
+  partial overall status intentionally because patched candidates have no
+  expected exchange evidence; no incomplete result is marked verified. The
+  protected API baseline, official Firefox/WebKit/Mobile Safari, physical
+  devices, accessibility/legal/release, public export, Studio integration,
+  Worker, broker/live execution, publication, tag, release, and Phase 16.4
+  gates remain open. See
+  `docs/reports/phase-16-3-scenario-comparison.md` and
+  `docs/architecture/research-scenario-comparison.md`.
 
 ## Current milestone
 

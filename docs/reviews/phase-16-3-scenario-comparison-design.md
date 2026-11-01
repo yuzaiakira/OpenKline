@@ -1,12 +1,12 @@
 # OpenKline Phase 16.3 — Research Scenario Comparison and Execution-Assumption Sensitivity
 
-Status: **DESIGN APPROVED — INTERNAL IMPLEMENTATION IN PROGRESS — NOT PUBLIC**
+Status: **DESIGN APPROVED — IMPLEMENTED / VERIFIED INTERNALLY — NOT PUBLIC**
 
-This document is an internal design and authorization handoff. It does not
-add a comparison engine, change a source or public interface, authorize a
-public API, or establish that a simulated fill occurred on an exchange.
-Every result described by the proposed capability would remain a modeled
-research result.
+This document is the reviewed internal design and authorization record. The
+approved implementation adds only an internal comparison engine, tests,
+benchmarks, and documentation; it does not change a public interface,
+authorize a public API, or establish that a simulated fill occurred on an
+exchange. Every comparison result remains a modeled research result.
 
 ## 1. Review boundary and repository state
 
@@ -106,9 +106,8 @@ test, broker simulator, live-trading facility, or public consumer API.
 
 ## 3. Proposed internal comparison contract
 
-The following names are design notation, not declarations to add to the
-package. They describe a future internal module and require owner approval
-before implementation.
+The following names describe the implemented internal module. They are not
+public package declarations and do not create a public compatibility promise.
 
 ### 3.1 Input model
 
@@ -483,7 +482,7 @@ exists. No performance target should be accepted from a synthetic estimate.
 | Performance | existing research/replay benchmarks | Comparison benchmark protocol and memory accounting | Universal FPS/capacity claim |
 | Public boundary | root/API baseline checks and proposal status | None; keep module internal | Root/React exports, Studio contracts |
 
-### Proposed implementation increments after authorization
+### Implemented increments under the explicit owner authorization
 
 1. **Contract and identity:** versioned internal types, canonical identity
    records, compatibility errors, and strict input preflight.
@@ -499,13 +498,14 @@ exists. No performance target should be accepted from a synthetic estimate.
 6. **Documentation:** update internal architecture/report documents only
    after verified behavior; keep public API and release gates unchanged.
 
-No increment should add Studio, Worker, broker, live execution, package
-exports, or protected API baseline changes.
+The implementation adds no Studio, Worker, broker, live execution, package
+exports, or protected API baseline changes. Detailed evidence is in
+`docs/reports/phase-16-3-scenario-comparison.md`.
 
 ## 11. Test and benchmark design
 
-The following tests are acceptance design, not results. They must be added and
-run only after a separate implementation authorization.
+The following tests are the retained acceptance design. The executed results
+and any limitations are recorded in the Phase 16.3 report.
 
 ### Correctness and causality
 
@@ -590,7 +590,9 @@ are evidenced:
 
 ## 12. Risks and unresolved design decisions
 
-The owner and counsel/maintainer review must resolve these before coding:
+The owner and maintainer review should keep these as explicit follow-up
+questions; the internal implementation records the approved choices in the
+architecture and final verification report:
 
 - **Assumption patch semantics:** whether Phase 16.3 initially accepts only
   pre-generated full artifacts, or authorizes a deterministic internal
@@ -625,7 +627,7 @@ claims.
 
 This design does not authorize or implement:
 
-- Phase 16.3 source changes;
+- public Phase 16.3 source changes;
 - root, React, Studio, or any other public API exports;
 - protected API baseline modifications;
 - public scenario/comparison file formats or compatibility promises;
@@ -639,10 +641,10 @@ This design does not authorize or implement:
 - claims of profitability, execution certainty, statistical significance,
   exchange-fill equivalence, or 500k capacity.
 
-## 14. Exact owner authorization requested
+## 14. Exact owner authorization record
 
-If the owner approves the next step, the requested authorization should be
-recorded with the following limited wording:
+The owner authorization message approved the limited implementation using the
+following wording:
 
 > **Approve internal Phase 16.3 implementation only:** authorize a
 > provider-neutral, sequential research-scenario comparison executor based
@@ -662,10 +664,12 @@ recorded with the following limited wording:
 > sensitivity decision-policy runner requires separate approval if it is not
 > covered by the exact implementation plan.
 
-Before implementation begins, the owner should additionally record decisions
-on assumption-patch semantics, candidate limits, cancellation model,
-checkpoint use, output retention, and whether aggregate results with changed
-decision histories may be displayed.
+The implementation records the resulting choices: allowlisted patches,
+eight total scenarios, a 1,000,000 eligible-event budget, sequential
+execution, cooperative cancellation, checkpoints disabled by default, bounded
+immutable JSON-safe output, and descriptive-only treatment of different
+decision histories. Any expansion beyond those choices requires separate
+authorization.
 
 ## 15. Repository reconciliation record
 
@@ -680,7 +684,10 @@ The requested recovery was completed without changing the design concepts:
 | Original design SHA-256 | `91278d0160bdf2c3ae1f42e5abd939847c810f4f4dcd60e46fa08c879327b6c0` |
 | Product/source changes | None in this handoff |
 | Public API/baseline changes | None |
-| Commit/push | Not performed; separate authorization is required |
+| Design commit/push | `53820951fde0f599ddc28b543d55a4696f048670` |
+| Implementation commit/push | `7f35d3b8c7030c0d7e27e48dfa22bb15a73f96c0` |
+| Benchmark tooling commit/push | `29481a02201f06b138ee045456223fc92284dd14` |
+| Test-hardening commit/push | `f1493af159665b144201c5b15f68a73efed0ce87` |
 
 Necessary local design corrections were limited to the stale repository state,
 the Phase 16.2 research-checkpoint contract, the Phase 16.2.1 cache-independent
@@ -692,11 +699,13 @@ dimensions, test plan, and exclusions were preserved.
 
 The repository was reconciled to the specification's verified main SHA and
 the approved design document was committed and pushed as
-`53820951fde0f599ddc28b543d55a4696f048670`. The Phase 16.3 implementation is
-now authorized and in progress, but remains internal and non-public. The
-implementation authorization does not extend to public API, Studio, Worker,
-broker, live execution, publication, release, or Phase 16.4 work.
-
-The next safe action is owner review of this design and explicit authorization
-for the limited internal implementation above. Until that authorization is
-recorded, Phase 16.3 remains an open design gate.
+`53820951fde0f599ddc28b543d55a4696f048670`. The owner then explicitly
+authorized the limited internal implementation. Implementation, benchmark
+tooling, and cancellation/disposal test hardening were committed and pushed as
+`7f35d3b8c7030c0d7e27e48dfa22bb15a73f96c0`,
+`29481a02201f06b138ee045456223fc92284dd14`, and
+`f1493af159665b144201c5b15f68a73efed0ce87`. Phase 16.3 remains internal and
+non-public; the authorization does not extend to public API, Studio, Worker,
+broker, live execution, publication, release, or Phase 16.4 work. The final
+acceptance state is recorded in
+`docs/reports/phase-16-3-scenario-comparison.md`.

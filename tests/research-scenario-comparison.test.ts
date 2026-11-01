@@ -18,9 +18,9 @@ function sourceStatus(id: string, time: number): MarketReplayEvent {
   return { id, kind: "source-status", instrumentId, venueId, time, revision: 0, source, status: "available", coverage: "complete" };
 }
 
-function book(id: string, time: number): MarketReplayEvent {
-  const snapshot = { version: 1 as const, instrumentId, venueId, time, sequence: 1, bids: [{ price: 99, quantity: 10 }], asks: [{ price: 101, quantity: 10 }], tickSize: 1, source };
-  return { id, kind: "order-book-snapshot", instrumentId, venueId, time, sequence: 1, revision: 0, source, snapshot };
+function book(id: string, time: number, sequence = 1): MarketReplayEvent {
+  const snapshot = { version: 1 as const, instrumentId, venueId, time, sequence, bids: [{ price: 99, quantity: 10 }], asks: [{ price: 101, quantity: 10 }], tickSize: 1, source };
+  return { id, kind: "order-book-snapshot", instrumentId, venueId, time, sequence, revision: 0, source, snapshot };
 }
 
 function trade(id: string, time: number): MarketReplayEvent {
@@ -32,7 +32,7 @@ function createTape(id = "comparison-tape"): MarketReplayTape {
   return createMarketReplayTape({ id, events: [sourceStatus("status", 1_000), book("book", 1_001), trade("trade-1", 1_002), trade("trade-2", 1_003)] });
 }
 
-function createOptions(tape: MarketReplayTape, scenarioId: string, commission = 1): ResearchExecutionOptions {
+function createOptions(tape: MarketReplayTape, scenarioId: string, commission = 1, overrides: Partial<ResearchExecutionOptions> = {}): ResearchExecutionOptions {
   return {
     scenarioId,
     tape,
@@ -42,11 +42,12 @@ function createOptions(tape: MarketReplayTape, scenarioId: string, commission = 
     currency: "USD",
     commission: { type: "fixed", value: commission },
     slippage: { type: "fixed", value: 0 },
+    ...overrides,
   };
 }
 
-function createArtifact(tape: MarketReplayTape, scenarioId: string, withOrder: boolean): ResearchScenarioArtifact {
-  const session = createResearchExecutionSession(createOptions(tape, scenarioId));
+function createArtifact(tape: MarketReplayTape, scenarioId: string, withOrder: boolean, overrides: Partial<ResearchExecutionOptions> = {}): ResearchScenarioArtifact {
+  const session = createResearchExecutionSession(createOptions(tape, scenarioId, 1, overrides));
   try {
     session.start();
     session.step();
@@ -186,4 +187,52 @@ test("unsupported assumption patch fields are rejected before reconstruction", (
     }),
     (error: unknown) => error instanceof ResearchScenarioComparisonError && error.code === "INVALID_INPUT",
   );
+});
+
+test("repeated plans are deterministic and canonicalize candidate ordering", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "comparison-scenario", true);
+  const first = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [
+      { candidateId: "slippage", patch: { slippage: { type: "fixed", value: 2 } } },
+      { candidateId: "commission", patch: { commission: { type: "fixed", value: 5 } } },
+    ],
+  });
+  const second = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [
+      { candidateId: "commission", patch: { commission: { type: "fixed", value: 5 } } },
+      { candidateId: "slippage", patch: { slippage: { type: "fixed", value: 2 } } },
+    ],
+  });
+  assert.equal(first.comparisonFingerprint, second.comparisonFingerprint);
+  assert.deepEqual(first.candidates.map((candidate) => candidate.candidateId), ["commission", "slippage"]);
+  assert.equal(JSON.stringify(first).includes("session"), false);
+});
+
+test("indeterminate valuation stays explicit and is not presented as a numeric delta", () => {
+  const tape = createMarketReplayTape({
+    id: "indeterminate-comparison-tape",
+    events: [
+      sourceStatus("status", 1_000),
+      book("book-1", 1_001, 1),
+      book("book-2", 1_002, 2),
+      trade("trade-1", 1_002),
+      sourceStatus("status-2", 1_003),
+    ],
+  });
+  const baseline = createArtifact(tape, "indeterminate-scenario", true, { maxQuoteAgeMs: 0 });
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "fee", patch: { commission: { type: "fixed", value: 2 } } }],
+  });
+  assert.ok(result.baseline);
+  assert.equal(result.baseline.evaluationStatus, "indeterminate");
+  assert.equal(result.baseline.metrics.valuation, "partial");
+  assert.equal(result.baseline.metrics.equity === null, false, "the mark may be present while its quality is partial");
+  const candidate = findCandidate(result, "fee");
+  assert.equal(candidate.status, "indeterminate");
+  assert.equal(candidate.differences?.equity.status, "unknown");
+  assert.equal(candidate.differences?.equity.delta, null);
 });
