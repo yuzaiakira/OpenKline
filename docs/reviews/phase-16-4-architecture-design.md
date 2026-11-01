@@ -1359,4 +1359,14 @@ validation), adds Vanilla/Next.js client fixtures, CSP external stylesheet
 mode, and Composition hostile-input protections. Evidence is recorded in
 `docs/reports/phase-16-4-3-developer-api-integration.md` and
 `docs/guides/widget-developer-integration.md`. Public Widget package adoption
-and Phase 16.4.4 remain unauthorized.
+remains unauthorized.
+
+## 37. Phase 16.4.4 cross-browser and accessibility quality reconciliation
+
+Phase 16.4.4 exercises Chromium/Firefox/Mobile-Chrome Widget workflows,
+hardens Widget accessibility semantics and responsive touch targets, verifies
+CSP under enforced `style-src 'self'`, records responsive screenshots, measures
+performance/cleanup, and documents WebKit/Mobile Safari as BLOCKED when system
+libraries are missing. Evidence:
+`docs/reports/phase-16-4-4-cross-browser-accessibility-quality.md`. Public
+Widget package adoption and Phase 16.4.5 remain unauthorized.

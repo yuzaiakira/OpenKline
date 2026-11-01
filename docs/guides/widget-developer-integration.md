@@ -59,10 +59,22 @@ CSP-friendly hosts:
 
 1. Set `styles: { mode: "external" }`.
 2. Load `WIDGET_CSS` via a same-origin stylesheet (see
-   `examples/vanilla/widget-csp.html`).
-3. Optional future nonce: `styles: { mode: "inject", nonce }`.
+   `examples/vanilla/widget-csp.html` and `examples/vanilla/widget-openkline.css`).
+3. Keep the host CSS fixture synchronized after Widget style edits:
+   `node scripts/sync-widget-host-css.mjs`.
+4. Optional nonce: `styles: { mode: "inject", nonce }`.
+5. Prefer verifying under an **enforced** CSP (`style-src 'self'`) rather than
+   only checking for absence of Widget `<style>` tags.
 
-Shadow DOM packaging remains a future proposal.
+Shadow DOM packaging remains a future proposal. Universal CSP certification is
+not claimed; Chromium/Firefox enforcement fixtures are the current evidence.
+
+## Accessibility notes (internal)
+
+The Widget root is a labelled region with live status/error descriptions. Panel
+dialogs use native-ish semantics (`h2` + `aria-labelledby`). Drawing Toolbar and
+Replay are non-modal so chart pointer input remains available. Formal
+screen-reader certification remains open.
 
 ## Fixtures
 
@@ -70,6 +82,7 @@ Shadow DOM packaging remains a future proposal.
 - CSP: `examples/vanilla/widget-csp.html`
 - Next.js client: `/widget-integration`
 - Browser tests: `tests/browser/widget-developer-integration.spec.ts`,
+  `tests/browser/widget-quality-gates.spec.ts`,
   `tests/react-browser/widget-integration.spec.ts`
 
 ## PROPOSAL — NOT A PUBLISHED API

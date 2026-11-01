@@ -224,9 +224,8 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1/16.4.3
-  Widget foundation, professional UI, multi-chart layouts, advanced panels,
-  Datafeed/Composition integrity hardening, and developer integration readiness]
+- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1/16.4.3/16.4.4
+  Widget foundation through cross-browser & accessibility quality hardening]
   Owner-authorized internal browser-side Widget work now provides
   offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
   cleanup, modular controller architecture, single/two/four chart layouts with
@@ -236,18 +235,19 @@ offline Studio Market Replay Lab are present.
   Drawing Property Editor, Chart Settings). Phase 16.4.2.1 restores
   ChartSlot→Chart.setDatafeed resolve/subscribe/realtime semantics, accurate
   pending-request diagnostics, canonical Composition IDs, finite numeric
-  validation, and prevalidated import with best-effort rollback. Focused
-  Chromium and Mobile Chrome tests cover layout switching, sync, panel
-  workflows, Datafeed integrity, composition validation, modal focus, real
-  touch hit-testing, multi-instance isolation, and destruction cleanup. The
-  Widget benchmark records 1k/10k/100k Canvas2D lifecycle plus multi-chart
-  layout/sync/panel measurements. No root/React export, public package,
-  protected API-baseline change, publication, release, or legal change is
-  included. Phase 16.4.3 adds validated construction options, richer lifecycle
-  events, Composition accessor/Proxy hardening, CSP external stylesheet mode,
-  Vanilla/Next.js integration fixtures, and the developer guide. Firefox,
-  WebKit, Mobile Safari, physical-device, formal assistive-technology, CSP,
-  public API, and release gates remain open. See
+  validation, and prevalidated import with best-effort rollback. Phase 16.4.3
+  adds validated construction options, richer lifecycle events, Composition
+  accessor/Proxy hardening, CSP external stylesheet mode, Vanilla/Next.js
+  fixtures, and the developer guide. Phase 16.4.4 hardens Widget landmarks,
+  honest modal semantics, contrast/reduced-motion/touch targets, enforced CSP
+  fixtures, Chromium+Firefox desktop matrices, Mobile Chrome touch hit-testing,
+  responsive screenshot evidence, and React accessibility serial stability.
+  WebKit/Mobile Safari are BLOCKED on missing host libraries in the verified
+  environment; physical devices, formal AT/WCAG certification, universal CSP,
+  public API, and release gates remain open. No root/React export, public
+  package, protected API-baseline change, publication, release, or legal change
+  is included. See
+  `docs/reports/phase-16-4-4-cross-browser-accessibility-quality.md`,
   `docs/reports/phase-16-4-3-developer-api-integration.md`,
   `docs/guides/widget-developer-integration.md`,
   `docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`,

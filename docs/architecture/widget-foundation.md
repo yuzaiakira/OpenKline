@@ -1,9 +1,10 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.2 multi-chart layouts/advanced panels, Phase 16.4.2.1
-Datafeed & Composition integrity hardening, and Phase 16.4.3 developer
-integration readiness are implemented and verified in supported local Chromium
-environments; public Widget API and package publication remain unapproved.
+Status: Phase 16.4.2–16.4.3 foundations plus Phase 16.4.4 cross-browser,
+accessibility, visual, and CSP quality hardening are implemented and verified
+in available Chromium/Firefox/Mobile-Chrome environments; WebKit/Mobile Safari
+remain blocked on host libraries in this environment. Public Widget API and
+package publication remain unapproved.
 
 ## Boundary
 
@@ -73,8 +74,10 @@ Object Tree, Drawing Properties, Chart Settings), Phase 16.4.2 adds:
 - Comparison (ComparisonEngine + Chart line series)
 - Replay (Chart ReplayApi)
 
-Panels are accessible dialogs. The modal layer is scoped to content so the
-toolbar remains hit-testable. Drawing and Replay keep the chart interactive.
+Panels are accessible dialogs (`h2` titles, `aria-labelledby`). The modal layer
+is scoped to content so the toolbar remains hit-testable. Drawing and Replay
+keep the chart interactive and expose `aria-modal="false"` so AT semantics match
+behavior. Chart slots use `role="img"`; status/error regions are live.
 
 ## Data identity ownership
 
@@ -115,10 +118,20 @@ Guide: `docs/guides/widget-developer-integration.md`.
 The internal entry point remains `src/widget/index.ts`. No root export,
 package subpath, npm metadata, or protected API baseline was changed.
 
+## Accessibility and embedding quality (Phase 16.4.4)
+
+Widget CSS raises muted/danger contrast, honors `prefers-reduced-motion`, and
+enforces ≥32px control targets (≥44px at ≤640px viewports). Hosts can keep
+`examples/vanilla/widget-openkline.css` synchronized via
+`scripts/sync-widget-host-css.mjs`. Quality gates live in
+`tests/browser/widget-quality-gates.spec.ts` (layouts, RTL/theme, responsive
+screenshots, enforced CSP, Mobile Chrome taps).
+
 ## Verification boundary
 
-Focused Chromium and Mobile Chrome tests cover multi-chart layouts, sync,
-watchlist/comparison/replay panels, Datafeed resolve/subscribe/realtime
-integrity, composition validation, modal focus, real touch hit-testing, and
-cleanup. Firefox, WebKit, Mobile Safari, physical-device, formal
-assistive-technology, CSP, public API, legal, and release gates remain open.
+Chromium and Firefox desktop suites cover multi-chart layouts, sync, panels,
+Datafeed/composition integrity, modal focus, RTL/theme, CSP enforcement, and
+cleanup. Mobile Chrome emulation covers genuine touch hit-testing. WebKit,
+Mobile Safari, physical-device, formal assistive-technology, universal CSP
+certification, public API, legal, and release gates remain open. See
+`docs/reports/phase-16-4-4-cross-browser-accessibility-quality.md`.
