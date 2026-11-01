@@ -688,6 +688,7 @@ The requested recovery was completed without changing the design concepts:
 | Implementation commit/push | `7f35d3b8c7030c0d7e27e48dfa22bb15a73f96c0` |
 | Benchmark tooling commit/push | `29481a02201f06b138ee045456223fc92284dd14` |
 | Test-hardening commit/push | `f1493af159665b144201c5b15f68a73efed0ce87` |
+| Indeterminate-delta hardening commit/push | `1cdec710f707767860b950439e0cafd365e28b7c` |
 
 Necessary local design corrections were limited to the stale repository state,
 the Phase 16.2 research-checkpoint contract, the Phase 16.2.1 cache-independent
