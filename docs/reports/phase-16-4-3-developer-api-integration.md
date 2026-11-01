@@ -14,8 +14,8 @@ publication, and release readiness are **not** authorized.
 | Branch | `main` |
 | Required identity | `Akira Yuzai <yuzai.akira@gmail.com>` |
 | Scope | Phase 16.4.3 Developer API & Integration Experience only |
-| Implementation commit |  |
-| Report commit | Recorded in documentation Conventional Commit |
+| Implementation commit | `873ebd2eb6722227b910da059f89fcfb510dd291` |
+| Report commit | `b954a7ab6f68f0153e43928c4c9a39ccad8b7e0c` |
 | Publication state | No npm publication, Git tag, GitHub release, or license change |
 
 ## Explicit authorized scope
@@ -139,9 +139,8 @@ HeadlessChrome `156.0.0.0` (Linux x86_64), local only — not universal guarante
 
 | Commit | Role |
 | --- | --- |
-|  | Implementation + fixtures/tests |
-| (documentation commit) | Documentation |
-
+| `873ebd2eb6722227b910da059f89fcfb510dd291` | Implementation + fixtures/tests |
+| `b954a7ab6f68f0153e43928c4c9a39ccad8b7e0c` | Documentation |
 
 ## Final status
 
