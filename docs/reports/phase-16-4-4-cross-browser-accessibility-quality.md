@@ -266,11 +266,12 @@ approval before `api:check` can PASS.
 | Commit | Role |
 | --- | --- |
 | `115fbb408893c3bfbe2713d14a7c1f22a92b2d20` | Implementation + tests + evidence |
-|  | Documentation |
+| `0c6d9ddb27f77edec608ad5c330d6725d93b45db` | Documentation |
+| `24f08e5533af77ffc1d09bb0e35818edb26c614a` | Delivery SHA record (pre-push tip) |
 
 ## Final remote state
 
-| Check | Expected after push |
+| Check | Value |
 | --- | --- |
 | `HEAD == origin/main` | Verified after push |
 | Working tree | Clean after push |
