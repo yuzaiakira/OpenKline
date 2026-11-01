@@ -55,7 +55,9 @@ test("internal widget supports offline controls, keyboard access, RTL and cleanu
       const close = 200 + index;
       return { ...candle, open: close - 0.25, high: close + 1, low: close - 1, close };
     });
-    widget.setData(replacementCandles, { symbol: "ETH-USD", timeframe: "15m" });
+    const replacementIdentity = { symbol: "ETH-USD", timeframe: "15m" };
+    widget.setData(replacementCandles, replacementIdentity);
+    widget.setData(replacementCandles, replacementIdentity);
     await widget.saveWorkspace();
     widget.setData([]);
     await widget.loadWorkspace();
