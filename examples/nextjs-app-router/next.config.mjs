@@ -14,6 +14,8 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       openkline: resolve(process.cwd(), "../../dist/src/index.js"),
+      // Internal-only Widget entry for Phase 16.4.3 fixtures — not a published export.
+      "openkline/widget-internal": resolve(process.cwd(), "../../dist/src/widget/index.js"),
     };
     config.resolve.extensionAlias = {
       ...config.resolve.extensionAlias,

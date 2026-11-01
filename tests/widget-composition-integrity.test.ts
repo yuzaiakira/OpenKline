@@ -120,6 +120,30 @@ test("composition rejects invalid active chart, duplicate ids, and unknown versi
   );
 });
 
+test("composition rejects accessor properties without invoking getters", () => {
+  let getterHits = 0;
+  const hostile = {
+    ...compositionFor("single"),
+  };
+  Object.defineProperty(hostile, "poison", {
+    enumerable: true,
+    get() {
+      getterHits += 1;
+      throw new Error("getter should not run");
+    },
+  });
+  assert.throws(() => parseWidgetComposition(hostile), /accessor properties/);
+  assert.equal(getterHits, 0);
+
+  const proxy = new Proxy(compositionFor("single"), {
+    get(target, property, receiver) {
+      if (property === "layout") throw new Error("proxy trap");
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  assert.throws(() => parseWidgetComposition(proxy), /hostile or unreadable|proxy trap|plain objects/);
+});
+
 test("composition rejects non-finite comparison numerics and hostile shapes", () => {
   assert.throws(
     () => parseWidgetComposition({

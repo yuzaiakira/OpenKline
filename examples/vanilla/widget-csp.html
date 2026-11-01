@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Restrictive CSP: no unsafe-inline styles/scripts. Widget uses styles.mode=external. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'" />
+    <title>OpenKline Widget CSP Fixture</title>
+    <link rel="stylesheet" href="./widget-host-styles.css" />
+    <link rel="stylesheet" href="./widget-openkline.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Widget CSP fixture</h1>
+      <p>Host loads Widget CSS via <code>style-src 'self'</code>. Inline Widget injection is disabled.</p>
+      <div id="host"></div>
+      <pre id="status"></pre>
+    </main>
+    <script type="module" src="./widget-csp.js"></script>
+  </body>
+</html>

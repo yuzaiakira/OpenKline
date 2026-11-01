@@ -1,0 +1,46 @@
+/* Host-managed copy of internal Widget CSS for CSP style-src 'self' fixtures.
+ * Source of truth remains src/widget/styles.ts (WIDGET_CSS). Regenerate when tokens change.
+ */
+[data-openkline-widget] {
+  --openkline-widget-bg: #0f172a;
+  --openkline-widget-panel: #111827;
+  --openkline-widget-border: #334155;
+  --openkline-widget-text: #e2e8f0;
+  --openkline-widget-muted: #94a3b8;
+  --openkline-widget-focus: #38bdf8;
+  --openkline-widget-active: #1d4ed8;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 240px;
+  min-height: 280px;
+  height: 100%;
+  overflow: hidden;
+  color: var(--openkline-widget-text);
+  background: var(--openkline-widget-bg);
+  border: 1px solid var(--openkline-widget-border);
+  border-radius: 6px;
+  font: 13px/1.4 system-ui, sans-serif;
+}
+[data-openkline-widget][data-theme="light"] {
+  --openkline-widget-bg: #f8fafc;
+  --openkline-widget-panel: #ffffff;
+  --openkline-widget-border: #cbd5e1;
+  --openkline-widget-text: #0f172a;
+  --openkline-widget-muted: #475569;
+  --openkline-widget-focus: #0369a1;
+  --openkline-widget-active: #93c5fd;
+}
+[data-openkline-widget] *, [data-openkline-widget] *::before, [data-openkline-widget] *::after { box-sizing: border-box; }
+[data-openkline-widget] [data-openkline-toolbar] {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px;
+  background: var(--openkline-widget-panel); border-bottom: 1px solid var(--openkline-widget-border); z-index: 2;
+}
+[data-openkline-widget] button,
+[data-openkline-widget] select,
+[data-openkline-widget] input {
+  min-height: 30px; border: 1px solid var(--openkline-widget-border); border-radius: 4px;
+  color: var(--openkline-widget-text); background: var(--openkline-widget-bg); font: inherit;
+}

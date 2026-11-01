@@ -68,6 +68,18 @@ export function isWidgetLayout(value: unknown): value is WidgetLayout {
 }
 
 export function parseWidgetComposition(value: unknown): WidgetCompositionDocument {
+  try {
+    return parseWidgetCompositionDocument(value);
+  } catch (error) {
+    if (error instanceof WidgetCompositionValidationError) throw error;
+    // Proxy get/ownKeys traps and other hostile shapes may throw during inspection.
+    throw new WidgetCompositionValidationError(
+      `Widget composition rejected hostile or unreadable input: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+function parseWidgetCompositionDocument(value: unknown): WidgetCompositionDocument {
   assertAcyclicBounded(value, 0, new WeakSet<object>());
   if (!isPlainObject(value) || value.version !== OPENKLINE_WIDGET_COMPOSITION_VERSION) {
     throw new WidgetCompositionValidationError(`Unsupported Widget composition version; expected ${OPENKLINE_WIDGET_COMPOSITION_VERSION}`);
@@ -196,18 +208,52 @@ function assertAcyclicBounded(value: unknown, depth: number, ancestry: WeakSet<o
   ancestry.add(value);
   try {
     if (Array.isArray(value)) {
-      for (const item of value) assertAcyclicBounded(item, depth + 1, ancestry);
+      for (const item of ownArrayElements(value)) assertAcyclicBounded(item, depth + 1, ancestry);
       return;
     }
     if (Object.getPrototypeOf(value) !== Object.prototype) {
       throw new WidgetCompositionValidationError("Widget composition must use plain objects");
     }
-    for (const nested of Object.values(value as Record<string, unknown>)) {
+    for (const nested of ownDataPropertyValues(value)) {
       assertAcyclicBounded(nested, depth + 1, ancestry);
     }
   } finally {
     ancestry.delete(value);
   }
+}
+
+/** Read array indices without invoking object accessors on non-index properties. */
+function ownArrayElements(value: unknown[]): unknown[] {
+  const elements: unknown[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined) {
+      elements.push(undefined);
+      continue;
+    }
+    if (typeof descriptor.get === "function" || typeof descriptor.set === "function" || !("value" in descriptor)) {
+      throw new WidgetCompositionValidationError("Widget composition must not contain accessor properties");
+    }
+    elements.push(descriptor.value);
+  }
+  return elements;
+}
+
+/**
+ * Enumerate own data properties without calling Object.values(), which evaluates getters.
+ * Accessor-bearing objects are rejected. Proxy traps may still execute; callers catch that.
+ */
+function ownDataPropertyValues(value: object): unknown[] {
+  const values: unknown[] = [];
+  for (const key of Object.keys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined) continue;
+    if (typeof descriptor.get === "function" || typeof descriptor.set === "function" || !("value" in descriptor)) {
+      throw new WidgetCompositionValidationError("Widget composition must not contain accessor properties");
+    }
+    values.push(descriptor.value);
+  }
+  return values;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

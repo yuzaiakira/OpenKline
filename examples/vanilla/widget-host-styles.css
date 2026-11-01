@@ -1,0 +1,4 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; }
+body { margin: 0; background: #f8fafc; color: #0f172a; }
+main { max-width: 960px; margin: 1rem auto; padding: 0 1rem; }
+#host { height: 420px; border: 1px solid #cbd5e1; border-radius: 8px; }

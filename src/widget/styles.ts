@@ -377,8 +377,18 @@ export const WIDGET_CSS = `
 }
 `;
 
+export interface AcquireWidgetStylesOptions {
+  readonly mode?: "inject" | "external";
+  readonly nonce?: string;
+}
+
 /** Acquire a reference-counted Widget stylesheet for the owning Document. */
-export function acquireWidgetStyles(document: Document): () => void {
+export function acquireWidgetStyles(document: Document, options: AcquireWidgetStylesOptions = {}): () => void {
+  const mode = options.mode ?? "inject";
+  if (mode === "external") {
+    // Host owns stylesheet loading (link tag / bundled CSS). Nothing to release.
+    return () => undefined;
+  }
   let record = widgetStyleRegistry.get(document);
   if (record === undefined) {
     const existing = document.querySelector<HTMLStyleElement>(`style[${STYLE_MARKER}]`);
@@ -387,6 +397,7 @@ export function acquireWidgetStyles(document: Document): () => void {
     } else {
       const element = document.createElement("style");
       element.setAttribute(STYLE_MARKER, "");
+      if (options.nonce !== undefined && options.nonce.length > 0) element.nonce = options.nonce;
       element.textContent = WIDGET_CSS;
       document.head.append(element);
       record = { element, count: 1, owned: true };

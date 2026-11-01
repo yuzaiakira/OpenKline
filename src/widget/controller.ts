@@ -46,6 +46,7 @@ import {
   resolveWidgetIndicatorMetadata,
   stableChartIds,
   toColorInputValue,
+  validateWidgetOptions,
   type WidgetDrawingChoice,
 } from "./helpers.js";
 import { acquireWidgetStyles, countWidgetStyleElements } from "./styles.js";
@@ -128,9 +129,12 @@ class InternalWidgetController implements InternalWidget {
   private archivedSlots = new Map<string, { workspace: WorkspaceDocument; symbol: string | null; timeframe: string | null; chartType: WidgetChartType }>();
 
   public constructor(options: WidgetOptions) {
-    if (!(options.container instanceof HTMLElement)) throw new WidgetLifecycleError("Widget container must be an HTMLElement");
+    validateWidgetOptions(options);
     const document = options.container.ownerDocument;
-    this.releaseStyles = acquireWidgetStyles(document);
+    this.releaseStyles = acquireWidgetStyles(document, {
+      mode: options.styles?.mode ?? "inject",
+      ...(options.styles?.nonce === undefined ? {} : { nonce: options.styles.nonce }),
+    });
     this.features = normalizeWidgetFeatures(options.features);
     this.labels = normalizeWidgetLabels(options.labels);
     this.storage = options.storage ?? null;
@@ -209,6 +213,14 @@ class InternalWidgetController implements InternalWidget {
     this.refreshActiveMarkers();
     this.attachQuoteProvider();
     this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
+    // Defer readiness so hosts can subscribe synchronously after createOpenKlineWidget returns.
+    this.scheduleReadyEvent();
+  }
+
+  private scheduleReadyEvent(): void {
+    Promise.resolve().then(() => {
+      if (!this.destroyed) this.emit({ type: "ready", snapshot: this.getState() });
+    }).catch(() => undefined);
   }
 
   public getChart(): Chart {
@@ -228,9 +240,11 @@ class InternalWidgetController implements InternalWidget {
   public setActiveChartId(id: string): void {
     this.assertAlive();
     if (!this.slots.has(id)) throw new WidgetLifecycleError(`Unknown chart id: ${id}`);
+    if (this.activeChartId === id) return;
     this.activeChartId = id;
     this.refreshActiveMarkers();
     this.refreshOpenPanels();
+    this.emit({ type: "activeChart", activeChartId: id });
     this.emitState();
   }
 
@@ -278,7 +292,13 @@ class InternalWidgetController implements InternalWidget {
     if (!this.slots.has(this.activeChartId)) this.activeChartId = nextIds[0]!;
     if (this.layoutSelect !== null) this.layoutSelect.value = layout;
     this.refreshActiveMarkers();
+    this.emit({ type: "layout", layout, activeChartId: this.activeChartId });
     this.emitState();
+  }
+
+  public getFeatures(): WidgetFeatureVisibility {
+    this.assertAlive();
+    return { ...this.features };
   }
 
   public getSynchronization(): Required<WidgetSyncOptions> {
@@ -431,6 +451,11 @@ class InternalWidgetController implements InternalWidget {
   public startDrawing(type: string, options: { readonly snap?: "none" | "visible-ohlc" } = {}): void {
     this.assertAlive();
     this.activeSlot().startDrawing(type, options);
+  }
+
+  public cancelDrawing(): void {
+    this.assertAlive();
+    this.activeSlot().cancelDrawing();
   }
 
   public async saveWorkspace(key = this.storageKey): Promise<void> {
@@ -662,6 +687,7 @@ class InternalWidgetController implements InternalWidget {
     this.root.remove();
     this.status = "destroyed";
     this.error = null;
+    this.emit({ type: "destroyed" });
     this.listeners.clear();
   }
 

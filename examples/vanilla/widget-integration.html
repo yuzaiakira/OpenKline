@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenKline Internal Widget Integration (Vanilla)</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0b1220; color: #e2e8f0; }
+      main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+      #host { height: 640px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+      #log { margin-top: 1rem; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace; color: #94a3b8; }
+      .note { color: #94a3b8; font-size: 0.95rem; }
+      code { color: #7dd3fc; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Internal Widget — Vanilla integration</h1>
+      <p class="note">
+        Uses the internal module path <code>/dist/src/widget/index.js</code>.
+        This is <strong>not</strong> a published <code>@openkline/widget</code> package import.
+      </p>
+      <div id="host"></div>
+      <pre id="log" aria-live="polite"></pre>
+    </main>
+    <script type="module">
+      import { createOpenKlineWidget } from "../../dist/src/widget/index.js";
+
+      const logElement = document.querySelector("#log");
+      const lines = [];
+      const log = (message) => {
+        lines.push(message);
+        logElement.textContent = lines.join("\n");
+      };
+
+      const start = Date.UTC(2026, 0, 1);
+      const candles = Array.from({ length: 64 }, (_, index) => {
+        const close = 100 + Math.sin(index / 6) * 4 + index * 0.15;
+        return {
+          time: start + index * 60_000,
+          open: close - 0.4,
+          high: close + 1.2,
+          low: close - 1.2,
+          close,
+          volume: 1_000 + index * 11,
+        };
+      });
+
+      /** Host-owned optional Storage — no OpenKline backend. */
+      const memoryStorage = {
+        store: new Map(),
+        async load(key, signal) {
+          if (signal?.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
+          return this.store.get(key) ?? null;
+        },
+        async save(key, value, signal) {
+          if (signal?.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
+          this.store.set(key, value);
+        },
+        async remove(key, signal) {
+          if (signal?.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
+          this.store.delete(key);
+        },
+      };
+
+      const host = document.querySelector("#host");
+      const widget = createOpenKlineWidget({
+        container: host,
+        layout: "two-horizontal",
+        data: candles,
+        dataIdentity: { symbol: "BTC-USD", timeframe: "1m" },
+        chartOptions: { autoSize: true, theme: "dark", direction: "ltr" },
+        storage: memoryStorage,
+        storageKey: "openkline-internal-widget-demo",
+        features: { watchlist: true, comparison: true, replay: true },
+      });
+
+      const unsubscribe = widget.subscribe((event) => {
+        if (event.type === "ready") log(`ready status=${event.snapshot.status} layout=${event.snapshot.layout}`);
+        if (event.type === "layout") log(`layout=${event.layout} active=${event.activeChartId}`);
+        if (event.type === "activeChart") log(`activeChart=${event.activeChartId}`);
+        if (event.type === "error") log(`error=${event.error.message}`);
+        if (event.type === "destroyed") log("destroyed");
+      });
+
+      widget.setActiveChartId("chart-2");
+      widget.setData(candles.map((candle) => ({ ...candle, close: candle.close + 8, open: candle.close + 7.6, high: candle.close + 9, low: candle.close + 7 })), {
+        symbol: "ETH-USD",
+        timeframe: "5m",
+      });
+      widget.setActiveChartId("chart-1");
+      const indicatorId = widget.addIndicator("SMA", { pane: "main", period: 8 });
+      widget.startDrawing("trend-line", { snap: "visible-ohlc" });
+      widget.cancelDrawing();
+      widget.setChartType("line");
+      widget.setTheme("light");
+
+      await widget.saveWorkspace();
+      const composition = widget.exportComposition();
+      widget.setLayout("single");
+      widget.importComposition(composition);
+      log(`composition charts=${composition.charts.length} indicator=${indicatorId}`);
+      log(`features.layout=${widget.getFeatures().layout}`);
+
+      globalThis.__openklineWidgetIntegration = {
+        widget,
+        unsubscribe,
+        memoryStorage,
+        host,
+        candles,
+      };
+    </script>
+  </body>
+</html>

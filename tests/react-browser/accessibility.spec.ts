@@ -58,7 +58,9 @@ test("Canvas charts expose a text summary and dialogs restore focus on Escape", 
 
 test("Studio dialogs keep keyboard focus inside the modal", async ({ page }) => {
   await page.goto("/");
+  // Wait until a watchlist is selected so the Rename control is actually mounted.
   const trigger = page.getByRole("button", { name: "Rename watchlist", exact: true });
+  await expect(trigger).toBeVisible();
   await trigger.scrollIntoViewIfNeeded();
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Rename watchlist" });

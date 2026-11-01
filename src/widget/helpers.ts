@@ -3,7 +3,8 @@ import type { IndicatorMetadata, IndicatorParameterDefinition } from "../indicat
 import type { Candle } from "../types.js";
 import { DEFAULT_DRAWINGS } from "./defaults.js";
 import { WidgetLifecycleError } from "./errors.js";
-import type { WidgetChartType, WidgetDataIdentity, WidgetDatafeedQuery } from "./types.js";
+import type { WidgetChartType, WidgetDataIdentity, WidgetDatafeedQuery, WidgetOptions } from "./types.js";
+import { isWidgetLayout } from "./composition.js";
 
 export interface WidgetDrawingChoice {
   readonly type: string;
@@ -96,6 +97,46 @@ export function normalizeWidgetDatafeedQuery(query: WidgetDatafeedQuery): Widget
   const timeframe = normalizeIdentityValue(query.timeframe, "timeframe");
   if (symbol === undefined || timeframe === undefined) throw new WidgetLifecycleError("A datafeed query requires symbol and timeframe");
   return { ...query, symbol, timeframe };
+}
+
+/** Validate construction options without mutating host objects. */
+export function validateWidgetOptions(options: WidgetOptions): void {
+  if (options === null || typeof options !== "object") {
+    throw new WidgetLifecycleError("Widget options must be an object");
+  }
+  if (!(options.container instanceof HTMLElement)) {
+    throw new WidgetLifecycleError("Widget container must be an HTMLElement");
+  }
+  if (options.layout !== undefined && !isWidgetLayout(options.layout)) {
+    throw new WidgetLifecycleError("Invalid Widget layout");
+  }
+  if (options.chartType !== undefined && !isWidgetChartType(options.chartType)) {
+    throw new WidgetLifecycleError("Invalid Widget chart type");
+  }
+  if (options.data !== undefined && !Array.isArray(options.data)) {
+    throw new WidgetLifecycleError("Widget data must be an array of candles when provided");
+  }
+  if (options.datafeed !== undefined && options.datafeedQuery === undefined) {
+    throw new WidgetLifecycleError("datafeedQuery is required when datafeed is provided");
+  }
+  if (options.datafeedQuery !== undefined) normalizeWidgetDatafeedQuery(options.datafeedQuery);
+  if (options.dataIdentity !== undefined) normalizeWidgetIdentity(options.dataIdentity);
+  if (options.storageKey !== undefined && (typeof options.storageKey !== "string" || options.storageKey.trim().length === 0)) {
+    throw new WidgetLifecycleError("storageKey must be a non-empty string when provided");
+  }
+  if (options.storage !== undefined) {
+    if (typeof options.storage.load !== "function" || typeof options.storage.save !== "function") {
+      throw new WidgetLifecycleError("Widget storage must implement load and save");
+    }
+  }
+  if (options.synchronization !== undefined) {
+    const sync = options.synchronization;
+    for (const key of ["enabled", "crosshair", "visibleRange"] as const) {
+      if (sync[key] !== undefined && typeof sync[key] !== "boolean") {
+        throw new WidgetLifecycleError(`synchronization.${key} must be a boolean when provided`);
+      }
+    }
+  }
 }
 
 export function stableChartIds(count: number): string[] {

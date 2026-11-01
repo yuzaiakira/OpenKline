@@ -152,6 +152,16 @@ export interface WidgetOptions {
   readonly watchlist?: WatchlistDocument;
   /** Optional host-supplied quote provider for the Watchlist panel. */
   readonly quoteProvider?: QuoteProvider;
+  /**
+   * Stylesheet strategy for CSP-aware hosts.
+   * - `inject` (default): Widget inserts a reference-counted `<style>` element.
+   * - `external`: host must load `WIDGET_CSS` itself; Widget skips injection.
+   * Optional `nonce` is applied when injecting under CSP nonce policies.
+   */
+  readonly styles?: {
+    readonly mode?: "inject" | "external";
+    readonly nonce?: string;
+  };
 }
 
 export interface WidgetChartSnapshot {
@@ -187,10 +197,22 @@ export interface WidgetSnapshot {
   readonly synchronization: Required<WidgetSyncOptions>;
 }
 
+/**
+ * Widget event stream.
+ *
+ * Ownership notes:
+ * - `snapshot` / diagnostic payloads are immutable snapshots (borrowed copies).
+ * - `chart` payloads are Chart event values; do not retain Chart internals.
+ * - Hosts must unsubscribe; destroy clears listeners and emits `destroyed` once.
+ */
 export type WidgetEvent =
+  | { readonly type: "ready"; readonly snapshot: WidgetSnapshot }
   | { readonly type: "state"; readonly snapshot: WidgetSnapshot }
   | { readonly type: "error"; readonly error: Error }
-  | { readonly type: "chart"; readonly name: ChartEventName; readonly payload: unknown; readonly chartId: string };
+  | { readonly type: "layout"; readonly layout: WidgetLayout; readonly activeChartId: string }
+  | { readonly type: "activeChart"; readonly activeChartId: string }
+  | { readonly type: "chart"; readonly name: ChartEventName; readonly payload: unknown; readonly chartId: string }
+  | { readonly type: "destroyed" };
 
 export interface WidgetDiagnostics {
   readonly destroyed: boolean;
@@ -203,9 +225,20 @@ export interface WidgetDiagnostics {
   readonly syncEnabled: boolean;
 }
 
+/**
+ * Internal Widget integration surface.
+ *
+ * Ownership:
+ * - Widget creates and destroys Chart instances (borrow via getChart/getCharts).
+ * - PluginHandle is owned by the host after installPlugin; dispose explicitly or via Widget.destroy.
+ * - subscribe() returns an idempotent unsubscribe; destroy clears remaining listeners.
+ * - WorkspaceDocument / WidgetCompositionDocument returns are plain serializable snapshots.
+ * - ReplayApi is Chart-owned and becomes invalid after exitReplay/destroy.
+ */
 export interface InternalWidget {
-  /** Returns the active chart. */
+  /** Borrowed active Chart; Widget-owned lifecycle. */
   getChart(): Chart;
+  /** Borrowed Chart map; Widget-owned lifecycle. Do not mutate. */
   getCharts(): ReadonlyMap<string, Chart>;
   getActiveChartId(): string;
   setActiveChartId(id: string): void;
@@ -213,9 +246,11 @@ export interface InternalWidget {
   setLayout(layout: WidgetLayout): void;
   getSynchronization(): Required<WidgetSyncOptions>;
   setSynchronization(options: WidgetSyncOptions): void;
+  getFeatures(): WidgetFeatureVisibility;
   getState(): WidgetSnapshot;
   getDiagnostics(): WidgetDiagnostics;
   setData(candles: readonly Candle[], identity?: WidgetDataIdentity): void;
+  /** Async; aborted/stale generations do not commit confirmed identity. */
   setDatafeed(datafeed: Datafeed, query: WidgetDatafeedQuery): Promise<void>;
   setSymbol(symbol: string): Promise<void>;
   setTimeframe(timeframe: string): Promise<void>;
@@ -224,6 +259,7 @@ export interface InternalWidget {
   setDirection(direction: "ltr" | "rtl"): void;
   addIndicator(indicatorId: string, options?: IndicatorAddOptions): string;
   startDrawing(type: string, options?: { readonly snap?: "none" | "visible-ohlc" }): void;
+  cancelDrawing(): void;
   saveWorkspace(key?: string): Promise<void>;
   loadWorkspace(key?: string): Promise<WorkspaceRestoreResult>;
   exportWorkspace(): WorkspaceDocument;
@@ -243,6 +279,7 @@ export interface InternalWidget {
   enterReplay(options?: { readonly startAt?: number; readonly speed?: number }): ReplayApi;
   exitReplay(): void;
   installPlugin(plugin: OpenKlinePlugin): PluginHandle;
+  /** Idempotent unsubscribe. */
   subscribe(listener: (event: WidgetEvent) => void): () => void;
   destroy(): void;
 }
