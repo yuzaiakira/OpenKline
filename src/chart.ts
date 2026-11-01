@@ -2124,9 +2124,14 @@ export class Chart {
           symbol: query.symbol,
           timeframe: query.timeframe,
           onBar: (bar) => {
+            // Ignore callbacks after stopDatafeed()/replacement increments the request id.
+            if (this.destroyed || requestId !== this.datafeedRequestId) return;
             if (!this.isAnyReplayActive()) this.update(bar);
           },
-          onError: (error) => this.emit("datafeedError", error),
+          onError: (error) => {
+            if (this.destroyed || requestId !== this.datafeedRequestId) return;
+            this.emit("datafeedError", error);
+          },
         });
       }
     } catch (error) {

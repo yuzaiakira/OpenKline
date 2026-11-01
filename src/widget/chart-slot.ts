@@ -219,35 +219,44 @@ export class ChartSlot {
 
   public async setDatafeed(datafeed: Datafeed, query: WidgetDatafeedQuery): Promise<void> {
     this.assertAlive();
+    const controller = new AbortController();
+    this.dataRequest?.abort();
+    this.dataRequest = controller;
+    const generation = ++this.dataRequestGeneration;
     this.datafeed = datafeed;
-    this.datafeedQuery = query;
+    this.datafeedQuery = { ...query };
     this.requestedSymbol = query.symbol;
     this.requestedTimeframe = query.timeframe;
     this.identityStatus = "loading";
     this.error = null;
+    // Chart.setDatafeed clears managed indicators before confirming bars.
+    this.indicatorApis.clear();
+    this.indicatorKinds.clear();
     this.renderHeader();
     this.onStateChange();
-    const generation = ++this.dataRequestGeneration;
-    this.dataRequest?.abort();
-    this.dataRequest = new AbortController();
     try {
-      const bars = await datafeed.getBars({ ...query, signal: this.dataRequest.signal });
-      if (generation !== this.dataRequestGeneration || this.destroyed) return;
-      this.chart.setData(bars);
+      // Reuse Chart's provider-neutral resolveSymbol / getBars / subscribeBars lifecycle.
+      await this.chart.setDatafeed(datafeed, { ...query, signal: controller.signal });
+      if (this.destroyed || generation !== this.dataRequestGeneration || controller.signal.aborted) return;
       this.symbol = query.symbol;
       this.timeframe = query.timeframe;
+      this.requestedSymbol = this.symbol;
+      this.requestedTimeframe = this.timeframe;
       this.identityStatus = "confirmed";
-      this.hasData = bars.length > 0;
+      this.hasData = this.chart.getData().length > 0;
       this.emptyElement.hidden = this.hasData;
       this.syncPresentation();
       this.renderHeader();
       this.onStateChange();
     } catch (error) {
-      if (generation !== this.dataRequestGeneration || this.destroyed || isAbortError(error)) return;
+      if (controller.signal.aborted || generation !== this.dataRequestGeneration || isAbortError(error) || this.destroyed) return;
       this.identityStatus = "failed";
       this.error = error instanceof Error ? error.message : String(error);
       this.onStateChange();
       throw error;
+    } finally {
+      // Clear only this generation's controller so a newer request stays pending.
+      if (generation === this.dataRequestGeneration) this.dataRequest = null;
     }
   }
 
@@ -347,6 +356,11 @@ export class ChartSlot {
     this.destroyed = true;
     this.cancelPendingRequest();
     this.exitReplay();
+    if (this.datafeed !== null) {
+      this.chart.stopDatafeed();
+      this.datafeed = null;
+      this.datafeedQuery = null;
+    }
     for (const unsubscribe of this.subscriptions.splice(0)) unsubscribe();
     for (const handle of this.pluginHandles.splice(0)) handle.dispose();
     this.chart.destroy();

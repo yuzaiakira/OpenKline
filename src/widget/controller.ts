@@ -35,7 +35,7 @@ import {
   normalizeWidgetLabels,
 } from "./defaults.js";
 import { button, field, select } from "./dom.js";
-import { WidgetLifecycleError } from "./errors.js";
+import { WidgetCompositionValidationError, WidgetLifecycleError } from "./errors.js";
 import { openModalFocus, type ModalFocusSession } from "./focus.js";
 import {
   defaultIndicatorParameter,
@@ -502,19 +502,36 @@ class InternalWidgetController implements InternalWidget {
 
   public importComposition(value: unknown): void {
     this.assertAlive();
+    // Full structural prevalidation before any Widget mutation.
     const parsed = parseWidgetComposition(value);
+    const previous = this.exportComposition();
+    try {
+      this.applyComposition(parsed);
+    } catch (error) {
+      try {
+        this.applyComposition(previous);
+      } catch {
+        // Best-effort rollback; rethrow the original failure below.
+      }
+      throw error;
+    }
+  }
+
+  private applyComposition(parsed: WidgetCompositionDocument): void {
     this.setLayout(parsed.layout);
     for (const chart of parsed.charts) {
       const slot = this.slots.get(chart.id);
-      if (slot === undefined) continue;
+      if (slot === undefined) {
+        throw new WidgetCompositionValidationError(`Missing chart slot for canonical id ${chart.id}`);
+      }
       slot.importWorkspace(chart.workspace);
     }
     this.setActiveChartId(parsed.activeChartId);
     this.setSynchronization(parsed.synchronization);
     this.watchlistModel = new WatchlistModel(parsed.watchlist);
     this.attachQuoteProvider();
+    this.clearComparison();
     if (parsed.comparison !== undefined) {
-      this.clearComparison();
       this.comparisonEngine.setMode(parsed.comparison.mode);
       this.comparisonBaselineMaxAgeMs = parsed.comparison.baselineMaxAgeMs;
       this.comparisonEngine.setBaseline(parsed.comparison.baselineTime, { maxAgeMs: parsed.comparison.baselineMaxAgeMs });
