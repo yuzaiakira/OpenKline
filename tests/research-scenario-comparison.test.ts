@@ -5,6 +5,7 @@ import {
   compareResearchScenarios,
   ResearchScenarioComparisonError,
   type ResearchScenarioComparisonResult,
+  type ResearchScenarioAssumptionPatch,
 } from "../src/research-execution/index.js";
 import { createResearchExecutionSession } from "../src/research-execution/index.js";
 import type { ResearchExecutionOptions, ResearchScenarioArtifact } from "../src/research-execution/types.js";
@@ -150,5 +151,39 @@ test("cancellation is explicit and leaves no session in the result", () => {
   assert.throws(
     () => compareResearchScenarios({ baseline: { artifact: baseline, tape }, candidates: [], signal: controller.signal }),
     (error: unknown) => error instanceof ResearchScenarioComparisonError && error.code === "CANCELLED",
+  );
+});
+
+test("mid-reconstruction cancellation returns an explicit incomplete result", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "comparison-scenario", true);
+  const controller = new AbortController();
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "candidate", patch: { commission: { type: "fixed", value: 2 } } }],
+    signal: controller.signal,
+    onProgress: (progress) => {
+      if (progress.phase === "restoring" && progress.processedEligibleEventVisits >= 2) controller.abort();
+    },
+  });
+  assert.equal(result.status, "cancelled");
+  assert.equal(result.baseline, null);
+  assert.deepEqual(result.candidates, []);
+  assert.equal(result.warnings.some((warning) => warning.toLowerCase().includes("cancel")), true);
+  assert.equal(JSON.stringify(result).includes("session"), false);
+});
+
+test("unsupported assumption patch fields are rejected before reconstruction", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "comparison-scenario", false);
+  assert.throws(
+    () => compareResearchScenarios({
+      baseline: { artifact: baseline, tape },
+      candidates: [{
+        candidateId: "unsupported",
+        patch: { execution: { unsupportedField: true } } as unknown as ResearchScenarioAssumptionPatch,
+      }],
+    }),
+    (error: unknown) => error instanceof ResearchScenarioComparisonError && error.code === "INVALID_INPUT",
   );
 });
