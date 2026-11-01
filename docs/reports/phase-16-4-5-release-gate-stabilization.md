@@ -152,7 +152,7 @@ rotation, Chart Settings. Emulation only.
 | Starting SHA | `4af4cc5e6d00bce7cde8a1666a95672947d5aa47` |
 | Implementation | `778fca7be8d95244848b7ce734a2c5b3bf88c770` |
 | Documentation | `d0be115c95ed72debc3d28720ea96cbaadfdd69d` |
-| Final tip | `4afe7ebb8d91b0c9ded37c48ae39cd7b1cf7e2bf` (pre-push amended tip; verify with git rev-parse) |
+| Final tip | `b18f327c2398e11b717c800bcdde97f04978b64c` |
 | Remote | `origin/main` synchronized |
 | Author | `Akira Yuzai <yuzai.akira@gmail.com>` |
 | Working tree | Clean after delivery |
