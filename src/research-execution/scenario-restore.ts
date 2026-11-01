@@ -27,7 +27,9 @@ export type ResearchScenarioRestoreErrorCode =
   | "VENUE_MISMATCH"
   | "RECEIVE_TIME_UNAVAILABLE"
   | "INCOMPLETE_DECISION_HISTORY"
-  | "FRONTIER_MISMATCH";
+  | "FRONTIER_MISMATCH"
+  | "CANCELLED"
+  | "EVENT_VISIT_LIMIT";
 
 export class ResearchScenarioRestoreError extends Error {
   public constructor(public readonly code: ResearchScenarioRestoreErrorCode, message: string) {
@@ -37,7 +39,9 @@ export class ResearchScenarioRestoreError extends Error {
 }
 
 export function restoreResearchScenario(options: ResearchScenarioRestoreOptions): ResearchScenarioReconstructionResult {
+  throwIfCancelled(options.signal);
   const artifact = parseResearchScenarioArtifact(options.artifact, options.validation);
+  throwIfCancelled(options.signal);
   validateCompatibleTape(artifact, options.tape);
   if (!artifact.decisionHistory.complete) throw new ResearchScenarioRestoreError("INCOMPLETE_DECISION_HISTORY", "decision history is incomplete and cannot be reconstructed safely");
 
@@ -62,12 +66,14 @@ export function restoreResearchScenario(options: ResearchScenarioRestoreOptions)
     ...(assumptions.venueId === null ? {} : { venueId: assumptions.venueId }),
     ...(assumptions.priceImpact === null ? {} : { priceImpact: assumptions.priceImpact }),
     ...(assumptions.corporateActionSource === null ? {} : { corporateActionSource: assumptions.corporateActionSource }),
+    ...(options.checkpoints === undefined ? {} : { checkpoints: options.checkpoints }),
   };
   let implementation: ResearchExecutionSessionImpl | null = null;
   try {
     implementation = createResearchExecutionSession(sessionOptions) as ResearchExecutionSessionImpl;
     implementation.loadScenarioDecisions(artifact.decisions);
-    restoreFrontier(implementation, artifact);
+    restoreFrontier(implementation, artifact, options);
+    throwIfCancelled(options.signal);
     const actualSnapshot = implementation.getSnapshot();
     const frontier = artifact.replay.frontier;
     if (actualSnapshot.state !== frontier.state
@@ -131,14 +137,22 @@ function validateCompatibleTape(artifact: ResearchScenarioArtifact, tape: Market
   }
 }
 
-function restoreFrontier(session: ResearchExecutionSessionImpl, artifact: ResearchScenarioArtifact): void {
+function restoreFrontier(session: ResearchExecutionSessionImpl, artifact: ResearchScenarioArtifact, options: ResearchScenarioRestoreOptions): void {
   const frontier = artifact.replay.frontier;
   if (frontier.eventIndex === null) {
     if (frontier.state === "ready") session.start();
     return;
   }
   session.start();
-  for (let index = 0; index <= frontier.eventIndex; index += 1) session.step();
+  for (let index = 0; index <= frontier.eventIndex; index += 1) {
+    throwIfCancelled(options.signal);
+    options.onEventVisit?.(index);
+    session.step();
+  }
+}
+
+function throwIfCancelled(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) throw new ResearchScenarioRestoreError("CANCELLED", "scenario restoration was cancelled");
 }
 
 function sameCursor(left: ResearchScenarioResultEvidence["cursor"], right: ResearchScenarioResultEvidence["cursor"]): boolean {

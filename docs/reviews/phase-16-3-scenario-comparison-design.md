@@ -1,6 +1,6 @@
 # OpenKline Phase 16.3 — Research Scenario Comparison and Execution-Assumption Sensitivity
 
-Status: **DESIGN ONLY — NOT IMPLEMENTED — OWNER AUTHORIZATION REQUIRED**
+Status: **DESIGN APPROVED — INTERNAL IMPLEMENTATION IN PROGRESS — NOT PUBLIC**
 
 This document is an internal design and authorization handoff. It does not
 add a comparison engine, change a source or public interface, authorize a
@@ -10,11 +10,12 @@ research result.
 
 ## 1. Review boundary and repository state
 
-The Phase 16.3 specification states that the Phase 16.2.1 authorization does
-not extend automatically. The requested work is therefore limited to a
-technically actionable design and a narrowly scoped owner authorization
-request. No production code, Studio integration, Worker integration, public
-export, commit, or push is included in this handoff.
+The original Phase 16.3 specification required a design-only handoff. The
+owner has since explicitly approved both design documentation and the limited
+internal implementation described in the separate authorization message. The
+implementation remains restricted to internal source, tests, benchmarks, and
+technical documentation; it does not authorize Studio, Worker, public export,
+or release work.
 
 The specification names `40e6d12ac0bb12b7b0da29a1c280b023c419d975` as its
 starting SHA. The actual checkout inspected for this handoff is different:
@@ -689,12 +690,12 @@ dimensions, test plan, and exclusions were preserved.
 
 ## 16. Current handoff state
 
-The repository is now at the specification's verified main SHA, with the
-design document still untracked and the working tree containing no other
-local changes. The Phase 16.3 proposal is technically actionable but remains
-unimplemented and non-public. No commit or push was made because the
-specification explicitly withholds authorization for documentation-only
-commit/push activity as well as implementation.
+The repository was reconciled to the specification's verified main SHA and
+the approved design document was committed and pushed as
+`53820951fde0f599ddc28b543d55a4696f048670`. The Phase 16.3 implementation is
+now authorized and in progress, but remains internal and non-public. The
+implementation authorization does not extend to public API, Studio, Worker,
+broker, live execution, publication, release, or Phase 16.4 work.
 
 The next safe action is owner review of this design and explicit authorization
 for the limited internal implementation above. Until that authorization is

@@ -115,6 +115,34 @@ export function createResearchScenarioArtifact(input: ResearchScenarioArtifactIn
   return artifact;
 }
 
+/**
+ * Creates an internal candidate artifact variant without changing the source
+ * artifact or its durable decision history. Expected evidence is deliberately
+ * omitted because it belongs to the source assumptions and cannot be trusted
+ * after an assumption patch.
+ */
+export function createResearchScenarioArtifactVariant(
+  artifact: ResearchScenarioArtifact,
+  assumptions: ResearchScenarioAssumptions,
+): ResearchScenarioArtifact {
+  validateResearchScenarioArtifact(artifact);
+  const { integrity: ignoredIntegrity, expectedResult: ignoredExpectedResult, ...unsignedArtifact } = artifact;
+  void ignoredIntegrity;
+  void ignoredExpectedResult;
+  const base = {
+    ...unsignedArtifact,
+    assumptions: cloneAssumptions(assumptions),
+  } as Omit<ResearchScenarioArtifact, "integrity">;
+  const integrity: ResearchScenarioArtifactIntegrity = {
+    algorithm: "fnv1a64",
+    contentHash: fnv1a64(canonicalStringify(base)),
+    authenticated: false,
+  };
+  const variant = { ...base, integrity };
+  validateResearchScenarioArtifact(variant);
+  return variant;
+}
+
 export function validateResearchScenarioArtifact(
   value: unknown,
   options: ResearchScenarioArtifactValidationOptions = {},

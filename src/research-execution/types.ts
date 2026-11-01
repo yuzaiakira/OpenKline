@@ -397,6 +397,12 @@ export interface ResearchScenarioRestoreOptions {
   readonly artifact: ResearchScenarioArtifact | string | unknown;
   readonly tape: MarketReplayTape;
   readonly validation?: ResearchScenarioArtifactValidationOptions;
+  /** Internal cooperative cancellation boundary; absent from public package APIs. */
+  readonly signal?: AbortSignal;
+  /** Internal event-visit accounting hook; called before each restored event. */
+  readonly onEventVisit?: (eventIndex: number) => void;
+  /** Internal checkpoint policy for a fresh restored session. */
+  readonly checkpoints?: ResearchCheckpointOptions;
 }
 
 export type ResearchScenarioReconstructionStatus = "verified" | "mismatch" | "no-expected-result";
