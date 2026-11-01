@@ -266,7 +266,7 @@ approval before `api:check` can PASS.
 | Commit | Role |
 | --- | --- |
 | `115fbb408893c3bfbe2713d14a7c1f22a92b2d20` | Implementation + tests + evidence |
-| _(docs commit SHA recorded after documentation commit)_ | Documentation |
+|  | Documentation |
 
 ## Final remote state
 
