@@ -15,7 +15,7 @@ are not authorized by this work.
 | Required identity | `Akira Yuzai <yuzai.akira@gmail.com>` |
 | Scope | Phase 16.4.2.1 Datafeed & Composition integrity hardening only |
 | Implementation commit | `204ff6164ce01c3fa0a94f7e925a9ad0c82711b9` |
-| Report commit | The documentation commit containing this report |
+| Report commit | `e5d021444eb9a28149e325716b96b2577d676745` |
 | Publication state | No npm publication, Git tag, GitHub release, or license change |
 
 ## Explicit authorized scope
@@ -275,16 +275,18 @@ Filled after Git delivery:
 | Commit | Role |
 | --- | --- |
 | `204ff6164ce01c3fa0a94f7e925a9ad0c82711b9` | Implementation + tests |
-| (this documentation commit) | Documentation |
+| `e5d021444eb9a28149e325716b96b2577d676745` | Documentation |
 
 ## Final branch / remote synchronization status
 
 Filled after push:
 
-| Check | Expected |
+| Check | Value |
 | --- | --- |
 | Author / committer | `Akira Yuzai <yuzai.akira@gmail.com>` |
-| `HEAD == origin/main` | Required |
+| Implementation SHA | `204ff6164ce01c3fa0a94f7e925a9ad0c82711b9` |
+| Documentation SHA | `e5d021444eb9a28149e325716b96b2577d676745` |
+| `HEAD == origin/main` | Verified after push |
 | Working tree | Clean after delivery |
 | Force push / history rewrite | Not used |
 
