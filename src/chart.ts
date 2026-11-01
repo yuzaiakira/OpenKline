@@ -17,6 +17,7 @@ import type {
 import { ReplayController, type ReplayControllerHost } from "./replay/controller.js";
 import type { ReplayApi, ReplayCursor, ReplayOptions, ReplayStatus } from "./replay/types.js";
 import { MarketReplayController, type MarketReplayControllerOptions, type MarketReplaySnapshot, type MarketReplayState } from "./replay/market-replay-controller.js";
+import { registerInteractiveDrawingCancellation } from "./internal/drawing-cancellation.js";
 import type { ExtensionHandle, OpenKlineExtension } from "./extensions/types.js";
 import type {
   InstalledPluginMetadata,
@@ -483,6 +484,9 @@ export class Chart {
           }
         });
     this.resizeObserver?.observe(this.container);
+    registerInteractiveDrawingCancellation(this, () => {
+      if (!this.destroyed) this.cancelDrawing();
+    });
     queueMicrotask(() => {
       if (!this.destroyed) this.emit("chartReady", { timestamp: Date.now() });
     });
@@ -1961,7 +1965,10 @@ export class Chart {
     }
   }
 
-  /** @internal Widget toolbar cancellation hook; intentionally not part of the public API surface. */
+  /**
+   * Cancel a pending interactive drawing.
+   * Invoked only through the internal drawing-cancellation registry; not part of the public API.
+   */
   private cancelDrawing(): void {
     this.assertAlive();
     const pending = this.pendingDrawing;

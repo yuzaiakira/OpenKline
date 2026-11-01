@@ -44,8 +44,10 @@ test("professional widget exposes behavioral indicator, drawing, object, propert
   await indicatorTrigger.click();
   const indicatorPanel = page.locator('[data-openkline-panel="indicator-explorer"]');
   await expect(indicatorPanel.locator('[data-openkline-panel-close]')).toBeFocused();
+  await expect(indicatorPanel).toHaveAttribute("aria-modal", "true");
   await page.keyboard.press("Escape");
   await expect(indicatorTrigger).toBeFocused();
+  await expect(indicatorPanel).toBeHidden();
   await indicatorTrigger.click();
   await indicatorPanel.locator('[data-openkline-panel-search]').fill("Bollinger");
   await expect(indicatorPanel.locator('[data-openkline-indicator-action="select"]')).toHaveCount(1);
@@ -165,8 +167,8 @@ test("professional widget panels remain isolated across instances and datafeed t
     second.destroy();
     return { firstPanelCount, secondPanelCount, secondState, secondDiagnostics, canvases: document.querySelectorAll("canvas").length, baselineCanvases };
   }, candles);
-  expect(result.firstPanelCount).toBe(5);
-  expect(result.secondPanelCount).toBe(5);
+  expect(result.firstPanelCount).toBe(9);
+  expect(result.secondPanelCount).toBe(9);
   expect(result.secondState).toMatchObject({ symbol: "TWO", timeframe: "5m", status: "ready" });
   expect(result.secondDiagnostics.canvasCount).toBe(1);
   expect(result.canvases).toBe(result.baselineCanvases);
@@ -184,7 +186,7 @@ test("professional widget toolbar is touch-usable and responsive in mobile Chrom
     if (key === "drawing-toolbar") expect(await panel.locator('[data-openkline-drawing-tool]').count()).toBeGreaterThan(0);
     if (key === "object-tree") expect(await panel.locator('[data-openkline-object-row]').count()).toBeGreaterThan(0);
     if (key === "drawing-properties") await expect(panel).toContainText("Select a drawing");
-    await panel.locator('[data-openkline-panel-close]').click({ force: true });
+    await panel.locator('[data-openkline-panel-close]').click();
   }
   const layout = await page.evaluate(() => {
     const root = (globalThis as WidgetGlobals).__openklineHost!.firstElementChild?.getBoundingClientRect();

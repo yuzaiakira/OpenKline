@@ -24,5 +24,9 @@ export default defineConfig({
     url: "http://127.0.0.1:4174/lifecycle-verification",
     reuseExistingServer: false,
     timeout: 60_000,
+    env: {
+      ...process.env,
+      OPENKLINE_NEXT_DIST: ".next-playwright",
+    },
   },
 });

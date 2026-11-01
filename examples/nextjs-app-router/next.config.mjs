@@ -5,6 +5,9 @@ const nextConfig = {
   // Local Playwright uses the loopback address while Next's dev server starts
   // from localhost. Allow only these development origins for HMR verification.
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // Allow an alternate dist directory when a pre-existing root-owned `.next`
+  // cache blocks local Playwright verification.
+  distDir: process.env.OPENKLINE_NEXT_DIST ?? ".next",
   transpilePackages: ["@openkline/react", "openkline"],
   outputFileTracingRoot: resolve(process.cwd(), "../.."),
   webpack(config) {

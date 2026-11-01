@@ -137,7 +137,17 @@ try {
       return { openMs: Number(openMs.toFixed(3)), closeMs: Number((performance.now() - closeStart).toFixed(3)) };
     };
     const uiPanels = {};
-    for (const key of ["indicator-explorer", "drawing-toolbar", "object-tree", "drawing-properties", "chart-settings"]) {
+    for (const key of [
+      "indicator-explorer",
+      "drawing-toolbar",
+      "object-tree",
+      "drawing-properties",
+      "chart-settings",
+      "synchronization",
+      "watchlist",
+      "comparison",
+      "replay",
+    ]) {
       uiPanels[key] = await measurePanel(key);
     }
     const indicatorPanel = uiHost.querySelector('[data-openkline-panel="indicator-explorer"]');
@@ -208,6 +218,57 @@ try {
     uiWidget.destroy();
     const uiAfterDestroy = uiWidget.getDiagnostics();
     uiHost.remove();
+
+    const multiHost = document.createElement("div");
+    multiHost.style.cssText = "width: 1000px; height: 640px";
+    document.body.append(multiHost);
+    const multiCandles = makeCandles(1_000);
+    const multiCreateStart = performance.now();
+    const multiWidget = createOpenKlineWidget({
+      container: multiHost,
+      data: multiCandles,
+      dataIdentity: { symbol: "MULTI", timeframe: "1m" },
+      chartOptions: { autoSize: true },
+      synchronization: { enabled: false, crosshair: false, visibleRange: false },
+    });
+    const multiCreateMs = performance.now() - multiCreateStart;
+    const layoutSamples = [];
+    for (const layout of ["two-horizontal", "two-vertical", "four-grid", "single", "four-grid", "two-horizontal"]) {
+      const started = performance.now();
+      multiWidget.setLayout(layout);
+      await nextVisualFrame();
+      layoutSamples.push(performance.now() - started);
+    }
+    multiWidget.setLayout("two-horizontal");
+    multiWidget.setSynchronization({ enabled: true, crosshair: true, visibleRange: true });
+    const syncPan = await measureVisual(() => multiWidget.getChart().pan(1), 12);
+    multiWidget.setSynchronization({ enabled: false, crosshair: false, visibleRange: false });
+    const watchlistStart = performance.now();
+    multiWidget.setWatchlist({
+      version: 1,
+      selectedWatchlistId: "wl-1",
+      lists: [{ id: "wl-1", name: "Bench", symbols: [{ id: "AAA", displaySymbol: "AAA", name: "AAA", favorite: false }] }],
+    });
+    const watchlistMs = performance.now() - watchlistStart;
+    const comparisonStart = performance.now();
+    multiWidget.addComparisonAsset("CMP", multiCandles, { label: "CMP" });
+    multiWidget.setComparisonBaseline(multiCandles[0].time, { maxAgeMs: 0 });
+    await nextVisualFrame();
+    multiWidget.clearComparison();
+    const comparisonMs = performance.now() - comparisonStart;
+    const replayStart = performance.now();
+    const replay = multiWidget.enterReplay({ speed: 4 });
+    replay.stepForward();
+    await nextVisualFrame();
+    multiWidget.exitReplay();
+    const replayMs = performance.now() - replayStart;
+    const multiBeforeDestroy = multiWidget.getDiagnostics();
+    const multiDestroyStart = performance.now();
+    multiWidget.destroy();
+    const multiDestroyMs = performance.now() - multiDestroyStart;
+    const multiAfterDestroy = multiWidget.getDiagnostics();
+    multiHost.remove();
+
     const mountSamples = [];
     for (let round = 0; round < 10; round += 1) {
       const host = document.createElement("div");
@@ -226,6 +287,18 @@ try {
       styleCountAfter: document.querySelectorAll("style[data-openkline-widget-style]").length,
       canvasCountBefore,
       repeatedMountUnmount: { rounds: mountSamples.length, ...statistics(mountSamples) },
+      multiChart: {
+        candleCount: 1_000,
+        createMs: Number(multiCreateMs.toFixed(3)),
+        layoutSwitch: { samples: layoutSamples.length, ...statistics(layoutSamples) },
+        syncPan,
+        watchlistMs: Number(watchlistMs.toFixed(3)),
+        comparisonMs: Number(comparisonMs.toFixed(3)),
+        replayMs: Number(replayMs.toFixed(3)),
+        destroyMs: Number(multiDestroyMs.toFixed(3)),
+        beforeDestroy: multiBeforeDestroy,
+        afterDestroy: multiAfterDestroy,
+      },
       ui: {
         candleCount: 1_000,
         panels: uiPanels,

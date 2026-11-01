@@ -1,463 +1,161 @@
-import { createChart, type Chart } from "../chart.js";
-import type { DrawingStartOptions, DrawingStyle } from "../drawings/types.js";
+import type { Chart } from "../chart.js";
+import type { DrawingStyle } from "../drawings/types.js";
 import type { OpenKlinePlugin, PluginHandle } from "../extensions/types.js";
-import { builtInIndicatorDefinitions } from "../indicators/index.js";
 import type { IndicatorMetadata, IndicatorParameterDefinition } from "../indicators/types.js";
 import type {
-  ChartIndicatorApi,
-  ChartEventName,
-  ChartEvents,
-  ChartOptions,
   Candle,
   Datafeed,
   IndicatorAddOptions,
-  LinePoint,
   PriceScaleMode,
   PriceScaleOptions,
-  SeriesApi,
-  SeriesOptions,
 } from "../types.js";
-import { parseWorkspace, type WorkspaceMetadata, type WorkspaceDocument, type WorkspaceRestoreResult } from "../workspace.js";
+import { ChartSynchronizationController } from "../synchronization.js";
+import { ComparisonEngine, type ComparisonNormalizationMode } from "../comparison.js";
 import {
-  type InternalWidget,
-  type WidgetChartType,
-  type WidgetDataIdentity,
-  type WidgetDatafeedQuery,
-  type WidgetDiagnostics,
-  type WidgetEvent,
-  type WidgetFeatureVisibility,
-  type WidgetIdentityStatus,
-  type WidgetLabels,
-  type WidgetOptions,
-  type WidgetSnapshot,
-  type WidgetStatus,
-  type WidgetStorage,
+  WatchlistModel,
+  parseWatchlistDocument,
+  type QuoteProvider,
+  type WatchlistDocument,
+  type WatchlistQuote,
+} from "../studio/watchlist.js";
+import type { WorkspaceDocument, WorkspaceRestoreResult } from "../workspace.js";
+import type { ReplayApi } from "../replay/types.js";
+import { ChartSlot } from "./chart-slot.js";
+import {
+  chartCountForLayout,
+  parseWidgetComposition,
+  type WidgetCompositionDocument,
+} from "./composition.js";
+import {
+  COMPARISON_SERIES_PREFIX,
+  DEFAULT_TIMEFRAMES,
+  MAX_COMPARISON_ASSETS,
+  MAX_WATCHLIST_SYMBOLS,
+  normalizeWidgetFeatures,
+  normalizeWidgetLabels,
+} from "./defaults.js";
+import { button, field, select } from "./dom.js";
+import { WidgetLifecycleError } from "./errors.js";
+import { openModalFocus, type ModalFocusSession } from "./focus.js";
+import {
+  defaultIndicatorParameter,
+  formatWidgetName,
+  normalizeWidgetDatafeedQuery,
+  normalizeWidgetIdentity,
+  resolveWidgetDrawingChoices,
+  resolveWidgetIndicatorMetadata,
+  stableChartIds,
+  toColorInputValue,
+  type WidgetDrawingChoice,
+} from "./helpers.js";
+import { acquireWidgetStyles, countWidgetStyleElements } from "./styles.js";
+import type {
+  InternalWidget,
+  WidgetChartType,
+  WidgetDataIdentity,
+  WidgetDatafeedQuery,
+  WidgetDiagnostics,
+  WidgetEvent,
+  WidgetFeatureVisibility,
+  WidgetLabels,
+  WidgetLayout,
+  WidgetOptions,
+  WidgetSnapshot,
+  WidgetStatus,
+  WidgetStorage,
+  WidgetSyncOptions,
 } from "./types.js";
 
-const DEFAULT_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"] as const;
-const DEFAULT_INDICATORS = ["SMA", "EMA", "RSI", "MACD", "BOLLINGER_BANDS"] as const;
-const DEFAULT_DRAWINGS = [
-  "trend-line",
-  "ray",
-  "extended-line",
-  "horizontal-line",
-  "vertical-line",
-  "parallel-channel",
-  "rectangle",
-  "fibonacci-retracement",
-  "fibonacci-extension",
-  "price-range",
-  "date-range",
-  "long-position",
-  "short-position",
-  "text",
-] as const;
-const BASE_SERIES_ID = "widget-price";
-const PRESENTATION_SERIES_ID = "widget-presentation";
-const STYLE_MARKER = "data-openkline-widget-style";
-let nextWidgetInstanceId = 1;
-const widgetStyleRegistry = new WeakMap<Document, { element: HTMLStyleElement; count: number; owned: boolean }>();
+export { WidgetLifecycleError } from "./errors.js";
+export { normalizeWidgetFeatures, normalizeWidgetLabels } from "./defaults.js";
 
-const DEFAULT_LABELS: WidgetLabels = {
-  widgetLabel: "OpenKline financial chart",
-  symbol: "Symbol",
-  timeframe: "Timeframe",
-  chartType: "Chart type",
-  indicators: "Indicators",
-  drawings: "Drawings",
-  theme: "Theme",
-  direction: "Direction",
-  saveWorkspace: "Save workspace",
-  loadWorkspace: "Load workspace",
-  add: "Add",
-  start: "Start",
-  load: "Load",
-  loading: "Loading market data",
-  empty: "No chart data loaded",
-  ready: "Chart ready",
-  error: "Chart error",
-  indicatorExplorer: "Indicator explorer",
-  drawingToolbar: "Drawing tools",
-  objectTree: "Object tree",
-  drawingProperties: "Drawing properties",
-  chartSettings: "Chart settings",
-  close: "Close",
-  cancel: "Cancel",
-  undo: "Undo",
-  redo: "Redo",
-  update: "Update",
-  remove: "Remove",
-  apply: "Apply",
-};
-
-const WIDGET_CSS = `
-[data-openkline-widget] {
-  --openkline-widget-bg: #0f172a;
-  --openkline-widget-panel: #111827;
-  --openkline-widget-border: #334155;
-  --openkline-widget-text: #e2e8f0;
-  --openkline-widget-muted: #94a3b8;
-  --openkline-widget-focus: #38bdf8;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 240px;
-  min-height: 280px;
-  height: 100%;
-  overflow: hidden;
-  color: var(--openkline-widget-text);
-  background: var(--openkline-widget-bg);
-  border: 1px solid var(--openkline-widget-border);
-  border-radius: 6px;
-  font: 13px/1.4 system-ui, sans-serif;
-}
-[data-openkline-widget][data-theme="light"] {
-  --openkline-widget-bg: #f8fafc;
-  --openkline-widget-panel: #ffffff;
-  --openkline-widget-border: #cbd5e1;
-  --openkline-widget-text: #0f172a;
-  --openkline-widget-muted: #475569;
-  --openkline-widget-focus: #0369a1;
-}
-[data-openkline-widget] *, [data-openkline-widget] *::before, [data-openkline-widget] *::after {
-  box-sizing: border-box;
-}
-[data-openkline-widget] [data-openkline-toolbar] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 7px;
-  background: var(--openkline-widget-panel);
-  border-bottom: 1px solid var(--openkline-widget-border);
-}
-[data-openkline-widget] [data-openkline-field] {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-[data-openkline-widget] label {
-  color: var(--openkline-widget-muted);
-  white-space: nowrap;
-}
-[data-openkline-widget] button,
-[data-openkline-widget] select,
-[data-openkline-widget] input {
-  min-height: 30px;
-  border: 1px solid var(--openkline-widget-border);
-  border-radius: 4px;
-  color: var(--openkline-widget-text);
-  background: var(--openkline-widget-bg);
-  font: inherit;
-}
-[data-openkline-widget] button,
-[data-openkline-widget] select {
-  padding: 4px 8px;
-  cursor: pointer;
-}
-[data-openkline-widget] input {
-  width: 105px;
-  padding: 4px 6px;
-}
-[data-openkline-widget] button:hover:not(:disabled),
-[data-openkline-widget] select:hover,
-[data-openkline-widget] input:hover {
-  border-color: var(--openkline-widget-focus);
-}
-[data-openkline-widget] button:focus-visible,
-[data-openkline-widget] select:focus-visible,
-[data-openkline-widget] input:focus-visible {
-  outline: 2px solid var(--openkline-widget-focus);
-  outline-offset: 1px;
-}
-[data-openkline-widget] button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-[data-openkline-widget] [data-openkline-chart] {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 220px;
-  min-width: 0;
-}
-[data-openkline-widget] [data-openkline-status],
-[data-openkline-widget] [data-openkline-error],
-[data-openkline-widget] [data-openkline-empty] {
-  padding: 5px 9px;
-  color: var(--openkline-widget-muted);
-  background: var(--openkline-widget-panel);
-  border-top: 1px solid var(--openkline-widget-border);
-}
-[data-openkline-widget] [data-openkline-error] {
-  color: #fca5a5;
-}
-[data-openkline-widget] [data-openkline-empty] {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  transform: translate(-50%, -50%);
-  border: 0;
-  background: transparent;
-  text-align: center;
-  pointer-events: none;
-}
-[data-openkline-widget] [data-openkline-panel-strip] {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  max-height: min(46vh, 420px);
-  overflow: auto;
-  background: var(--openkline-widget-bg);
-}
-[data-openkline-widget] [data-openkline-panel] {
-  border-bottom: 1px solid var(--openkline-widget-border);
-  padding: 9px;
-}
-[data-openkline-widget] [data-openkline-panel] [data-openkline-panel-header] {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 7px;
-}
-[data-openkline-widget] [data-openkline-panel-title] {
-  font-weight: 600;
-}
-[data-openkline-widget] [data-openkline-panel-search] {
-  width: 100%;
-  margin-bottom: 7px;
-}
-[data-openkline-widget] [data-openkline-panel-list] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 5px;
-}
-[data-openkline-widget] [data-openkline-panel-list] button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  text-align: start;
-}
-[data-openkline-widget] [data-openkline-panel-list] button[aria-pressed="true"] {
-  border-color: var(--openkline-widget-focus);
-  box-shadow: inset 0 0 0 1px var(--openkline-widget-focus);
-}
-[data-openkline-widget] [data-openkline-panel-description] {
-  display: block;
-  color: var(--openkline-widget-muted);
-  font-size: 12px;
-  margin: 2px 0 7px;
-}
-[data-openkline-widget] [data-openkline-panel-form] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 6px;
-  margin: 7px 0;
-}
-[data-openkline-widget] [data-openkline-panel-form] [data-openkline-field] {
-  flex: 0 1 140px;
-}
-[data-openkline-widget] [data-openkline-panel-subtitle] {
-  display: block;
-  margin: 9px 0 5px;
-  color: var(--openkline-widget-muted);
-  font-weight: 600;
-}
-[data-openkline-widget] [data-openkline-tool-grid] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-[data-openkline-widget] [data-openkline-tool-grid] button[data-active="true"] {
-  border-color: var(--openkline-widget-focus);
-  background: color-mix(in srgb, var(--openkline-widget-focus) 18%, var(--openkline-widget-bg));
-}
-[data-openkline-widget] [data-openkline-object-row] {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
-  min-height: 32px;
-  padding: 3px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--openkline-widget-border) 65%, transparent);
-}
-[data-openkline-widget] [data-openkline-object-row] > span {
-  flex: 1 1 150px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-[data-openkline-widget] [data-openkline-settings-grid] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 7px;
-}
-[data-openkline-widget] [data-openkline-settings-grid] [data-openkline-field] {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 3px;
-}
-[data-openkline-widget] [data-openkline-panel-empty] {
-  color: var(--openkline-widget-muted);
-  padding: 4px 0;
-}
-[data-openkline-widget] [data-openkline-panel-error] {
-  color: #fca5a5;
-  margin-top: 5px;
-}
-@media (max-width: 640px) {
-  [data-openkline-widget] [data-openkline-toolbar] {
-    gap: 4px;
-    padding: 5px;
-  }
-  [data-openkline-widget] [data-openkline-field] {
-    flex: 1 1 auto;
-  }
-  [data-openkline-widget] [data-openkline-field] label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-  [data-openkline-widget] button,
-  [data-openkline-widget] select,
-  [data-openkline-widget] input {
-    min-height: 36px;
-  }
-}
-`;
-
-export class WidgetLifecycleError extends Error {
-  public constructor(message: string) {
-    super(message);
-    this.name = "WidgetLifecycleError";
-  }
-}
-
-interface WidgetProfessionalControls {
-  readonly panelStrip: HTMLElement;
-  readonly indicatorPanel: HTMLElement | null;
-  readonly drawingPanel: HTMLElement | null;
-  readonly objectPanel: HTMLElement | null;
-  readonly drawingPropertiesPanel: HTMLElement | null;
-  readonly settingsPanel: HTMLElement | null;
-}
-
-interface WidgetIndicatorEntry {
-  readonly id: string;
-  readonly indicatorId: string;
-  readonly paneId: string;
-}
-
-interface WidgetDrawingChoice {
-  readonly type: string;
-  readonly label: string;
-}
+const COMPARISON_COLORS = ["#f59e0b", "#60a5fa", "#34d399", "#f472b6", "#a78bfa", "#fb7185", "#2dd4bf", "#facc15"] as const;
 
 export function createOpenKlineWidget(options: WidgetOptions): InternalWidget {
   return new InternalWidgetController(options);
 }
 
-export function normalizeWidgetLabels(labels?: Partial<WidgetLabels>): WidgetLabels {
-  return { ...DEFAULT_LABELS, ...(labels ?? {}) };
-}
-
 class InternalWidgetController implements InternalWidget {
   private readonly root: HTMLElement;
-  private readonly chartContainer: HTMLElement;
+  private readonly content: HTMLElement;
+  private readonly chartGrid: HTMLElement;
+  private readonly modalLayer: HTMLElement;
+  private readonly modalBackdrop: HTMLElement;
   private readonly statusElement: HTMLElement;
-  private readonly emptyElement: HTMLElement;
   private readonly errorElement: HTMLElement;
   private readonly labels: WidgetLabels;
   private readonly features: WidgetFeatureVisibility;
   private readonly storage: WidgetStorage | null;
   private readonly storageKey: string;
+  private readonly chartOptionsBase: WidgetOptions["chartOptions"];
+  private readonly initialPlugins: readonly OpenKlinePlugin[];
+  private readonly availableIndicators: readonly IndicatorMetadata[];
+  private readonly availableDrawings: readonly WidgetDrawingChoice[];
   private readonly domCleanups: Array<() => void> = [];
-  private readonly chartSubscriptions: Array<() => void> = [];
   private readonly listeners = new Set<(event: WidgetEvent) => void>();
-  private readonly pluginHandles: PluginHandle[] = [];
-  private readonly chart: Chart;
-  private readonly instanceId: number;
   private readonly releaseStyles: () => void;
-  private datafeed: Datafeed | null;
-  private datafeedQuery: WidgetDatafeedQuery | null;
-  private dataRequest: AbortController | null = null;
-  private dataRequestGeneration = 0;
+  private readonly slots = new Map<string, ChartSlot>();
+  private readonly syncController: ChartSynchronizationController;
+  private readonly syncUnregisters = new Map<string, () => void>();
+  private readonly comparisonEngine = new ComparisonEngine({ mode: "percentage" });
+  private readonly comparisonSeriesIds = new Set<string>();
+  private watchlistModel: WatchlistModel;
+  private quoteProvider: QuoteProvider | null;
+  private quoteUnsubscribe: (() => void) | null = null;
+  private quotes: readonly WatchlistQuote[] = [];
+  private layout: WidgetLayout;
+  private activeChartId: string;
+  private syncOptions: Required<WidgetSyncOptions>;
   private storageRequest: AbortController | null = null;
-  private controlId = 0;
-  private presentation: SeriesApi<Candle> | SeriesApi<LinePoint> | null = null;
-  private syncingPresentation = false;
   private destroyed = false;
   private status: WidgetStatus = "idle";
   private error: string | null = null;
-  private hasData = false;
-  private symbol: string | null;
-  private timeframe: string | null;
-  private requestedSymbol: string | null;
-  private requestedTimeframe: string | null;
-  private identityStatus: WidgetIdentityStatus;
-  private applyingDirectData = false;
   private chartType: WidgetChartType;
   private theme: "light" | "dark";
   private direction: "ltr" | "rtl";
   private pricePrecision: number | null;
-  private readonly symbolInput: HTMLInputElement | null;
-  private readonly timeframeSelect: HTMLSelectElement | null;
-  private readonly chartTypeSelect: HTMLSelectElement | null;
-  private readonly themeButton: HTMLButtonElement | null;
-  private readonly directionButton: HTMLButtonElement | null;
-  private readonly availableIndicators: readonly IndicatorMetadata[];
-  private readonly availableDrawings: readonly WidgetDrawingChoice[];
-  private readonly indicatorPanel: HTMLElement | null;
-  private readonly drawingPanel: HTMLElement | null;
-  private readonly objectPanel: HTMLElement | null;
-  private readonly drawingPropertiesPanel: HTMLElement | null;
-  private readonly settingsPanel: HTMLElement | null;
-  private readonly indicatorApis = new Map<string, ChartIndicatorApi>();
-  private readonly indicatorKinds = new Map<string, string>();
+  private symbolInput: HTMLInputElement | null = null;
+  private timeframeSelect: HTMLSelectElement | null = null;
+  private chartTypeSelect: HTMLSelectElement | null = null;
+  private themeButton: HTMLButtonElement | null = null;
+  private directionButton: HTMLButtonElement | null = null;
+  private layoutSelect: HTMLSelectElement | null = null;
+  private readonly panels = new Map<string, { panel: HTMLElement; trigger: HTMLButtonElement }>();
+  private openModal: ModalFocusSession | null = null;
   private selectedIndicatorId: string | null = null;
   private selectedIndicatorInstanceId: string | null = null;
-  private activeDrawingType: string | null = null;
-  private openPanelState: { readonly panel: HTMLElement; readonly trigger: HTMLButtonElement } | null = null;
+  private comparisonBaselineMaxAgeMs = 0;
+  private archivedSlots = new Map<string, { workspace: WorkspaceDocument; symbol: string | null; timeframe: string | null; chartType: WidgetChartType }>();
 
   public constructor(options: WidgetOptions) {
     if (!(options.container instanceof HTMLElement)) throw new WidgetLifecycleError("Widget container must be an HTMLElement");
-    this.instanceId = nextWidgetInstanceId++;
     const document = options.container.ownerDocument;
-    const directIdentity = normalizeWidgetIdentity(options.dataIdentity);
-    const initialQuery = options.datafeedQuery === undefined ? null : normalizeWidgetDatafeedQuery(options.datafeedQuery);
     this.releaseStyles = acquireWidgetStyles(document);
     this.features = normalizeWidgetFeatures(options.features);
     this.labels = normalizeWidgetLabels(options.labels);
     this.storage = options.storage ?? null;
     this.storageKey = options.storageKey ?? "openkline-widget-workspace";
-    this.datafeed = options.datafeed ?? null;
-    this.datafeedQuery = initialQuery;
-    this.symbol = directIdentity?.symbol ?? null;
-    this.timeframe = directIdentity?.timeframe ?? null;
-    this.requestedSymbol = this.datafeedQuery?.symbol ?? this.symbol;
-    this.requestedTimeframe = this.datafeedQuery?.timeframe ?? this.timeframe;
-    this.identityStatus = this.datafeedQuery !== null
-      ? "loading"
-      : options.data !== undefined && options.data.length > 0
-        ? directIdentity === undefined ? "unavailable" : "confirmed"
-        : directIdentity === undefined ? "unbound" : "confirmed";
+    this.chartOptionsBase = options.chartOptions;
+    this.initialPlugins = options.plugins ?? [];
     this.chartType = options.chartType ?? "candlestick";
     this.theme = options.chartOptions?.theme === "dark" ? "dark" : "light";
     this.direction = options.chartOptions?.direction ?? "ltr";
     this.pricePrecision = options.chartOptions?.pricePrecision ?? null;
     this.availableIndicators = resolveWidgetIndicatorMetadata(options.indicatorChoices);
     this.availableDrawings = resolveWidgetDrawingChoices(options.drawingChoices);
+    this.layout = options.layout ?? "single";
+    this.syncOptions = {
+      enabled: options.synchronization?.enabled ?? false,
+      crosshair: options.synchronization?.crosshair ?? false,
+      visibleRange: options.synchronization?.visibleRange ?? false,
+    };
+    this.syncController = new ChartSynchronizationController({
+      enabled: this.syncOptions.enabled,
+      crosshair: this.syncOptions.crosshair,
+      visibleRange: this.syncOptions.visibleRange,
+    });
+    this.watchlistModel = new WatchlistModel(options.watchlist ?? { version: 1, selectedWatchlistId: null, lists: [] });
+    this.quoteProvider = options.quoteProvider ?? null;
 
     this.root = document.createElement("section");
     this.root.dataset.openklineWidget = "";
@@ -467,80 +165,168 @@ class InternalWidgetController implements InternalWidget {
     this.root.dir = this.direction;
     this.root.setAttribute("aria-label", this.labels.widgetLabel);
 
-    const toolbarControls = this.createToolbar(document, options);
-    this.symbolInput = toolbarControls.symbolInput;
-    this.timeframeSelect = toolbarControls.timeframeSelect;
-    this.chartTypeSelect = toolbarControls.chartTypeSelect;
-    this.themeButton = toolbarControls.themeButton;
-    this.directionButton = toolbarControls.directionButton;
-    this.indicatorPanel = toolbarControls.professional.indicatorPanel;
-    this.drawingPanel = toolbarControls.professional.drawingPanel;
-    this.objectPanel = toolbarControls.professional.objectPanel;
-    this.drawingPropertiesPanel = toolbarControls.professional.drawingPropertiesPanel;
-    this.settingsPanel = toolbarControls.professional.settingsPanel;
-
-    this.chartContainer = document.createElement("div");
-    this.chartContainer.dataset.openklineChart = "";
-    this.chartContainer.setAttribute("aria-label", "OpenKline chart area");
+    this.content = document.createElement("div");
+    this.content.dataset.openklineContent = "";
+    this.chartGrid = document.createElement("div");
+    this.chartGrid.dataset.openklineChartGrid = "";
+    this.chartGrid.dataset.layout = this.layout;
+    this.modalLayer = document.createElement("div");
+    this.modalLayer.dataset.openklineModalLayer = "";
+    this.modalLayer.hidden = true;
+    this.modalBackdrop = document.createElement("div");
+    this.modalBackdrop.dataset.openklineModalBackdrop = "";
+    this.modalLayer.append(this.modalBackdrop);
     this.statusElement = document.createElement("div");
     this.statusElement.dataset.openklineStatus = "";
     this.statusElement.setAttribute("role", "status");
     this.statusElement.setAttribute("aria-live", "polite");
-    this.emptyElement = document.createElement("div");
-    this.emptyElement.dataset.openklineEmpty = "";
-    this.emptyElement.setAttribute("role", "status");
     this.errorElement = document.createElement("div");
     this.errorElement.dataset.openklineError = "";
     this.errorElement.setAttribute("role", "alert");
-
-    this.root.append(toolbarControls.toolbar, toolbarControls.professional.panelStrip, this.chartContainer, this.statusElement, this.errorElement);
-    this.chartContainer.append(this.emptyElement);
+    const toolbar = this.createToolbar(document, options);
+    this.content.append(this.chartGrid, this.statusElement, this.errorElement, this.modalLayer);
+    this.root.append(toolbar, this.content);
     options.container.append(this.root);
 
-    const chartOptions: ChartOptions = {
-      ...(options.chartOptions ?? {}),
-      autoSize: options.chartOptions?.autoSize ?? true,
-      theme: options.chartOptions?.theme ?? this.theme,
-      direction: this.direction,
-    };
-    this.chart = createChart(this.chartContainer, chartOptions);
-    const base = this.chart.addCandlestickSeries({ id: BASE_SERIES_ID, title: "Price", style: { visible: this.chartType === "candlestick" } });
-    if (options.data !== undefined) {
-      base.setData(options.data);
+    const ids = stableChartIds(chartCountForLayout(this.layout));
+    this.activeChartId = ids[0]!;
+    for (const id of ids) {
+      const seed: {
+        data?: readonly Candle[];
+        dataIdentity?: WidgetDataIdentity;
+        datafeed?: Datafeed | null;
+        datafeedQuery?: WidgetDatafeedQuery | null;
+      } = {};
+      if (id === this.activeChartId) {
+        if (options.data !== undefined) seed.data = options.data;
+        const identity = normalizeWidgetIdentity(options.dataIdentity);
+        if (identity !== undefined) seed.dataIdentity = identity;
+        if (options.datafeed !== undefined) seed.datafeed = options.datafeed;
+        if (options.datafeedQuery !== undefined) seed.datafeedQuery = normalizeWidgetDatafeedQuery(options.datafeedQuery);
+      }
+      this.createSlot(id, seed);
     }
-    this.attachChartSubscriptions();
-    this.attachToolbarListeners(toolbarControls);
-    for (const plugin of options.plugins ?? []) this.pluginHandles.push(this.chart.installPlugin(plugin));
-    this.hasData = this.chart.getData().length > 0;
-    this.syncPresentationForChartType();
-    this.refreshProfessionalUi();
-    this.setStatus(this.hasData ? "ready" : "empty");
-    if (this.datafeed !== null && this.datafeedQuery !== null) {
-      void this.setDatafeed(this.datafeed, this.datafeedQuery).catch(() => undefined);
-    } else if (this.datafeed !== null) {
-      this.fail(new Error("A datafeed query is required when a datafeed is supplied"));
-    }
+    this.refreshActiveMarkers();
+    this.attachQuoteProvider();
+    this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
   }
 
   public getChart(): Chart {
+    return this.activeSlot().chart;
+  }
+
+  public getCharts(): ReadonlyMap<string, Chart> {
     this.assertAlive();
-    return this.chart;
+    return new Map([...this.slots.entries()].map(([id, slot]) => [id, slot.chart]));
+  }
+
+  public getActiveChartId(): string {
+    this.assertAlive();
+    return this.activeChartId;
+  }
+
+  public setActiveChartId(id: string): void {
+    this.assertAlive();
+    if (!this.slots.has(id)) throw new WidgetLifecycleError(`Unknown chart id: ${id}`);
+    this.activeChartId = id;
+    this.refreshActiveMarkers();
+    this.refreshOpenPanels();
+    this.emitState();
+  }
+
+  public getLayout(): WidgetLayout {
+    this.assertAlive();
+    return this.layout;
+  }
+
+  public setLayout(layout: WidgetLayout): void {
+    this.assertAlive();
+    if (layout === this.layout) return;
+    const nextCount = chartCountForLayout(layout);
+    const currentIds = [...this.slots.keys()];
+    const nextIds = stableChartIds(nextCount);
+
+    // Archive slots that will be removed so layout switches can restore them.
+    for (const id of currentIds) {
+      if (nextIds.includes(id)) continue;
+      const slot = this.slots.get(id)!;
+      this.archivedSlots.set(id, {
+        workspace: slot.exportWorkspace(),
+        symbol: slot.symbol,
+        timeframe: slot.timeframe,
+        chartType: slot.chartType,
+      });
+      this.unregisterSync(id);
+      slot.destroy();
+      this.slots.delete(id);
+    }
+
+    for (const id of nextIds) {
+      if (this.slots.has(id)) continue;
+      const archived = this.archivedSlots.get(id);
+      this.createSlot(id, {});
+      if (archived !== undefined) {
+        const slot = this.slots.get(id)!;
+        slot.chartType = archived.chartType;
+        slot.importWorkspace(archived.workspace);
+        this.archivedSlots.delete(id);
+      }
+    }
+
+    this.layout = layout;
+    this.chartGrid.dataset.layout = layout;
+    if (!this.slots.has(this.activeChartId)) this.activeChartId = nextIds[0]!;
+    if (this.layoutSelect !== null) this.layoutSelect.value = layout;
+    this.refreshActiveMarkers();
+    this.emitState();
+  }
+
+  public getSynchronization(): Required<WidgetSyncOptions> {
+    this.assertAlive();
+    return { ...this.syncOptions };
+  }
+
+  public setSynchronization(options: WidgetSyncOptions): void {
+    this.assertAlive();
+    this.syncOptions = {
+      enabled: options.enabled ?? this.syncOptions.enabled,
+      crosshair: options.crosshair ?? this.syncOptions.crosshair,
+      visibleRange: options.visibleRange ?? this.syncOptions.visibleRange,
+    };
+    this.syncController.setOptions(this.syncOptions);
+    this.emitState();
   }
 
   public getState(): WidgetSnapshot {
+    const active = this.slots.get(this.activeChartId);
     return {
       status: this.status,
-      symbol: this.symbol,
-      timeframe: this.timeframe,
-      requestedSymbol: this.requestedSymbol,
-      requestedTimeframe: this.requestedTimeframe,
-      identityStatus: this.identityStatus,
-      chartType: this.chartType,
+      symbol: active?.symbol ?? null,
+      timeframe: active?.timeframe ?? null,
+      requestedSymbol: active?.requestedSymbol ?? null,
+      requestedTimeframe: active?.requestedTimeframe ?? null,
+      identityStatus: active?.identityStatus ?? "unbound",
+      chartType: active?.chartType ?? this.chartType,
       theme: this.theme,
       direction: this.direction,
-      hasData: this.hasData,
-      error: this.error,
-      features: { ...this.features },
+      hasData: active?.hasData ?? false,
+      error: this.error ?? active?.error ?? null,
+      features: this.features,
+      layout: this.layout,
+      activeChartId: this.activeChartId,
+      charts: [...this.slots.values()].map((slot) => ({
+        id: slot.id,
+        active: slot.id === this.activeChartId,
+        symbol: slot.symbol,
+        timeframe: slot.timeframe,
+        requestedSymbol: slot.requestedSymbol,
+        requestedTimeframe: slot.requestedTimeframe,
+        identityStatus: slot.identityStatus,
+        hasData: slot.hasData,
+        error: slot.error,
+        replay: slot.getReplayStatus(),
+      })),
+      synchronization: { ...this.syncOptions },
     };
   }
 
@@ -548,62 +334,22 @@ class InternalWidgetController implements InternalWidget {
     return {
       destroyed: this.destroyed,
       domListeners: this.domCleanups.length,
-      chartSubscriptions: this.chartSubscriptions.length,
-      pendingDataRequest: this.dataRequest !== null,
-      canvasCount: this.root.querySelectorAll("canvas").length,
-      styleElementCount: this.root.ownerDocument.querySelectorAll(`style[${STYLE_MARKER}]`).length,
+      chartSubscriptions: [...this.slots.values()].reduce((total, slot) => total + slot.getSubscriptionCount(), 0),
+      pendingDataRequest: [...this.slots.values()].some((slot) => slot.hasPendingDataRequest()),
+      canvasCount: this.destroyed ? 0 : this.root.querySelectorAll("canvas").length,
+      styleElementCount: countWidgetStyleElements(this.root.ownerDocument),
+      chartCount: this.slots.size,
+      syncEnabled: this.syncOptions.enabled,
     };
   }
 
   public setData(candles: readonly Candle[], identity?: WidgetDataIdentity): void {
     this.assertAlive();
-    let normalizedIdentity: WidgetDataIdentity | undefined;
     try {
-      normalizedIdentity = normalizeWidgetIdentity(identity);
-    } catch (error) {
-      this.fail(error);
-      throw error;
-    }
-    if (candles.length > 0 && !hasWidgetIdentity(normalizedIdentity) && (this.hasData || this.identityStatus === "confirmed")) {
-      throw this.fail(new WidgetLifecycleError("A data identity is required when replacing displayed candles"));
-    }
-    this.dataRequest?.abort();
-    this.dataRequest = null;
-    this.dataRequestGeneration += 1;
-    if (this.datafeed !== null) {
-      this.chart.stopDatafeed();
-      this.datafeed = null;
-      this.datafeedQuery = null;
-    }
-    try {
-      this.applyingDirectData = true;
-      try {
-        this.chart.setData(candles);
-      } finally {
-        this.applyingDirectData = false;
-      }
-      this.hasData = candles.length > 0;
-      if (normalizedIdentity !== undefined && hasWidgetIdentity(normalizedIdentity)) {
-        this.symbol = normalizedIdentity.symbol ?? null;
-        this.timeframe = normalizedIdentity.timeframe ?? null;
-        this.requestedSymbol = this.symbol;
-        this.requestedTimeframe = this.timeframe;
-        this.identityStatus = "confirmed";
-      } else if (candles.length > 0) {
-        this.symbol = null;
-        this.timeframe = null;
-        this.requestedSymbol = null;
-        this.requestedTimeframe = null;
-        this.identityStatus = "unavailable";
-      } else if (this.identityStatus !== "confirmed") {
-        this.symbol = null;
-        this.timeframe = null;
-        this.requestedSymbol = null;
-        this.requestedTimeframe = null;
-        this.identityStatus = "unbound";
-      }
+      this.activeSlot().setData(candles, identity === undefined ? undefined : normalizeWidgetIdentity(identity));
+      this.chartType = this.activeSlot().chartType;
       this.error = null;
-      this.setStatus(this.hasData ? "ready" : "empty");
+      this.setStatus(candles.length > 0 ? "ready" : "empty");
     } catch (error) {
       this.fail(error);
       throw error;
@@ -612,100 +358,70 @@ class InternalWidgetController implements InternalWidget {
 
   public async setDatafeed(datafeed: Datafeed, query: WidgetDatafeedQuery): Promise<void> {
     this.assertAlive();
-    const normalizedQuery = normalizeWidgetDatafeedQuery(query);
-    const controller = new AbortController();
-    this.dataRequest?.abort();
-    this.dataRequest = controller;
-    const generation = ++this.dataRequestGeneration;
-    this.datafeed = datafeed;
-    this.datafeedQuery = { ...normalizedQuery };
-    this.requestedSymbol = normalizedQuery.symbol;
-    this.requestedTimeframe = normalizedQuery.timeframe;
-    this.identityStatus = "loading";
-    this.error = null;
     this.setStatus("loading");
     try {
-      await this.chart.setDatafeed(datafeed, { ...normalizedQuery, signal: controller.signal });
-      if (this.destroyed || generation !== this.dataRequestGeneration || controller.signal.aborted) return;
-      this.symbol = normalizedQuery.symbol;
-      this.timeframe = normalizedQuery.timeframe;
-      this.requestedSymbol = this.symbol;
-      this.requestedTimeframe = this.timeframe;
-      this.identityStatus = "confirmed";
-      this.hasData = this.chart.getData().length > 0;
-      this.syncPresentationForChartType();
-      this.setStatus(this.hasData ? "ready" : "empty");
+      await this.activeSlot().setDatafeed(datafeed, normalizeWidgetDatafeedQuery(query));
+      this.error = null;
+      this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
     } catch (error) {
-      if (controller.signal.aborted || generation !== this.dataRequestGeneration || isAbortError(error)) return;
-      this.identityStatus = "failed";
       this.fail(error);
       throw error;
-    } finally {
-      if (generation === this.dataRequestGeneration) this.dataRequest = null;
     }
   }
 
   public async setSymbol(symbol: string): Promise<void> {
     this.assertAlive();
-    const next = symbol.trim();
-    if (next.length === 0) throw this.fail(new Error("Symbol must not be empty"));
-    if (this.datafeed === null || this.datafeedQuery === null) {
-      if (this.hasData) throw this.fail(new WidgetLifecycleError("Cannot change symbol while direct candles are displayed; replace them with setData(candles, { symbol, timeframe })"));
-      this.requestedSymbol = next;
-      this.renderState();
-      return;
+    this.setStatus("loading");
+    try {
+      await this.activeSlot().setSymbol(symbol);
+      this.error = null;
+      this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
+    } catch (error) {
+      this.fail(error);
+      throw error;
     }
-    if (next === this.requestedSymbol && this.identityStatus === "loading") return;
-    await this.setDatafeed(this.datafeed, { ...this.datafeedQuery, symbol: next });
   }
 
   public async setTimeframe(timeframe: string): Promise<void> {
     this.assertAlive();
-    const next = timeframe.trim();
-    if (next.length === 0) throw this.fail(new Error("Timeframe must not be empty"));
-    if (this.datafeed === null || this.datafeedQuery === null) {
-      if (this.hasData) throw this.fail(new WidgetLifecycleError("Cannot change timeframe while direct candles are displayed; replace them with setData(candles, { symbol, timeframe })"));
-      this.requestedTimeframe = next;
-      this.renderState();
-      return;
+    this.setStatus("loading");
+    try {
+      await this.activeSlot().setTimeframe(timeframe);
+      this.error = null;
+      this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
+    } catch (error) {
+      this.fail(error);
+      throw error;
     }
-    if (next === this.requestedTimeframe && this.identityStatus === "loading") return;
-    await this.setDatafeed(this.datafeed, { ...this.datafeedQuery, timeframe: next });
   }
 
   public setChartType(type: WidgetChartType): void {
     this.assertAlive();
-    if (this.chartType === type) return;
     this.chartType = type;
-    this.syncPresentationForChartType();
-    this.renderState();
+    this.activeSlot().setChartType(type);
+    this.emitState();
   }
 
   public setTheme(theme: "light" | "dark"): void {
     this.assertAlive();
     this.theme = theme;
-    this.chart.setOptions({ theme });
-    this.renderState();
+    for (const slot of this.slots.values()) slot.chart.setOptions({ theme });
+    this.renderShell();
+    this.emitState();
   }
 
   public setDirection(direction: "ltr" | "rtl"): void {
     this.assertAlive();
     this.direction = direction;
-    this.chart.setOptions({ direction });
-    this.root.dir = direction;
-    this.renderState();
+    for (const slot of this.slots.values()) slot.chart.setOptions({ direction });
+    this.renderShell();
+    this.emitState();
   }
 
   public addIndicator(indicatorId: string, options: IndicatorAddOptions = {}): string {
     this.assertAlive();
     try {
-      const api = this.chart.addIndicator(indicatorId, options);
-      this.indicatorApis.set(api.id, api);
-      this.indicatorKinds.set(api.id, api.indicatorId);
-      this.selectedIndicatorId = api.indicatorId;
-      this.selectedIndicatorInstanceId = api.id;
-      this.refreshProfessionalUi();
-      return api.id;
+      return this.activeSlot().addIndicator(indicatorId, options);
     } catch (error) {
       this.fail(error);
       throw error;
@@ -714,93 +430,45 @@ class InternalWidgetController implements InternalWidget {
 
   public startDrawing(type: string, options: { readonly snap?: "none" | "visible-ohlc" } = {}): void {
     this.assertAlive();
-    try {
-      const drawingOptions: DrawingStartOptions = options.snap === undefined ? {} : { snap: options.snap };
-      this.chart.startDrawing(type, drawingOptions);
-    } catch (error) {
-      this.fail(error);
-      throw error;
-    }
+    this.activeSlot().startDrawing(type, options);
   }
 
   public async saveWorkspace(key = this.storageKey): Promise<void> {
     this.assertAlive();
-    if (this.storage === null) throw this.fail(new Error("Widget storage is not configured"));
+    if (this.storage === null) throw new WidgetLifecycleError("Widget storage is not configured");
     this.storageRequest?.abort();
-    const controller = new AbortController();
-    this.storageRequest = controller;
-    const metadata: WorkspaceMetadata = {
-      ...(this.symbol === null ? {} : { symbol: this.symbol }),
-      ...(this.timeframe === null ? {} : { timeframe: this.timeframe }),
-    };
-    try {
-      const document = this.chart.serializeWorkspace(metadata);
-      await this.storage.save(key, JSON.stringify(document), controller.signal);
-      if (controller.signal.aborted || this.destroyed) return;
-    } catch (error) {
-      if (controller.signal.aborted || this.destroyed) return;
-      this.fail(error);
-      throw error;
-    } finally {
-      if (this.storageRequest === controller) this.storageRequest = null;
-    }
+    this.storageRequest = new AbortController();
+    const payload = JSON.stringify(this.exportComposition());
+    await this.storage.save(key, payload, this.storageRequest.signal);
   }
 
   public async loadWorkspace(key = this.storageKey): Promise<WorkspaceRestoreResult> {
     this.assertAlive();
-    if (this.storage === null) throw this.fail(new Error("Widget storage is not configured"));
+    if (this.storage === null) throw new WidgetLifecycleError("Widget storage is not configured");
     this.storageRequest?.abort();
-    const controller = new AbortController();
-    this.storageRequest = controller;
-    try {
-      const value = await this.storage.load(key, controller.signal);
-      if (controller.signal.aborted || this.destroyed) throw new WidgetLifecycleError("Workspace load was cancelled");
-      if (value === null) throw new Error(`No workspace stored for key ${key}`);
-      const document = typeof value === "string" ? JSON.parse(value) as unknown : value;
-      return this.importWorkspace(document);
-    } catch (error) {
-      if (controller.signal.aborted || this.destroyed) throw new WidgetLifecycleError("Workspace load was cancelled");
-      this.fail(error);
-      throw error;
-    } finally {
-      if (this.storageRequest === controller) this.storageRequest = null;
+    this.storageRequest = new AbortController();
+    const raw = await this.storage.load(key, this.storageRequest.signal);
+    if (raw === null || raw === undefined) throw new WidgetLifecycleError("Workspace storage entry was empty");
+    const value = typeof raw === "string" ? JSON.parse(raw) as unknown : raw;
+    if (isCompositionLike(value)) {
+      this.importComposition(value);
+      return this.activeSlot().importWorkspace(this.activeSlot().exportWorkspace());
     }
+    return this.importWorkspace(value);
   }
 
   public exportWorkspace(): WorkspaceDocument {
     this.assertAlive();
-    return this.chart.serializeWorkspace({
-      ...(this.symbol === null ? {} : { symbol: this.symbol }),
-      ...(this.timeframe === null ? {} : { timeframe: this.timeframe }),
-    });
+    return this.activeSlot().exportWorkspace();
   }
 
   public importWorkspace(value: unknown): WorkspaceRestoreResult {
     this.assertAlive();
     try {
-      const parsed = parseWorkspace(value);
-      const identity = normalizeWidgetIdentity(parsed.metadata);
-      this.dataRequest?.abort();
-      this.dataRequest = null;
-      this.dataRequestGeneration += 1;
-      if (this.datafeed !== null) this.chart.stopDatafeed();
-      this.datafeed = null;
-      this.datafeedQuery = null;
-      this.indicatorApis.clear();
-      this.indicatorKinds.clear();
-      this.selectedIndicatorInstanceId = null;
-      const result = this.chart.restoreWorkspace(value, { missingPlugins: "skip", missingIndicators: "skip" });
-      this.rebindRestoredPresentation();
-      this.symbol = identity?.symbol ?? null;
-      this.timeframe = identity?.timeframe ?? null;
-      this.requestedSymbol = this.symbol;
-      this.requestedTimeframe = this.timeframe;
-      this.hasData = this.chart.getData().length > 0;
-      this.identityStatus = this.hasData
-        ? hasWidgetIdentity(identity) ? "confirmed" : "unavailable"
-        : hasWidgetIdentity(identity) ? "confirmed" : "unbound";
+      const result = this.activeSlot().importWorkspace(value);
+      this.chartType = this.activeSlot().chartType;
       this.error = null;
-      this.setStatus(this.hasData ? "ready" : "empty");
+      this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
       return result;
     } catch (error) {
       this.fail(error);
@@ -808,11 +476,147 @@ class InternalWidgetController implements InternalWidget {
     }
   }
 
+  public exportComposition(): WidgetCompositionDocument {
+    this.assertAlive();
+    return parseWidgetComposition({
+      version: 1,
+      layout: this.layout,
+      activeChartId: this.activeChartId,
+      charts: [...this.slots.values()].map((slot) => ({
+        id: slot.id,
+        symbol: slot.symbol,
+        timeframe: slot.timeframe,
+        workspace: slot.exportWorkspace(),
+      })),
+      synchronization: { ...this.syncOptions },
+      watchlist: this.watchlistModel.getDocument(),
+      comparison: {
+        active: this.comparisonSeriesIds.size > 0,
+        mode: this.comparisonEngine.getMode(),
+        baselineTime: this.comparisonEngine.getBaseline()?.time ?? null,
+        baselineMaxAgeMs: this.comparisonEngine.getBaseline()?.maxAgeMs ?? this.comparisonBaselineMaxAgeMs,
+        assetIds: this.comparisonEngine.getAssetIds(),
+      },
+    });
+  }
+
+  public importComposition(value: unknown): void {
+    this.assertAlive();
+    const parsed = parseWidgetComposition(value);
+    this.setLayout(parsed.layout);
+    for (const chart of parsed.charts) {
+      const slot = this.slots.get(chart.id);
+      if (slot === undefined) continue;
+      slot.importWorkspace(chart.workspace);
+    }
+    this.setActiveChartId(parsed.activeChartId);
+    this.setSynchronization(parsed.synchronization);
+    this.watchlistModel = new WatchlistModel(parsed.watchlist);
+    this.attachQuoteProvider();
+    if (parsed.comparison !== undefined) {
+      this.clearComparison();
+      this.comparisonEngine.setMode(parsed.comparison.mode);
+      this.comparisonBaselineMaxAgeMs = parsed.comparison.baselineMaxAgeMs;
+      this.comparisonEngine.setBaseline(parsed.comparison.baselineTime, { maxAgeMs: parsed.comparison.baselineMaxAgeMs });
+      // Asset candles are host-owned; composition restores configuration only.
+    }
+    this.error = null;
+    this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
+  }
+
+  public getWatchlist(): WatchlistDocument {
+    this.assertAlive();
+    return this.watchlistModel.getDocument();
+  }
+
+  public setWatchlist(document: WatchlistDocument): void {
+    this.assertAlive();
+    this.watchlistModel = new WatchlistModel(parseWatchlistDocument(document));
+    this.attachQuoteProvider();
+    this.refreshOpenPanels();
+    this.emitState();
+  }
+
+  public setQuoteProvider(provider: QuoteProvider | null): void {
+    this.assertAlive();
+    this.quoteProvider = provider;
+    this.attachQuoteProvider();
+    this.refreshOpenPanels();
+  }
+
+  public getQuotes(): readonly WatchlistQuote[] {
+    this.assertAlive();
+    return this.quotes.map((quote) => ({ ...quote }));
+  }
+
+  public setComparisonMode(mode: ComparisonNormalizationMode): void {
+    this.assertAlive();
+    this.comparisonEngine.setMode(mode);
+    this.applyComparisonSeries();
+    this.refreshOpenPanels();
+  }
+
+  public setComparisonBaseline(time: number | null, options: { readonly maxAgeMs?: number } = {}): void {
+    this.assertAlive();
+    if (options.maxAgeMs !== undefined) this.comparisonBaselineMaxAgeMs = options.maxAgeMs;
+    this.comparisonEngine.setBaseline(time, { maxAgeMs: this.comparisonBaselineMaxAgeMs });
+    this.applyComparisonSeries();
+    this.refreshOpenPanels();
+  }
+
+  public addComparisonAsset(id: string, candles: readonly Candle[], options: { readonly label?: string; readonly color?: string } = {}): void {
+    this.assertAlive();
+    if (this.comparisonEngine.getAssetIds().length >= MAX_COMPARISON_ASSETS) {
+      throw new WidgetLifecycleError(`Comparison supports at most ${MAX_COMPARISON_ASSETS} assets`);
+    }
+    const color = options.color ?? COMPARISON_COLORS[this.comparisonEngine.getAssetIds().length % COMPARISON_COLORS.length]!;
+    this.comparisonEngine.addAsset({
+      id,
+      label: options.label ?? id,
+      ...(color === undefined ? {} : { color }),
+      data: candles.map((candle) => ({ time: candle.time, price: candle.close })),
+    });
+    this.applyComparisonSeries();
+    this.refreshOpenPanels();
+  }
+
+  public removeComparisonAsset(id: string): void {
+    this.assertAlive();
+    this.comparisonEngine.removeAsset(id);
+    this.applyComparisonSeries();
+    this.refreshOpenPanels();
+  }
+
+  public clearComparison(): void {
+    this.assertAlive();
+    this.comparisonEngine.clear();
+    this.applyComparisonSeries();
+    this.refreshOpenPanels();
+  }
+
+  public getReplay(): ReplayApi | null {
+    this.assertAlive();
+    return this.activeSlot().getReplay();
+  }
+
+  public enterReplay(options: { readonly startAt?: number; readonly speed?: number } = {}): ReplayApi {
+    this.assertAlive();
+    try {
+      return this.activeSlot().enterReplay(options);
+    } catch (error) {
+      this.fail(error);
+      throw error;
+    }
+  }
+
+  public exitReplay(): void {
+    this.assertAlive();
+    this.activeSlot().exitReplay();
+  }
+
   public installPlugin(plugin: OpenKlinePlugin): PluginHandle {
     this.assertAlive();
-    const handle = this.chart.installPlugin(plugin);
-    this.pluginHandles.push(handle);
-    return handle;
+    return this.activeSlot().chart.installPlugin(plugin);
   }
 
   public subscribe(listener: (event: WidgetEvent) => void): () => void {
@@ -824,291 +628,454 @@ class InternalWidgetController implements InternalWidget {
   public destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
-    this.dataRequestGeneration += 1;
-    this.dataRequest?.abort();
-    this.dataRequest = null;
+    this.closeOpenModal();
     this.storageRequest?.abort();
     this.storageRequest = null;
+    this.quoteUnsubscribe?.();
+    this.quoteUnsubscribe = null;
     for (const cleanup of this.domCleanups.splice(0)) cleanup();
-    for (const unsubscribe of this.chartSubscriptions.splice(0)) unsubscribe();
-    for (const handle of this.pluginHandles.splice(0)) handle.dispose();
-    this.chart.destroy();
+    for (const id of [...this.slots.keys()]) {
+      this.unregisterSync(id);
+      this.slots.get(id)?.destroy();
+      this.slots.delete(id);
+    }
+    this.syncController.destroy();
+    this.comparisonEngine.dispose();
     this.releaseStyles();
     this.root.remove();
     this.status = "destroyed";
     this.error = null;
-    this.hasData = false;
     this.listeners.clear();
   }
 
-  private createToolbar(document: Document, options: WidgetOptions): {
-    toolbar: HTMLElement;
-    symbolInput: HTMLInputElement | null;
-    timeframeSelect: HTMLSelectElement | null;
-    chartTypeSelect: HTMLSelectElement | null;
-    indicatorSelect: HTMLSelectElement | null;
-    drawingSelect: HTMLSelectElement | null;
-    saveButton: HTMLButtonElement | null;
-    loadButton: HTMLButtonElement | null;
-    themeButton: HTMLButtonElement | null;
-    directionButton: HTMLButtonElement | null;
-    loadSymbolButton: HTMLButtonElement | null;
-    addIndicatorButton: HTMLButtonElement | null;
-    startDrawingButton: HTMLButtonElement | null;
-    professional: WidgetProfessionalControls;
-  } {
+  private createSlot(
+    id: string,
+    seed: {
+      data?: readonly Candle[];
+      dataIdentity?: WidgetDataIdentity;
+      datafeed?: Datafeed | null;
+      datafeedQuery?: WidgetDatafeedQuery | null;
+    },
+  ): ChartSlot {
+    const document = this.root.ownerDocument;
+    const chartOptions = {
+      ...(this.chartOptionsBase ?? {}),
+      autoSize: this.chartOptionsBase?.autoSize ?? true,
+      theme: this.chartOptionsBase?.theme ?? this.theme,
+      direction: this.direction,
+    };
+    const slot = new ChartSlot({
+      id,
+      document,
+      grid: this.chartGrid,
+      chartOptions,
+      chartType: this.chartType,
+      ...(seed.data === undefined ? {} : { data: seed.data }),
+      ...(seed.dataIdentity === undefined ? {} : { dataIdentity: seed.dataIdentity }),
+      ...(seed.datafeed === undefined ? {} : { datafeed: seed.datafeed }),
+      ...(seed.datafeedQuery === undefined ? {} : { datafeedQuery: seed.datafeedQuery }),
+      plugins: this.initialPlugins,
+      onEvent: (chartId, name, payload) => {
+        this.emit({ type: "chart", name, payload, chartId });
+        if (chartId === this.activeChartId) this.refreshOpenPanels();
+      },
+      onStateChange: () => {
+        if (this.destroyed) return;
+        const active = this.activeSlot();
+        if (active.error !== null) this.error = active.error;
+        this.renderShell();
+        this.emitState();
+      },
+    });
+    this.onDom(slot.slotElement, "pointerdown", () => {
+      if (this.activeChartId !== id) this.setActiveChartId(id);
+    });
+    this.slots.set(id, slot);
+    this.registerSync(id, slot);
+    return slot;
+  }
+
+  private registerSync(id: string, slot: ChartSlot): void {
+    this.unregisterSync(id);
+    const unregister = this.syncController.addChart(id, slot.chart);
+    this.syncUnregisters.set(id, unregister);
+  }
+
+  private unregisterSync(id: string): void {
+    const unregister = this.syncUnregisters.get(id);
+    if (unregister === undefined) return;
+    unregister();
+    this.syncUnregisters.delete(id);
+  }
+
+  private activeSlot(): ChartSlot {
+    this.assertAlive();
+    const slot = this.slots.get(this.activeChartId);
+    if (slot === undefined) throw new WidgetLifecycleError("Active chart slot is missing");
+    return slot;
+  }
+
+  private refreshActiveMarkers(): void {
+    for (const slot of this.slots.values()) slot.setActive(slot.id === this.activeChartId);
+  }
+
+  private createToolbar(document: Document, options: WidgetOptions): HTMLElement {
     const toolbar = document.createElement("div");
     toolbar.dataset.openklineToolbar = "";
     toolbar.setAttribute("role", "toolbar");
     toolbar.setAttribute("aria-label", this.labels.widgetLabel);
     if (!this.features.header) toolbar.hidden = true;
 
-    let symbolInput: HTMLInputElement | null = null;
-    let timeframeSelect: HTMLSelectElement | null = null;
-    let chartTypeSelect: HTMLSelectElement | null = null;
-    let indicatorSelect: HTMLSelectElement | null = null;
-    let drawingSelect: HTMLSelectElement | null = null;
-    let saveButton: HTMLButtonElement | null = null;
-    let loadButton: HTMLButtonElement | null = null;
-    let themeButton: HTMLButtonElement | null = null;
-    let directionButton: HTMLButtonElement | null = null;
-    let loadSymbolButton: HTMLButtonElement | null = null;
-    let addIndicatorButton: HTMLButtonElement | null = null;
-    let startDrawingButton: HTMLButtonElement | null = null;
-
     if (this.features.symbol) {
-      symbolInput = document.createElement("input");
-      symbolInput.value = this.requestedSymbol ?? this.symbol ?? "";
-      symbolInput.placeholder = "BTC-USD";
-      symbolInput.setAttribute("aria-label", this.labels.symbol);
-      loadSymbolButton = this.button(document, this.labels.load, this.labels.load);
-      toolbar.append(this.field(document, this.labels.symbol, symbolInput), loadSymbolButton);
+      this.symbolInput = document.createElement("input");
+      this.symbolInput.placeholder = "BTC-USD";
+      this.symbolInput.setAttribute("aria-label", this.labels.symbol);
+      const load = button(document, this.labels.load, this.labels.load);
+      toolbar.append(field(document, this.labels.symbol, this.symbolInput), load);
+      this.onDom(load, "click", () => { void this.setSymbol(this.symbolInput!.value).catch(() => undefined); });
+      this.onDom(this.symbolInput, "keydown", (event) => {
+        if ((event as KeyboardEvent).key === "Enter") void this.setSymbol(this.symbolInput!.value).catch(() => undefined);
+      });
     }
     if (this.features.timeframe) {
-      timeframeSelect = document.createElement("select");
-      timeframeSelect.setAttribute("aria-label", this.labels.timeframe);
-      const initialTimeframe = this.requestedTimeframe ?? this.timeframe ?? DEFAULT_TIMEFRAMES[3];
-      const timeframes = new Set<string>([...DEFAULT_TIMEFRAMES, initialTimeframe]);
-      for (const timeframe of timeframes) {
-        const option = document.createElement("option");
-        option.value = timeframe;
-        option.textContent = timeframe;
-        timeframeSelect.append(option);
-      }
-      timeframeSelect.value = initialTimeframe;
-      toolbar.append(this.field(document, this.labels.timeframe, timeframeSelect));
+      this.timeframeSelect = select(document, this.labels.timeframe, [...DEFAULT_TIMEFRAMES]);
+      toolbar.append(field(document, this.labels.timeframe, this.timeframeSelect));
+      this.onDom(this.timeframeSelect, "change", () => { void this.setTimeframe(this.timeframeSelect!.value).catch(() => undefined); });
     }
     if (this.features.chartType) {
-      chartTypeSelect = document.createElement("select");
-      chartTypeSelect.setAttribute("aria-label", this.labels.chartType);
-      for (const type of ["candlestick", "ohlc", "hollow-candlestick", "heikin-ashi", "line", "area", "baseline"] as const) {
-        const option = document.createElement("option");
-        option.value = type;
-        option.textContent = type === "hollow-candlestick" ? "Hollow candles" : type.replace("-", " ");
-        chartTypeSelect.append(option);
-      }
-      chartTypeSelect.value = this.chartType;
-      toolbar.append(this.field(document, this.labels.chartType, chartTypeSelect));
+      this.chartTypeSelect = select(document, this.labels.chartType, ["candlestick", "ohlc", "hollow-candlestick", "heikin-ashi", "line", "area", "baseline"]);
+      this.chartTypeSelect.value = this.chartType;
+      toolbar.append(field(document, this.labels.chartType, this.chartTypeSelect));
+      this.onDom(this.chartTypeSelect, "change", () => this.setChartType(this.chartTypeSelect!.value as WidgetChartType));
+    }
+    if (this.features.layout) {
+      this.layoutSelect = select(document, this.labels.layout, ["single", "two-horizontal", "two-vertical", "four-grid"]);
+      this.layoutSelect.value = this.layout;
+      toolbar.append(field(document, this.labels.layout, this.layoutSelect));
+      this.onDom(this.layoutSelect, "change", () => this.setLayout(this.layoutSelect!.value as WidgetLayout));
     }
     if (this.features.indicators) {
-      indicatorSelect = this.select(document, this.labels.indicators, options.indicatorChoices ?? DEFAULT_INDICATORS);
-      addIndicatorButton = this.button(document, this.labels.add, this.labels.add);
-      toolbar.append(this.field(document, this.labels.indicators, indicatorSelect), addIndicatorButton);
+      const indicatorSelect = select(document, this.labels.indicators, options.indicatorChoices ?? ["SMA", "EMA", "RSI", "MACD", "BOLLINGER_BANDS"]);
+      const addIndicatorButton = button(document, this.labels.add, this.labels.add);
+      toolbar.append(field(document, this.labels.indicators, indicatorSelect), addIndicatorButton);
+      this.onDom(addIndicatorButton, "click", () => {
+        const indicatorId = indicatorSelect.value;
+        const pane = ["RSI", "MACD"].includes(indicatorId) ? "new" : "main";
+        this.addIndicator(indicatorId, { pane, period: 14 });
+      });
     }
     if (this.features.drawings) {
-      drawingSelect = this.select(document, this.labels.drawings, options.drawingChoices ?? DEFAULT_DRAWINGS);
-      startDrawingButton = this.button(document, this.labels.start, this.labels.start);
-      toolbar.append(this.field(document, this.labels.drawings, drawingSelect), startDrawingButton);
+      const drawingSelect = select(document, this.labels.drawings, this.availableDrawings.map((item) => item.type));
+      const startDrawingButton = button(document, this.labels.start, this.labels.start);
+      toolbar.append(field(document, this.labels.drawings, drawingSelect), startDrawingButton);
+      this.onDom(startDrawingButton, "click", () => this.startDrawing(drawingSelect.value, { snap: "visible-ohlc" }));
     }
     if (this.features.theme) {
-      themeButton = this.button(document, this.labels.theme, this.labels.theme);
-      toolbar.append(themeButton);
+      this.themeButton = button(document, this.labels.theme, this.labels.theme);
+      toolbar.append(this.themeButton);
+      this.onDom(this.themeButton, "click", () => this.setTheme(this.theme === "dark" ? "light" : "dark"));
     }
     if (this.features.direction) {
-      directionButton = this.button(document, this.labels.direction, this.labels.direction);
-      toolbar.append(directionButton);
+      this.directionButton = button(document, this.labels.direction, this.labels.direction);
+      toolbar.append(this.directionButton);
+      this.onDom(this.directionButton, "click", () => this.setDirection(this.direction === "rtl" ? "ltr" : "rtl"));
     }
     if (this.features.workspace && this.storage !== null) {
-      saveButton = this.button(document, this.labels.saveWorkspace, this.labels.saveWorkspace);
-      loadButton = this.button(document, this.labels.loadWorkspace, this.labels.loadWorkspace);
+      const saveButton = button(document, this.labels.saveWorkspace, this.labels.saveWorkspace);
+      const loadButton = button(document, this.labels.loadWorkspace, this.labels.loadWorkspace);
       toolbar.append(saveButton, loadButton);
+      this.onDom(saveButton, "click", () => { void this.saveWorkspace().catch(() => undefined); });
+      this.onDom(loadButton, "click", () => { void this.loadWorkspace().catch(() => undefined); });
     }
-    const professional = this.createProfessionalUi(document, toolbar, options);
-    return { toolbar, symbolInput, timeframeSelect, chartTypeSelect, indicatorSelect, drawingSelect, saveButton, loadButton, themeButton, directionButton, loadSymbolButton, addIndicatorButton, startDrawingButton, professional };
+
+    this.createPanelTriggers(document, toolbar);
+    return toolbar;
   }
 
-  private createProfessionalUi(document: Document, toolbar: HTMLElement, _options: WidgetOptions): WidgetProfessionalControls {
-    const panelStrip = document.createElement("div");
-    panelStrip.dataset.openklinePanelStrip = "";
+  private createPanelTriggers(document: Document, toolbar: HTMLElement): void {
+    const specs: Array<{ key: string; label: string; enabled: boolean; build: (body: HTMLElement) => void }> = [
+      { key: "indicator-explorer", label: this.labels.indicatorExplorer, enabled: this.features.indicatorExplorer && this.features.indicators, build: (body) => this.buildIndicatorPanel(body) },
+      { key: "drawing-toolbar", label: this.labels.drawingToolbar, enabled: this.features.drawingToolbar && this.features.drawings, build: (body) => this.buildDrawingPanel(body) },
+      { key: "object-tree", label: this.labels.objectTree, enabled: this.features.objectTree && (this.features.drawings || this.features.indicators), build: () => undefined },
+      { key: "drawing-properties", label: this.labels.drawingProperties, enabled: this.features.drawingProperties && this.features.drawings, build: () => undefined },
+      { key: "chart-settings", label: this.labels.chartSettings, enabled: this.features.chartSettings, build: (body) => this.buildSettingsPanel(body) },
+      { key: "synchronization", label: this.labels.synchronization, enabled: this.features.synchronization, build: (body) => this.buildSyncPanel(body) },
+      { key: "watchlist", label: this.labels.watchlist, enabled: this.features.watchlist, build: (body) => this.buildWatchlistPanel(body) },
+      { key: "comparison", label: this.labels.comparison, enabled: this.features.comparison, build: (body) => this.buildComparisonPanel(body) },
+      { key: "replay", label: this.labels.replay, enabled: this.features.replay, build: (body) => this.buildReplayPanel(body) },
+    ];
 
-    const createPanel = (key: string, label: string): { readonly panel: HTMLElement; readonly body: HTMLElement; readonly trigger: HTMLButtonElement } => {
-      const trigger = this.button(document, label, label);
-      trigger.dataset.openklinePanelTrigger = key;
+    for (const spec of specs) {
+      if (!spec.enabled) continue;
+      const trigger = button(document, spec.label, spec.label);
+      trigger.dataset.openklinePanelTrigger = spec.key;
       trigger.setAttribute("aria-expanded", "false");
+      trigger.setAttribute("aria-haspopup", "dialog");
       toolbar.append(trigger);
-
       const panel = document.createElement("section");
-      panel.dataset.openklinePanel = key;
+      panel.dataset.openklinePanel = spec.key;
       panel.hidden = true;
       panel.setAttribute("role", "dialog");
       panel.setAttribute("aria-modal", "true");
-      panel.setAttribute("aria-label", label);
+      panel.setAttribute("aria-label", spec.label);
       const header = document.createElement("div");
       header.dataset.openklinePanelHeader = "";
       const title = document.createElement("span");
       title.dataset.openklinePanelTitle = "";
-      title.textContent = label;
-      const close = this.button(document, this.labels.close, this.labels.close);
-      close.dataset.openklinePanelClose = key;
+      title.textContent = spec.label;
+      const close = button(document, this.labels.close, this.labels.close);
+      close.dataset.openklinePanelClose = spec.key;
       header.append(title, close);
       const body = document.createElement("div");
       body.dataset.openklinePanelBody = "";
       panel.append(header, body);
-      panelStrip.append(panel);
-      this.onDom(trigger, "click", () => this.togglePanel(panel, trigger));
-      this.onDom(close, "click", () => this.closePanel(panel, trigger));
-      return { panel, body, trigger };
-    };
-
-    const indicator = this.features.indicatorExplorer && this.features.indicators
-      ? createPanel("indicator-explorer", this.labels.indicatorExplorer)
-      : null;
-    const drawing = this.features.drawingToolbar && this.features.drawings
-      ? createPanel("drawing-toolbar", this.labels.drawingToolbar)
-      : null;
-    const objects = this.features.objectTree && (this.features.drawings || this.features.indicators)
-      ? createPanel("object-tree", this.labels.objectTree)
-      : null;
-    const properties = this.features.drawingProperties && this.features.drawings
-      ? createPanel("drawing-properties", this.labels.drawingProperties)
-      : null;
-    const settings = this.features.chartSettings
-      ? createPanel("chart-settings", this.labels.chartSettings)
-      : null;
-
-    if (indicator !== null) {
-      const search = document.createElement("input");
-      search.type = "search";
-      search.dataset.openklinePanelSearch = "";
-      search.placeholder = "Search indicators";
-      search.setAttribute("aria-label", "Search indicators");
-      const list = document.createElement("div");
-      list.dataset.openklinePanelList = "";
-      const form = document.createElement("div");
-      form.dataset.openklinePanelForm = "";
-      const activeTitle = document.createElement("span");
-      activeTitle.dataset.openklinePanelSubtitle = "";
-      activeTitle.textContent = "Active indicators";
-      const active = document.createElement("div");
-      active.dataset.openklineIndicatorActive = "";
-      indicator.body.append(search, list, form, activeTitle, active);
-      this.onDom(search, "input", () => this.renderIndicatorExplorer(indicator.panel));
-      this.onDom(indicator.panel, "click", (event) => this.handleIndicatorPanelClick(event, indicator.panel));
+      spec.build(body);
+      this.modalLayer.append(panel);
+      this.panels.set(spec.key, { panel, trigger });
+      this.onDom(trigger, "click", () => this.togglePanel(spec.key));
+      this.onDom(close, "click", () => this.closePanel(spec.key));
+      this.onDom(panel, "click", (event) => this.handlePanelClick(spec.key, event));
     }
-
-    if (drawing !== null) {
-      const tools = document.createElement("div");
-      tools.dataset.openklineToolGrid = "";
-      const actions = document.createElement("div");
-      actions.dataset.openklineToolGrid = "";
-      for (const [label, action] of [[this.labels.cancel, "cancel"], [this.labels.undo, "undo"], [this.labels.redo, "redo"]] as const) {
-        const button = this.button(document, label, label);
-        button.dataset.openklineDrawingAction = action;
-        actions.append(button);
-      }
-      drawing.body.append(tools, actions);
-      this.onDom(drawing.panel, "click", (event) => this.handleDrawingPanelClick(event, drawing.panel));
-    }
-
-    if (objects !== null) {
-      this.onDom(objects.panel, "click", (event) => this.handleObjectPanelClick(event));
-    }
-
-    if (properties !== null) {
-      this.onDom(properties.panel, "click", (event) => this.handleDrawingPropertyClick(event, properties.panel));
-    }
-
-    if (settings !== null) {
-      const grid = document.createElement("div");
-      grid.dataset.openklineSettingsGrid = "";
-      const theme = this.select(document, this.labels.theme, ["light", "dark"]);
-      theme.dataset.openklineSetting = "theme";
-      const direction = this.select(document, this.labels.direction, ["ltr", "rtl"]);
-      direction.dataset.openklineSetting = "direction";
-      const scale = this.select(document, "Price scale", ["linear", "logarithmic", "percentage", "indexed"]);
-      scale.dataset.openklineSetting = "priceScaleMode";
-      const autoScale = document.createElement("input");
-      autoScale.type = "checkbox";
-      autoScale.dataset.openklineSetting = "autoScale";
-      autoScale.setAttribute("aria-label", "Auto scale");
-      const axisVisible = document.createElement("input");
-      axisVisible.type = "checkbox";
-      axisVisible.dataset.openklineSetting = "axisVisible";
-      axisVisible.setAttribute("aria-label", "Price axis visible");
-      const precision = document.createElement("input");
-      precision.type = "number";
-      precision.min = "0";
-      precision.max = "12";
-      precision.step = "1";
-      precision.dataset.openklineSetting = "pricePrecision";
-      grid.append(
-        this.field(document, this.labels.theme, theme),
-        this.field(document, this.labels.direction, direction),
-        this.field(document, "Price scale", scale),
-        this.field(document, "Auto scale", autoScale),
-        this.field(document, "Price axis", axisVisible),
-        this.field(document, "Precision", precision),
-      );
-      const apply = this.button(document, this.labels.apply, this.labels.apply);
-      apply.dataset.openklineSettingsAction = "apply";
-      settings.body.append(grid, apply);
-      this.onDom(settings.panel, "click", (event) => this.handleSettingsPanelClick(event, settings.panel));
-    }
-
-    this.onDom(this.root, "keydown", (event) => {
-      if ((event as KeyboardEvent).key === "Escape" && this.openPanelState !== null) {
-        event.preventDefault();
-        this.closePanel(this.openPanelState.panel, this.openPanelState.trigger);
-      }
+    this.onDom(this.modalBackdrop, "click", () => {
+      const openKey = [...this.panels.entries()].find(([, value]) => !value.panel.hidden)?.[0];
+      if (openKey !== undefined) this.closePanel(openKey);
     });
-    return {
-      panelStrip,
-      indicatorPanel: indicator?.panel ?? null,
-      drawingPanel: drawing?.panel ?? null,
-      objectPanel: objects?.panel ?? null,
-      drawingPropertiesPanel: properties?.panel ?? null,
-      settingsPanel: settings?.panel ?? null,
-    };
   }
 
-  private togglePanel(panel: HTMLElement, trigger: HTMLButtonElement): void {
-    if (this.openPanelState?.panel === panel) {
-      this.closePanel(panel, trigger);
+  private togglePanel(key: string): void {
+    const entry = this.panels.get(key);
+    if (entry === undefined) return;
+    if (!entry.panel.hidden) {
+      this.closePanel(key);
       return;
     }
-    if (this.openPanelState !== null) this.closePanel(this.openPanelState.panel, this.openPanelState.trigger);
-    panel.hidden = false;
-    trigger.setAttribute("aria-expanded", "true");
-    this.openPanelState = { panel, trigger };
-    this.refreshProfessionalUi();
-    const focusTarget = panel.querySelector<HTMLElement>("input, select, button");
-    focusTarget?.focus();
+    for (const [otherKey, other] of this.panels) {
+      if (!other.panel.hidden) this.closePanel(otherKey);
+    }
+    entry.panel.hidden = false;
+    entry.trigger.setAttribute("aria-expanded", "true");
+    this.modalLayer.hidden = false;
+    const keepChartInteractive = key === "drawing-toolbar" || key === "replay";
+    this.modalLayer.dataset.chartInteractive = String(keepChartInteractive);
+    this.refreshPanel(key);
+    this.openModal = openModalFocus(entry.panel, entry.trigger, () => this.closePanel(key), {
+      keepChartInteractive,
+    });
   }
 
-  private closePanel(panel: HTMLElement, trigger: HTMLButtonElement): void {
-    panel.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-    if (this.openPanelState?.panel === panel) this.openPanelState = null;
-    trigger.focus();
+  private closePanel(key: string): void {
+    const entry = this.panels.get(key);
+    if (entry === undefined) return;
+    entry.panel.hidden = true;
+    entry.trigger.setAttribute("aria-expanded", "false");
+    const release = this.openModal;
+    this.openModal = null;
+    release?.release();
+    if ([...this.panels.values()].every((item) => item.panel.hidden)) this.modalLayer.hidden = true;
   }
 
-  private refreshProfessionalUi(): void {
-    if (this.destroyed) return;
-    if (this.indicatorPanel !== null) this.renderIndicatorExplorer(this.indicatorPanel);
-    if (this.drawingPanel !== null) this.renderDrawingToolbar(this.drawingPanel);
-    if (this.objectPanel !== null) this.renderObjectTree(this.objectPanel);
-    if (this.drawingPropertiesPanel !== null) this.renderDrawingProperties(this.drawingPropertiesPanel);
-    if (this.settingsPanel !== null) this.renderSettingsPanel(this.settingsPanel);
+  private closeOpenModal(): void {
+    for (const key of this.panels.keys()) {
+      if (!this.panels.get(key)!.panel.hidden) this.closePanel(key);
+    }
+  }
+
+  private refreshOpenPanels(): void {
+    for (const [key, entry] of this.panels) {
+      if (!entry.panel.hidden) this.refreshPanel(key);
+    }
+  }
+
+  private refreshPanel(key: string): void {
+    const entry = this.panels.get(key);
+    if (entry === undefined) return;
+    if (key === "indicator-explorer") this.renderIndicatorExplorer(entry.panel);
+    if (key === "drawing-toolbar") this.renderDrawingToolbar(entry.panel);
+    if (key === "object-tree") this.renderObjectTree(entry.panel);
+    if (key === "drawing-properties") this.renderDrawingProperties(entry.panel);
+    if (key === "chart-settings") this.renderSettingsPanel(entry.panel);
+    if (key === "synchronization") this.renderSyncPanel(entry.panel);
+    if (key === "watchlist") this.renderWatchlistPanel(entry.panel);
+    if (key === "comparison") this.renderComparisonPanel(entry.panel);
+    if (key === "replay") this.renderReplayPanel(entry.panel);
+  }
+
+  private handlePanelClick(key: string, event: Event): void {
+    if (key === "indicator-explorer") this.handleIndicatorPanelClick(event);
+    if (key === "drawing-toolbar") this.handleDrawingPanelClick(event);
+    if (key === "object-tree") this.handleObjectPanelClick(event);
+    if (key === "drawing-properties") this.handleDrawingPropertyClick(event);
+    if (key === "chart-settings") this.handleSettingsPanelClick(event);
+    if (key === "synchronization") this.handleSyncPanelClick(event);
+    if (key === "watchlist") this.handleWatchlistPanelClick(event);
+    if (key === "comparison") this.handleComparisonPanelClick(event);
+    if (key === "replay") this.handleReplayPanelClick(event);
+  }
+
+  private buildIndicatorPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const search = document.createElement("input");
+    search.type = "search";
+    search.dataset.openklinePanelSearch = "";
+    search.placeholder = "Search indicators";
+    search.setAttribute("aria-label", "Search indicators");
+    const list = document.createElement("div");
+    list.dataset.openklinePanelList = "";
+    const form = document.createElement("div");
+    form.dataset.openklinePanelForm = "";
+    const activeTitle = document.createElement("span");
+    activeTitle.dataset.openklinePanelSubtitle = "";
+    activeTitle.textContent = "Active indicators";
+    const active = document.createElement("div");
+    active.dataset.openklineIndicatorActive = "";
+    body.append(search, list, form, activeTitle, active);
+    this.onDom(search, "input", () => this.renderIndicatorExplorer(body.parentElement as HTMLElement));
+  }
+
+  private buildDrawingPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const tools = document.createElement("div");
+    tools.dataset.openklineToolGrid = "";
+    const actions = document.createElement("div");
+    actions.dataset.openklineToolGrid = "";
+    for (const [label, action] of [[this.labels.cancel, "cancel"], [this.labels.undo, "undo"], [this.labels.redo, "redo"]] as const) {
+      const item = button(document, label, label);
+      item.dataset.openklineDrawingAction = action;
+      actions.append(item);
+    }
+    body.append(tools, actions);
+  }
+
+  private buildSettingsPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const grid = document.createElement("div");
+    grid.dataset.openklineSettingsGrid = "";
+    const theme = select(document, this.labels.theme, ["light", "dark"]);
+    theme.dataset.openklineSetting = "theme";
+    const direction = select(document, this.labels.direction, ["ltr", "rtl"]);
+    direction.dataset.openklineSetting = "direction";
+    const scale = select(document, "Price scale", ["linear", "logarithmic", "percentage", "indexed"]);
+    scale.dataset.openklineSetting = "priceScaleMode";
+    const autoScale = document.createElement("input");
+    autoScale.type = "checkbox";
+    autoScale.dataset.openklineSetting = "autoScale";
+    autoScale.setAttribute("aria-label", "Auto scale");
+    const axisVisible = document.createElement("input");
+    axisVisible.type = "checkbox";
+    axisVisible.dataset.openklineSetting = "axisVisible";
+    axisVisible.setAttribute("aria-label", "Price axis visible");
+    const precision = document.createElement("input");
+    precision.type = "number";
+    precision.min = "0";
+    precision.max = "12";
+    precision.step = "1";
+    precision.dataset.openklineSetting = "pricePrecision";
+    grid.append(
+      field(document, this.labels.theme, theme),
+      field(document, this.labels.direction, direction),
+      field(document, "Price scale", scale),
+      field(document, "Auto scale", autoScale),
+      field(document, "Price axis", axisVisible),
+      field(document, "Precision", precision),
+    );
+    const apply = button(document, this.labels.apply, this.labels.apply);
+    apply.dataset.openklineSettingsAction = "apply";
+    body.append(grid, apply);
+  }
+
+  private buildSyncPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    for (const [label, key] of [
+      [this.labels.syncEnabled, "enabled"],
+      [this.labels.syncCrosshair, "crosshair"],
+      [this.labels.syncVisibleRange, "visibleRange"],
+    ] as const) {
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.openklineSyncOption = key;
+      input.setAttribute("aria-label", label);
+      body.append(field(document, label, input));
+    }
+  }
+
+  private buildWatchlistPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const form = document.createElement("div");
+    form.dataset.openklinePanelForm = "";
+    const symbol = document.createElement("input");
+    symbol.dataset.openklineWatchlistInput = "symbol";
+    symbol.placeholder = "BTC-USD";
+    symbol.setAttribute("aria-label", "Watchlist symbol");
+    const add = button(document, this.labels.add, this.labels.add);
+    add.dataset.openklineWatchlistAction = "add";
+    form.append(field(document, this.labels.symbol, symbol), add);
+    const list = document.createElement("div");
+    list.dataset.openklineWatchlistList = "";
+    const empty = document.createElement("div");
+    empty.dataset.openklinePanelEmpty = "";
+    empty.textContent = "No watchlist symbols";
+    body.append(form, list, empty);
+  }
+
+  private buildComparisonPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const form = document.createElement("div");
+    form.dataset.openklinePanelForm = "";
+    const asset = document.createElement("input");
+    asset.dataset.openklineComparisonInput = "asset";
+    asset.placeholder = "ETH-USD";
+    asset.setAttribute("aria-label", "Comparison asset id");
+    const mode = select(document, this.labels.normalization, ["percentage", "indexed"]);
+    mode.dataset.openklineComparisonInput = "mode";
+    const add = button(document, this.labels.add, this.labels.add);
+    add.dataset.openklineComparisonAction = "add-active";
+    const clear = button(document, this.labels.remove, "Clear");
+    clear.dataset.openklineComparisonAction = "clear";
+    form.append(field(document, "Asset", asset), field(document, this.labels.normalization, mode), add, clear);
+    const list = document.createElement("div");
+    list.dataset.openklineComparisonList = "";
+    body.append(form, list);
+  }
+
+  private buildReplayPanel(body: HTMLElement): void {
+    const document = body.ownerDocument;
+    const grid = document.createElement("div");
+    grid.dataset.openklineReplayGrid = "";
+    const status = document.createElement("div");
+    status.dataset.openklineReplayStatus = "";
+    status.setAttribute("role", "status");
+    const actions = document.createElement("div");
+    actions.dataset.openklineToolGrid = "";
+    for (const [label, action] of [
+      ["Enter", "enter"],
+      [this.labels.play, "play"],
+      [this.labels.pause, "pause"],
+      [this.labels.stepBackward, "step-backward"],
+      [this.labels.stepForward, "step-forward"],
+      [this.labels.exitReplay, "exit"],
+    ] as const) {
+      const item = button(document, label, label);
+      item.dataset.openklineReplayAction = action;
+      actions.append(item);
+    }
+    const speed = document.createElement("input");
+    speed.type = "number";
+    speed.min = "0.25";
+    speed.max = "16";
+    speed.step = "0.25";
+    speed.value = "1";
+    speed.dataset.openklineReplayInput = "speed";
+    speed.setAttribute("aria-label", this.labels.speed);
+    const seek = document.createElement("input");
+    seek.type = "number";
+    seek.min = "0";
+    seek.step = "1";
+    seek.dataset.openklineReplayInput = "seek";
+    seek.setAttribute("aria-label", this.labels.seek);
+    const applySeek = button(document, this.labels.seek, this.labels.seek);
+    applySeek.dataset.openklineReplayAction = "seek";
+    grid.append(field(document, this.labels.speed, speed), field(document, this.labels.seek, seek), applySeek);
+    body.append(status, actions, grid);
   }
 
   private renderIndicatorExplorer(panel: HTMLElement): void {
@@ -1128,22 +1095,15 @@ class InternalWidgetController implements InternalWidget {
     }
     list.replaceChildren();
     for (const metadata of filtered) {
-      const button = this.button(panel.ownerDocument, metadata.name, metadata.name);
-      button.dataset.openklineIndicatorAction = "select";
-      button.dataset.openklineIndicatorId = metadata.id;
-      button.setAttribute("aria-pressed", String(metadata.id === this.selectedIndicatorId));
+      const item = button(panel.ownerDocument, metadata.name, metadata.name);
+      item.dataset.openklineIndicatorAction = "select";
+      item.dataset.openklineIndicatorId = metadata.id;
+      item.setAttribute("aria-pressed", String(metadata.id === this.selectedIndicatorId));
       const category = panel.ownerDocument.createElement("small");
       category.textContent = metadata.category ?? "custom";
-      button.append(category);
-      list.append(button);
+      item.append(category);
+      list.append(item);
     }
-    if (filtered.length === 0) {
-      const empty = panel.ownerDocument.createElement("div");
-      empty.dataset.openklinePanelEmpty = "";
-      empty.textContent = "No indicators match the search";
-      list.append(empty);
-    }
-
     form.replaceChildren();
     const metadata = this.availableIndicators.find((item) => item.id === this.selectedIndicatorId);
     if (metadata !== undefined) {
@@ -1151,62 +1111,52 @@ class InternalWidgetController implements InternalWidget {
       description.dataset.openklinePanelDescription = "";
       description.textContent = metadata.description;
       form.append(description);
-      let existingParameters: Readonly<Record<string, unknown>> | undefined;
-      if (this.selectedIndicatorInstanceId !== null) {
-        try {
-          existingParameters = this.indicatorApis.get(this.selectedIndicatorInstanceId)?.getResult().parameters;
-        } catch {
-          this.selectedIndicatorInstanceId = null;
-        }
-      }
       for (const parameter of metadata.parameters) {
-        form.append(this.createIndicatorParameterField(panel.ownerDocument, parameter, existingParameters?.[parameter.name]));
+        form.append(this.createIndicatorParameterField(panel.ownerDocument, parameter));
       }
-      const action = this.button(panel.ownerDocument, this.selectedIndicatorInstanceId === null ? this.labels.add : this.labels.update, this.selectedIndicatorInstanceId === null ? this.labels.add : this.labels.update);
-      action.dataset.openklineIndicatorAction = this.selectedIndicatorInstanceId === null ? "add" : "update";
-      action.dataset.openklineIndicatorId = metadata.id;
-      form.append(action);
+      const add = button(panel.ownerDocument, this.labels.add, this.labels.add);
+      add.dataset.openklineIndicatorAction = "add";
+      const update = button(panel.ownerDocument, this.labels.update, this.labels.update);
+      update.dataset.openklineIndicatorAction = "update";
+      form.append(add, update);
     }
-
     active.replaceChildren();
-    const entries = this.getIndicatorEntries();
-    if (entries.length === 0) {
+    for (const [id, kind] of this.activeSlot().indicatorKinds) {
+      const row = panel.ownerDocument.createElement("div");
+      row.dataset.openklineObjectRow = "";
+      const label = panel.ownerDocument.createElement("span");
+      label.textContent = `${kind} (${id})`;
+      const edit = button(panel.ownerDocument, this.labels.update, this.labels.update);
+      edit.dataset.openklineIndicatorAction = "edit";
+      edit.dataset.openklineIndicatorInstance = id;
+      edit.dataset.openklineIndicatorId = kind;
+      const remove = button(panel.ownerDocument, this.labels.remove, this.labels.remove);
+      remove.dataset.openklineIndicatorAction = "remove";
+      remove.dataset.openklineIndicatorInstance = id;
+      row.append(label, edit, remove);
+      active.append(row);
+    }
+    if (this.activeSlot().indicatorKinds.size === 0) {
       const empty = panel.ownerDocument.createElement("div");
       empty.dataset.openklinePanelEmpty = "";
       empty.textContent = "No active indicators";
       active.append(empty);
-      return;
-    }
-    for (const entry of entries) {
-      const row = panel.ownerDocument.createElement("div");
-      row.dataset.openklineObjectRow = "";
-      const label = panel.ownerDocument.createElement("span");
-      label.textContent = `${entry.indicatorId} · ${entry.id} · ${entry.paneId}`;
-      const edit = this.button(panel.ownerDocument, `Edit ${entry.id}`, "Edit");
-      edit.dataset.openklineIndicatorAction = "edit";
-      edit.dataset.openklineIndicatorInstance = entry.id;
-      edit.dataset.openklineIndicatorId = entry.indicatorId;
-      const remove = this.button(panel.ownerDocument, `${this.labels.remove} ${entry.id}`, this.labels.remove);
-      remove.dataset.openklineIndicatorAction = "remove";
-      remove.dataset.openklineIndicatorInstance = entry.id;
-      row.append(label, edit, remove);
-      active.append(row);
     }
   }
 
   private createIndicatorParameterField(document: Document, parameter: IndicatorParameterDefinition, currentValue?: unknown): HTMLElement {
-    const value = currentValue ?? parameter.defaultValue ?? defaultIndicatorParameter(parameter, this.chart.getData());
+    const value = currentValue ?? parameter.defaultValue ?? defaultIndicatorParameter(parameter, this.activeSlot().chart.getData());
     let control: HTMLInputElement | HTMLSelectElement;
     if (parameter.type === "enum") {
-      const select = document.createElement("select");
+      const selectControl = document.createElement("select");
       for (const optionValue of parameter.values ?? []) {
         const option = document.createElement("option");
         option.value = optionValue;
         option.textContent = optionValue;
-        select.append(option);
+        selectControl.append(option);
       }
-      select.value = String(value);
-      control = select;
+      selectControl.value = String(value);
+      control = selectControl;
     } else {
       const input = document.createElement("input");
       input.type = parameter.type === "boolean" ? "checkbox" : parameter.type === "string" ? "text" : "number";
@@ -1220,121 +1170,97 @@ class InternalWidgetController implements InternalWidget {
       control = input;
     }
     control.dataset.openklineIndicatorParameter = parameter.name;
-    return this.field(document, parameter.name, control);
+    control.setAttribute("aria-label", parameter.name);
+    return field(document, parameter.name, control);
   }
 
-  private handleIndicatorPanelClick(event: Event, panel: HTMLElement): void {
+  private handleIndicatorPanelClick(event: Event): void {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-indicator-action]") : null;
     if (target === null) return;
     const action = target.dataset.openklineIndicatorAction;
-    const indicatorId = target.dataset.openklineIndicatorId;
-    const instanceId = target.dataset.openklineIndicatorInstance;
-    if (action === "select" && indicatorId !== undefined) {
-      this.selectedIndicatorId = indicatorId;
+    const panel = target.closest<HTMLElement>("[data-openkline-panel]");
+    if (panel === null) return;
+    if (action === "select") {
+      this.selectedIndicatorId = target.dataset.openklineIndicatorId ?? null;
       this.selectedIndicatorInstanceId = null;
       this.renderIndicatorExplorer(panel);
       return;
     }
-    if (action === "edit" && indicatorId !== undefined && instanceId !== undefined) {
-      this.selectedIndicatorId = indicatorId;
-      this.selectedIndicatorInstanceId = instanceId;
+    if (action === "edit") {
+      this.selectedIndicatorId = target.dataset.openklineIndicatorId ?? null;
+      this.selectedIndicatorInstanceId = target.dataset.openklineIndicatorInstance ?? null;
       this.renderIndicatorExplorer(panel);
       return;
     }
-    if (action === "remove" && instanceId !== undefined) {
+    if (action === "remove") {
+      const instanceId = target.dataset.openklineIndicatorInstance;
+      if (instanceId === undefined) return;
+      this.activeSlot().chart.removeIndicator(instanceId);
+      this.activeSlot().indicatorApis.delete(instanceId);
+      this.activeSlot().indicatorKinds.delete(instanceId);
+      this.renderIndicatorExplorer(panel);
+      return;
+    }
+    if (action === "add" || action === "update") {
+      const metadata = this.availableIndicators.find((item) => item.id === this.selectedIndicatorId);
+      if (metadata === undefined) return;
       try {
-        this.chart.removeIndicator(instanceId);
-        if (this.selectedIndicatorInstanceId === instanceId) this.selectedIndicatorInstanceId = null;
+        const parameters = this.readIndicatorParameters(panel, metadata);
+        if (action === "update" && this.selectedIndicatorInstanceId !== null) {
+          const api = this.activeSlot().indicatorApis.get(this.selectedIndicatorInstanceId);
+          api?.setParameters(parameters);
+        } else {
+          const pane = metadata.category === "oscillator" || ["RSI", "MACD"].includes(metadata.id) ? "new" : "main";
+          this.addIndicator(metadata.id, { pane, ...parameters });
+        }
+        this.error = null;
+        this.setStatus(this.activeSlot().hasData ? "ready" : "empty");
       } catch (error) {
         this.fail(error);
       }
-      return;
-    }
-    if ((action === "add" || action === "update") && indicatorId !== undefined) {
-      this.applyIndicatorPanel(indicatorId, action === "update", panel);
-    }
-  }
-
-  private applyIndicatorPanel(indicatorId: string, update: boolean, panel: HTMLElement): void {
-    const metadata = this.availableIndicators.find((item) => item.id === indicatorId);
-    if (metadata === undefined) return;
-    try {
-      const parameters = this.readIndicatorParameters(panel, metadata);
-      if (update) {
-        if (this.selectedIndicatorInstanceId === null) throw new WidgetLifecycleError("Select an active indicator before updating it");
-        const api = this.indicatorApis.get(this.selectedIndicatorInstanceId);
-        if (api === undefined) throw new WidgetLifecycleError("This restored indicator does not expose an editable widget handle");
-        api.setParameters(parameters);
-      } else {
-        const id = this.addIndicator(indicatorId, {
-          pane: metadata.overlay === false ? "new" : "main",
-          parameters,
-        });
-        this.selectedIndicatorInstanceId = id;
-      }
-      this.error = null;
-      this.setStatus(this.hasData ? "ready" : "empty");
-    } catch (error) {
-      this.fail(error);
+      this.renderIndicatorExplorer(panel);
     }
   }
 
   private readIndicatorParameters(panel: HTMLElement, metadata: IndicatorMetadata): Record<string, unknown> {
     const parameters: Record<string, unknown> = {};
-    for (const definition of metadata.parameters) {
+    for (const parameter of metadata.parameters) {
       const control = Array.from(panel.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-openkline-indicator-parameter]"))
-        .find((item) => item.dataset.openklineIndicatorParameter === definition.name);
+        .find((element) => element.dataset.openklineIndicatorParameter === parameter.name);
       if (control === undefined) continue;
-      if (definition.type === "boolean" && control instanceof HTMLInputElement) parameters[definition.name] = control.checked;
-      else if (definition.type === "integer") parameters[definition.name] = Number(control.value);
-      else if (definition.type === "number") parameters[definition.name] = Number(control.value);
-      else parameters[definition.name] = control.value;
+      if (control instanceof HTMLInputElement && control.type === "checkbox") parameters[parameter.name] = control.checked;
+      else if (control instanceof HTMLInputElement && control.type === "number") parameters[parameter.name] = Number(control.value);
+      else parameters[parameter.name] = control.value;
     }
     return parameters;
-  }
-
-  private getIndicatorEntries(): WidgetIndicatorEntry[] {
-    const entries = new Map<string, WidgetIndicatorEntry>();
-    for (const series of this.chart.getSeriesInfo()) {
-      const separator = series.id.indexOf(":");
-      if (separator <= 0) continue;
-      const id = series.id.slice(0, separator);
-      if (!entries.has(id)) {
-        entries.set(id, { id, indicatorId: this.indicatorKinds.get(id) ?? id, paneId: series.paneId });
-      }
-    }
-    for (const [id, api] of this.indicatorApis) {
-      if (!entries.has(id)) entries.set(id, { id, indicatorId: api.indicatorId, paneId: api.paneId });
-    }
-    return [...entries.values()];
   }
 
   private renderDrawingToolbar(panel: HTMLElement): void {
     const tools = panel.querySelector<HTMLElement>("[data-openkline-tool-grid]");
     if (tools === null) return;
     tools.replaceChildren();
-    for (const choice of this.availableDrawings) {
-      const button = this.button(panel.ownerDocument, choice.label, choice.label);
-      button.dataset.openklineDrawingTool = choice.type;
-      button.dataset.active = String(choice.type === this.activeDrawingType);
-      button.setAttribute("aria-pressed", String(choice.type === this.activeDrawingType));
-      tools.append(button);
+    const active = this.activeSlot().activeDrawingType;
+    for (const drawing of this.availableDrawings) {
+      const item = button(panel.ownerDocument, drawing.label, drawing.label);
+      item.dataset.openklineDrawingTool = drawing.type;
+      item.dataset.active = String(drawing.type === active);
+      tools.append(item);
     }
   }
 
-  private handleDrawingPanelClick(event: Event, _panel: HTMLElement): void {
-    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-drawing-tool], [data-openkline-drawing-action]") : null;
+  private handleDrawingPanelClick(event: Event): void {
+    const target = event.target instanceof Element
+      ? event.target.closest<HTMLElement>("[data-openkline-drawing-tool], [data-openkline-drawing-action]")
+      : null;
     if (target === null) return;
-    const type = target.dataset.openklineDrawingTool;
-    const action = target.dataset.openklineDrawingAction;
-    try {
-      if (type !== undefined) this.startDrawing(type, { snap: "visible-ohlc" });
-      else if (action === "cancel") this.cancelInteractiveDrawing();
-      else if (action === "undo") this.chart.undoDrawing();
-      else if (action === "redo") this.chart.redoDrawing();
-    } catch (error) {
-      this.fail(error);
+    if (target.dataset.openklineDrawingTool !== undefined) {
+      this.startDrawing(target.dataset.openklineDrawingTool, { snap: "visible-ohlc" });
+      return;
     }
+    const action = target.dataset.openklineDrawingAction;
+    if (action === "cancel") this.activeSlot().cancelDrawing();
+    if (action === "undo") this.activeSlot().chart.undoDrawing();
+    if (action === "redo") this.activeSlot().chart.redoDrawing();
   }
 
   private renderObjectTree(panel: HTMLElement): void {
@@ -1345,43 +1271,15 @@ class InternalWidgetController implements InternalWidget {
       panel.querySelector("[data-openkline-panel-body]")?.append(tree);
     }
     tree.replaceChildren();
-    const series = this.chart.getSeriesInfo();
-    const drawings = this.chart.getDrawings();
-    const indicators = this.getIndicatorEntries();
-    if (series.length === 0 && drawings.length === 0 && indicators.length === 0) {
-      const empty = panel.ownerDocument.createElement("div");
-      empty.dataset.openklinePanelEmpty = "";
-      empty.textContent = "No chart objects";
-      tree.append(empty);
-      return;
+    const chart = this.activeSlot().chart;
+    for (const series of chart.getSeriesInfo()) {
+      tree.append(this.createObjectRow(panel.ownerDocument, `${series.title ?? series.id} (${series.type})`, "series", series.id));
     }
-    for (const item of series) {
-      const row = this.createObjectRow(panel.ownerDocument, `${item.title ?? item.id} · ${item.type}`, "series", item.id);
-      const visibility = this.button(panel.ownerDocument, item.style.visible === false ? "Show" : "Hide", item.style.visible === false ? "Show" : "Hide");
-      visibility.dataset.openklineObjectAction = "series-visibility";
-      row.append(visibility);
-      tree.append(row);
+    for (const [id, kind] of this.activeSlot().indicatorKinds) {
+      tree.append(this.createObjectRow(panel.ownerDocument, `${kind} (${id})`, "indicator", id));
     }
-    for (const entry of indicators) {
-      const row = this.createObjectRow(panel.ownerDocument, `${entry.indicatorId} · ${entry.id} · ${entry.paneId}`, "indicator", entry.id);
-      const remove = this.button(panel.ownerDocument, `${this.labels.remove} ${entry.id}`, this.labels.remove);
-      remove.dataset.openklineObjectAction = "indicator-remove";
-      row.append(remove);
-      tree.append(row);
-    }
-    for (const drawing of drawings) {
-      const row = this.createObjectRow(panel.ownerDocument, `${drawing.type} · ${drawing.id}`, "drawing", drawing.id);
-      if (drawing.id === this.chart.getSelectedDrawingId()) row.setAttribute("aria-current", "true");
-      const select = this.button(panel.ownerDocument, "Select", "Select");
-      select.dataset.openklineObjectAction = "drawing-select";
-      const visibility = this.button(panel.ownerDocument, drawing.style.visible === false ? "Show" : "Hide", drawing.style.visible === false ? "Show" : "Hide");
-      visibility.dataset.openklineObjectAction = "drawing-visibility";
-      const lock = this.button(panel.ownerDocument, drawing.style.locked === true ? "Unlock" : "Lock", drawing.style.locked === true ? "Unlock" : "Lock");
-      lock.dataset.openklineObjectAction = "drawing-lock";
-      const remove = this.button(panel.ownerDocument, this.labels.remove, this.labels.remove);
-      remove.dataset.openklineObjectAction = "drawing-remove";
-      row.append(select, visibility, lock, remove);
-      tree.append(row);
+    for (const drawing of chart.getDrawings()) {
+      tree.append(this.createObjectRow(panel.ownerDocument, `${formatWidgetName(drawing.type)} (${drawing.id})`, "drawing", drawing.id));
     }
   }
 
@@ -1393,64 +1291,69 @@ class InternalWidgetController implements InternalWidget {
     const label = document.createElement("span");
     label.textContent = labelText;
     row.append(label);
+    if (kind === "drawing") {
+      for (const [text, action] of [["Select", "drawing-select"], ["Lock", "drawing-lock"], ["Hide", "drawing-hide"], [this.labels.remove, "drawing-remove"]] as const) {
+        const item = button(document, text, text);
+        item.dataset.openklineObjectAction = action;
+        row.append(item);
+      }
+    } else if (kind === "indicator") {
+      const remove = button(document, this.labels.remove, this.labels.remove);
+      remove.dataset.openklineObjectAction = "indicator-remove";
+      row.append(remove);
+    }
     return row;
   }
 
   private handleObjectPanelClick(event: Event): void {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-object-action]") : null;
-    const row = target?.closest<HTMLElement>("[data-openkline-object-row]");
-    if (target === null || row === null || row === undefined) return;
-    const action = target.dataset.openklineObjectAction;
+    const row = target?.closest<HTMLElement>("[data-openkline-object-row]") ?? null;
+    if (target === null || row === null) return;
     const id = row.dataset.openklineObjectId;
     if (id === undefined) return;
-    try {
-      if (action === "series-visibility") {
-        const series = this.chart.getSeriesInfo().find((item) => item.id === id);
-        if (series !== undefined) this.chart.setSeriesStyle(id, { visible: series.style.visible === false });
-      } else if (action === "indicator-remove") {
-        this.chart.removeIndicator(id);
-      } else if (action === "drawing-select") {
-        this.chart.selectDrawing(id);
-      } else if (action === "drawing-visibility") {
-        const drawing = this.chart.getDrawings().find((item) => item.id === id);
-        if (drawing !== undefined) this.chart.setDrawingVisibility(id, drawing.style.visible === false);
-      } else if (action === "drawing-lock") {
-        const drawing = this.chart.getDrawings().find((item) => item.id === id);
-        if (drawing !== undefined) this.chart.setDrawingLocked(id, drawing.style.locked !== true);
-      } else if (action === "drawing-remove") {
-        this.chart.removeDrawing(id);
-      }
-    } catch (error) {
-      this.fail(error);
+    const chart = this.activeSlot().chart;
+    const action = target.dataset.openklineObjectAction;
+    if (action === "drawing-select") chart.selectDrawing(id);
+    if (action === "drawing-lock") {
+      const drawing = chart.getDrawings().find((item) => item.id === id);
+      if (drawing !== undefined) chart.setDrawingStyle(id, { locked: !drawing.style.locked });
     }
+    if (action === "drawing-hide") {
+      const drawing = chart.getDrawings().find((item) => item.id === id);
+      if (drawing !== undefined) chart.setDrawingStyle(id, { visible: drawing.style.visible === false ? true : false });
+    }
+    if (action === "drawing-remove") chart.removeDrawing(id);
+    if (action === "indicator-remove") {
+      chart.removeIndicator(id);
+      this.activeSlot().indicatorApis.delete(id);
+      this.activeSlot().indicatorKinds.delete(id);
+    }
+    this.refreshOpenPanels();
   }
 
   private renderDrawingProperties(panel: HTMLElement): void {
     const body = panel.querySelector<HTMLElement>("[data-openkline-panel-body]");
     if (body === null) return;
     body.replaceChildren();
-    const selectedId = this.chart.getSelectedDrawingId();
-    const drawing = selectedId === null ? undefined : this.chart.getDrawings().find((item) => item.id === selectedId);
+    const selectedId = this.activeSlot().chart.getSelectedDrawingId();
+    const drawing = this.activeSlot().chart.getDrawings().find((item) => item.id === selectedId);
     if (drawing === undefined) {
       const empty = panel.ownerDocument.createElement("div");
       empty.dataset.openklinePanelEmpty = "";
-      empty.textContent = "Select a drawing to edit its properties";
+      empty.textContent = "Select a drawing";
       body.append(empty);
       return;
     }
-    const grid = panel.ownerDocument.createElement("div");
-    grid.dataset.openklineSettingsGrid = "";
     const color = panel.ownerDocument.createElement("input");
     color.type = "color";
     color.value = toColorInputValue(drawing.style.color);
     color.dataset.openklineDrawingProperty = "color";
-    const lineWidth = panel.ownerDocument.createElement("input");
-    lineWidth.type = "number";
-    lineWidth.min = "1";
-    lineWidth.max = "8";
-    lineWidth.step = "1";
-    lineWidth.value = String(drawing.style.lineWidth ?? 1);
-    lineWidth.dataset.openklineDrawingProperty = "lineWidth";
+    const width = panel.ownerDocument.createElement("input");
+    width.type = "number";
+    width.min = "1";
+    width.max = "8";
+    width.value = String(drawing.style.lineWidth ?? 2);
+    width.dataset.openklineDrawingProperty = "lineWidth";
     const visible = panel.ownerDocument.createElement("input");
     visible.type = "checkbox";
     visible.checked = drawing.style.visible !== false;
@@ -1459,99 +1362,74 @@ class InternalWidgetController implements InternalWidget {
     locked.type = "checkbox";
     locked.checked = drawing.style.locked === true;
     locked.dataset.openklineDrawingProperty = "locked";
-    grid.append(
-      this.field(panel.ownerDocument, "Color", color),
-      this.field(panel.ownerDocument, "Line width", lineWidth),
-      this.field(panel.ownerDocument, "Visible", visible),
-      this.field(panel.ownerDocument, "Locked", locked),
-    );
-    const actions = panel.ownerDocument.createElement("div");
-    actions.dataset.openklineToolGrid = "";
-    const apply = this.button(panel.ownerDocument, this.labels.apply, this.labels.apply);
+    const apply = button(panel.ownerDocument, this.labels.apply, this.labels.apply);
     apply.dataset.openklineDrawingAction = "apply-properties";
-    const remove = this.button(panel.ownerDocument, this.labels.remove, this.labels.remove);
-    remove.dataset.openklineDrawingAction = "remove-selected";
-    actions.append(apply, remove);
-    body.append(grid, actions);
+    body.append(
+      field(panel.ownerDocument, "Color", color),
+      field(panel.ownerDocument, "Width", width),
+      field(panel.ownerDocument, "Visible", visible),
+      field(panel.ownerDocument, "Locked", locked),
+      apply,
+    );
   }
 
-  private handleDrawingPropertyClick(event: Event, panel: HTMLElement): void {
+  private handleDrawingPropertyClick(event: Event): void {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-drawing-action]") : null;
-    if (target === null) return;
-    const action = target.dataset.openklineDrawingAction;
-    const id = this.chart.getSelectedDrawingId();
-    if (id === null) return;
-    try {
-      if (action === "remove-selected") {
-        this.chart.removeDrawing(id);
-        return;
-      }
-      if (action !== "apply-properties") return;
-      const value = (name: string): HTMLInputElement | null => panel.querySelector<HTMLInputElement>(`[data-openkline-drawing-property="${name}"]`);
-      const color = value("color");
-      const lineWidth = value("lineWidth");
-      const visible = value("visible");
-      const locked = value("locked");
-      const style: DrawingStyle = {
-        ...(color === null ? {} : { color: color.value }),
-        ...(lineWidth === null ? {} : { lineWidth: Number(lineWidth.value) }),
-        ...(visible === null ? {} : { visible: visible.checked }),
-        ...(locked === null ? {} : { locked: locked.checked }),
-      };
-      this.chart.setDrawingStyle(id, style);
-    } catch (error) {
-      this.fail(error);
-    }
+    const panel = target?.closest<HTMLElement>("[data-openkline-panel]") ?? null;
+    if (target?.dataset.openklineDrawingAction !== "apply-properties" || panel === null) return;
+    const selectedId = this.activeSlot().chart.getSelectedDrawingId();
+    if (selectedId === null) return;
+    const color = panel.querySelector<HTMLInputElement>('[data-openkline-drawing-property="color"]');
+    const width = panel.querySelector<HTMLInputElement>('[data-openkline-drawing-property="lineWidth"]');
+    const visible = panel.querySelector<HTMLInputElement>('[data-openkline-drawing-property="visible"]');
+    const locked = panel.querySelector<HTMLInputElement>('[data-openkline-drawing-property="locked"]');
+    const style: DrawingStyle = {
+      ...(color === null ? {} : { color: color.value }),
+      ...(width === null ? {} : { lineWidth: Number(width.value) }),
+      ...(visible === null ? {} : { visible: visible.checked }),
+      ...(locked === null ? {} : { locked: locked.checked }),
+    };
+    this.activeSlot().chart.setDrawingStyle(selectedId, style);
   }
 
   private renderSettingsPanel(panel: HTMLElement): void {
     const theme = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="theme"]');
     const direction = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="direction"]');
-    const scale = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="priceScaleMode"]');
+    const mode = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="priceScaleMode"]');
     const autoScale = panel.querySelector<HTMLInputElement>('[data-openkline-setting="autoScale"]');
     const axisVisible = panel.querySelector<HTMLInputElement>('[data-openkline-setting="axisVisible"]');
     const precision = panel.querySelector<HTMLInputElement>('[data-openkline-setting="pricePrecision"]');
-    if (theme === null || direction === null || scale === null || autoScale === null || axisVisible === null || precision === null) return;
-    const priceScale = this.chart.getPriceScaleOptions();
-    theme.value = this.theme;
-    direction.value = this.direction;
-    scale.value = priceScale.mode;
-    autoScale.checked = priceScale.autoScale;
-    axisVisible.checked = priceScale.axisVisible;
-    precision.value = this.pricePrecision === null ? "" : String(this.pricePrecision);
+    const priceScale = this.activeSlot().chart.getPriceScaleOptions();
+    if (theme !== null) theme.value = this.theme;
+    if (direction !== null) direction.value = this.direction;
+    if (mode !== null) mode.value = priceScale.mode;
+    if (autoScale !== null) autoScale.checked = priceScale.autoScale !== false;
+    if (axisVisible !== null) axisVisible.checked = priceScale.axisVisible !== false;
+    if (precision !== null) precision.value = String(this.pricePrecision ?? 2);
   }
 
-  private handleSettingsPanelClick(event: Event, panel: HTMLElement): void {
+  private handleSettingsPanelClick(event: Event): void {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-settings-action]") : null;
-    if (target === null || target.dataset.openklineSettingsAction !== "apply") return;
+    const panel = target?.closest<HTMLElement>("[data-openkline-panel]") ?? null;
+    if (target?.dataset.openklineSettingsAction !== "apply" || panel === null) return;
     try {
-      const read = (name: string): HTMLInputElement | HTMLSelectElement | null => panel.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-openkline-setting="${name}"]`);
-      const theme = read("theme") as HTMLSelectElement | null;
-      const direction = read("direction") as HTMLSelectElement | null;
-      const scale = read("priceScaleMode") as HTMLSelectElement | null;
-      const autoScale = read("autoScale") as HTMLInputElement | null;
-      const axisVisible = read("axisVisible") as HTMLInputElement | null;
-      const precision = read("pricePrecision") as HTMLInputElement | null;
-      const nextTheme = theme?.value as "light" | "dark" | undefined;
-      const nextDirection = direction?.value as "ltr" | "rtl" | undefined;
-      const nextScale = scale?.value as PriceScaleMode | undefined;
-      const nextAutoScale = autoScale?.checked;
-      const nextAxisVisible = axisVisible?.checked;
-      const nextPrecision = precision?.value.trim() ?? "";
-      if (nextTheme !== undefined) this.setTheme(nextTheme);
-      if (nextDirection !== undefined) this.setDirection(nextDirection);
-      if (nextScale !== undefined && nextAutoScale !== undefined && nextAxisVisible !== undefined) {
-        const options: PriceScaleOptions = {
-          mode: nextScale,
-          autoScale: nextAutoScale,
-          axisVisible: nextAxisVisible,
-        };
-        this.chart.setPriceScaleOptions(options);
-        if (nextAutoScale) this.chart.resetPriceScale();
-      }
-      if (nextPrecision.length > 0) {
-        const parsedPrecision = Number(nextPrecision);
-        this.chart.setOptions({ pricePrecision: parsedPrecision });
+      const theme = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="theme"]')?.value as "light" | "dark" | undefined;
+      const direction = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="direction"]')?.value as "ltr" | "rtl" | undefined;
+      const mode = panel.querySelector<HTMLSelectElement>('[data-openkline-setting="priceScaleMode"]')?.value as PriceScaleMode | undefined;
+      const autoScale = panel.querySelector<HTMLInputElement>('[data-openkline-setting="autoScale"]')?.checked;
+      const axisVisible = panel.querySelector<HTMLInputElement>('[data-openkline-setting="axisVisible"]')?.checked;
+      const precisionRaw = panel.querySelector<HTMLInputElement>('[data-openkline-setting="pricePrecision"]')?.value;
+      if (theme !== undefined) this.setTheme(theme);
+      if (direction !== undefined) this.setDirection(direction);
+      const patch: PriceScaleOptions = {
+        ...(mode === undefined ? {} : { mode }),
+        ...(autoScale === undefined ? {} : { autoScale }),
+        ...(axisVisible === undefined ? {} : { axisVisible }),
+      };
+      this.activeSlot().chart.setPriceScaleOptions(patch);
+      if (precisionRaw !== undefined && precisionRaw.length > 0) {
+        const parsedPrecision = Number(precisionRaw);
+        this.activeSlot().chart.setOptions({ pricePrecision: parsedPrecision });
         this.pricePrecision = parsedPrecision;
       }
     } catch (error) {
@@ -1559,187 +1437,305 @@ class InternalWidgetController implements InternalWidget {
     }
   }
 
-  private cancelInteractiveDrawing(): void {
-    this.activeDrawingType = null;
-    const internalChart = this.chart as unknown as { cancelDrawing?: () => void };
-    internalChart.cancelDrawing?.();
-    this.refreshProfessionalUi();
+  private renderSyncPanel(panel: HTMLElement): void {
+    const enabled = panel.querySelector<HTMLInputElement>('[data-openkline-sync-option="enabled"]');
+    const crosshair = panel.querySelector<HTMLInputElement>('[data-openkline-sync-option="crosshair"]');
+    const visibleRange = panel.querySelector<HTMLInputElement>('[data-openkline-sync-option="visibleRange"]');
+    if (enabled !== null) enabled.checked = this.syncOptions.enabled;
+    if (crosshair !== null) crosshair.checked = this.syncOptions.crosshair;
+    if (visibleRange !== null) visibleRange.checked = this.syncOptions.visibleRange;
   }
 
-  private attachToolbarListeners(controls: ReturnType<InternalWidgetController["createToolbar"]>): void {
-    if (controls.loadSymbolButton !== null && controls.symbolInput !== null) {
-      this.onDom(controls.loadSymbolButton, "click", () => { void this.setSymbol(controls.symbolInput!.value).catch(() => undefined); });
-      this.onDom(controls.symbolInput, "keydown", (event) => {
-        if ((event as KeyboardEvent).key === "Enter") void this.setSymbol(controls.symbolInput!.value).catch(() => undefined);
-      });
-    }
-    if (controls.timeframeSelect !== null) this.onDom(controls.timeframeSelect, "change", () => { void this.setTimeframe(controls.timeframeSelect!.value).catch(() => undefined); });
-    if (controls.chartTypeSelect !== null) this.onDom(controls.chartTypeSelect, "change", () => this.setChartType(controls.chartTypeSelect!.value as WidgetChartType));
-    if (controls.indicatorSelect !== null && controls.addIndicatorButton !== null) {
-      this.onDom(controls.addIndicatorButton, "click", () => {
-        const indicatorId = controls.indicatorSelect!.value;
-        const pane = ["RSI", "MACD"].includes(indicatorId) ? "new" : "main";
-        this.addIndicator(indicatorId, { pane, period: 14 });
-      });
-    }
-    if (controls.drawingSelect !== null && controls.startDrawingButton !== null) {
-      this.onDom(controls.startDrawingButton, "click", () => this.startDrawing(controls.drawingSelect!.value, { snap: "visible-ohlc" }));
-    }
-    if (controls.themeButton !== null) this.onDom(controls.themeButton, "click", () => this.setTheme(this.theme === "dark" ? "light" : "dark"));
-    if (controls.directionButton !== null) this.onDom(controls.directionButton, "click", () => this.setDirection(this.direction === "rtl" ? "ltr" : "rtl"));
-    if (controls.saveButton !== null) this.onDom(controls.saveButton, "click", () => { void this.saveWorkspace().catch(() => undefined); });
-    if (controls.loadButton !== null) this.onDom(controls.loadButton, "click", () => { void this.loadWorkspace().catch(() => undefined); });
-  }
-
-  private attachChartSubscriptions(): void {
-    this.subscribeChart("dataUpdated", (event) => {
-      this.hasData = this.chart.getData().length > 0;
-      if (!this.syncingPresentation && event.kind === "set") this.syncPresentationForChartType();
-      if (!this.syncingPresentation && event.kind === "update") this.syncPresentationForChartType();
-      if (!this.applyingDirectData && this.status !== "loading" && this.status !== "destroyed") this.setStatus(this.hasData ? "ready" : "empty");
+  private handleSyncPanelClick(event: Event): void {
+    const target = event.target instanceof HTMLInputElement ? event.target : null;
+    if (target === null || target.dataset.openklineSyncOption === undefined) return;
+    this.setSynchronization({
+      enabled: (this.root.querySelector<HTMLInputElement>('[data-openkline-sync-option="enabled"]')?.checked) ?? this.syncOptions.enabled,
+      crosshair: (this.root.querySelector<HTMLInputElement>('[data-openkline-sync-option="crosshair"]')?.checked) ?? this.syncOptions.crosshair,
+      visibleRange: (this.root.querySelector<HTMLInputElement>('[data-openkline-sync-option="visibleRange"]')?.checked) ?? this.syncOptions.visibleRange,
     });
-    this.subscribeChart("datafeedError", (event) => this.fail(event));
-    this.subscribeChart("chartReady", () => this.emitChartState());
-    this.subscribeChart("themeChange", () => this.renderState());
-    this.subscribeChart("chartDestroy", () => {
-      if (!this.destroyed) {
-        this.status = "destroyed";
-        this.renderState();
+  }
+
+  private renderWatchlistPanel(panel: HTMLElement): void {
+    const list = panel.querySelector<HTMLElement>("[data-openkline-watchlist-list]");
+    const empty = panel.querySelector<HTMLElement>("[data-openkline-panel-empty]");
+    if (list === null || empty === null) return;
+    list.replaceChildren();
+    const document = this.watchlistModel.getDocument();
+    const selected = document.lists.find((item) => item.id === document.selectedWatchlistId) ?? document.lists[0];
+    const symbols = selected?.symbols ?? [];
+    empty.hidden = symbols.length > 0;
+    for (const [index, symbol] of symbols.entries()) {
+      const row = panel.ownerDocument.createElement("div");
+      row.dataset.openklineWatchlistRow = "";
+      row.dataset.openklineWatchlistSymbol = symbol.id;
+      const label = panel.ownerDocument.createElement("span");
+      label.textContent = `${symbol.displaySymbol} · ${symbol.name}`;
+      const quote = this.quotes.find((item) => item.symbolId === symbol.id);
+      const quoteLabel = panel.ownerDocument.createElement("small");
+      if (quote === undefined) {
+        quoteLabel.dataset.openklineQuoteError = "";
+        quoteLabel.textContent = "No quote";
+      } else if (quote.status === "stale") {
+        quoteLabel.dataset.openklineQuoteStale = "";
+        quoteLabel.textContent = `Stale ${quote.last ?? "—"}`;
+      } else if (quote.status === "error") {
+        quoteLabel.dataset.openklineQuoteError = "";
+        quoteLabel.textContent = quote.error ?? "Quote error";
+      } else if (quote.status === "loading") {
+        quoteLabel.textContent = "Loading";
+      } else {
+        quoteLabel.textContent = quote.last === null ? "Missing" : String(quote.last);
       }
-    });
-    this.subscribeChart("indicatorChange", (event) => {
-      if (event.action === "add") this.indicatorKinds.set(event.id, event.indicatorId);
-      if (event.action === "remove") {
-        this.indicatorKinds.delete(event.id);
-        this.indicatorApis.delete(event.id);
-        if (this.selectedIndicatorInstanceId === event.id) this.selectedIndicatorInstanceId = null;
-      }
-      this.refreshProfessionalUi();
-    });
-    this.subscribeChart("drawingSelection", () => this.refreshProfessionalUi());
-    this.subscribeChart("toolActivation", (event) => {
-      this.activeDrawingType = event.active ? event.type : null;
-      this.refreshProfessionalUi();
-    });
-    for (const name of ["viewportChange", "crosshairMove", "replayChange", "replayError", "scriptError", "alertTriggered", "alertError"] as const) {
-      this.subscribeChart(name);
+      const selectSymbol = button(panel.ownerDocument, "Select", "Select");
+      selectSymbol.dataset.openklineWatchlistAction = "select";
+      const favorite = button(panel.ownerDocument, this.labels.favorite, symbol.favorite ? "★" : "☆");
+      favorite.dataset.openklineWatchlistAction = "favorite";
+      const up = button(panel.ownerDocument, this.labels.reorder, "↑");
+      up.dataset.openklineWatchlistAction = "up";
+      up.disabled = index === 0;
+      const down = button(panel.ownerDocument, this.labels.reorder, "↓");
+      down.dataset.openklineWatchlistAction = "down";
+      down.disabled = index === symbols.length - 1;
+      const remove = button(panel.ownerDocument, this.labels.remove, this.labels.remove);
+      remove.dataset.openklineWatchlistAction = "remove";
+      row.append(label, quoteLabel, selectSymbol, favorite, up, down, remove);
+      list.append(row);
     }
   }
 
-  private subscribeChart<Name extends ChartEventName>(name: Name, callback?: (event: ChartEvents[Name]) => void): void {
-    const unsubscribe = this.chart.subscribe(name, (event) => {
-      callback?.(event);
-      this.emit({ type: "chart", name, payload: event });
-    });
-    this.chartSubscriptions.push(unsubscribe);
-  }
-
-  private syncPresentationForChartType(): void {
-    if (this.chartType === "candlestick") {
-      this.presentation?.remove();
-      this.presentation = null;
-      this.chart.setSeriesStyle(BASE_SERIES_ID, { visible: true });
+  private handleWatchlistPanelClick(event: Event): void {
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-watchlist-action]") : null;
+    if (target === null) return;
+    const action = target.dataset.openklineWatchlistAction;
+    const document = this.watchlistModel.getDocument();
+    let listId = document.selectedWatchlistId ?? document.lists[0]?.id;
+    if (listId === null || listId === undefined) {
+      listId = this.watchlistModel.create("Watchlist").id;
+    }
+    if (action === "add") {
+      const panel = target.closest<HTMLElement>("[data-openkline-panel]");
+      const input = panel?.querySelector<HTMLInputElement>('[data-openkline-watchlist-input="symbol"]');
+      const value = input?.value.trim() ?? "";
+      if (value.length === 0) return;
+      const current = this.watchlistModel.getDocument().lists.find((item) => item.id === listId);
+      if ((current?.symbols.length ?? 0) >= MAX_WATCHLIST_SYMBOLS) {
+        this.fail(new WidgetLifecycleError(`Watchlist supports at most ${MAX_WATCHLIST_SYMBOLS} symbols`));
+        return;
+      }
+      try {
+        this.watchlistModel.addSymbol(listId, { id: value, displaySymbol: value, name: value });
+        if (input !== null && input !== undefined) input.value = "";
+        this.attachQuoteProvider();
+        this.refreshOpenPanels();
+      } catch (error) {
+        this.fail(error);
+      }
       return;
     }
-    this.chart.setSeriesStyle(BASE_SERIES_ID, { visible: false });
-    this.presentation?.remove();
-    const options: SeriesOptions = { id: PRESENTATION_SERIES_ID, title: "Price", style: { visible: true } };
-    const presentation = this.createPresentationSeries(options);
-    const candles = this.chart.getData();
-    this.syncingPresentation = true;
+    const row = target.closest<HTMLElement>("[data-openkline-watchlist-row]");
+    const symbolId = row?.dataset.openklineWatchlistSymbol;
+    if (symbolId === undefined) return;
+    const list = this.watchlistModel.getDocument().lists.find((item) => item.id === listId);
+    const index = list?.symbols.findIndex((symbol) => symbol.id === symbolId) ?? -1;
     try {
-      const values = this.chartType === "ohlc" || this.chartType === "hollow-candlestick" || this.chartType === "heikin-ashi"
-        ? candles
-        : candles.map(toClosePoint);
-      presentation.setData(values as never);
-    } finally {
-      this.syncingPresentation = false;
-    }
-    this.presentation = presentation;
-  }
-
-  private createPresentationSeries(options: SeriesOptions): SeriesApi<Candle> | SeriesApi<LinePoint> {
-    switch (this.chartType) {
-      case "ohlc": return this.chart.addOhlcSeries(options);
-      case "hollow-candlestick": return this.chart.addHollowCandlestickSeries(options);
-      case "heikin-ashi": return this.chart.addHeikinAshiSeries(options);
-      case "line": return this.chart.addLineSeries(options);
-      case "area": return this.chart.addAreaSeries(options);
-      case "baseline": return this.chart.addBaselineSeries(options);
-      case "candlestick": return this.chart.addCandlestickSeries(options);
+      if (action === "select") void this.setSymbol(symbolId).catch(() => undefined);
+      if (action === "favorite") this.watchlistModel.setFavorite(listId, symbolId, !(list?.symbols[index]?.favorite ?? false));
+      if (action === "remove") this.watchlistModel.removeSymbol(listId, symbolId);
+      if (action === "up" && index > 0) this.watchlistModel.reorderSymbol(listId, symbolId, index - 1);
+      if (action === "down" && list !== undefined && index >= 0 && index < list.symbols.length - 1) {
+        this.watchlistModel.reorderSymbol(listId, symbolId, index + 1);
+      }
+      this.attachQuoteProvider();
+      this.refreshOpenPanels();
+    } catch (error) {
+      this.fail(error);
     }
   }
 
-  private rebindRestoredPresentation(): void {
-    const info = this.chart.getSeriesInfo();
-    const restored = info.find((series) => series.id === PRESENTATION_SERIES_ID);
-    if (restored !== undefined && isWidgetChartType(restored.type)) {
-      this.chartType = restored.type;
-      this.chart.removeSeries(PRESENTATION_SERIES_ID);
-    } else {
-      this.chartType = "candlestick";
-      if (restored !== undefined) this.chart.removeSeries(PRESENTATION_SERIES_ID);
+  private renderComparisonPanel(panel: HTMLElement): void {
+    const list = panel.querySelector<HTMLElement>("[data-openkline-comparison-list]");
+    const mode = panel.querySelector<HTMLSelectElement>('[data-openkline-comparison-input="mode"]');
+    if (mode !== null) mode.value = this.comparisonEngine.getMode();
+    if (list === null) return;
+    list.replaceChildren();
+    for (const status of this.comparisonEngine.getStatus()) {
+      const row = panel.ownerDocument.createElement("div");
+      row.dataset.openklineComparisonRow = "";
+      row.dataset.openklineComparisonAsset = status.id;
+      const label = panel.ownerDocument.createElement("span");
+      label.textContent = `${status.label} · ${status.eligible ? "ready" : "ineligible"} · ${status.pointCount} pts`;
+      const baseline = button(panel.ownerDocument, this.labels.baseline, this.labels.baseline);
+      baseline.dataset.openklineComparisonAction = "baseline";
+      const remove = button(panel.ownerDocument, this.labels.remove, this.labels.remove);
+      remove.dataset.openklineComparisonAction = "remove";
+      row.append(label, baseline, remove);
+      list.append(row);
     }
-    this.presentation = null;
-    const base = info.find((series) => series.id === BASE_SERIES_ID);
-    if (base === undefined) {
-      const series = this.chart.addCandlestickSeries({ id: BASE_SERIES_ID, title: "Price", style: { visible: this.chartType === "candlestick" } });
-      series.setData(this.chart.getData());
+    if (this.comparisonEngine.getAssetIds().length === 0) {
+      const empty = panel.ownerDocument.createElement("div");
+      empty.dataset.openklinePanelEmpty = "";
+      empty.textContent = "No comparison assets";
+      list.append(empty);
     }
-    this.syncPresentationForChartType();
+  }
+
+  private handleComparisonPanelClick(event: Event): void {
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-comparison-action]") : null;
+    const panel = (target ?? (event.target instanceof Element ? event.target : null))?.closest<HTMLElement>("[data-openkline-panel]");
+    if (panel === null || panel === undefined) return;
+    const mode = panel.querySelector<HTMLSelectElement>('[data-openkline-comparison-input="mode"]');
+    if (mode !== null && mode.value !== this.comparisonEngine.getMode()) {
+      this.setComparisonMode(mode.value as ComparisonNormalizationMode);
+    }
+    if (target === null) return;
+    const action = target.dataset.openklineComparisonAction;
+    if (action === "add-active") {
+      const input = panel.querySelector<HTMLInputElement>('[data-openkline-comparison-input="asset"]');
+      const id = (input?.value.trim() || this.activeSlot().symbol || `asset-${this.comparisonEngine.getAssetIds().length + 1}`);
+      try {
+        this.addComparisonAsset(id, this.activeSlot().chart.getData(), { label: id });
+        if (input !== null) input.value = "";
+      } catch (error) {
+        this.fail(error);
+      }
+      return;
+    }
+    if (action === "clear") {
+      this.clearComparison();
+      return;
+    }
+    const row = target.closest<HTMLElement>("[data-openkline-comparison-row]");
+    const assetId = row?.dataset.openklineComparisonAsset;
+    if (assetId === undefined) return;
+    if (action === "remove") this.removeComparisonAsset(assetId);
+    if (action === "baseline") {
+      const first = this.comparisonEngine.getRawData(assetId)[0]?.time ?? null;
+      this.setComparisonBaseline(first, { maxAgeMs: this.comparisonBaselineMaxAgeMs });
+    }
+  }
+
+  private renderReplayPanel(panel: HTMLElement): void {
+    const status = panel.querySelector<HTMLElement>("[data-openkline-replay-status]");
+    const replay = this.activeSlot().getReplayStatus();
+    if (status !== null) {
+      status.textContent = replay === null
+        ? `Idle on ${this.activeChartId}`
+        : `${replay.state} · bar ${replay.currentIndex ?? "—"} / ${replay.totalBars} · speed ${replay.speed}${replay.error === undefined ? "" : ` · ${replay.error}`}`;
+    }
+  }
+
+  private handleReplayPanelClick(event: Event): void {
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-openkline-replay-action]") : null;
+    if (target === null) return;
+    const panel = target.closest<HTMLElement>("[data-openkline-panel]");
+    const action = target.dataset.openklineReplayAction;
+    try {
+      if (action === "enter") this.enterReplay();
+      const replay = this.getReplay();
+      if (action === "play") replay?.play();
+      if (action === "pause") replay?.pause();
+      if (action === "step-forward") replay?.stepForward();
+      if (action === "step-backward") replay?.stepBackward();
+      if (action === "exit") this.exitReplay();
+      if (action === "seek" && replay !== null && panel !== null) {
+        const speed = panel.querySelector<HTMLInputElement>('[data-openkline-replay-input="speed"]');
+        const seek = panel.querySelector<HTMLInputElement>('[data-openkline-replay-input="seek"]');
+        if (speed !== null) replay.setSpeed(Number(speed.value));
+        if (seek !== null && seek.value.length > 0) replay.seekToBar(Number(seek.value));
+      }
+      this.refreshOpenPanels();
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  private applyComparisonSeries(): void {
+    const chart = this.activeSlot().chart;
+    for (const id of [...this.comparisonSeriesIds]) {
+      if (chart.getSeriesIds().includes(id)) chart.removeSeries(id);
+      this.comparisonSeriesIds.delete(id);
+    }
+    const replayCutoff = this.activeSlot().getReplayStatus()?.currentTimestamp ?? null;
+    for (const asset of this.comparisonEngine.getNormalizedData()) {
+      const seriesId = `${COMPARISON_SERIES_PREFIX}${encodeURIComponent(asset.id)}`;
+      const data = replayCutoff === null ? asset.data : asset.data.filter((point) => point.time <= replayCutoff);
+      if (data.length === 0) continue;
+      const series = chart.addLineSeries({
+        id: seriesId,
+        title: asset.label,
+        style: { color: asset.color ?? "#60a5fa", lineWidth: 2, visible: true },
+      });
+      series.setData(data);
+      this.comparisonSeriesIds.add(seriesId);
+    }
+  }
+
+  private attachQuoteProvider(): void {
+    this.quoteUnsubscribe?.();
+    this.quoteUnsubscribe = null;
+    this.quotes = [];
+    if (this.quoteProvider === null) return;
+    const document = this.watchlistModel.getDocument();
+    const selected = document.lists.find((item) => item.id === document.selectedWatchlistId) ?? document.lists[0];
+    const symbolIds = (selected?.symbols ?? []).map((symbol) => symbol.id);
+    if (symbolIds.length === 0) return;
+    this.quoteUnsubscribe = this.quoteProvider.subscribe(symbolIds, (quotes) => {
+      this.quotes = quotes;
+      this.refreshOpenPanels();
+    });
   }
 
   private setStatus(status: WidgetStatus): void {
     this.status = status;
-    this.renderState();
+    this.renderShell();
+    this.emitState();
   }
 
-  private renderState(): void {
+  private renderShell(): void {
     this.root.dataset.status = this.status;
     this.root.dataset.theme = this.theme;
     this.root.dataset.direction = this.direction;
     this.root.dir = this.direction;
-    const displaySymbol = this.requestedSymbol ?? this.symbol ?? "";
-    const displayTimeframe = this.requestedTimeframe ?? this.timeframe ?? DEFAULT_TIMEFRAMES[3];
+    const active = this.slots.get(this.activeChartId);
+    const displaySymbol = active?.requestedSymbol ?? active?.symbol ?? "";
+    const displayTimeframe = active?.requestedTimeframe ?? active?.timeframe ?? DEFAULT_TIMEFRAMES[3];
     if (this.symbolInput !== null && this.symbolInput.value !== displaySymbol) this.symbolInput.value = displaySymbol;
     if (this.timeframeSelect !== null && this.timeframeSelect.value !== displayTimeframe) this.timeframeSelect.value = displayTimeframe;
-    if (this.chartTypeSelect !== null && this.chartTypeSelect.value !== this.chartType) this.chartTypeSelect.value = this.chartType;
-    if (this.themeButton !== null) this.themeButton.textContent = `${this.labels.theme}: ${this.theme}`;
-    if (this.themeButton !== null) this.themeButton.setAttribute("aria-pressed", String(this.theme === "dark"));
+    if (this.chartTypeSelect !== null && this.chartTypeSelect.value !== (active?.chartType ?? this.chartType)) {
+      this.chartTypeSelect.value = active?.chartType ?? this.chartType;
+    }
+    if (this.themeButton !== null) {
+      this.themeButton.textContent = `${this.labels.theme}: ${this.theme}`;
+      this.themeButton.setAttribute("aria-pressed", String(this.theme === "dark"));
+    }
     if (this.directionButton !== null) {
       this.directionButton.textContent = `${this.labels.direction}: ${this.direction}`;
       this.directionButton.setAttribute("aria-pressed", String(this.direction === "rtl"));
     }
     this.statusElement.hidden = !this.features.status;
     this.errorElement.hidden = this.status !== "error";
-    this.emptyElement.hidden = this.status !== "empty";
     this.statusElement.textContent = this.status === "loading"
       ? this.labels.loading
-      : this.status === "ready"
-        ? `${this.labels.ready}${this.symbol === null ? "" : `: ${this.symbol}`}`
-        : this.status === "empty"
-          ? this.labels.empty
-          : this.status === "destroyed"
-            ? "Widget destroyed"
-            : "";
-    this.emptyElement.textContent = this.labels.empty;
-    this.errorElement.textContent = this.error === null ? "" : `${this.labels.error}: ${this.error}`;
-    this.refreshProfessionalUi();
-    this.emitChartState();
+      : this.status === "empty"
+        ? this.labels.empty
+        : this.status === "error"
+          ? this.labels.error
+          : this.labels.ready;
+    this.errorElement.textContent = this.error ?? "";
+    for (const slot of this.slots.values()) {
+      slot.emptyElement.hidden = slot.hasData;
+      slot.emptyElement.textContent = this.labels.empty;
+      slot.renderHeader();
+    }
   }
 
-  private emitChartState(): void {
+  private emitState(): void {
     this.emit({ type: "state", snapshot: this.getState() });
   }
 
   private emit(event: WidgetEvent): void {
-    for (const listener of this.listeners) {
-      try {
-        listener(event);
-      } catch {
-        // A host listener must not break chart lifecycle cleanup or other listeners.
-      }
-    }
+    for (const listener of this.listeners) listener(event);
   }
 
   private fail(error: unknown): WidgetLifecycleError {
@@ -1747,42 +1743,11 @@ class InternalWidgetController implements InternalWidget {
       ? error
       : new WidgetLifecycleError(error instanceof Error ? error.message : String(error));
     this.error = normalized.message;
-    if (!this.destroyed) this.status = "error";
-    this.renderState();
+    this.status = "error";
+    this.renderShell();
     this.emit({ type: "error", error: normalized });
+    this.emitState();
     return normalized;
-  }
-
-  private field(document: Document, labelText: string, control: HTMLElement): HTMLElement {
-    const field = document.createElement("span");
-    field.dataset.openklineField = "";
-    const label = document.createElement("label");
-    label.textContent = labelText;
-    const id = `openkline-widget-${this.instanceId}-${++this.controlId}`;
-    control.id = id;
-    label.htmlFor = id;
-    field.append(label, control);
-    return field;
-  }
-
-  private select(document: Document, label: string, values: readonly string[]): HTMLSelectElement {
-    const select = document.createElement("select");
-    select.setAttribute("aria-label", label);
-    for (const value of values) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      select.append(option);
-    }
-    return select;
-  }
-
-  private button(document: Document, label: string, text: string): HTMLButtonElement {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.setAttribute("aria-label", label);
-    button.textContent = text;
-    return button;
   }
 
   private onDom(target: EventTarget, name: string, handler: (event: Event) => void): void {
@@ -1795,165 +1760,6 @@ class InternalWidgetController implements InternalWidget {
   }
 }
 
-function acquireWidgetStyles(document: Document): () => void {
-  let record = widgetStyleRegistry.get(document);
-  if (record === undefined) {
-    const existing = Array.from(document.querySelectorAll<HTMLStyleElement>(`style[${STYLE_MARKER}]`))
-      .find((style) => style.textContent === WIDGET_CSS);
-    const element = existing ?? document.createElement("style");
-    const owned = existing === undefined;
-    if (owned) {
-      element.setAttribute(STYLE_MARKER, "");
-      element.textContent = WIDGET_CSS;
-      document.head.append(element);
-    }
-    record = { element, count: 0, owned };
-    widgetStyleRegistry.set(document, record);
-  }
-  record.count += 1;
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    const current = widgetStyleRegistry.get(document);
-    if (current === undefined) return;
-    current.count -= 1;
-    if (current.count <= 0) {
-      if (current.owned) current.element.remove();
-      widgetStyleRegistry.delete(document);
-    }
-  };
-}
-
-export function normalizeWidgetFeatures(features?: Partial<WidgetFeatureVisibility>): WidgetFeatureVisibility {
-  const supplied = features ?? {};
-  const indicators = supplied.indicators ?? true;
-  const drawings = supplied.drawings ?? true;
-  return {
-    header: true,
-    symbol: true,
-    timeframe: true,
-    chartType: true,
-    indicators,
-    drawings,
-    theme: true,
-    direction: true,
-    workspace: true,
-    status: true,
-    indicatorExplorer: supplied.indicatorExplorer ?? indicators,
-    drawingToolbar: supplied.drawingToolbar ?? drawings,
-    objectTree: supplied.objectTree ?? (drawings || indicators),
-    drawingProperties: supplied.drawingProperties ?? drawings,
-    chartSettings: supplied.chartSettings ?? true,
-    ...supplied,
-  };
-}
-
-function toClosePoint(candle: Candle): LinePoint {
-  return { time: candle.time, value: candle.close };
-}
-
-function resolveWidgetIndicatorMetadata(choices?: readonly string[]): readonly IndicatorMetadata[] {
-  const definitions = new Map(builtInIndicatorDefinitions.map((definition) => [definition.metadata.id, definition.metadata]));
-  const ids = choices === undefined ? [...definitions.keys()] : [...choices];
-  const seen = new Set<string>();
-  const result: IndicatorMetadata[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const known = definitions.get(id);
-    if (known !== undefined) {
-      result.push(known);
-      continue;
-    }
-    result.push({
-      id,
-      name: id,
-      version: 1,
-      description: "Host-registered indicator",
-      category: "custom",
-      parameters: [],
-      outputs: [],
-    });
-  }
-  return result;
-}
-
-function resolveWidgetDrawingChoices(choices?: readonly string[]): readonly WidgetDrawingChoice[] {
-  const types = choices === undefined ? DEFAULT_DRAWINGS : choices;
-  const seen = new Set<string>();
-  return types.filter((type) => {
-    if (seen.has(type)) return false;
-    seen.add(type);
-    return true;
-  }).map((type) => ({ type, label: formatWidgetName(type) }));
-}
-
-function formatWidgetName(value: string): string {
-  return value
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function defaultIndicatorParameter(parameter: IndicatorParameterDefinition, candles: readonly Candle[]): unknown {
-  switch (parameter.name) {
-    case "fastPeriod": return 12;
-    case "slowPeriod": return 26;
-    case "signalPeriod": return 9;
-    case "kPeriod": return 14;
-    case "dPeriod": return 3;
-    case "standardDeviations": return 2;
-    case "multiplier": return 2;
-    case "constant": return 0.015;
-    case "anchorTime": return candles[candles.length - 1]?.time ?? 0;
-    case "priceSource": return "typical";
-    case "session": return "none";
-    case "period": return 14;
-    default:
-      if (parameter.defaultValue !== undefined) return parameter.defaultValue;
-      if (parameter.type === "boolean") return false;
-      if (parameter.type === "enum") return parameter.values?.[0] ?? "";
-      if (parameter.type === "integer" || parameter.type === "number") return parameter.min ?? 0;
-      return "";
-  }
-}
-
-function toColorInputValue(value: string | undefined): string {
-  return value !== undefined && /^#[0-9a-f]{6}$/i.test(value) ? value : "#38bdf8";
-}
-
-function isWidgetChartType(type: string): type is WidgetChartType {
-  return ["candlestick", "ohlc", "hollow-candlestick", "heikin-ashi", "line", "area", "baseline"].includes(type);
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-function normalizeWidgetIdentity(identity?: WidgetDataIdentity): WidgetDataIdentity | undefined {
-  if (identity === undefined) return undefined;
-  const symbol = normalizeIdentityValue(identity.symbol, "symbol");
-  const timeframe = normalizeIdentityValue(identity.timeframe, "timeframe");
-  return {
-    ...(symbol === undefined ? {} : { symbol }),
-    ...(timeframe === undefined ? {} : { timeframe }),
-  };
-}
-
-function normalizeIdentityValue(value: string | undefined, field: "symbol" | "timeframe"): string | undefined {
-  if (value === undefined) return undefined;
-  const normalized = value.trim();
-  if (normalized.length === 0) throw new WidgetLifecycleError(`Widget ${field} must not be empty`);
-  return normalized;
-}
-
-function hasWidgetIdentity(identity: WidgetDataIdentity | undefined | null): identity is WidgetDataIdentity & { readonly symbol?: string; readonly timeframe?: string } {
-  return identity?.symbol !== undefined || identity?.timeframe !== undefined;
-}
-
-function normalizeWidgetDatafeedQuery(query: WidgetDatafeedQuery): WidgetDatafeedQuery {
-  const symbol = normalizeIdentityValue(query.symbol, "symbol");
-  const timeframe = normalizeIdentityValue(query.timeframe, "timeframe");
-  if (symbol === undefined || timeframe === undefined) throw new WidgetLifecycleError("A datafeed query requires symbol and timeframe");
-  return { ...query, symbol, timeframe };
+function isCompositionLike(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "version" in value && "layout" in value && "charts" in value && "activeChartId" in value;
 }
