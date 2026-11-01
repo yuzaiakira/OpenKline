@@ -224,23 +224,29 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2 Widget
-  foundation, professional UI, multi-chart layouts, and advanced panels]
+- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1
+  Widget foundation, professional UI, multi-chart layouts, advanced panels,
+  and Datafeed/Composition integrity hardening]
   Owner-authorized internal browser-side Widget work now provides
   offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
   cleanup, modular controller architecture, single/two/four chart layouts with
   active-chart targeting, opt-in ChartSynchronizationController reuse,
   Watchlist/Comparison/Replay panels over existing Core contracts, and the
   Phase 16.4.1 surfaces (Indicator Explorer, Drawing Toolbar, Object Tree,
-  Drawing Property Editor, Chart Settings). Focused Chromium and Mobile Chrome
-  tests cover layout switching, sync, panel workflows, modal focus, real
+  Drawing Property Editor, Chart Settings). Phase 16.4.2.1 restores
+  ChartSlot→Chart.setDatafeed resolve/subscribe/realtime semantics, accurate
+  pending-request diagnostics, canonical Composition IDs, finite numeric
+  validation, and prevalidated import with best-effort rollback. Focused
+  Chromium and Mobile Chrome tests cover layout switching, sync, panel
+  workflows, Datafeed integrity, composition validation, modal focus, real
   touch hit-testing, multi-instance isolation, and destruction cleanup. The
   Widget benchmark records 1k/10k/100k Canvas2D lifecycle plus multi-chart
   layout/sync/panel measurements. No root/React export, public package,
   protected API-baseline change, publication, release, or legal change is
   included. Firefox, WebKit, Mobile Safari, physical-device, formal
   assistive-technology, CSP, public API, and release gates remain open. See
-  `docs/reports/phase-16-4-2-multichart-advanced-panels.md` and
+  `docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`,
+  `docs/reports/phase-16-4-2-multichart-advanced-panels.md`, and
   `docs/architecture/widget-foundation.md`.
 
 ## Current milestone

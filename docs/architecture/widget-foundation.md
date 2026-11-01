@@ -1,8 +1,9 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.2 internal multi-chart layouts and advanced panels
-implemented and verified in supported local Chromium environments; public
-Widget API and package publication remain unapproved.
+Status: Phase 16.4.2 multi-chart layouts/advanced panels plus Phase 16.4.2.1
+Datafeed & Composition integrity hardening are implemented and verified in
+supported local Chromium environments; public Widget API and package
+publication remain unapproved.
 
 ## Boundary
 
@@ -81,12 +82,21 @@ Direct/offline candles are not implicitly relabeled. Confirmed vs requested
 identity remains explicit. Watchlist selection never relabels candles before a
 confirmed Datafeed/`setData` replacement.
 
+Each `ChartSlot` reuses `Chart.setDatafeed()` for provider-neutral
+`resolveSymbol` / `getBars` / `subscribeBars` lifecycle, AbortSignal
+propagation, generation-aware pending diagnostics, and unsubscribe on
+replacement, workspace import, and destroy. Archived layout slots restore
+Workspace state only; hosts must re-inject Datafeed connectivity explicitly.
+
 ## Persistence
 
 `exportWorkspace` / `importWorkspace` target the active chart through the
 existing public workspace contracts. `exportComposition` / `importComposition`
-serialize the internal multi-chart document (schema version 1). Persistence
+serialize the internal multi-chart document (schema version 1) with canonical
+`chart-1`…`chart-N` IDs, finite comparison numerics, allowlisted keys, and
+prevalidated import with best-effort rollback on apply failure. Persistence
 remains optional and host-injected. No mandatory localStorage/IndexedDB.
+Comparison restores configuration only; asset candles remain host-owned.
 
 ## Public API decision boundary
 
@@ -96,6 +106,7 @@ package subpath, npm metadata, or protected API baseline was changed.
 ## Verification boundary
 
 Focused Chromium and Mobile Chrome tests cover multi-chart layouts, sync,
-watchlist/comparison/replay panels, modal focus, real touch hit-testing, and
+watchlist/comparison/replay panels, Datafeed resolve/subscribe/realtime
+integrity, composition validation, modal focus, real touch hit-testing, and
 cleanup. Firefox, WebKit, Mobile Safari, physical-device, formal
 assistive-technology, CSP, public API, legal, and release gates remain open.

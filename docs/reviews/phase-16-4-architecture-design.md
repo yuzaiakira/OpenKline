@@ -1282,17 +1282,18 @@ Phase 16.4 workstreams.
 
 The current handoff state is:
 
-`PHASE 16.4.2 — MULTI-CHART & ADVANCED WIDGET PANELS IMPLEMENTED / VERIFIED INTERNALLY — PUBLIC WIDGET API NOT AUTHORIZED`
+`PHASE 16.4.2.1 — DATAFEED & COMPOSITION INTEGRITY HARDENING COMPLETE / VERIFIED INTERNALLY — PUBLIC WIDGET API NOT AUTHORIZED`
 
 This revision provides the requested product vision, capability/gap matrix,
 widget architecture, package boundaries, UI inventory, developer API sketches,
 datafeed/storage contracts, accessibility/performance requirements,
 implementation dependencies, release acceptance criteria, exclusions, and exact
 owner authorization request. Subsequent owner authorizations permit the
-internal Phase 16.4.0 foundation, Phase 16.4.1 UI, and Phase 16.4.2
-multi-chart/advanced panels documented in the phase reports; they do not
-authorize the complete widget roadmap, public exports, or release readiness.
-No release gate is closed by this implementation.
+internal Phase 16.4.0 foundation, Phase 16.4.1 UI, Phase 16.4.2
+multi-chart/advanced panels, and Phase 16.4.2.1 Datafeed/Composition integrity
+hardening documented in the phase reports; they do not authorize the complete
+widget roadmap, public exports, or release readiness. No release gate is closed
+by this implementation.
 
 ## 32. Phase 16.4.0 implementation reconciliation
 
@@ -1340,3 +1341,14 @@ modal focus management, and an internal versioned composition document. The
 controller was decomposed into focused modules; drawing cancellation uses an
 internal registry rather than a public Chart API. Public exports, protected
 baselines, React adapters, and publication remain unauthorized.
+
+## 35. Phase 16.4.2.1 Datafeed and Composition integrity reconciliation
+
+Phase 16.4.2.1 restores ChartSlot Datafeed behavior through
+`Chart.setDatafeed()` (resolveSymbol, getBars, subscribeBars, unsubscribe),
+generation-aware pending diagnostics, request-id guards for stale realtime
+callbacks, canonical Composition chart IDs, finite comparison numerics,
+hostile-input rejection, and prevalidated import with best-effort rollback.
+Evidence is recorded in
+`docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`. Phase 16.4.3
+and public Widget API adoption remain unauthorized.
