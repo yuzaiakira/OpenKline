@@ -86,6 +86,72 @@ test("comparison keeps the baseline isolated and reports controlled fee sensitiv
   assert.equal(Object.isFrozen(candidate), true);
 });
 
+test("same decision history with different currencies keeps monetary deltas not-comparable", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "same-history", true, { currency: "USD" });
+  const candidateArtifact = createArtifact(tape, "same-history", true, { currency: "EUR" });
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "eur", artifact: candidateArtifact }],
+  });
+  const candidate = findCandidate(result, "eur");
+  const reason = "Accounting currency mismatch: baseline USD, candidate EUR; no FX conversion is configured";
+  assert.equal(result.status, "verified", "causal reconstruction remains independently verified");
+  assert.equal(candidate.compatibility, "identical-decision-history");
+  assert.equal(candidate.status, "verified");
+  assert.deepEqual(candidate.differences?.monetaryUnits, { baselineCurrency: "USD", candidateCurrency: "EUR", comparable: false });
+  for (const delta of [
+    candidate.differences?.realizedPnl,
+    candidate.differences?.unrealizedPnl,
+    candidate.differences?.equity,
+    candidate.differences?.drawdown,
+    candidate.differences?.totalFees,
+    candidate.differences?.marketValue,
+    candidate.differences?.modeledExecution.feeAmount,
+  ]) {
+    assert.equal(delta?.status, "not-comparable");
+    assert.equal(delta?.delta, null);
+    assert.equal(delta?.reason, reason);
+  }
+  assert.equal(candidate.differences?.simulatedQuantity.status, "available");
+  assert.equal(candidate.differences?.fillCount.status, "available");
+  assert.equal(candidate.differences?.drawdownPercent.status, "available");
+});
+
+test("same-currency monetary deltas remain available and expose initial capital", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "capital-history", true, { currency: "USD", initialCapital: 1_000 });
+  const candidateArtifact = createArtifact(tape, "capital-history", true, { currency: "USD", initialCapital: 2_000 });
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "larger-capital", artifact: candidateArtifact }],
+  });
+  const candidate = findCandidate(result, "larger-capital");
+  assert.equal(candidate.compatibility, "identical-decision-history");
+  assert.equal(candidate.differences?.monetaryUnits.comparable, true);
+  assert.equal(candidate.scenario?.metrics.initialCapital, 2_000);
+  assert.equal(candidate.differences?.equity.status, "available");
+  assert.equal(candidate.differences?.equity.delta, 1_000);
+  assert.equal(candidate.differences?.totalFees.status, "available");
+});
+
+test("precision-policy differences preserve valid nonmonetary comparisons", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "precision-history", true);
+  const candidateArtifact = createArtifact(tape, "precision-history", true, {
+    precision: { tickSize: 1, quantityStep: 1, minimumQuantity: 1, tickPolicy: "round", quantityPolicy: "round" },
+  });
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "rounded", artifact: candidateArtifact }],
+  });
+  const candidate = findCandidate(result, "rounded");
+  assert.equal(candidate.compatibility, "identical-decision-history");
+  assert.equal(candidate.status, "verified");
+  assert.equal(candidate.differences?.simulatedQuantity.status, "available");
+  assert.equal(candidate.differences?.fillCount.status, "available");
+});
+
 test("different decision histories remain descriptive and are not ranked", () => {
   const tape = createTape();
   const baseline = createArtifact(tape, "comparison-scenario", true);
@@ -235,4 +301,38 @@ test("indeterminate valuation stays explicit and is not presented as a numeric d
   assert.equal(candidate.status, "indeterminate");
   assert.equal(candidate.differences?.equity.status, "unknown");
   assert.equal(candidate.differences?.equity.delta, null);
+});
+
+test("currency mismatch takes precedence over an indeterminate valuation", () => {
+  const tape = createMarketReplayTape({
+    id: "indeterminate-currency-tape",
+    events: [
+      sourceStatus("status", 1_000),
+      book("book-1", 1_001, 1),
+      book("book-2", 1_002, 2),
+      trade("trade-1", 1_002),
+      sourceStatus("status-2", 1_003),
+    ],
+  });
+  const baseline = createArtifact(tape, "indeterminate-same-history", true, { currency: "USD", maxQuoteAgeMs: 0 });
+  const candidateArtifact = createArtifact(tape, "indeterminate-same-history", true, { currency: "EUR", maxQuoteAgeMs: 0 });
+  const result = compareResearchScenarios({
+    baseline: { artifact: baseline, tape },
+    candidates: [{ candidateId: "eur", artifact: candidateArtifact }],
+  });
+  const candidate = findCandidate(result, "eur");
+  assert.equal(candidate.scenario?.evaluationStatus, "indeterminate");
+  assert.equal(candidate.differences?.equity.status, "not-comparable");
+  assert.equal(candidate.differences?.equity.delta, null);
+  assert.match(candidate.differences?.equity.reason ?? "", /baseline USD, candidate EUR/);
+});
+
+test("result-size budget rejects an oversized serialized comparison", () => {
+  const tape = createTape();
+  const baseline = createArtifact(tape, "size-limited", true);
+  const baselineBytes = Buffer.byteLength(JSON.stringify(baseline), "utf8");
+  assert.throws(
+    () => compareResearchScenarios({ baseline: { artifact: baseline, tape }, candidates: [], maxSerializedResultBytes: baselineBytes + 1 }),
+    (error: unknown) => error instanceof ResearchScenarioComparisonError && error.code === "RESULT_SIZE_LIMIT",
+  );
 });

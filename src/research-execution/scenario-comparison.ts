@@ -125,6 +125,7 @@ export interface ResearchScenarioComparisonProvenance {
 
 export interface ResearchScenarioComparisonMetrics {
   readonly currency: string;
+  readonly initialCapital: number;
   readonly realizedPnl: number;
   readonly unrealizedPnl: number | null;
   readonly equity: number | null;
@@ -191,6 +192,12 @@ export interface ResearchScenarioComparisonScenarioResult {
   readonly indeterminateReasons: readonly string[];
 }
 
+export interface ResearchScenarioComparisonMonetaryUnits {
+  readonly baselineCurrency: string;
+  readonly candidateCurrency: string;
+  readonly comparable: boolean;
+}
+
 export interface ResearchScenarioMetricDelta {
   readonly status: "available" | "unknown" | "not-comparable";
   readonly baseline: number | null;
@@ -201,12 +208,21 @@ export interface ResearchScenarioMetricDelta {
 
 export interface ResearchScenarioComparisonDifferences {
   readonly mode: "controlled-fixed-history" | "descriptive-different-history";
+  readonly monetaryUnits: ResearchScenarioComparisonMonetaryUnits;
+  readonly marketValue: ResearchScenarioMetricDelta;
   readonly realizedPnl: ResearchScenarioMetricDelta;
   readonly unrealizedPnl: ResearchScenarioMetricDelta;
   readonly equity: ResearchScenarioMetricDelta;
   readonly drawdown: ResearchScenarioMetricDelta;
   readonly drawdownPercent: ResearchScenarioMetricDelta;
   readonly totalFees: ResearchScenarioMetricDelta;
+  readonly modeledExecution: {
+    readonly feeAmount: ResearchScenarioMetricDelta;
+    /** Price-unit deltas are not currency costs. */
+    readonly slippagePriceDelta: ResearchScenarioMetricDelta;
+    /** Price-unit deltas are not currency costs. */
+    readonly priceImpactPriceDelta: ResearchScenarioMetricDelta;
+  };
   readonly simulatedQuantity: ResearchScenarioMetricDelta;
   readonly remainingOrderQuantity: ResearchScenarioMetricDelta;
   readonly fillCount: ResearchScenarioMetricDelta;
@@ -444,6 +460,7 @@ function createScenarioResult(
     evidence: cloneEvidence(restored.actualResult),
     metrics: {
       currency: scenario.assumptions.currency,
+      initialCapital: scenario.assumptions.initialCapital,
       realizedPnl: ledger.realizedPnl,
       unrealizedPnl: position?.unrealizedPnl ?? null,
       equity: ledger.equity,
@@ -513,14 +530,28 @@ function createDifferences(
   if (compatibility === "incompatible-tape" || compatibility === "not-evaluated") return null;
   const mode = compatibility === "decision-history-different" ? "descriptive-different-history" : "controlled-fixed-history";
   const valuationComparable = baseline.evaluationStatus === "complete" && candidate.evaluationStatus === "complete";
+  const currenciesComparable = baseline.metrics.currency === candidate.metrics.currency;
+  const monetaryReason = currenciesComparable ? null : currencyMismatchReason(baseline.metrics.currency, candidate.metrics.currency);
+  const monetaryDelta = (left: number | null, right: number | null, valuation = true): ResearchScenarioMetricDelta => metricDelta(left, right, valuation, currenciesComparable, monetaryReason);
   return {
     mode,
-    realizedPnl: metricDelta(baseline.metrics.realizedPnl, candidate.metrics.realizedPnl),
-    unrealizedPnl: metricDelta(baseline.metrics.unrealizedPnl, candidate.metrics.unrealizedPnl, valuationComparable),
-    equity: metricDelta(baseline.metrics.equity, candidate.metrics.equity, valuationComparable),
-    drawdown: metricDelta(baseline.metrics.drawdown, candidate.metrics.drawdown, valuationComparable),
+    monetaryUnits: {
+      baselineCurrency: baseline.metrics.currency,
+      candidateCurrency: candidate.metrics.currency,
+      comparable: currenciesComparable,
+    },
+    marketValue: monetaryDelta(baseline.metrics.marketValue, candidate.metrics.marketValue, valuationComparable),
+    realizedPnl: monetaryDelta(baseline.metrics.realizedPnl, candidate.metrics.realizedPnl),
+    unrealizedPnl: monetaryDelta(baseline.metrics.unrealizedPnl, candidate.metrics.unrealizedPnl, valuationComparable),
+    equity: monetaryDelta(baseline.metrics.equity, candidate.metrics.equity, valuationComparable),
+    drawdown: monetaryDelta(baseline.metrics.drawdown, candidate.metrics.drawdown, valuationComparable),
     drawdownPercent: metricDelta(baseline.metrics.drawdownPercent, candidate.metrics.drawdownPercent, valuationComparable),
-    totalFees: metricDelta(baseline.metrics.totalFees, candidate.metrics.totalFees),
+    totalFees: monetaryDelta(baseline.metrics.totalFees, candidate.metrics.totalFees),
+    modeledExecution: {
+      feeAmount: monetaryDelta(baseline.metrics.modeledExecution.feeAmount, candidate.metrics.modeledExecution.feeAmount),
+      slippagePriceDelta: metricDelta(baseline.metrics.modeledExecution.slippagePriceDelta, candidate.metrics.modeledExecution.slippagePriceDelta),
+      priceImpactPriceDelta: metricDelta(baseline.metrics.modeledExecution.priceImpactPriceDelta, candidate.metrics.modeledExecution.priceImpactPriceDelta),
+    },
     simulatedQuantity: metricDelta(baseline.metrics.simulatedQuantity, candidate.metrics.simulatedQuantity),
     remainingOrderQuantity: metricDelta(baseline.metrics.remainingOrderQuantity, candidate.metrics.remainingOrderQuantity),
     fillCount: metricDelta(baseline.metrics.fillCount, candidate.metrics.fillCount),
@@ -528,10 +559,21 @@ function createDifferences(
   };
 }
 
-function metricDelta(baseline: number | null, candidate: number | null, comparable = true): ResearchScenarioMetricDelta {
+function metricDelta(
+  baseline: number | null,
+  candidate: number | null,
+  comparable = true,
+  unitsComparable = true,
+  unitsReason: string | null = null,
+): ResearchScenarioMetricDelta {
+  if (!unitsComparable) return { status: "not-comparable", baseline, candidate, delta: null, reason: unitsReason ?? "Scenario measurement units are incompatible" };
   if (!comparable) return { status: "unknown", baseline, candidate, delta: null, reason: "One or both scenario valuations are indeterminate" };
   if (baseline === null || candidate === null) return { status: "unknown", baseline, candidate, delta: null, reason: "One or both valuations are unavailable or indeterminate" };
   return { status: "available", baseline, candidate, delta: candidate - baseline, reason: null };
+}
+
+function currencyMismatchReason(baselineCurrency: string, candidateCurrency: string): string {
+  return `Accounting currency mismatch: baseline ${baselineCurrency}, candidate ${candidateCurrency}; no FX conversion is configured`;
 }
 
 function candidateError(

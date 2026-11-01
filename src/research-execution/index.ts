@@ -28,6 +28,7 @@ export type {
   ResearchScenarioComparisonFillSummary,
   ResearchScenarioComparisonLimits,
   ResearchScenarioComparisonMetrics,
+  ResearchScenarioComparisonMonetaryUnits,
   ResearchScenarioComparisonOptions,
   ResearchScenarioComparisonOrderSummary,
   ResearchScenarioComparisonProgress,
