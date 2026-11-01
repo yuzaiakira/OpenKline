@@ -224,9 +224,9 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1
+- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1/16.4.3
   Widget foundation, professional UI, multi-chart layouts, advanced panels,
-  and Datafeed/Composition integrity hardening]
+  Datafeed/Composition integrity hardening, and developer integration readiness]
   Owner-authorized internal browser-side Widget work now provides
   offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
   cleanup, modular controller architecture, single/two/four chart layouts with
@@ -243,8 +243,13 @@ offline Studio Market Replay Lab are present.
   Widget benchmark records 1k/10k/100k Canvas2D lifecycle plus multi-chart
   layout/sync/panel measurements. No root/React export, public package,
   protected API-baseline change, publication, release, or legal change is
-  included. Firefox, WebKit, Mobile Safari, physical-device, formal
-  assistive-technology, CSP, public API, and release gates remain open. See
+  included. Phase 16.4.3 adds validated construction options, richer lifecycle
+  events, Composition accessor/Proxy hardening, CSP external stylesheet mode,
+  Vanilla/Next.js integration fixtures, and the developer guide. Firefox,
+  WebKit, Mobile Safari, physical-device, formal assistive-technology, CSP,
+  public API, and release gates remain open. See
+  `docs/reports/phase-16-4-3-developer-api-integration.md`,
+  `docs/guides/widget-developer-integration.md`,
   `docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`,
   `docs/reports/phase-16-4-2-multichart-advanced-panels.md`, and
   `docs/architecture/widget-foundation.md`.

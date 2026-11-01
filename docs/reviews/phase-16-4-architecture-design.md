@@ -1282,7 +1282,7 @@ Phase 16.4 workstreams.
 
 The current handoff state is:
 
-`PHASE 16.4.2.1 — DATAFEED & COMPOSITION INTEGRITY HARDENING COMPLETE / VERIFIED INTERNALLY — PUBLIC WIDGET API NOT AUTHORIZED`
+`PHASE 16.4.3 — DEVELOPER API & INTEGRATION EXPERIENCE COMPLETE / VERIFIED INTERNALLY — PUBLIC WIDGET API NOT YET AUTHORIZED`
 
 This revision provides the requested product vision, capability/gap matrix,
 widget architecture, package boundaries, UI inventory, developer API sketches,
@@ -1350,5 +1350,13 @@ generation-aware pending diagnostics, request-id guards for stale realtime
 callbacks, canonical Composition chart IDs, finite comparison numerics,
 hostile-input rejection, and prevalidated import with best-effort rollback.
 Evidence is recorded in
-`docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`. Phase 16.4.3
-and public Widget API adoption remain unauthorized.
+`docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`.
+
+## 36. Phase 16.4.3 developer API and integration reconciliation
+
+Phase 16.4.3 hardens the internal Developer API (ownership, events, option
+validation), adds Vanilla/Next.js client fixtures, CSP external stylesheet
+mode, and Composition hostile-input protections. Evidence is recorded in
+`docs/reports/phase-16-4-3-developer-api-integration.md` and
+`docs/guides/widget-developer-integration.md`. Public Widget package adoption
+and Phase 16.4.4 remain unauthorized.

@@ -1,9 +1,9 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.2 multi-chart layouts/advanced panels plus Phase 16.4.2.1
-Datafeed & Composition integrity hardening are implemented and verified in
-supported local Chromium environments; public Widget API and package
-publication remain unapproved.
+Status: Phase 16.4.2 multi-chart layouts/advanced panels, Phase 16.4.2.1
+Datafeed & Composition integrity hardening, and Phase 16.4.3 developer
+integration readiness are implemented and verified in supported local Chromium
+environments; public Widget API and package publication remain unapproved.
 
 ## Boundary
 
@@ -97,6 +97,18 @@ serialize the internal multi-chart document (schema version 1) with canonical
 prevalidated import with best-effort rollback on apply failure. Persistence
 remains optional and host-injected. No mandatory localStorage/IndexedDB.
 Comparison restores configuration only; asset candles remain host-owned.
+
+## Developer integration surface (Phase 16.4.3)
+
+Internal hosts may:
+
+- Construct/destroy Widgets with validated options
+- Subscribe to `ready` / `state` / `error` / `layout` / `activeChart` / `chart` / `destroyed`
+- Choose `styles.mode = "external"` and load `WIDGET_CSS` under CSP `style-src 'self'`
+- Use Vanilla (`examples/vanilla/widget-integration.html`) and Next.js
+  (`/widget-integration`) fixtures that import the internal module path
+
+Guide: `docs/guides/widget-developer-integration.md`.
 
 ## Public API decision boundary
 
