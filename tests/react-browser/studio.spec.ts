@@ -102,7 +102,9 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   expect(anchors).toHaveLength(2);
   expect(anchors).toEqual(anchorsBeforeLinear);
 
-  await page.reload();
+  // Prefer a fresh navigation over page.reload(): under default multi-worker
+  // contention the shared Next.js webpack-dev server can detach the page mid-reload.
+  await page.goto("/", { waitUntil: "load" });
   await expect(studioChartCanvas(page)).toHaveCount(1);
   await page.getByRole("button", { name: "Load", exact: true }).first().click();
   await expect(page.getByRole("button", { name: "Heikin-Ashi", exact: true })).toHaveAttribute("aria-pressed", "true");

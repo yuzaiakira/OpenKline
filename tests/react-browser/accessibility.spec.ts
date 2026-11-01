@@ -1,5 +1,9 @@
 import { expect, studioChartCanvas, test } from "./studio-test.js";
 
+// Serialize accessibility dialog cases: shared Studio state + focus timing are
+// sensitive under default multi-worker contention on the Next.js app.
+test.describe.configure({ mode: "serial" });
+
 test("Studio interactive controls expose names, keyboard focus, status, and dialog semantics", async ({ page }) => {
   await page.goto("/");
   const unnamed = await page.evaluate(() => {

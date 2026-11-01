@@ -77,6 +77,7 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   await page.getByLabel("Workspace", { exact: true }).selectOption(savedWorkspaceId);
   await test.step("restore and inspect panel visibility", async () => {
     await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+    await page.waitForLoadState("domcontentloaded");
     const chartTwoIndicators = page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true });
     if (await page.evaluate(() => window.matchMedia("(max-width: 720px)").matches)) {
       // Workspace restoration intentionally selects chart-1. Verify chart-2's

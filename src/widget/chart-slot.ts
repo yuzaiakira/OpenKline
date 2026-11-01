@@ -101,10 +101,12 @@ export class ChartSlot {
     this.headerElement.textContent = this.id;
     this.chartContainer = document.createElement("div");
     this.chartContainer.dataset.openklineChart = "";
+    this.chartContainer.setAttribute("role", "img");
     this.chartContainer.setAttribute("aria-label", `OpenKline chart ${this.id}`);
     this.emptyElement = document.createElement("div");
     this.emptyElement.dataset.openklineEmpty = "";
     this.emptyElement.setAttribute("role", "status");
+    this.emptyElement.setAttribute("aria-live", "polite");
     this.emptyElement.textContent = "No chart data loaded";
     this.chartContainer.append(this.emptyElement);
     this.slotElement.append(this.headerElement, this.chartContainer);

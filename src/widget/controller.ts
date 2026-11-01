@@ -167,6 +167,7 @@ class InternalWidgetController implements InternalWidget {
     this.root.dataset.theme = this.theme;
     this.root.dataset.direction = this.direction;
     this.root.dir = this.direction;
+    this.root.setAttribute("role", "region");
     this.root.setAttribute("aria-label", this.labels.widgetLabel);
 
     this.content = document.createElement("div");
@@ -174,6 +175,8 @@ class InternalWidgetController implements InternalWidget {
     this.chartGrid = document.createElement("div");
     this.chartGrid.dataset.openklineChartGrid = "";
     this.chartGrid.dataset.layout = this.layout;
+    this.chartGrid.setAttribute("role", "group");
+    this.chartGrid.setAttribute("aria-label", "Charts");
     this.modalLayer = document.createElement("div");
     this.modalLayer.dataset.openklineModalLayer = "";
     this.modalLayer.hidden = true;
@@ -182,11 +185,16 @@ class InternalWidgetController implements InternalWidget {
     this.modalLayer.append(this.modalBackdrop);
     this.statusElement = document.createElement("div");
     this.statusElement.dataset.openklineStatus = "";
+    this.statusElement.id = `openkline-status-${Math.random().toString(36).slice(2, 9)}`;
     this.statusElement.setAttribute("role", "status");
     this.statusElement.setAttribute("aria-live", "polite");
+    this.statusElement.setAttribute("aria-atomic", "true");
     this.errorElement = document.createElement("div");
     this.errorElement.dataset.openklineError = "";
+    this.errorElement.id = `openkline-error-${Math.random().toString(36).slice(2, 9)}`;
     this.errorElement.setAttribute("role", "alert");
+    this.errorElement.setAttribute("aria-live", "assertive");
+    this.root.setAttribute("aria-describedby", `${this.statusElement.id} ${this.errorElement.id}`);
     const toolbar = this.createToolbar(document, options);
     this.content.append(this.chartGrid, this.statusElement, this.errorElement, this.modalLayer);
     this.root.append(toolbar, this.content);
@@ -859,13 +867,16 @@ class InternalWidgetController implements InternalWidget {
       panel.dataset.openklinePanel = spec.key;
       panel.hidden = true;
       panel.setAttribute("role", "dialog");
-      panel.setAttribute("aria-modal", "true");
-      panel.setAttribute("aria-label", spec.label);
+      // Drawing/replay keep the chart interactive; mark non-modal so AT/host UI match behavior.
+      const keepChartInteractive = spec.key === "drawing-toolbar" || spec.key === "replay";
+      panel.setAttribute("aria-modal", keepChartInteractive ? "false" : "true");
       const header = document.createElement("div");
       header.dataset.openklinePanelHeader = "";
-      const title = document.createElement("span");
+      const title = document.createElement("h2");
       title.dataset.openklinePanelTitle = "";
+      title.id = `openkline-panel-title-${spec.key}`;
       title.textContent = spec.label;
+      panel.setAttribute("aria-labelledby", title.id);
       const close = button(document, this.labels.close, this.labels.close);
       close.dataset.openklinePanelClose = spec.key;
       header.append(title, close);

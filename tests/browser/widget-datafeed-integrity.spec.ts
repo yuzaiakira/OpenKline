@@ -47,7 +47,7 @@ async function mount(page: Page, layout: "single" | "two-horizontal" | "four-gri
 }
 
 test("widget datafeed resolves symbols, loads history, and manages realtime subscriptions", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "chromium", "Datafeed integrity is verified in desktop Chromium");
+  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Datafeed integrity is verified on desktop Chromium/Firefox");
   await mount(page, "single");
 
   const result = await page.evaluate(async (candles) => {
@@ -218,7 +218,7 @@ test("widget datafeed resolves symbols, loads history, and manages realtime subs
 });
 
 test("multi-chart datafeeds stay isolated and composition import rolls back on invalid input", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "chromium", "Isolation and composition integrity use desktop Chromium");
+  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Isolation and composition integrity use desktop Chromium/Firefox");
   await mount(page, "two-horizontal");
 
   const result = await page.evaluate(async (candles) => {
@@ -351,7 +351,7 @@ test("multi-chart datafeeds stay isolated and composition import rolls back on i
 });
 
 test("pending diagnostics clear after cancellation and abort mid-resolution", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "chromium", "Pending-request diagnostics use desktop Chromium");
+  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Pending-request diagnostics use desktop Chromium/Firefox");
   await mount(page, "single");
 
   const result = await page.evaluate(async (candles) => {

@@ -8,9 +8,10 @@ export const WIDGET_CSS = `
   --openkline-widget-panel: #111827;
   --openkline-widget-border: #334155;
   --openkline-widget-text: #e2e8f0;
-  --openkline-widget-muted: #94a3b8;
+  --openkline-widget-muted: #cbd5e1;
   --openkline-widget-focus: #38bdf8;
   --openkline-widget-active: #1d4ed8;
+  --openkline-widget-danger: #fecaca;
   box-sizing: border-box;
   position: relative;
   display: flex;
@@ -31,9 +32,18 @@ export const WIDGET_CSS = `
   --openkline-widget-panel: #ffffff;
   --openkline-widget-border: #cbd5e1;
   --openkline-widget-text: #0f172a;
-  --openkline-widget-muted: #475569;
+  --openkline-widget-muted: #334155;
   --openkline-widget-focus: #0369a1;
   --openkline-widget-active: #93c5fd;
+  --openkline-widget-danger: #b91c1c;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-openkline-widget],
+  [data-openkline-widget] * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 [data-openkline-widget] *, [data-openkline-widget] *::before, [data-openkline-widget] *::after {
   box-sizing: border-box;
@@ -60,7 +70,8 @@ export const WIDGET_CSS = `
 [data-openkline-widget] button,
 [data-openkline-widget] select,
 [data-openkline-widget] input {
-  min-height: 30px;
+  min-height: 32px;
+  min-width: 32px;
   border: 1px solid var(--openkline-widget-border);
   border-radius: 4px;
   color: var(--openkline-widget-text);
@@ -166,7 +177,12 @@ export const WIDGET_CSS = `
   border-top: 1px solid var(--openkline-widget-border);
 }
 [data-openkline-widget] [data-openkline-error] {
-  color: #fca5a5;
+  color: var(--openkline-widget-danger);
+}
+[data-openkline-widget] [data-openkline-panel-title] {
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
 }
 [data-openkline-widget] [data-openkline-empty] {
   position: absolute;
@@ -364,7 +380,8 @@ export const WIDGET_CSS = `
   [data-openkline-widget] button,
   [data-openkline-widget] select,
   [data-openkline-widget] input {
-    min-height: 36px;
+    min-height: 44px;
+    min-width: 44px;
   }
   [data-openkline-widget] [data-openkline-chart-grid][data-layout="two-horizontal"],
   [data-openkline-widget] [data-openkline-chart-grid][data-layout="four-grid"] {
