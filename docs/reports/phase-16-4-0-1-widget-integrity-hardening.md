@@ -14,13 +14,15 @@ publication, a release, or Phase 16.4.1.
 | Branch | main |
 | Authorized baseline | 57ab4ffc5b827a576fb96bba0c3cbb1097242cab |
 | Implementation commit | 962883759c1ce3ec0a2394134e15cf48acd66a3e |
-| Report finalization commit | recorded by the final documentation-only synchronization commit |
+| Regression-test commit | 37f67386f83c4dc73fe4f86b2b461aa197e2d3dc |
+| Report delivery commit | df20590ae45cb8d5543f6b7ab8fa24b2325a8751 |
 | Git identity | Akira Yuzai <yuzai.akira@gmail.com> |
 | Publication state | no npm publication, tag, GitHub release, license change, or GitHub Actions change |
 
-The implementation commit was pushed immediately to origin/main. The final
-documentation synchronization commit is the commit that contains the exact
-final repository SHA in this report.
+The implementation, regression-test, and report delivery commits were each
+pushed immediately to origin/main. The final source/test delivery SHA is
+37f67386f83c4dc73fe4f86b2b461aa197e2d3dc; the report delivery SHA is recorded
+above. A later documentation-only amendment does not alter source behavior.
 
 ## Authorization and boundary
 
@@ -255,7 +257,7 @@ close the formal accessibility gate.
 | Deterministic resource cleanup | PASS | Widget diagnostics, stress cleanup, zero Widget canvases/styles |
 | Preserve public/Core contracts | PASS | Root and React exports unchanged; no financial/replay changes |
 | Relevant regressions | PASS except inherited API gate | Node, Chromium, React, production, package, distribution, Studio, stress pass |
-| Authorized Git delivery | PASS | Implementation pushed; final report commit will be synchronized |
+| Authorized Git delivery | PASS | Implementation and regression commits pushed; report delivery synchronized |
 
 The only unresolved verification gates are the inherited API baseline review,
 unsupported browser/device/accessibility/CSP gates, and the separate public
@@ -274,17 +276,22 @@ Widget API decision. None is silently marked as passed.
 
 ## Git delivery
 
-The implementation commit used Conventional Commits and the required author
+The implementation and regression commits used Conventional Commits and the required author
 and committer identity:
 
 ~~~
 962883759c1ce3ec0a2394134e15cf48acd66a3e fix(widget): harden data identity and style lifecycle
 author    Akira Yuzai <yuzai.akira@gmail.com>
 committer Akira Yuzai <yuzai.akira@gmail.com>
+
+37f67386f83c4dc73fe4f86b2b461aa197e2d3dc test(widget): cover repeated identity-bound data updates
+author    Akira Yuzai <yuzai.akira@gmail.com>
+committer Akira Yuzai <yuzai.akira@gmail.com>
 ~~~
 
-It was pushed directly to origin/main without force-push or history rewrite.
-The final documentation-only commit must verify:
+They were pushed directly to origin/main without force-push or history rewrite.
+The report delivery commit was df20590ae45cb8d5543f6b7ab8fa24b2325a8751.
+The final documentation-only amendment must verify:
 
 ~~~
 HEAD == origin/main
