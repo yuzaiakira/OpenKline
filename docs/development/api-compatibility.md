@@ -39,3 +39,9 @@ requires owner approval, a before/after review record, and a deliberate
 baseline update. Required additions, removals, changed parameter/return types,
 optional-to-required changes, changed property types, and removed overloads
 remain compatibility failures.
+
+Phase 16.4.5 recorded an additive-only baseline adoption for the historical
+`Chart` / `WorkspaceDocument` / `WorkspaceRestoreOptions` hash drift in
+`docs/reviews/public-api-baseline-adoption-phase-16-4-5.md`. That adoption
+refreshes the strict gate only; it does not authorize Widget publication or a
+public release.

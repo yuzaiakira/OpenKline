@@ -224,8 +224,8 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2/16.4.2.1/16.4.3/16.4.4
-  Widget foundation through cross-browser & accessibility quality hardening]
+- [Implemented / Verified internally — Phase 16.4.0–16.4.5 Widget foundation
+  through release-gate stabilization]
   Owner-authorized internal browser-side Widget work now provides
   offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
   cleanup, modular controller architecture, single/two/four chart layouts with
@@ -242,16 +242,16 @@ offline Studio Market Replay Lab are present.
   honest modal semantics, contrast/reduced-motion/touch targets, enforced CSP
   fixtures, Chromium+Firefox desktop matrices, Mobile Chrome touch hit-testing,
   responsive screenshot evidence, and React accessibility serial stability.
-  WebKit/Mobile Safari are BLOCKED on missing host libraries in the verified
-  environment; physical devices, formal AT/WCAG certification, universal CSP,
-  public API, and release gates remain open. No root/React export, public
-  package, protected API-baseline change, publication, release, or legal change
-  is included. See
+  Phase 16.4.5 recovers the additive-only public API baseline gate, stabilizes
+  default-parallel React/Studio tests via production Next.js serving, expands
+  Object Tree accessibility/mobile checks, and documents a WebKit Docker recipe
+  for hosts missing Playwright libraries. WebKit/Mobile Safari remain BLOCKED
+  on this host; physical devices, formal AT/WCAG certification, universal CSP,
+  Public Widget API, and public release remain open/not authorized. See
+  `docs/reports/phase-16-4-5-release-gate-stabilization.md`,
   `docs/reports/phase-16-4-4-cross-browser-accessibility-quality.md`,
-  `docs/reports/phase-16-4-3-developer-api-integration.md`,
-  `docs/guides/widget-developer-integration.md`,
-  `docs/reports/phase-16-4-2-1-datafeed-composition-integrity.md`,
-  `docs/reports/phase-16-4-2-multichart-advanced-panels.md`, and
+  `docs/reviews/public-api-baseline-adoption-phase-16-4-5.md`,
+  `docs/guides/widget-developer-integration.md`, and
   `docs/architecture/widget-foundation.md`.
 
 ## Current milestone
