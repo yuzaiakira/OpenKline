@@ -267,14 +267,14 @@ approval before `api:check` can PASS.
 | --- | --- |
 | `115fbb408893c3bfbe2713d14a7c1f22a92b2d20` | Implementation + tests + evidence |
 | `0c6d9ddb27f77edec608ad5c330d6725d93b45db` | Documentation |
-| `7b978279c49055460e5965325b6de3e92bfffc74` | Final synchronized tip on `origin/main` |
+| `8c669de9390c51f08d28becb12d8e23b8530a16d` | Final synchronized tip on `origin/main` |
 
 ## Final remote state
 
 | Check | Value |
 | --- | --- |
 | Starting SHA | `933d7ae644dd3e463c5d5be85d0baec7fcefcf91` |
-| Final SHA | `7b978279c49055460e5965325b6de3e92bfffc74` |
+| Final SHA | `8c669de9390c51f08d28becb12d8e23b8530a16d` |
 | `HEAD == origin/main` | Yes |
 | Working tree | Clean |
 | Author/committer | `Akira Yuzai <yuzai.akira@gmail.com>` |
