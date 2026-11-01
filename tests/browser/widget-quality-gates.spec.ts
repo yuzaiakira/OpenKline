@@ -220,3 +220,23 @@ test("mobile chrome touch hit-testing opens and closes watchlist without force",
   await expect(panel).toBeHidden();
   await page.evaluate(() => (globalThis as WidgetGlobals).__openklineQualityWidget!.destroy());
 });
+
+test("mobile chrome object tree and chart settings remain reachable after viewport rotation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chrome", "Mobile responsive Object Tree coverage uses Mobile Chrome");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mountQualityWidget(page, 390, 700);
+  const tree = page.locator('[data-openkline-panel-trigger="object-tree"]');
+  await expect(tree).toBeVisible();
+  await tree.tap();
+  const panel = page.locator('[data-openkline-panel="object-tree"]');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator("h2[data-openkline-panel-title]")).toBeVisible();
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(panel).toBeVisible();
+  await panel.locator("[data-openkline-panel-close]").click();
+  await expect(panel).toBeHidden();
+  const settings = page.locator('[data-openkline-panel-trigger="chart-settings"]');
+  await settings.tap();
+  await expect(page.locator('[data-openkline-panel="chart-settings"]')).toBeVisible();
+  await page.evaluate(() => (globalThis as WidgetGlobals).__openklineQualityWidget!.destroy());
+});

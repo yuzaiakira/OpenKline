@@ -1,5 +1,12 @@
 import { defineConfig } from "@playwright/test";
 
+/**
+ * React/Studio browser verification uses a production Next.js server.
+ * Shared `next dev` + multi-worker webpack contention previously caused
+ * intermittent Object Tree / navigation detach failures under default parallel
+ * execution. Production serves a stable build without HMR races while preserving
+ * default Playwright worker parallelism.
+ */
 export default defineConfig({
   testDir: "tests/react-browser",
   timeout: 30_000,
@@ -19,11 +26,11 @@ export default defineConfig({
     },
   }],
   webServer: {
-    command: "npm run dev -- --webpack --port 4174",
+    command: "npm run build && npm run start -- --port 4174",
     cwd: "examples/nextjs-app-router",
     url: "http://127.0.0.1:4174/lifecycle-verification",
     reuseExistingServer: false,
-    timeout: 60_000,
+    timeout: 180_000,
     env: {
       ...process.env,
       OPENKLINE_NEXT_DIST: ".next-playwright",

@@ -46,6 +46,8 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
   await expect(page.getByRole("heading", { name: "Objects" })).toBeVisible();
   await expect(studioChartCanvas(page)).toHaveCount(1);
   await expect(page.getByText("Series (10)", { exact: true })).toBeVisible();
@@ -70,12 +72,17 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   await placeVisibleChartPoint(page, 0.65, 0.32);
   await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
   const objectTree = page.getByRole("complementary", { name: "Object tree" });
-  await expect(objectTree).toBeVisible();
+  await expect(objectTree).toHaveAttribute("data-object-tree-ready", "true");
+  const drawingRow = objectTree.locator('[data-drawing-id="drawing-1"]');
+  await expect(drawingRow).toHaveAttribute("data-drawing-visible", "true");
   await objectTree.getByRole("button", { name: "Lock drawing-1", exact: true }).click();
+  await expect(drawingRow).toHaveAttribute("data-drawing-locked", "true");
   await expect(objectTree.getByRole("button", { name: "Unlock drawing-1", exact: true })).toBeVisible();
   await objectTree.getByRole("button", { name: "Hide drawing-1", exact: true }).click();
+  await expect(drawingRow).toHaveAttribute("data-drawing-visible", "false");
   await expect(objectTree.getByRole("button", { name: "Show drawing-1", exact: true })).toBeVisible();
   await objectTree.getByRole("button", { name: "Show drawing-1", exact: true }).click();
+  await expect(drawingRow).toHaveAttribute("data-drawing-visible", "true");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   const anchorsBeforeLinear = await page.evaluate(() => {
     const workspace = JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as {

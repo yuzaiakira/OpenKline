@@ -1,4 +1,4 @@
-import { expect, studioChartCanvas, test } from "./studio-test.js";
+import { expect, placeVisibleChartPoint, studioChartCanvas, test } from "./studio-test.js";
 
 // Serialize accessibility dialog cases: shared Studio state + focus timing are
 // sensitive under default multi-worker contention on the Next.js app.
@@ -99,4 +99,23 @@ test("Reduced-motion mode has no decorative Studio animation path", async ({ pag
   expect(motion.reducedMotion).toBe(true);
   expect(motion.animations).toBe(0);
   expect(motion.transitions).toBe(false);
+});
+
+test("Object Tree drawing controls expose names and toggle state for keyboard users", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.4, 0.3);
+  await placeVisibleChartPoint(page, 0.7, 0.4);
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  await expect(objectTree).toHaveAttribute("data-object-tree-ready", "true");
+  const hide = objectTree.getByRole("button", { name: "Hide drawing-1", exact: true });
+  await hide.focus();
+  await expect(hide).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "false");
+  const show = objectTree.getByRole("button", { name: "Show drawing-1", exact: true });
+  await show.focus();
+  await page.keyboard.press("Enter");
+  await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "true");
 });

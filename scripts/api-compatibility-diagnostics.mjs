@@ -46,6 +46,12 @@ const workspace = compareDeclarationSurfaces(
   "WorkspaceDocument",
   "interface",
 );
+const workspaceRestore = compareDeclarationSurfaces(
+  gitSource(baselineCommit, "src/workspace.ts"),
+  currentSource("src/workspace.ts"),
+  "WorkspaceRestoreOptions",
+  "interface",
+);
 const rootExports = compareRootExports(gitSource(baselineCommit, "src/index.ts"), currentSource("src/index.ts"));
 const delta = strictDelta(inventory);
 const findings = [
@@ -53,6 +59,8 @@ const findings = [
   ...chart.changed.map((entry) => ({ surface: "Chart", ...entry })),
   ...workspace.removed.map((entry) => ({ surface: "WorkspaceDocument", ...entry })),
   ...workspace.changed.map((entry) => ({ surface: "WorkspaceDocument", ...entry })),
+  ...workspaceRestore.removed.map((entry) => ({ surface: "WorkspaceRestoreOptions", ...entry })),
+  ...workspaceRestore.changed.map((entry) => ({ surface: "WorkspaceRestoreOptions", ...entry })),
   ...rootExports.removed.map((entry) => ({ surface: "root exports", category: "removed-export", ...entry, breaking: true })),
   ...rootExports.changed.map((entry) => ({ surface: "root exports", category: "re-export-module-changed", ...entry, breaking: true })),
 ];
@@ -67,9 +75,9 @@ const report = {
     removed: delta.removed,
     changed: delta.changed,
     additiveSurfaceCount: delta.added.length,
-    policy: "The strict historical baseline is unchanged; intentional additions still require owner approval before baseline adoption.",
+    policy: "Intentional additive public-surface updates require an owner-reviewed baseline adoption record before rewriting docs/audits/public-api-baseline.json.",
   },
-  declarations: { Chart: chart, WorkspaceDocument: workspace },
+  declarations: { Chart: chart, WorkspaceDocument: workspace, WorkspaceRestoreOptions: workspaceRestore },
   rootExports: {
     added: rootExports.added,
     removed: rootExports.removed,
