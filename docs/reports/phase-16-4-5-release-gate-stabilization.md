@@ -150,8 +150,9 @@ rotation, Chart Settings. Emulation only.
 | Item | Value |
 | --- | --- |
 | Starting SHA | `4af4cc5e6d00bce7cde8a1666a95672947d5aa47` |
-| Implementation / docs commits | _(filled at delivery)_ |
-| Final tip | _(filled at delivery)_ |
+| Implementation | `778fca7be8d95244848b7ce734a2c5b3bf88c770` |
+| Documentation | `d0be115c95ed72debc3d28720ea96cbaadfdd69d` |
+| Final tip | See `git rev-parse origin/main` after delivery push |
 | Remote | `origin/main` synchronized |
 | Author | `Akira Yuzai <yuzai.akira@gmail.com>` |
 | Working tree | Clean after delivery |
