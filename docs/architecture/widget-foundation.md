@@ -1,7 +1,7 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.0 internal implementation complete; public Widget API and
-package publication remain unapproved.
+Status: Phase 16.4.0.1 internal integrity hardening complete; public Widget API
+and package publication remain unapproved.
 
 ## Boundary
 
@@ -53,6 +53,25 @@ Workspace values are validated by the existing `parseWorkspace` contract before
 restoration. Symbol/timeframe metadata is restored when present. Plugins remain
 trusted host-supplied objects; workspace JSON cannot execute code.
 
+## Data identity ownership
+
+Direct/offline candles are not implicitly relabeled. A host may provide an
+optional `dataIdentity` binding when constructing a Widget or when replacing
+data with `setData(candles, identity)`. If displayed candles already exist, a
+non-empty replacement must carry at least one normalized identity field;
+`setSymbol()` and `setTimeframe()` reject direct-data changes instead of
+pretending that the existing candles belong to the requested identity.
+
+The snapshot keeps `symbol`/`timeframe` as the confirmed identity and exposes
+`requestedSymbol`/`requestedTimeframe` separately. A Datafeed transition stages
+the new request, retains the previous confirmed identity until the new bars
+are accepted, and reports `loading`, `failed`, or `confirmed` explicitly. A
+cancelled or stale request cannot commit identity or data. Workspace import
+cancels the active request, clears the old feed binding, and derives identity
+only from the validated workspace metadata. This keeps visible data and its
+identity aligned while allowing the host to retain valid old data during a
+failed transition.
+
 ## Data and persistence
 
 The controller accepts local candles without network access. A host may inject
@@ -61,6 +80,23 @@ request generation and pass an `AbortSignal` through the core. A host may also
 inject asynchronous `load`/`save` storage. There is no default localStorage,
 IndexedDB, authentication, telemetry, market-data service, or mandatory
 network request.
+
+## CSS ownership and embedding isolation
+
+Widget CSS is inserted once per owning `Document` and tracked by a weak
+per-document reference count. Multiple Widget instances share the same style
+element; destroying one does not affect the others, and destroying the final
+instance removes only the style element created by the Widget. A pre-existing
+matching style element is treated as host-owned and is never removed. All
+selectors are rooted at `[data-openkline-widget]`; the Widget does not install a
+global reset or modify unrelated host controls. `WidgetDiagnostics` reports the
+current marked-style count for lifecycle checks.
+
+The current internal contract still injects a style element. A restrictive CSP
+that disallows inline style elements may block these rules; this phase does not
+invent a nonce, external stylesheet URL, or public package asset contract. CSP
+nonce/stylesheet distribution and Shadow DOM decisions require a separate API
+and packaging review.
 
 ## Public API decision boundary
 

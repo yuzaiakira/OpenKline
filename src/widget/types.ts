@@ -15,6 +15,14 @@ export type WidgetChartType =
 
 export type WidgetStatus = "idle" | "loading" | "ready" | "empty" | "error" | "destroyed";
 
+/** Identity explicitly confirmed by the host for the currently displayed data. */
+export interface WidgetDataIdentity {
+  readonly symbol?: string;
+  readonly timeframe?: string;
+}
+
+export type WidgetIdentityStatus = "unbound" | "loading" | "confirmed" | "unavailable" | "failed";
+
 export interface WidgetFeatureVisibility {
   readonly header: boolean;
   readonly symbol: boolean;
@@ -61,6 +69,8 @@ export interface WidgetOptions {
   readonly chartOptions?: ChartOptions;
   readonly chartType?: WidgetChartType;
   readonly data?: readonly Candle[];
+  /** Optional identity binding for direct/offline candles. */
+  readonly dataIdentity?: WidgetDataIdentity;
   readonly datafeed?: Datafeed;
   readonly datafeedQuery?: WidgetDatafeedQuery;
   readonly storage?: WidgetStorage;
@@ -75,7 +85,11 @@ export interface WidgetOptions {
 export interface WidgetSnapshot {
   readonly status: WidgetStatus;
   readonly symbol: string | null;
-  readonly timeframe: string;
+  readonly timeframe: string | null;
+  /** A host request that has not yet become the confirmed data identity. */
+  readonly requestedSymbol: string | null;
+  readonly requestedTimeframe: string | null;
+  readonly identityStatus: WidgetIdentityStatus;
   readonly chartType: WidgetChartType;
   readonly theme: "light" | "dark";
   readonly direction: "ltr" | "rtl";
@@ -95,13 +109,14 @@ export interface WidgetDiagnostics {
   readonly chartSubscriptions: number;
   readonly pendingDataRequest: boolean;
   readonly canvasCount: number;
+  readonly styleElementCount: number;
 }
 
 export interface InternalWidget {
   getChart(): Chart;
   getState(): WidgetSnapshot;
   getDiagnostics(): WidgetDiagnostics;
-  setData(candles: readonly Candle[]): void;
+  setData(candles: readonly Candle[], identity?: WidgetDataIdentity): void;
   setDatafeed(datafeed: Datafeed, query: WidgetDatafeedQuery): Promise<void>;
   setSymbol(symbol: string): Promise<void>;
   setTimeframe(timeframe: string): Promise<void>;

@@ -16,10 +16,12 @@ import { parseWorkspace, type WorkspaceMetadata, type WorkspaceDocument, type Wo
 import {
   type InternalWidget,
   type WidgetChartType,
+  type WidgetDataIdentity,
   type WidgetDatafeedQuery,
   type WidgetDiagnostics,
   type WidgetEvent,
   type WidgetFeatureVisibility,
+  type WidgetIdentityStatus,
   type WidgetLabels,
   type WidgetOptions,
   type WidgetSnapshot,
@@ -34,6 +36,7 @@ const BASE_SERIES_ID = "widget-price";
 const PRESENTATION_SERIES_ID = "widget-presentation";
 const STYLE_MARKER = "data-openkline-widget-style";
 let nextWidgetInstanceId = 1;
+const widgetStyleRegistry = new WeakMap<Document, { element: HTMLStyleElement; count: number; owned: boolean }>();
 
 const DEFAULT_LABELS: WidgetLabels = {
   widgetLabel: "OpenKline financial chart",
@@ -224,6 +227,7 @@ class InternalWidgetController implements InternalWidget {
   private readonly pluginHandles: PluginHandle[] = [];
   private readonly chart: Chart;
   private readonly instanceId: number;
+  private readonly releaseStyles: () => void;
   private datafeed: Datafeed | null;
   private datafeedQuery: WidgetDatafeedQuery | null;
   private dataRequest: AbortController | null = null;
@@ -237,7 +241,11 @@ class InternalWidgetController implements InternalWidget {
   private error: string | null = null;
   private hasData = false;
   private symbol: string | null;
-  private timeframe: string;
+  private timeframe: string | null;
+  private requestedSymbol: string | null;
+  private requestedTimeframe: string | null;
+  private identityStatus: WidgetIdentityStatus;
+  private applyingDirectData = false;
   private chartType: WidgetChartType;
   private theme: "light" | "dark";
   private direction: "ltr" | "rtl";
@@ -251,15 +259,24 @@ class InternalWidgetController implements InternalWidget {
     if (!(options.container instanceof HTMLElement)) throw new WidgetLifecycleError("Widget container must be an HTMLElement");
     this.instanceId = nextWidgetInstanceId++;
     const document = options.container.ownerDocument;
-    ensureWidgetStyles(document);
+    const directIdentity = normalizeWidgetIdentity(options.dataIdentity);
+    const initialQuery = options.datafeedQuery === undefined ? null : normalizeWidgetDatafeedQuery(options.datafeedQuery);
+    this.releaseStyles = acquireWidgetStyles(document);
     this.features = normalizeWidgetFeatures(options.features);
     this.labels = normalizeWidgetLabels(options.labels);
     this.storage = options.storage ?? null;
     this.storageKey = options.storageKey ?? "openkline-widget-workspace";
     this.datafeed = options.datafeed ?? null;
-    this.datafeedQuery = options.datafeedQuery === undefined ? null : { ...options.datafeedQuery };
-    this.symbol = this.datafeedQuery?.symbol ?? null;
-    this.timeframe = this.datafeedQuery?.timeframe ?? DEFAULT_TIMEFRAMES[3];
+    this.datafeedQuery = initialQuery;
+    this.symbol = directIdentity?.symbol ?? null;
+    this.timeframe = directIdentity?.timeframe ?? null;
+    this.requestedSymbol = this.datafeedQuery?.symbol ?? this.symbol;
+    this.requestedTimeframe = this.datafeedQuery?.timeframe ?? this.timeframe;
+    this.identityStatus = this.datafeedQuery !== null
+      ? "loading"
+      : options.data !== undefined && options.data.length > 0
+        ? directIdentity === undefined ? "unavailable" : "confirmed"
+        : directIdentity === undefined ? "unbound" : "confirmed";
     this.chartType = options.chartType ?? "candlestick";
     this.theme = options.chartOptions?.theme === "dark" ? "dark" : "light";
     this.direction = options.chartOptions?.direction ?? "ltr";
@@ -331,6 +348,9 @@ class InternalWidgetController implements InternalWidget {
       status: this.status,
       symbol: this.symbol,
       timeframe: this.timeframe,
+      requestedSymbol: this.requestedSymbol,
+      requestedTimeframe: this.requestedTimeframe,
+      identityStatus: this.identityStatus,
       chartType: this.chartType,
       theme: this.theme,
       direction: this.direction,
@@ -347,14 +367,57 @@ class InternalWidgetController implements InternalWidget {
       chartSubscriptions: this.chartSubscriptions.length,
       pendingDataRequest: this.dataRequest !== null,
       canvasCount: this.root.querySelectorAll("canvas").length,
+      styleElementCount: this.root.ownerDocument.querySelectorAll(`style[${STYLE_MARKER}]`).length,
     };
   }
 
-  public setData(candles: readonly Candle[]): void {
+  public setData(candles: readonly Candle[], identity?: WidgetDataIdentity): void {
     this.assertAlive();
+    let normalizedIdentity: WidgetDataIdentity | undefined;
     try {
-      this.chart.setData(candles);
+      normalizedIdentity = normalizeWidgetIdentity(identity);
+    } catch (error) {
+      this.fail(error);
+      throw error;
+    }
+    if (candles.length > 0 && !hasWidgetIdentity(normalizedIdentity) && (this.hasData || this.identityStatus === "confirmed")) {
+      throw this.fail(new WidgetLifecycleError("A data identity is required when replacing displayed candles"));
+    }
+    this.dataRequest?.abort();
+    this.dataRequest = null;
+    this.dataRequestGeneration += 1;
+    if (this.datafeed !== null) {
+      this.chart.stopDatafeed();
+      this.datafeed = null;
+      this.datafeedQuery = null;
+    }
+    try {
+      this.applyingDirectData = true;
+      try {
+        this.chart.setData(candles);
+      } finally {
+        this.applyingDirectData = false;
+      }
       this.hasData = candles.length > 0;
+      if (normalizedIdentity !== undefined && hasWidgetIdentity(normalizedIdentity)) {
+        this.symbol = normalizedIdentity.symbol ?? null;
+        this.timeframe = normalizedIdentity.timeframe ?? null;
+        this.requestedSymbol = this.symbol;
+        this.requestedTimeframe = this.timeframe;
+        this.identityStatus = "confirmed";
+      } else if (candles.length > 0) {
+        this.symbol = null;
+        this.timeframe = null;
+        this.requestedSymbol = null;
+        this.requestedTimeframe = null;
+        this.identityStatus = "unavailable";
+      } else if (this.identityStatus !== "confirmed") {
+        this.symbol = null;
+        this.timeframe = null;
+        this.requestedSymbol = null;
+        this.requestedTimeframe = null;
+        this.identityStatus = "unbound";
+      }
       this.error = null;
       this.setStatus(this.hasData ? "ready" : "empty");
     } catch (error) {
@@ -365,24 +428,32 @@ class InternalWidgetController implements InternalWidget {
 
   public async setDatafeed(datafeed: Datafeed, query: WidgetDatafeedQuery): Promise<void> {
     this.assertAlive();
+    const normalizedQuery = normalizeWidgetDatafeedQuery(query);
     const controller = new AbortController();
     this.dataRequest?.abort();
     this.dataRequest = controller;
     const generation = ++this.dataRequestGeneration;
     this.datafeed = datafeed;
-    this.datafeedQuery = { ...query };
-    this.symbol = query.symbol;
-    this.timeframe = query.timeframe;
+    this.datafeedQuery = { ...normalizedQuery };
+    this.requestedSymbol = normalizedQuery.symbol;
+    this.requestedTimeframe = normalizedQuery.timeframe;
+    this.identityStatus = "loading";
     this.error = null;
     this.setStatus("loading");
     try {
-      await this.chart.setDatafeed(datafeed, { ...query, signal: controller.signal });
+      await this.chart.setDatafeed(datafeed, { ...normalizedQuery, signal: controller.signal });
       if (this.destroyed || generation !== this.dataRequestGeneration || controller.signal.aborted) return;
+      this.symbol = normalizedQuery.symbol;
+      this.timeframe = normalizedQuery.timeframe;
+      this.requestedSymbol = this.symbol;
+      this.requestedTimeframe = this.timeframe;
+      this.identityStatus = "confirmed";
       this.hasData = this.chart.getData().length > 0;
       this.syncPresentationForChartType();
       this.setStatus(this.hasData ? "ready" : "empty");
     } catch (error) {
       if (controller.signal.aborted || generation !== this.dataRequestGeneration || isAbortError(error)) return;
+      this.identityStatus = "failed";
       this.fail(error);
       throw error;
     } finally {
@@ -394,11 +465,13 @@ class InternalWidgetController implements InternalWidget {
     this.assertAlive();
     const next = symbol.trim();
     if (next.length === 0) throw this.fail(new Error("Symbol must not be empty"));
-    this.symbol = next;
     if (this.datafeed === null || this.datafeedQuery === null) {
+      if (this.hasData) throw this.fail(new WidgetLifecycleError("Cannot change symbol while direct candles are displayed; replace them with setData(candles, { symbol, timeframe })"));
+      this.requestedSymbol = next;
       this.renderState();
       return;
     }
+    if (next === this.requestedSymbol && this.identityStatus === "loading") return;
     await this.setDatafeed(this.datafeed, { ...this.datafeedQuery, symbol: next });
   }
 
@@ -406,11 +479,13 @@ class InternalWidgetController implements InternalWidget {
     this.assertAlive();
     const next = timeframe.trim();
     if (next.length === 0) throw this.fail(new Error("Timeframe must not be empty"));
-    this.timeframe = next;
     if (this.datafeed === null || this.datafeedQuery === null) {
+      if (this.hasData) throw this.fail(new WidgetLifecycleError("Cannot change timeframe while direct candles are displayed; replace them with setData(candles, { symbol, timeframe })"));
+      this.requestedTimeframe = next;
       this.renderState();
       return;
     }
+    if (next === this.requestedTimeframe && this.identityStatus === "loading") return;
     await this.setDatafeed(this.datafeed, { ...this.datafeedQuery, timeframe: next });
   }
 
@@ -466,7 +541,7 @@ class InternalWidgetController implements InternalWidget {
     this.storageRequest = controller;
     const metadata: WorkspaceMetadata = {
       ...(this.symbol === null ? {} : { symbol: this.symbol }),
-      ...(this.timeframe.length === 0 ? {} : { timeframe: this.timeframe }),
+      ...(this.timeframe === null ? {} : { timeframe: this.timeframe }),
     };
     try {
       const document = this.chart.serializeWorkspace(metadata);
@@ -506,7 +581,7 @@ class InternalWidgetController implements InternalWidget {
     this.assertAlive();
     return this.chart.serializeWorkspace({
       ...(this.symbol === null ? {} : { symbol: this.symbol }),
-      ...(this.timeframe.length === 0 ? {} : { timeframe: this.timeframe }),
+      ...(this.timeframe === null ? {} : { timeframe: this.timeframe }),
     });
   }
 
@@ -514,11 +589,23 @@ class InternalWidgetController implements InternalWidget {
     this.assertAlive();
     try {
       const parsed = parseWorkspace(value);
+      const identity = normalizeWidgetIdentity(parsed.metadata);
+      this.dataRequest?.abort();
+      this.dataRequest = null;
+      this.dataRequestGeneration += 1;
+      if (this.datafeed !== null) this.chart.stopDatafeed();
+      this.datafeed = null;
+      this.datafeedQuery = null;
       const result = this.chart.restoreWorkspace(value, { missingPlugins: "skip", missingIndicators: "skip" });
       this.rebindRestoredPresentation();
-      if (parsed.metadata?.symbol !== undefined) this.symbol = parsed.metadata.symbol;
-      if (parsed.metadata?.timeframe !== undefined) this.timeframe = parsed.metadata.timeframe;
+      this.symbol = identity?.symbol ?? null;
+      this.timeframe = identity?.timeframe ?? null;
+      this.requestedSymbol = this.symbol;
+      this.requestedTimeframe = this.timeframe;
       this.hasData = this.chart.getData().length > 0;
+      this.identityStatus = this.hasData
+        ? hasWidgetIdentity(identity) ? "confirmed" : "unavailable"
+        : hasWidgetIdentity(identity) ? "confirmed" : "unbound";
       this.error = null;
       this.setStatus(this.hasData ? "ready" : "empty");
       return result;
@@ -553,6 +640,7 @@ class InternalWidgetController implements InternalWidget {
     for (const unsubscribe of this.chartSubscriptions.splice(0)) unsubscribe();
     for (const handle of this.pluginHandles.splice(0)) handle.dispose();
     this.chart.destroy();
+    this.releaseStyles();
     this.root.remove();
     this.status = "destroyed";
     this.error = null;
@@ -596,7 +684,7 @@ class InternalWidgetController implements InternalWidget {
 
     if (this.features.symbol) {
       symbolInput = document.createElement("input");
-      symbolInput.value = this.symbol ?? "";
+      symbolInput.value = this.requestedSymbol ?? this.symbol ?? "";
       symbolInput.placeholder = "BTC-USD";
       symbolInput.setAttribute("aria-label", this.labels.symbol);
       loadSymbolButton = this.button(document, this.labels.load, this.labels.load);
@@ -605,14 +693,15 @@ class InternalWidgetController implements InternalWidget {
     if (this.features.timeframe) {
       timeframeSelect = document.createElement("select");
       timeframeSelect.setAttribute("aria-label", this.labels.timeframe);
-      const timeframes = new Set<string>([...DEFAULT_TIMEFRAMES, this.timeframe]);
+      const initialTimeframe = this.requestedTimeframe ?? this.timeframe ?? DEFAULT_TIMEFRAMES[3];
+      const timeframes = new Set<string>([...DEFAULT_TIMEFRAMES, initialTimeframe]);
       for (const timeframe of timeframes) {
         const option = document.createElement("option");
         option.value = timeframe;
         option.textContent = timeframe;
         timeframeSelect.append(option);
       }
-      timeframeSelect.value = this.timeframe;
+      timeframeSelect.value = initialTimeframe;
       toolbar.append(this.field(document, this.labels.timeframe, timeframeSelect));
     }
     if (this.features.chartType) {
@@ -683,7 +772,7 @@ class InternalWidgetController implements InternalWidget {
       this.hasData = this.chart.getData().length > 0;
       if (!this.syncingPresentation && event.kind === "set") this.syncPresentationForChartType();
       if (!this.syncingPresentation && event.kind === "update") this.syncPresentationForChartType();
-      if (this.status !== "loading" && this.status !== "destroyed") this.setStatus(this.hasData ? "ready" : "empty");
+      if (!this.applyingDirectData && this.status !== "loading" && this.status !== "destroyed") this.setStatus(this.hasData ? "ready" : "empty");
     });
     this.subscribeChart("datafeedError", (event) => this.fail(event));
     this.subscribeChart("chartReady", () => this.emitChartState());
@@ -772,8 +861,10 @@ class InternalWidgetController implements InternalWidget {
     this.root.dataset.theme = this.theme;
     this.root.dataset.direction = this.direction;
     this.root.dir = this.direction;
-    if (this.symbolInput !== null && this.symbolInput.value !== (this.symbol ?? "")) this.symbolInput.value = this.symbol ?? "";
-    if (this.timeframeSelect !== null && this.timeframeSelect.value !== this.timeframe) this.timeframeSelect.value = this.timeframe;
+    const displaySymbol = this.requestedSymbol ?? this.symbol ?? "";
+    const displayTimeframe = this.requestedTimeframe ?? this.timeframe ?? DEFAULT_TIMEFRAMES[3];
+    if (this.symbolInput !== null && this.symbolInput.value !== displaySymbol) this.symbolInput.value = displaySymbol;
+    if (this.timeframeSelect !== null && this.timeframeSelect.value !== displayTimeframe) this.timeframeSelect.value = displayTimeframe;
     if (this.chartTypeSelect !== null && this.chartTypeSelect.value !== this.chartType) this.chartTypeSelect.value = this.chartType;
     if (this.themeButton !== null) this.themeButton.textContent = `${this.labels.theme}: ${this.theme}`;
     if (this.themeButton !== null) this.themeButton.setAttribute("aria-pressed", String(this.theme === "dark"));
@@ -865,12 +956,34 @@ class InternalWidgetController implements InternalWidget {
   }
 }
 
-function ensureWidgetStyles(document: Document): void {
-  if (document.querySelector(`style[${STYLE_MARKER}]`) !== null) return;
-  const style = document.createElement("style");
-  style.setAttribute(STYLE_MARKER, "");
-  style.textContent = WIDGET_CSS;
-  document.head.append(style);
+function acquireWidgetStyles(document: Document): () => void {
+  let record = widgetStyleRegistry.get(document);
+  if (record === undefined) {
+    const existing = Array.from(document.querySelectorAll<HTMLStyleElement>(`style[${STYLE_MARKER}]`))
+      .find((style) => style.textContent === WIDGET_CSS);
+    const element = existing ?? document.createElement("style");
+    const owned = existing === undefined;
+    if (owned) {
+      element.setAttribute(STYLE_MARKER, "");
+      element.textContent = WIDGET_CSS;
+      document.head.append(element);
+    }
+    record = { element, count: 0, owned };
+    widgetStyleRegistry.set(document, record);
+  }
+  record.count += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const current = widgetStyleRegistry.get(document);
+    if (current === undefined) return;
+    current.count -= 1;
+    if (current.count <= 0) {
+      if (current.owned) current.element.remove();
+      widgetStyleRegistry.delete(document);
+    }
+  };
 }
 
 export function normalizeWidgetFeatures(features?: Partial<WidgetFeatureVisibility>): WidgetFeatureVisibility {
@@ -899,4 +1012,32 @@ function isWidgetChartType(type: string): type is WidgetChartType {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
+}
+
+function normalizeWidgetIdentity(identity?: WidgetDataIdentity): WidgetDataIdentity | undefined {
+  if (identity === undefined) return undefined;
+  const symbol = normalizeIdentityValue(identity.symbol, "symbol");
+  const timeframe = normalizeIdentityValue(identity.timeframe, "timeframe");
+  return {
+    ...(symbol === undefined ? {} : { symbol }),
+    ...(timeframe === undefined ? {} : { timeframe }),
+  };
+}
+
+function normalizeIdentityValue(value: string | undefined, field: "symbol" | "timeframe"): string | undefined {
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  if (normalized.length === 0) throw new WidgetLifecycleError(`Widget ${field} must not be empty`);
+  return normalized;
+}
+
+function hasWidgetIdentity(identity: WidgetDataIdentity | undefined | null): identity is WidgetDataIdentity & { readonly symbol?: string; readonly timeframe?: string } {
+  return identity?.symbol !== undefined || identity?.timeframe !== undefined;
+}
+
+function normalizeWidgetDatafeedQuery(query: WidgetDatafeedQuery): WidgetDatafeedQuery {
+  const symbol = normalizeIdentityValue(query.symbol, "symbol");
+  const timeframe = normalizeIdentityValue(query.timeframe, "timeframe");
+  if (symbol === undefined || timeframe === undefined) throw new WidgetLifecycleError("A datafeed query requires symbol and timeframe");
+  return { ...query, symbol, timeframe };
 }
