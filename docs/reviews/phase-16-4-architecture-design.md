@@ -1,6 +1,6 @@
 # OpenKline Phase 16.4 — Professional Embeddable Charting Library Design
 
-**Status: INTERNAL PHASE 16.4.1 PROFESSIONAL WIDGET UI IMPLEMENTED / PUBLIC API REVIEW REQUIRED**
+**Status: INTERNAL PHASE 16.4.2 MULTI-CHART & ADVANCED PANELS IMPLEMENTED / PUBLIC API REVIEW REQUIRED**
 
 This document is an internal product-architecture and implementation-readiness
 design for Phase 16.4. The original design handoff was not an implementation,
@@ -1282,16 +1282,17 @@ Phase 16.4 workstreams.
 
 The current handoff state is:
 
-`PHASE 16.4.1 — INTERNAL PROFESSIONAL WIDGET UI IMPLEMENTED / PUBLIC WIDGET API REVIEW REQUIRED`
+`PHASE 16.4.2 — MULTI-CHART & ADVANCED WIDGET PANELS IMPLEMENTED / VERIFIED INTERNALLY — PUBLIC WIDGET API NOT AUTHORIZED`
 
 This revision provides the requested product vision, capability/gap matrix,
 widget architecture, package boundaries, UI inventory, developer API sketches,
 datafeed/storage contracts, accessibility/performance requirements,
 implementation dependencies, release acceptance criteria, exclusions, and exact
-owner authorization request. The subsequent owner authorizations permit the
-internal Phase 16.4.0 foundation and Phase 16.4.1 UI documented in the phase
-reports; they do not authorize the complete widget roadmap, public exports, or
-release readiness. No release gate is closed by this implementation.
+owner authorization request. Subsequent owner authorizations permit the
+internal Phase 16.4.0 foundation, Phase 16.4.1 UI, and Phase 16.4.2
+multi-chart/advanced panels documented in the phase reports; they do not
+authorize the complete widget roadmap, public exports, or release readiness.
+No release gate is closed by this implementation.
 
 ## 32. Phase 16.4.0 implementation reconciliation
 
@@ -1323,7 +1324,19 @@ from `src/index.ts`, `@openkline/react`, the package export map, or a new public
 Widget package.
 
 Focused Chromium and Mobile Chrome emulation evidence is recorded in
-`docs/reports/phase-16-4-1-professional-widget-ui.md`. Firefox, WebKit, Mobile
-Safari, physical-device, formal assistive-technology, CSP, public API, legal,
-and release gates remain open. Phase 16.4.2 work is not authorized by this
-reconciliation.
+`docs/reports/phase-16-4-1-professional-widget-ui.md` and
+`docs/reports/phase-16-4-2-multichart-advanced-panels.md`. Firefox, WebKit,
+Mobile Safari, physical-device, formal assistive-technology, CSP, public API,
+legal, and release gates remain open. Phase 16.4.3 work is not authorized by
+this reconciliation.
+
+## 34. Phase 16.4.2 multi-chart and advanced-panel reconciliation
+
+The internal Widget now owns multi-chart layouts (`single`,
+`two-horizontal`, `two-vertical`, `four-grid`) with stable chart IDs,
+active-chart targeting, archived layout restoration, opt-in
+`ChartSynchronizationController` reuse, Watchlist/Comparison/Replay panels,
+modal focus management, and an internal versioned composition document. The
+controller was decomposed into focused modules; drawing cancellation uses an
+internal registry rather than a public Chart API. Public exports, protected
+baselines, React adapters, and publication remain unauthorized.

@@ -1,8 +1,8 @@
 # Internal Widget Foundation Architecture
 
-Status: Phase 16.4.1 internal professional Widget UI implemented and verified
-in supported local Chromium environments; public Widget API and package
-publication remain unapproved.
+Status: Phase 16.4.2 internal multi-chart layouts and advanced panels
+implemented and verified in supported local Chromium environments; public
+Widget API and package publication remain unapproved.
 
 ## Boundary
 
@@ -13,7 +13,8 @@ single financial renderer and calculation owner:
 
 ```text
 Host DOM container
-  -> InternalWidgetController (controls, state, storage/datafeed orchestration)
+  -> InternalWidgetController (controls, layout, sync, panels)
+  -> ChartSlot[] (one Chart each: series, identity, replay, datafeed)
   -> Chart (series, panes, scales, crosshair, indicators, drawings, workspace)
   -> Canvas2D renderer and financial engines
 ```
@@ -22,127 +23,79 @@ The Widget does not import React, Next.js, Studio application code, provider
 credentials, or a backend. It never reaches into `ChartModel`, renderer
 internals, stores, or indicator/drawing engines.
 
+## Module organization
+
+| Module | Role |
+| --- | --- |
+| `controller.ts` | Lifecycle orchestration, toolbar, modal panels, composition |
+| `chart-slot.ts` | Per-chart ownership and identity-safe data transitions |
+| `composition.ts` | Internal versioned multi-chart composition schema |
+| `styles.ts` | Scoped CSS + reference-counted stylesheet ownership |
+| `focus.ts` | Modal focus trap / Escape / restoration |
+| `defaults.ts` / `helpers.ts` / `dom.ts` / `errors.ts` / `types.ts` | Shared contracts |
+
+Drawing cancellation uses `src/internal/drawing-cancellation.ts` rather than a
+public Chart method or TypeScript cast into private members.
+
 ## Lifecycle ownership
 
-Phase 16.4.0 implements widget-owned Chart construction. Construction creates
-one responsive DOM shell and one Chart canvas, then attaches only public chart
-subscriptions. `destroy()` is idempotent and performs the following in order:
+Construction creates one responsive DOM shell, a content region with a chart
+grid, and one or more Chart slots. `destroy()` is idempotent and:
 
-1. invalidate and abort pending datafeed and storage requests;
-2. remove DOM and Chart subscriptions;
-3. dispose trusted plugin handles installed through the Widget;
-4. destroy the owned Chart and remove the Widget root; and
-5. clear observable listener and data-state references.
+1. closes open modals and aborts pending datafeed/storage requests;
+2. unregisters synchronization and quote subscriptions;
+3. destroys every Chart slot;
+4. destroys the sync controller and comparison engine;
+5. releases the reference-counted stylesheet and removes the Widget root.
 
-Stale datafeed generations are ignored after cancellation, and storage adapters
-receive the same abort signal. Host storage is never created implicitly.
+## Multi-chart layouts
 
-## State and controls
+Layouts: `single`, `two-horizontal`, `two-vertical`, `four-grid`. Each slot
+keeps independent series, identity, indicators, drawings, replay, viewport
+(when unsynchronized), and resource lifecycle. Active-chart selection directs
+toolbar and panel actions. Layout changes archive/restore per-chart workspace
+state without silently dropping drawings or indicators when charts return.
 
-`WidgetSnapshot` is the defensive UI state boundary. The shell exposes native
-buttons, selects, and inputs for symbol, timeframe, chart presentation,
-indicator/drawing entry points, theme, direction, and workspace actions. Feature
-visibility is configured at construction time. Status, loading, empty, and error
-regions use semantic live-region/alert roles.
+## Synchronization
 
-Alternative presentations reuse the Chart's existing series APIs. The Widget
-keeps the canonical `widget-price` candlestick source and creates one
-`widget-presentation` series only for a selected alternative. It does not
-duplicate viewport, price scale, crosshair, tooltip, or financial calculations.
+Opt-in reuse of `ChartSynchronizationController` for crosshair and visible
+UTC range only. Disabled by default. Price scales stay independent. Replay
+cutoffs remain Chart-owned.
 
-Workspace values are validated by the existing `parseWorkspace` contract before
-restoration. Symbol/timeframe metadata is restored when present. Plugins remain
-trusted host-supplied objects; workspace JSON cannot execute code.
+## Advanced panels
 
-## Internal professional UI (Phase 16.4.1)
+In addition to the Phase 16.4.1 surfaces (Indicator Explorer, Drawing Toolbar,
+Object Tree, Drawing Properties, Chart Settings), Phase 16.4.2 adds:
 
-The internal controller now composes five scoped UI surfaces over the same Chart
-handle:
+- Synchronization controls
+- Watchlist (host quotes / WatchlistModel)
+- Comparison (ComparisonEngine + Chart line series)
+- Replay (Chart ReplayApi)
 
-- **Indicator Explorer** searches the registered built-in metadata, renders
-  validated parameter controls, adds indicators to the appropriate pane, and
-  updates or removes Widget-owned instances. Invalid parameter submissions are
-  surfaced through the existing error state.
-- **Drawing Toolbar** exposes the supported drawing-tool registry, start and
-  cancel actions, and Chart-owned undo/redo. Cancellation clears the pending
-  interactive tool through an internal Chart lifecycle hook; no second drawing
-  state is maintained by the Widget.
-- **Object Tree** lists live price series, indicator groups, and drawings. Its
-  controls delegate visibility, selection, locking, and removal to Chart.
-- **Drawing Property Editor** edits the selected drawing's color, line width,
-  visibility, and lock state through `setDrawingStyle`; it never mutates a
-  drawing snapshot directly.
-- **Chart Settings** applies theme, direction, primary price-scale mode,
-  autoscale, axis visibility, and precision through existing Chart setters.
-
-All five surfaces use native controls, scoped `data-openkline-*` selectors,
-dialog semantics, focus restoration on Escape, and responsive/touch-sized
-controls. A panel refreshes from Chart events (`indicatorChange`,
-`drawingSelection`, and `toolActivation`) rather than keeping a duplicate
-financial or drawing model. The UI is deliberately internal: no root export,
-React export, package subpath, public Widget contract, or API baseline was
-changed. Provider-specific metadata, multi-chart UI, watchlists, replay UI,
-and a public customization/theming contract remain deferred.
+Panels are accessible dialogs. The modal layer is scoped to content so the
+toolbar remains hit-testable. Drawing and Replay keep the chart interactive.
 
 ## Data identity ownership
 
-Direct/offline candles are not implicitly relabeled. A host may provide an
-optional `dataIdentity` binding when constructing a Widget or when replacing
-data with `setData(candles, identity)`. If displayed candles already exist, a
-non-empty replacement must carry at least one normalized identity field;
-`setSymbol()` and `setTimeframe()` reject direct-data changes instead of
-pretending that the existing candles belong to the requested identity.
+Direct/offline candles are not implicitly relabeled. Confirmed vs requested
+identity remains explicit. Watchlist selection never relabels candles before a
+confirmed Datafeed/`setData` replacement.
 
-The snapshot keeps `symbol`/`timeframe` as the confirmed identity and exposes
-`requestedSymbol`/`requestedTimeframe` separately. A Datafeed transition stages
-the new request, retains the previous confirmed identity until the new bars
-are accepted, and reports `loading`, `failed`, or `confirmed` explicitly. A
-cancelled or stale request cannot commit identity or data. Workspace import
-cancels the active request, clears the old feed binding, and derives identity
-only from the validated workspace metadata. This keeps visible data and its
-identity aligned while allowing the host to retain valid old data during a
-failed transition.
+## Persistence
 
-## Data and persistence
-
-The controller accepts local candles without network access. A host may inject
-the existing provider-neutral `Datafeed`; symbol/timeframe changes create a new
-request generation and pass an `AbortSignal` through the core. A host may also
-inject asynchronous `load`/`save` storage. There is no default localStorage,
-IndexedDB, authentication, telemetry, market-data service, or mandatory
-network request.
-
-## CSS ownership and embedding isolation
-
-Widget CSS is inserted once per owning `Document` and tracked by a weak
-per-document reference count. Multiple Widget instances share the same style
-element; destroying one does not affect the others, and destroying the final
-instance removes only the style element created by the Widget. A pre-existing
-matching style element is treated as host-owned and is never removed. All
-selectors are rooted at `[data-openkline-widget]`; the Widget does not install a
-global reset or modify unrelated host controls. `WidgetDiagnostics` reports the
-current marked-style count for lifecycle checks.
-
-The current internal contract still injects a style element. A restrictive CSP
-that disallows inline style elements may block these rules; this phase does not
-invent a nonce, external stylesheet URL, or public package asset contract. CSP
-nonce/stylesheet distribution and Shadow DOM decisions require a separate API
-and packaging review.
+`exportWorkspace` / `importWorkspace` target the active chart through the
+existing public workspace contracts. `exportComposition` / `importComposition`
+serialize the internal multi-chart document (schema version 1). Persistence
+remains optional and host-injected. No mandatory localStorage/IndexedDB.
 
 ## Public API decision boundary
 
-The internal entry point is `src/widget/index.ts` and its current shape is
-documented as a proposal in the Phase 16.4 design and verification report.
-No root export, package subpath, npm metadata, or protected API baseline was
-changed. A separate owner decision is required before promoting the
-`createOpenKlineWidget` contract or publishing a Widget package.
+The internal entry point remains `src/widget/index.ts`. No root export,
+package subpath, npm metadata, or protected API baseline was changed.
 
 ## Verification boundary
 
-Focused Chromium and mobile-Chrome tests cover offline construction, controls,
-workspace restoration, cancellation, independent instances, RTL/theme state,
-responsive layout, and cleanup. Existing Node, React/Studio, package,
-distribution, and stress suites remain the source of truth for the core. The
-cloud environment has no Playwright-managed Firefox or WebKit binaries, so no
-Firefox, WebKit, Mobile Safari, physical-device, or universal accessibility
-claim is made.
+Focused Chromium and Mobile Chrome tests cover multi-chart layouts, sync,
+watchlist/comparison/replay panels, modal focus, real touch hit-testing, and
+cleanup. Firefox, WebKit, Mobile Safari, physical-device, formal
+assistive-technology, CSP, public API, legal, and release gates remain open.

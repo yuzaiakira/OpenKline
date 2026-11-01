@@ -224,21 +224,23 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0/16.4.1 Widget foundation
-  and professional UI] Owner-authorized internal browser-side Widget work now
-  provides offline/datafeed construction, identity-safe lifecycle handling,
-  scoped CSS cleanup, and five UI surfaces over the existing Chart: Indicator
-  Explorer, Drawing Toolbar, Object Tree, Drawing Property Editor, and Chart
-  Settings. Focused Chromium behavior tests and Mobile Chrome emulation cover
-  the internal UI, touch-sized responsive controls, RTL/theme/price-scale
-  changes, invalid indicator parameters, drawing cancellation/undo/redo,
-  object management, multi-instance isolation, datafeed transition, and
-  destruction cleanup. The Widget benchmark records 1k/10k/100k Canvas2D
-  lifecycle and next-frame interaction measurements. No root/React export,
-  public package, protected API-baseline change, publication, release, or
-  legal change is included. Firefox, WebKit, Mobile Safari, physical-device,
-  formal assistive-technology, CSP, public API, and release gates remain open.
-  See `docs/reports/phase-16-4-1-professional-widget-ui.md` and
+- [Implemented / Verified internally — Phase 16.4.0/16.4.1/16.4.2 Widget
+  foundation, professional UI, multi-chart layouts, and advanced panels]
+  Owner-authorized internal browser-side Widget work now provides
+  offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
+  cleanup, modular controller architecture, single/two/four chart layouts with
+  active-chart targeting, opt-in ChartSynchronizationController reuse,
+  Watchlist/Comparison/Replay panels over existing Core contracts, and the
+  Phase 16.4.1 surfaces (Indicator Explorer, Drawing Toolbar, Object Tree,
+  Drawing Property Editor, Chart Settings). Focused Chromium and Mobile Chrome
+  tests cover layout switching, sync, panel workflows, modal focus, real
+  touch hit-testing, multi-instance isolation, and destruction cleanup. The
+  Widget benchmark records 1k/10k/100k Canvas2D lifecycle plus multi-chart
+  layout/sync/panel measurements. No root/React export, public package,
+  protected API-baseline change, publication, release, or legal change is
+  included. Firefox, WebKit, Mobile Safari, physical-device, formal
+  assistive-technology, CSP, public API, and release gates remain open. See
+  `docs/reports/phase-16-4-2-multichart-advanced-panels.md` and
   `docs/architecture/widget-foundation.md`.
 
 ## Current milestone
