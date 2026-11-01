@@ -207,6 +207,23 @@ offline Studio Market Replay Lab are present.
   gates remain open. See
   `docs/reports/phase-16-3-scenario-comparison.md` and
   `docs/architecture/research-scenario-comparison.md`.
+- [Implemented / Verified internally — Phase 16.3.1 financial unit
+  comparability] Authorized corrective maintenance fixes the reproduced case
+  where USD and EUR scenarios with identical tape, decisions, and frontier
+  were incorrectly subtracted as numeric monetary deltas. Validated accounting
+  currencies are now part of the comparison boundary: differing currencies
+  preserve each scenario's values and provenance but return `not-comparable`
+  with a deterministic reason and `null` delta. Same-currency monetary deltas,
+  nonmonetary counts/quantities, percentage-drawdown uncertainty, different
+  initial capital, precision policies, different histories, cancellation,
+  budgets, and baseline immutability are covered by 16 focused tests. Full
+  Node (385/385), Market Replay (17/17), Chromium (35/35), React/Studio
+  Chromium (38/38), API inventory/diagnostics, package/distribution, stress,
+  and refreshed 1k/10k/100k comparison benchmarks pass. The API compatibility
+  gate remains open with the inherited three declaration changes; managed
+  Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
+  public API, publication, and Phase 16.4 gates remain open. See
+  `docs/reports/phase-16-3-1-financial-comparability.md`.
 
 ## Current milestone
 

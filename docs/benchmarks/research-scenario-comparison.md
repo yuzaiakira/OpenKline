@@ -18,7 +18,7 @@ The command builds the internal source and runs
 
 | Field | Value |
 | --- | --- |
-| Benchmark commit | `1cdec710f707767860b950439e0cafd365e28b7c` |
+| Benchmark commit | `e871213cba57e3759914ff36c9e489fa9c4887e6` |
 | Node | `v24.19.0` |
 | Platform / architecture | `linux` / `x64` |
 | Forced GC | available |
@@ -48,9 +48,9 @@ the maximum observed sample and is not a stable tail estimate.
 
 | Events | Samples | Comparison median / p95 | Tape build median / p95 | Artifact build median / p95 | Result bytes median / p95 | Retained heap delta median / p95 | Event visits |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 3 | 272.271 / 289.417 | 29.668 / 48.681 | 58.909 / 66.013 | 7,827 / 7,827 | 336,320 / 1,021,416 | 3,000 |
-| 10,000 | 3 | 2,927.730 / 2,944.946 | 279.082 / 281.640 | 651.594 / 669.865 | 7,855 / 7,855 | 165,432 / 228,832 | 30,000 |
-| 100,000 | 2 | 24,113.630 / 24,113.630 | 2,658.565 / 2,658.565 | 5,038.836 / 5,038.836 | 7,883 / 7,883 | 182,200 / 182,200 | 300,000 |
+| 1,000 | 3 | 264.993 / 297.623 | 32.436 / 47.838 | 69.536 / 73.130 | 8,860 / 8,860 | 314,304 / 1,023,664 | 3,000 |
+| 10,000 | 3 | 3,037.272 / 3,097.623 | 288.409 / 305.443 | 673.516 / 780.149 | 8,888 / 8,888 | 156,392 / 221,440 | 30,000 |
+| 100,000 | 2 | 24,968.951 / 24,968.951 | 3,084.948 / 3,084.948 | 5,356.904 / 5,356.904 | 8,916 / 8,916 | 240,064 / 240,064 | 300,000 |
 
 All three workloads remained below the configured aggregate visit and result
 budgets. The benchmark did not run 500,000 events. The heap readings are
@@ -62,8 +62,10 @@ heap guarantee.
 - The comparison path is sequential and uses three fresh causal restorations;
   its cost therefore scales with the number of eligible event visits and the
   number of scenarios.
-- Candidate outputs remained bounded at approximately 7.6 KiB for this fixture;
-  this is a fixture result size, not a general upper bound.
+- Candidate outputs remained bounded at approximately 8.9 KiB for this fixture;
+  the increase from the earlier Phase 16.3 result is the documented monetary
+  unit provenance and execution-cost delta contract, not an unbounded result
+  path. This is a fixture result size, not a general upper bound.
 - No ranking is performed. Different decision histories and indeterminate
   valuations remain explicitly classified in the result contract.
 - Existing Phase 16.0–16.2 replay benchmarks remain separate historical

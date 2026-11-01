@@ -14785,5 +14785,5 @@
     "Signature hashes are compared for actual exported declarations; formatting-only source changes are not a compatibility failure.",
     "Additive exports are reported separately from removals and signature changes."
   ],
-  "generatedFrom": "403ac9249bbd89c7b5d4fa694944b8d97e865372"
+  "generatedFrom": "e871213cba57e3759914ff36c9e489fa9c4887e6"
 }

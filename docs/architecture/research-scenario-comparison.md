@@ -49,8 +49,29 @@ equity or P&L value is converted to zero.
 The output contains stable artifact, assumption, decision-history, action,
 result-evidence, and comparison fingerprints. It retains bounded order/fill
 summaries, ledger metrics, quality/source diagnostics, provenance, and
-baseline-relative null-aware deltas. It never retains a live session, full
-tape, checkpoint cache, or provider credential.
+baseline-relative null-aware deltas. Monetary deltas compare the validated
+accounting currency of both scenarios. When currencies differ and no approved
+FX conversion exists, the original values and currency provenance are kept,
+but the delta is `null` with status `not-comparable` and a deterministic
+currency-mismatch reason. Valuation uncertainty is evaluated after that unit
+check, so currency mismatch takes precedence over an indeterminate mark. Counts,
+quantities, and drawdown percentages retain their independent semantics;
+valuation-dependent ratios remain `unknown` when their basis is incomplete.
+The output never retains a live session, full tape, checkpoint cache, or
+provider credential.
+
+## Phase 16.3.1 financial unit comparability
+
+The Phase 16.3.1 corrective maintenance fixes a reproduced USD/EUR defect
+without changing scenario restoration, artifact schema 1, tape fingerprints,
+durable decisions, causal evidence, or reference-ledger arithmetic. The
+comparison result now exposes `monetaryUnits` provenance and applies the
+currency gate to realized/unrealized P&L, equity, market value, drawdown,
+total fees, and modeled monetary execution fees. Slippage and price-impact
+fields remain explicitly price-unit deltas rather than being mislabeled as
+currency costs. Same-currency monetary sensitivity remains numeric; different
+decision histories remain descriptive; verified reconstruction is independent
+from financial-delta comparability.
 
 ## Causality, checkpoints, and budgets
 
@@ -73,11 +94,13 @@ cache metadata changing the result fingerprint.
 
 ## Verification boundary
 
-The focused suite covers baseline isolation, fee sensitivity, different
+The focused suite covers baseline isolation, same/different currency units,
+same-currency financial deltas, initial capital, precision policy, different
 decision histories, incompatible tape identity, fail-closed latency patches,
-event-visit limits, checkpoint-independent evidence, cancellation, unsupported
-patch fields, and disposal. The full Node, Market Replay, Chromium, React/
-Studio Chromium, package, distribution, and stress checks are recorded in
-`docs/reports/phase-16-3-scenario-comparison.md`. Browser, physical-device,
-accessibility, legal, publication, and release gates remain independent. A
-500k event workload is not verified.
+event/result budgets, checkpoint-independent evidence, cancellation,
+unsupported patch fields, deterministic ordering, indeterminate valuation,
+and disposal. The full Node, Market Replay, Chromium, React/Studio Chromium,
+package, distribution, API inventory/diagnostics, and stress checks are
+recorded in `docs/reports/phase-16-3-1-financial-comparability.md`. Browser,
+physical-device, accessibility, legal, publication, and release gates remain
+independent. A 500k event workload is not verified.
