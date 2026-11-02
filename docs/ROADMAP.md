@@ -300,6 +300,16 @@ offline Studio Market Replay Lab are present.
   no speculative product fixes. Formal WCAG remains OPEN. See
   `docs/reports/phase-16-4-12-external-at-physical-verification.md` and
   `docs/evidence/2026-11-02-phase-16-4-12-evidence-matrix.md`.
+- [Implemented / Verified internally — Phase 16.5.0 Roadmap-driven product
+  feature delivery]
+  Delivers Studio contextual drawing property editing (Phase 7.5.1 gap):
+  Object Tree Drawing properties region wired to Chart `setDrawingStyle` /
+  `selectDrawing` / `drawingSelection` for color, line width, visibility, and
+  lock, with workspace persistence. Unit + Chromium Studio browser coverage
+  added. Public Widget API and public release remain NOT AUTHORIZED. Formal
+  AT/physical/WCAG gates unchanged (new AT-S05b scenario documented for
+  future external runs). See
+  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`.
 
 ## Current milestone
 
@@ -970,14 +980,18 @@ Studio compatibility gates remain open**.
   append/correction equivalence are covered by the indicator tests and public
   API documentation. The advanced definitions reuse the existing registry,
   chart series, pane, scale, and filled-band architecture.
-- [In Progress] Phase 7.5.1 still requires contextual drawing property editing,
-  broader end-to-end drawing/synchronization coverage, workspace
-  import/storage and multi-chart performance/memory evidence. The accessible
-  Indicator Explorer, professional drawing toolbar, object tree,
-  visible-OHLC snapping, source-tagged sync controller, and in-page dialogs
-  are implemented and locally verified in Chromium. No Phase 7.5 acceptance
-  claim is made until the remaining checks and inherited Firefox/WebKit/Mobile
-  Safari/accessibility/device gates are verified.
+- [In Progress] Phase 7.5.1 contextual drawing property editing is delivered
+  in the reference Studio Object Tree (Phase 16.5.0): color, line width,
+  visibility, and lock call `setDrawingStyle` for the selected drawing, with
+  Chromium Studio browser coverage and DrawingEngine style-patch unit
+  coverage. Broader end-to-end drawing/synchronization coverage, workspace
+  import/storage, and multi-chart performance/memory evidence remain open.
+  The accessible Indicator Explorer, professional drawing toolbar, object
+  tree, visible-OHLC snapping, source-tagged sync controller, and in-page
+  dialogs were already implemented. No Phase 7.5 acceptance claim is made
+  until the remaining checks and inherited Firefox/WebKit/Mobile
+  Safari/accessibility/device gates are verified. See
+  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They

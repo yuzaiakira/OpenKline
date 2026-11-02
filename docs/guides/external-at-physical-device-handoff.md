@@ -110,6 +110,17 @@ For each scenario below: run on applicable environments; record PASS/FAIL/BLOCKE
 - **PASS:** Selection change discoverable with AT.
 - **Evidence:** Announcement of selection.
 
+#### AT-S05b — Drawing properties panel (Phase 16.5.0)
+
+- **Steps:** With a drawing selected, move into the Drawing properties region;
+  change color or width; toggle Visible / Locked; Clear selection.
+- **Expected:** Region name announced; each control has an accessible name;
+  state changes (visible/locked) remain discoverable; empty state announced
+  after Clear selection.
+- **PASS:** Property edits operable without pointer; selection/empty state clear.
+- **Evidence:** Control names + before/after announcements.
+- **Status:** NOT TESTED on real AT (environment gate unchanged).
+
 #### AT-S06 — Tab navigation
 
 - **Steps:** Tab/Shift+Tab across toolbar, Object Tree, settings, chart chrome (keyboard-only session).

@@ -24,6 +24,17 @@ private Next.js Studio is a reference host for layout, synchronization,
 watchlists, named local workspaces, and responsive panel selection. Its demo
 quote provider is deterministic and is not exchange data.
 
+## Drawing property editing
+
+The reference Studio Object Tree includes a contextual Drawing properties
+region. When a drawing is selected (via the Object Tree, chart hit-testing, or
+interactive creation), Studio surfaces color, line width, visibility, and lock
+controls that call the existing Chart `setDrawingStyle` / `selectDrawing` APIs.
+Selection is published through the chart `drawingSelection` event into the
+active panel snapshot. Changes persist through the normal workspace
+serialize/restore path. Property controls are disabled while replay is active,
+matching other structural Studio mutations.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its
