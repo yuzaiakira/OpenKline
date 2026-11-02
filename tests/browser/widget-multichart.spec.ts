@@ -41,7 +41,7 @@ async function createWidget(page: Page, layout: "single" | "two-horizontal" | "t
 }
 
 test("multi-chart layouts preserve independent chart state and dispose cleanly", async ({ page }, testInfo) => {
-  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Multi-chart workflows are verified on desktop Chromium/Firefox");
+  test.skip(!["chromium", "firefox", "webkit"].includes(testInfo.project.name), "Multi-chart workflows are verified on desktop Chromium/Firefox/WebKit");
   await createWidget(page, "single");
 
   const afterTwo = await page.evaluate(async (candles) => {
@@ -120,7 +120,7 @@ test("multi-chart layouts preserve independent chart state and dispose cleanly",
 });
 
 test("synchronization, watchlist, comparison, and replay panels stay chart-scoped", async ({ page }, testInfo) => {
-  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Advanced panel workflows are verified on desktop Chromium/Firefox");
+  test.skip(!["chromium", "firefox", "webkit"].includes(testInfo.project.name), "Advanced panel workflows are verified on desktop Chromium/Firefox/WebKit");
   await createWidget(page, "two-horizontal");
 
   const syncTrigger = page.locator('[data-openkline-panel-trigger="synchronization"]');

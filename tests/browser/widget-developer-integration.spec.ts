@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("vanilla widget integration fixture covers offline lifecycle and cleanup", async ({ page }, testInfo) => {
-  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Vanilla Widget integration is verified on desktop Chromium/Firefox");
+  test.skip(!["chromium", "firefox", "webkit"].includes(testInfo.project.name), "Vanilla Widget integration is verified on desktop Chromium/Firefox/WebKit");
   await page.goto("/examples/vanilla/widget-integration.html");
   await expect(page.locator("#log")).toContainText("ready status=");
   await expect(page.locator("#log")).toContainText("composition charts=2");
@@ -55,7 +55,7 @@ test("vanilla widget integration fixture covers offline lifecycle and cleanup", 
 });
 
 test("CSP external stylesheet mode avoids Widget-owned inline styles", async ({ page }, testInfo) => {
-  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "CSP fixture is verified on desktop Chromium/Firefox");
+  test.skip(!["chromium", "firefox", "webkit"].includes(testInfo.project.name), "CSP fixture is verified on desktop Chromium/Firefox/WebKit");
   await page.goto("/examples/vanilla/widget-csp.html");
   await expect(page.locator("#status")).toContainText('"status": "ready"');
   const result = await page.evaluate(() => {
@@ -83,7 +83,7 @@ test("CSP external stylesheet mode avoids Widget-owned inline styles", async ({ 
 });
 
 test("datafeed and memory storage fixtures remain host-owned", async ({ page }, testInfo) => {
-  test.skip(!["chromium", "firefox"].includes(testInfo.project.name), "Datafeed/Storage fixtures use desktop Chromium/Firefox");
+  test.skip(!["chromium", "firefox", "webkit"].includes(testInfo.project.name), "Datafeed/Storage fixtures use desktop Chromium/Firefox/WebKit");
   await page.goto("/examples/vanilla/index.html");
   const result = await page.evaluate(async () => {
     const moduleUrl = new URL("/dist/src/widget/index.js", location.href).href;

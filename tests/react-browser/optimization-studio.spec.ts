@@ -23,7 +23,7 @@ test("Studio runs real optimization, applies a selection to the tester, and pres
   await expect(page.getByRole("heading", { name: "Strategy Tester" })).toBeVisible();
   await expect(paper.getByText("100,000.00", { exact: true })).toHaveText(cashBefore ?? "100,000.00");
 
-  await page.getByRole("button", { name: "Walk-Forward" }).click();
+  await page.getByRole("tab", { name: "Walk-Forward" }).click();
   await page.getByRole("button", { name: "Run Walk-Forward" }).click();
   await expect(page.getByTestId("walk-forward-results")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("wfa-fold-chart")).toBeVisible();

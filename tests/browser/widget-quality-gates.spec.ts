@@ -15,7 +15,11 @@ type WidgetGlobals = typeof globalThis & {
 };
 
 function desktopBrowsers(name: string): boolean {
-  return ["chromium", "firefox"].includes(name);
+  return ["chromium", "firefox", "webkit"].includes(name);
+}
+
+function mobileEmulationBrowsers(name: string): boolean {
+  return ["mobile-chrome", "mobile-safari"].includes(name);
 }
 
 function makeCandles(count: number): Candle[] {
@@ -54,7 +58,7 @@ async function mountQualityWidget(page: Page, width: number, height = 520): Prom
 }
 
 test("cross-browser widget quality covers layouts, a11y semantics, RTL/theme and cleanup", async ({ page }, testInfo) => {
-  test.skip(!desktopBrowsers(testInfo.project.name), "Desktop Chromium/Firefox quality gate");
+  test.skip(!desktopBrowsers(testInfo.project.name), "Desktop Chromium/Firefox/WebKit quality gate");
   await mountQualityWidget(page, 1024);
 
   const host = page.locator("[data-openkline-widget]");
@@ -154,7 +158,7 @@ test("responsive widget widths keep controls hit-testable", async ({ page }, tes
 });
 
 test("CSP inject mode reports violations under style-src self while external mode stays clean", async ({ page }, testInfo) => {
-  test.skip(!desktopBrowsers(testInfo.project.name), "CSP enforcement uses desktop Chromium/Firefox");
+  test.skip(!desktopBrowsers(testInfo.project.name), "CSP enforcement uses desktop Chromium/Firefox/WebKit");
 
   // Inject mode under restrictive CSP: construction still succeeds; violations are observed.
   await page.goto("/examples/vanilla/index.html");
@@ -209,8 +213,8 @@ test("CSP inject mode reports violations under style-src self while external mod
   expect(external.violations.filter((item) => item.startsWith("style-src"))).toHaveLength(0);
 });
 
-test("mobile chrome touch hit-testing opens and closes watchlist without force", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chrome", "Touch hit-testing uses Mobile Chrome emulation");
+test("mobile emulation touch hit-testing opens and closes watchlist without force", async ({ page }, testInfo) => {
+  test.skip(!mobileEmulationBrowsers(testInfo.project.name), "Touch hit-testing uses Mobile Chrome / Mobile Safari emulation");
   await mountQualityWidget(page, 390, 700);
   const trigger = page.locator('[data-openkline-panel-trigger="watchlist"]');
   await trigger.tap();
@@ -221,8 +225,8 @@ test("mobile chrome touch hit-testing opens and closes watchlist without force",
   await page.evaluate(() => (globalThis as WidgetGlobals).__openklineQualityWidget!.destroy());
 });
 
-test("mobile chrome object tree and chart settings remain reachable after viewport rotation", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chrome", "Mobile responsive Object Tree coverage uses Mobile Chrome");
+test("mobile emulation object tree and chart settings remain reachable after viewport rotation", async ({ page }, testInfo) => {
+  test.skip(!mobileEmulationBrowsers(testInfo.project.name), "Mobile responsive Object Tree coverage uses Mobile Chrome / Mobile Safari emulation");
   await page.setViewportSize({ width: 390, height: 844 });
   await mountQualityWidget(page, 390, 700);
   const tree = page.locator('[data-openkline-panel-trigger="object-tree"]');

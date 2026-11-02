@@ -1,0 +1,70 @@
+# Reproducible WebKit / Mobile Safari verification.
+# Uses the official Playwright Linux image so host ICU/flite gaps do not block CI.
+# A green workflow run is required before claiming WebKit PASS; this file alone is not evidence.
+name: WebKit compat
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/widget/**"
+      - "tests/browser/**"
+      - "playwright.config.ts"
+      - "docker/playwright-webkit/**"
+      - ".github/workflows/webkit-compat.yml"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    paths:
+      - "src/widget/**"
+      - "tests/browser/**"
+      - "playwright.config.ts"
+      - "docker/playwright-webkit/**"
+      - ".github/workflows/webkit-compat.yml"
+      - "package.json"
+      - "package-lock.json"
+
+concurrency:
+  group: webkit-compat-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  webkit-quality-gates:
+    name: WebKit + Mobile Safari quality gates
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run WebKit desktop quality gates
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+          CI: "true"
+        run: npx playwright test --project=webkit tests/browser/widget-quality-gates.spec.ts tests/browser/widget-developer-integration.spec.ts
+
+      - name: Run Mobile Safari emulation quality gates
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+          CI: "true"
+        run: npx playwright test --project=mobile-safari tests/browser/widget-quality-gates.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
