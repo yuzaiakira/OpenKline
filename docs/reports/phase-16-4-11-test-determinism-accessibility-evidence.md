@@ -142,7 +142,13 @@ Handoff remains `docs/guides/external-at-physical-device-handoff.md`.
 
 ## 17. Git delivery
 
-See final response / `git log` after documentation commits. Starting HEAD `3d38133`. Backup `refs/backup/phase-16-4-11-start`.
+| Role | SHA |
+| --- | --- |
+| Phase-start / backup | `3d38133fa879af63d22598437625a1f243a60a4e` (`refs/backup/phase-16-4-11-start`) |
+| Implementation | `f261dca567e5fc777210fab8cc45d4cec29af030` |
+| Documentation | `d0b6d5f6b716a110c608366a52ed507d78f92427` |
+| Final local HEAD | use `git rev-parse HEAD` on main after this phase |
+
 
 ## Release-gate matrix
 
