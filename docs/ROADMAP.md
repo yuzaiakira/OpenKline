@@ -259,6 +259,14 @@ offline Studio Market Replay Lab are present.
   WCAG/AT/physical gates remain OPEN. Local commits only; no remote push. See
   `docs/reports/phase-16-4-8-contrast-accessibility-release-readiness.md` and
   `docs/audits/contrast-wcag-2-2-aa-phase-16-4-8.md`.
+- [Implemented / Verified internally — Phase 16.4.9 Accessibility state-matrix
+  and independent release evidence audit]
+  Interactive state inventory; hover/pressed/error contrast measurements;
+  rename-dialog validation a11y (aria-invalid + alert, dialog remains open);
+  negative-path Object Tree/focus regressions; Git rewrite reconciliation vs
+  `origin/main`. Formal WCAG/AT/physical remain OPEN. Local commits only. See
+  `docs/reports/phase-16-4-9-accessibility-state-matrix-evidence-audit.md` and
+  `docs/audits/release-evidence-reconciliation-phase-16-4-9.md`.
 
 ## Current milestone
 
