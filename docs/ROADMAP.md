@@ -326,6 +326,17 @@ offline Studio Market Replay Lab are present.
   import ids, accessible reject/cancel paths, workspace catalog names, and
   multi-panel restore status feedback while preserving panel-local drawings.
   See `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`.
+- [Implemented / Verified internally — Phase 16.5.3 Multi-chart performance,
+  memory lifecycle & restore benchmarking]
+  Adds reproducible `benchmark:multi-chart-lifecycle` and
+  `benchmark:studio-lifecycle` harnesses with measured 1/2/4-panel baselines,
+  collision-safe `allocateStudioWorkspaceImportId`, Studio sync prune/dispose
+  hardening, active-panel snapshot publication, and lifecycle regression
+  coverage. Chromium heap growth across restore cycles is recorded as
+  suspicious/inconclusive rather than proven leak-free. Public Widget API and
+  public release remain NOT AUTHORIZED. See
+  `docs/reports/phase-16-5-3-multi-chart-performance-lifecycle.md` and
+  `docs/benchmarks/multi-chart-lifecycle.md`.
 
 ## Current milestone
 
@@ -997,16 +1008,18 @@ Studio compatibility gates remain open**.
   API documentation. The advanced definitions reuse the existing registry,
   chart series, pane, scale, and filled-band architecture.
 - [In Progress] Phase 7.5.1 contextual drawing property editing (16.5.0),
-  multi-panel ownership (16.5.1), and workspace import/storage UX (16.5.2)
-  are delivered in the reference Studio. Multi-chart performance/memory
-  evidence remains open. The accessible Indicator Explorer, professional
-  drawing toolbar, object tree, visible-OHLC snapping, source-tagged sync
-  controller, and in-page dialogs were already implemented. No Phase 7.5
-  acceptance claim is made until the remaining checks and inherited
-  Firefox/WebKit/Mobile Safari/accessibility/device gates are verified. See
-  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
-  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`, and
-  `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`.
+  multi-panel ownership (16.5.1), workspace import/storage UX (16.5.2), and
+  multi-chart performance/lifecycle baselines (16.5.3) are delivered in the
+  reference Studio. Deeper Studio heap-retainer analysis and managed
+  Firefox/WebKit lifecycle parity remain open. The accessible Indicator
+  Explorer, professional drawing toolbar, object tree, visible-OHLC snapping,
+  source-tagged sync controller, and in-page dialogs were already implemented.
+  No Phase 7.5 acceptance claim is made until the remaining checks and
+  inherited Firefox/WebKit/Mobile Safari/accessibility/device gates are
+  verified. See `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
+  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`,
+  `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`, and
+  `docs/reports/phase-16-5-3-multi-chart-performance-lifecycle.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They
