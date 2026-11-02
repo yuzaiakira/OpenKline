@@ -17,6 +17,17 @@ export type {
 export { StudioSynchronizationController } from "./synchronization.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./synchronization.js";
 export {
+  applyScopedDrawingStyle,
+  clearScopedDrawingSelection,
+} from "./drawing-ownership.js";
+export type {
+  ApplyScopedDrawingStyleArgs,
+  ClearScopedDrawingSelectionArgs,
+  ScopedDrawingChart,
+  ScopedDrawingMutationFailure,
+  ScopedDrawingMutationResult,
+} from "./drawing-ownership.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

@@ -314,7 +314,7 @@ test("Studio contextual drawing properties edit color, width, visibility, and lo
   await expect(drawingRow).toHaveAttribute("data-drawing-selected", "true");
 
   await properties.getByLabel("Drawing color").fill("#ef4444");
-  await expect(page.getByText(/Updated drawing properties for drawing-1/)).toBeVisible();
+  await expect(page.getByText(/Updated drawing-1 on chart-1/)).toBeVisible();
   await properties.getByLabel("Drawing line width").fill("5");
   await properties.getByLabel("Drawing locked").check();
   await expect(drawingRow).toHaveAttribute("data-drawing-locked", "true");

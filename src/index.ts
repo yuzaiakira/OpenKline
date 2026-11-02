@@ -732,6 +732,8 @@ export {
   WatchlistValidationError,
   chartCount,
   createDeterministicDemoQuoteProvider,
+  applyScopedDrawingStyle,
+  clearScopedDrawingSelection,
   createStudioWorkspace,
   migrateLegacyWorkspace,
   parseStudioWorkspace,
@@ -739,9 +741,14 @@ export {
   StudioSynchronizationController,
 } from "./studio/index.js";
 export type {
+  ApplyScopedDrawingStyleArgs,
+  ClearScopedDrawingSelectionArgs,
   LegacyWorkspaceMigrationOptions,
   QuoteProvider,
   QuoteStatus,
+  ScopedDrawingChart,
+  ScopedDrawingMutationFailure,
+  ScopedDrawingMutationResult,
   StudioChartPanelDocument,
   StudioComparisonDocument,
   StudioLayout,
@@ -753,8 +760,7 @@ export type {
   WatchlistQuote,
   WatchlistSymbol,
 } from "./studio/index.js";
-export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
-export {
+export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";export {
   canonicalInstrumentIdentity,
   createDeterministicScreenerUniverse,
   createScreenerUniverse,

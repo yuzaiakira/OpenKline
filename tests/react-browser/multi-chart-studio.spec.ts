@@ -587,3 +587,108 @@ test("Studio exposes offline calendar mode, session analysis periods, and persis
   await expect(page.getByLabel("Session analysis period")).toBeDisabled();
   expect(errors).toEqual([]);
 });
+
+test("multi-panel Studio keeps drawing property edits chart-local across panel switches and restore", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+
+  await test.step("draw and style on chart-1 before enabling the second panel", async () => {
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-1");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(properties).toHaveAttribute("data-drawing-owner-panel", "chart-1");
+    await expect(properties).toHaveAttribute("data-drawing-properties-ready", "true");
+    await properties.getByLabel("Drawing color").fill("#ef4444");
+    await properties.getByLabel("Drawing line width").fill("5");
+    await properties.getByLabel("Drawing locked").check();
+    await expect(page.getByText(/Updated drawing-1 on chart-1/)).toBeVisible();
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-locked", "true");
+  });
+
+  await test.step("draw and style on chart-2 without mutating chart-1", async () => {
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-2");
+    await expect(properties).toHaveAttribute("data-drawing-properties-ready", "false");
+    // Mobile-style single-panel visibility still keeps chart-2 as the active/draw target.
+    await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Horizontal", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.4, 0.3, 'section[aria-label="OpenKline multi-chart workspace"] [data-panel-id="chart-2"] canvas');
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(properties).toHaveAttribute("data-drawing-owner-panel", "chart-2");
+    await expect(properties).toHaveAttribute("data-selected-drawing-id", "drawing-1");
+    await properties.getByLabel("Drawing color").fill("#22c55e");
+    await properties.getByLabel("Drawing line width").fill("3");
+    await properties.getByLabel("Drawing visible").uncheck();
+    await expect(page.getByText(/Updated drawing-1 on chart-2/)).toBeVisible();
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "false");
+  });
+
+  await test.step("return to chart-1 and verify isolation", async () => {
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties).toHaveAttribute("data-drawing-properties-ready", "true");
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#ef4444");
+    await expect(properties.getByLabel("Drawing line width")).toHaveValue("5");
+    await expect(properties.getByLabel("Drawing locked")).toBeChecked();
+    await expect(properties.getByLabel("Drawing visible")).toBeChecked();
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-locked", "true");
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "true");
+  });
+
+  await test.step("persist and restore panel-local drawing styles", async () => {
+    await page.getByLabel("Workspace name").fill("Drawing Ownership Isolation");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    const workspaceId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    const saved = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{
+          name: string;
+          charts: Array<{ panelId: string; workspace: { drawings: { drawings: Array<{ style: { color?: string; lineWidth?: number; locked?: boolean; visible?: boolean } }> } } }>;
+        }>;
+      };
+      return collection.workspaces.find((workspace) => workspace.name === "Drawing Ownership Isolation");
+    });
+    expect(saved?.charts).toHaveLength(2);
+    const chartOne = saved?.charts.find((chart) => chart.panelId === "chart-1")?.workspace.drawings.drawings[0]?.style;
+    const chartTwo = saved?.charts.find((chart) => chart.panelId === "chart-2")?.workspace.drawings.drawings[0]?.style;
+    expect(chartOne).toMatchObject({ color: "#ef4444", lineWidth: 5, locked: true });
+    expect(chartTwo).toMatchObject({ color: "#22c55e", lineWidth: 3, visible: false });
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace", { exact: true }).selectOption(workspaceId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-1");
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#ef4444");
+    await expect(properties.getByLabel("Drawing line width")).toHaveValue("5");
+    await expect(properties.getByLabel("Drawing locked")).toBeChecked();
+
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-2");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+    await expect(properties.getByLabel("Drawing line width")).toHaveValue("3");
+    await expect(properties.getByLabel("Drawing visible")).not.toBeChecked();
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "false");
+  });
+
+  expect(errors).toEqual([]);
+});
