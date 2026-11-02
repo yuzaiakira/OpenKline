@@ -77,6 +77,29 @@ The reference Studio Export/Import buttons exchange validated
   through the status region (`data-workspace-restore-*`). Drawing selection
   remains transient after restore.
 
+## Workspace library management
+
+The reference Studio library under `openkline-studio-workspaces-v1` keeps
+**stable workspace ids** distinct from display names. Helpers
+`renameStudioWorkspaceRecord`, `deleteStudioWorkspaceRecord`,
+`duplicateStudioWorkspaceRecord`, `allocateStudioWorkspaceId`,
+`parseStudioWorkspaceCollection`, and `studioWorkspaceSelectorLabel` operate on
+validated collection documents:
+
+- **Rename** updates only the display name for a targeted id. Chart panels,
+  drawings, indicators, and layout are unchanged. Charts are not remounted.
+  Naming reuses `normalizeStudioWorkspaceName` (trim/collapse, max 80, empty
+  rejected). Duplicate display names are allowed with a status warning.
+- **Delete** requires an accessible confirmation dialog and removes only the
+  targeted id. Unrelated records stay intact. When the deleted record is the
+  current live selection, Studio **detaches** the live desk (new collision-safe
+  id, live charts preserved) and does **not** auto-load another saved workspace.
+- **Duplicate** / **Save As** allocate collision-safe ids via
+  `allocateStudioWorkspaceId` (same stamp+sequence strategy as import ids).
+- Storage write failures do not report success; cancel leaves storage unchanged.
+- The workspace selector shows display names and appends a short id suffix when
+  duplicate names would otherwise be ambiguous.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its
