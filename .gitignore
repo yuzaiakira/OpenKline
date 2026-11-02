@@ -10,3 +10,4 @@ playwright-report/
 *.tsbuildinfo
 *.tgz
 artifacts/
+.cache/

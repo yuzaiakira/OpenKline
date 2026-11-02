@@ -9,7 +9,8 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "tests/react-browser",
-  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results",
+  // Suite-scoped default avoids cross-suite artifact clobber when env is unset.
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results-react",
   timeout: 30_000,
   expect: { timeout: 10_000 },
   use: {

@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/browser",
   // Prefer artifacts/ (gitignored) so a root-owned ./test-results cannot block local runs.
-  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results-browser",
   timeout: 15_000,
   expect: { timeout: 5_000 },
   use: {

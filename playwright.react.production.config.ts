@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/react-browser",
   testMatch: /portfolio-backtesting\.spec\.ts/,
-  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results-react-production",
   timeout: 30_000,
   expect: { timeout: 10_000 },
   use: {

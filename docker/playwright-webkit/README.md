@@ -15,17 +15,24 @@ Do **not** substitute Chromium results for WebKit. Mobile Safari emulation is
 # Requires a working Docker daemon and membership in the docker group.
 docker build -f docker/playwright-webkit/Dockerfile -t openkline-playwright-webkit:1.64.1 .
 
+# Prefer --user so mounted workspace artifacts are not root-owned.
 docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD:/work" -w /work \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -e CI=true \
+  -e HOME=/tmp \
   openkline-playwright-webkit:1.64.1 \
   npx playwright test --project=webkit --project=mobile-safari \
     tests/browser/widget-quality-gates.spec.ts \
     tests/browser/widget-developer-integration.spec.ts
 
 docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD:/work" -w /work \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -e CI=true \
+  -e HOME=/tmp \
   openkline-playwright-webkit:1.64.1 \
   npx playwright test --project=webkit \
     tests/browser/widget-datafeed-integrity.spec.ts \
