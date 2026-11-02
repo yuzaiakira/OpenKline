@@ -134,9 +134,9 @@ Templates remain under `docs/evidence/templates/`.
 | Item | Value |
 | --- | --- |
 | Starting SHA | `037be184ea3b3664e799df1b195788a5a9bb16ef` |
-| Implementation | _(filled at delivery)_ |
-| Documentation | _(filled at delivery)_ |
-| Final local tip | _(filled at delivery)_ |
+| Implementation | `8f28a3d08b1fad8e576b5950f78f05fcfa4626bb` |
+| Documentation | `b11600995e49ace7f306967a5fd5255c4a035c29` |
+| Final local tip | `b11600995e49ace7f306967a5fd5255c4a035c29` |
 | Remote push | **NOT PERFORMED** |
 
 ## 18. Final authorization status
