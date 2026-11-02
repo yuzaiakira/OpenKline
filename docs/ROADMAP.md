@@ -267,6 +267,20 @@ offline Studio Market Replay Lab are present.
   `origin/main`. Formal WCAG/AT/physical remain OPEN. Local commits only. See
   `docs/reports/phase-16-4-9-accessibility-state-matrix-evidence-audit.md` and
   `docs/audits/release-evidence-reconciliation-phase-16-4-9.md`.
+- [Implemented / Verified internally — Phase 16.4.10 Git lineage reconciliation
+  and external verification handoff]
+  Independent forensic confirmation of phase-start local vs `origin/main`
+  divergence (292 ahead / 286 behind): rewrite is metadata-only (286/286 paired
+  trees; patch-ids match; tip trees of phase-start `origin/main` and
+  `refs/rewrite/main` identical). Backup `refs/backup/phase-16-4-10-start`.
+  Mid-phase observation: remote-tracking later reflected rewritten tip
+  (`f55f16f`); unre written tip retained at `backup/pre-cursor-coauthor-strip`.
+  Actionable AT and physical-device handoff published. Formal WCAG/AT/physical
+  remain OPEN. Phase delivery commits are documentation-focused; no additional
+  history rewrite authorized in this phase. See
+  `docs/reports/phase-16-4-10-git-lineage-external-verification.md`,
+  `docs/audits/git-lineage-reconciliation-phase-16-4-10.md`, and
+  `docs/guides/external-at-physical-device-handoff.md`.
 
 ## Current milestone
 

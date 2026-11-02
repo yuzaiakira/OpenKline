@@ -195,6 +195,35 @@ No CI workflow, package export, or public API surface change appears in this tip
 
 ## 12. Explicit non-execution statement
 
-**RECONCILIATION NOT EXECUTED — HUMAN APPROVAL REQUIRED.**
+**RECONCILIATION NOT EXECUTED BY THIS PHASE'S AUTHORIZED OPERATIONS — HUMAN APPROVAL REQUIRED FOR FURTHER ANCESTRY POLICY.**
 
-This phase performed no merge, rebase, reset, cherry-pick, force-push, branch replacement, history rewrite, prune, or remote update. Only a new backup ref and documentation/regession commits (if any) on the existing tip are in scope for delivery.
+This phase's authorized engineering work performed no merge, rebase, reset, cherry-pick, force-push, branch replacement, history rewrite, prune, or remote update as part of the forensic/handoff delivery. A new backup ref and documentation commits on the existing tip remain in scope.
+
+## 13. Mid-phase remote-tracking update (observed)
+
+After the starting baseline was recorded (`HEAD=e5bb9b3`, `origin/main=9097451`, ahead 292 / behind 286), independent observation found:
+
+| Observation | Value |
+| --- | --- |
+| Local commits after start | `9cdf7c3` (distribution-check.json), `f55f16f` (this audit file initial commit) |
+| `refs/remotes/origin/main` reflog tip | `f55f16f` — annotated `update by push` |
+| Prior `origin/main` reflog | `9097451` — previous `update by push` |
+| `git ls-remote origin refs/heads/main` | `f55f16f` (verified read-only) |
+| Ahead / behind after update | **0 / 0** vs current `origin/main` |
+| Old unre written tip preserved | `backup/pre-cursor-coauthor-strip` → `9097451` |
+| Phase start backup | `refs/backup/phase-16-4-10-start` → `e5bb9b3` |
+
+**Interpretation:** The published `origin/main` tip moved from the unre written lineage (`9097451`) onto the rewritten local lineage tip (through `e5bb9b3` plus the two follow-on commits). That is a **published ancestry change** relative to the phase-start remote tip. Forensic conclusions in §§4–9 about content equivalence remain valid; process risk shifts from “how to publish unique tip commits without duplicates” toward “confirm stakeholders accept rewritten SHAs already on `origin/main`, and retain `9097451` backup for recovery.”
+
+**This section records observation only.** Further force-push, history rewrite, or branch replacement remains outside authorized Phase 16.4.10 delivery work.
+
+### Updated recommendation posture
+
+| Prior Option | Posture after mid-phase sync |
+| --- | --- |
+| A — Document divergence | Divergence vs current remote-tracking is cleared; retain backup refs |
+| B — Cherry-pick tip onto old `9097451` | **Superseded for publishing 16.4.8/9** if remote already contains rewritten tip; still useful only if rolling back remote to unre written history |
+| C — Force-replace remote with rewrite | **Effectively already reflected on remote tip** relative to phase-start `9097451`; do not repeat without explicit new authorization |
+| D — Naive merge of both ranges | Still **unsafe** if anyone reintroduces `9097451` history beside rewritten commits |
+
+Human review should confirm: (1) intentionality of the push that moved `origin/main` to `f55f16f`, (2) CI/fork impact of rewritten SHAs, (3) whether Cursor trailers remaining only on abandoned `9097451` chain are acceptable as archived history.
