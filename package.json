@@ -37,6 +37,8 @@
     "benchmark:browser": "npm run build && node scripts/browser-benchmark.mjs",
     "benchmark:widget": "npm run build && node scripts/widget-benchmark.mjs",
     "benchmark:multi-chart": "npm run build && node scripts/multi-chart-benchmark.mjs",
+    "benchmark:multi-chart-lifecycle": "npm run build && node scripts/multi-chart-lifecycle-benchmark.mjs",
+    "benchmark:studio-lifecycle": "npm run build && node scripts/studio-lifecycle-benchmark.mjs",
     "benchmark:comparison": "npm run build && node scripts/comparison-benchmark.mjs",
     "benchmark:comparison-datafeed": "npm run build && node scripts/comparison-datafeed-benchmark.mjs",
     "profile:multi-chart": "npm run build && node scripts/multi-chart-profile.mjs",
