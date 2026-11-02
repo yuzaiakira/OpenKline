@@ -88,6 +88,24 @@ test("drawings support locked editing, undo/redo, and versioned round trips", ()
   assert.throws(() => engine.getAll(), DrawingLifecycleError);
 });
 
+test("drawing style patches merge color, width, visibility, and lock for property editors", () => {
+  const engine = new DrawingEngine();
+  const line = engine.create("trend-line", {
+    points: [{ time: 10, price: 20 }, { time: 90, price: 80 }],
+    style: { color: "#fbbf24", lineWidth: 2 },
+  });
+  engine.setStyle(line.id, { color: "#ef4444", lineWidth: 4 });
+  assert.equal(engine.get(line.id).style.color, "#ef4444");
+  assert.equal(engine.get(line.id).style.lineWidth, 4);
+  engine.setStyle(line.id, { visible: false, locked: true });
+  assert.equal(engine.get(line.id).style.visible, false);
+  assert.equal(engine.get(line.id).style.locked, true);
+  assert.equal(engine.get(line.id).style.color, "#ef4444");
+  engine.setStyle(line.id, { visible: true });
+  assert.equal(engine.get(line.id).style.visible, true);
+  assert.equal(engine.get(line.id).style.locked, true);
+});
+
 test("custom drawing tools use the same registration contract", () => {
   const custom: DrawingToolDefinition = {
     type: "custom-ray",

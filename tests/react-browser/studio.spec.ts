@@ -292,3 +292,53 @@ test("Studio provides KlineScript templates, diagnostics, autocomplete, local sa
   await expect(page.getByText("My KlineScript", { exact: true })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test("Studio contextual drawing properties edit color, width, visibility, and lock", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+  await expect(studioChartCanvas(page)).toHaveCount(1);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.35, 0.24);
+  await placeVisibleChartPoint(page, 0.65, 0.32);
+  await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  await expect(properties).toHaveAttribute("data-drawing-properties-ready", "true");
+  await expect(properties).toHaveAttribute("data-selected-drawing-id", "drawing-1");
+  const drawingRow = objectTree.locator('[data-drawing-id="drawing-1"]');
+  await expect(drawingRow).toHaveAttribute("data-drawing-selected", "true");
+
+  await properties.getByLabel("Drawing color").fill("#ef4444");
+  await expect(page.getByText(/Updated drawing properties for drawing-1/)).toBeVisible();
+  await properties.getByLabel("Drawing line width").fill("5");
+  await properties.getByLabel("Drawing locked").check();
+  await expect(drawingRow).toHaveAttribute("data-drawing-locked", "true");
+  await properties.getByLabel("Drawing visible").uncheck();
+  await expect(drawingRow).toHaveAttribute("data-drawing-visible", "false");
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const saved = await page.evaluate(() => {
+    const workspace = JSON.parse(window.localStorage.getItem("openkline-studio-workspace-v1") ?? "null") as {
+      drawings: { drawings: Array<{ style: { color?: string; lineWidth?: number; visible?: boolean; locked?: boolean } }> };
+    };
+    return workspace.drawings.drawings[0]?.style;
+  });
+  expect(saved?.color).toBe("#ef4444");
+  expect(saved?.lineWidth).toBe(5);
+  expect(saved?.locked).toBe(true);
+  expect(saved?.visible).toBe(false);
+
+  await properties.getByRole("button", { name: "Clear selection for drawing-1", exact: true }).click();
+  await expect(properties).toHaveAttribute("data-drawing-properties-ready", "false");
+  await expect(drawingRow).toHaveAttribute("data-drawing-selected", "false");
+  await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+  await expect(properties).toHaveAttribute("data-drawing-properties-ready", "true");
+  await expect(properties.getByLabel("Drawing color")).toHaveValue("#ef4444");
+  await expect(properties.getByLabel("Drawing line width")).toHaveValue("5");
+  expect(errors).toEqual([]);
+});
