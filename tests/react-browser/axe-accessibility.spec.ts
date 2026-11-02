@@ -51,3 +51,23 @@ test("Studio dialog and Object Tree state changes remain free of serious axe vio
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toBeHidden();
 });
+
+test("Studio Object Tree lock/unlock cycle stays free of serious axe WCAG 2.2 AA violations", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.32, 0.28);
+  await placeVisibleChartPoint(page, 0.68, 0.48);
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  await expect(objectTree).toHaveAttribute("data-object-tree-ready", "true");
+  await objectTree.getByRole("button", { name: "Lock drawing-1", exact: true }).click();
+  await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-locked", "true");
+
+  const results = await new AxeBuilder({ page })
+    .include('[aria-label="Object tree"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+
+  const serious = results.violations.filter((item) => item.impact === "serious" || item.impact === "critical");
+  expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+});

@@ -118,4 +118,73 @@ test("Object Tree drawing controls expose names and toggle state for keyboard us
   await show.focus();
   await page.keyboard.press("Enter");
   await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "true");
+
+  const lock = objectTree.getByRole("button", { name: "Lock drawing-1", exact: true });
+  await lock.focus();
+  await page.keyboard.press("Enter");
+  await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-locked", "true");
+  const unlock = objectTree.getByRole("button", { name: "Unlock drawing-1", exact: true });
+  await unlock.focus();
+  await page.keyboard.press("Enter");
+  await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-locked", "false");
+});
+
+test("Object Tree interactive controls meet WCAG 2.2 AA 24px minimum target size", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Trend", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.35, 0.28);
+  await placeVisibleChartPoint(page, 0.65, 0.42);
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  await expect(objectTree).toHaveAttribute("data-object-tree-ready", "true");
+
+  const undersized = await objectTree.evaluate((root) => {
+    const tooSmall: string[] = [];
+    Array.from(root.querySelectorAll<HTMLElement>("button, summary, input, select")).forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      if (rect.width < 24 || rect.height < 24) {
+        tooSmall.push(`${element.tagName.toLowerCase()}[${element.getAttribute("aria-label") ?? element.textContent?.trim() ?? "?"}] ${Math.round(rect.width)}x${Math.round(rect.height)}`);
+      }
+    });
+    return tooSmall;
+  });
+  expect(undersized, undersized.join("\n")).toEqual([]);
+});
+
+test("Keyboard focus indicators remain visible on Studio chrome controls", async ({ page }) => {
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Rename watchlist", exact: true });
+  await expect(trigger).toBeVisible();
+  await trigger.focus();
+  const outline = await trigger.evaluate((node) => {
+    const styles = getComputedStyle(node);
+    return {
+      outlineStyle: styles.outlineStyle,
+      outlineWidth: styles.outlineWidth,
+      outlineColor: styles.outlineColor,
+      outlineOffset: styles.outlineOffset,
+    };
+  });
+  // Studio uses :focus-visible with a 2px solid amber outline; programmatic
+  // focus still applies the same rule in Chromium Playwright.
+  expect(outline.outlineStyle).not.toBe("none");
+  expect(Number.parseFloat(outline.outlineWidth)).toBeGreaterThanOrEqual(2);
+});
+
+test("Studio primary chrome reflows without horizontal clipping at 320px width", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Objects" })).toBeVisible();
+  const overflow = await page.evaluate(() => {
+    const doc = document.documentElement;
+    return {
+      scrollWidth: doc.scrollWidth,
+      clientWidth: doc.clientWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+    };
+  });
+  // Allow a small layout epsilon for scrollbar/chrome rounding.
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 8);
+  expect(overflow.bodyScrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 8);
 });
