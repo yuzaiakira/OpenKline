@@ -142,7 +142,7 @@ Formal conformance OPEN. AT/physical NOT TESTED. Text spacing / full zoom PARTIA
 | Item | Value |
 | --- | --- |
 | Starting SHA | `cbff1beec0440fb92e3d5d314b2babcbce6031f8` |
-| Implementation | _(filled at delivery)_ |
-| Documentation | _(filled at delivery)_ |
-| Final local tip | _(filled at delivery)_ |
+| Implementation | `599368185c679e8bccc3e690af023e9e0f6b17f7` |
+| Documentation | `fce84cf6245c6136d3c78026e8fa0eed953b37a1` |
+| Final local tip | `fce84cf6245c6136d3c78026e8fa0eed953b37a1` |
 | Remote push | **NOT PERFORMED** |
