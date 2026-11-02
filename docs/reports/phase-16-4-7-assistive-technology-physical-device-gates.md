@@ -155,8 +155,8 @@ Mobile Chrome / Mobile Safari Playwright results remain **emulation only**.
 | Item | Value |
 | --- | --- |
 | Starting SHA | `faa891eea52755072c1bd2abd876a581842fcaab` |
-| Implementation | `b0a41cc829b875e361b29056c26367bea18d6c9b` |
-| Documentation | `57d2734bd9e649f16af41ae4d61a0b9e09bbf0d6` |
-| Final local tip | `57d2734bd9e649f16af41ae4d61a0b9e09bbf0d6` |
+| Implementation | `603d9862030fd4ac713cdeb98b044d4cf6f879f9` |
+| Documentation | `83660cbeebb9fe0d14af9669f860e993bc6fefe6` |
+| Final local tip | `83660cbeebb9fe0d14af9669f860e993bc6fefe6` |
 | Remote push | **NOT PERFORMED** (phase rule) |
 | Author | repository Git config (unchanged) |
