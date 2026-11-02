@@ -57,7 +57,7 @@ universal CSP certification remain OPEN/NOT TESTED.
 | --- | --- |
 | Host `npx playwright … --project=webkit` | **BLOCKED** — system libraries |
 | Docker `openkline-playwright-webkit:1.64.1` quality + developer + datafeed + multichart | **PASS** — see counts below |
-| GitHub Actions `webkit-compat` | Workflow delivered; **execution NOT TESTED until Actions run after push** |
+| GitHub Actions `webkit-compat` | **PASS** — run [`41396937108`](https://github.com/yuzaiakira/OpenKline/actions/runs/41396937108) on `4977335` (WebKit 5 passed / 3 skipped; Mobile Safari 2 passed / 3 skipped) |
 
 ### Docker WebKit evidence (executed this phase)
 
@@ -197,15 +197,15 @@ No CSP weakening (`unsafe-inline` style exceptions) was introduced.
 | Formal AT / WCAG certification | High for a11y release claims | Execute `docs/guides/wcag-assistive-technology-protocol.md` |
 | Physical Android/iOS | High for mobile release claims | Execute physical-device protocol on real devices |
 | Host-native WebKit | Medium | Install ICU74/flite or always use Docker/CI |
-| GitHub Actions WebKit run evidence | Medium | Inspect first successful Actions run after push |
+| GitHub Actions WebKit run evidence | Closed (PASS) | Run `41396937108` succeeded; keep monitoring subsequent pushes |
 | Universal CSP certification | Medium | Expand policy matrix beyond Widget fixtures |
 
 ## 17. Recommended next actions
 
-1. Confirm `.github/workflows/webkit-compat.yml` green on GitHub Actions and archive the run URL.
-2. Schedule AT sessions (NVDA + VoiceOver) against the recorded SHA.
-3. Run physical Android Chrome + iOS Safari protocol and attach evidence.
-4. Keep Public Widget API unpublished until product/legal authorization.
+1. Schedule AT sessions (NVDA + VoiceOver) against SHA `4977335bd8159df52957a1b683087ae3ca3ca337` (Actions WebKit already green: run `41396937108`).
+2. Run physical Android Chrome + iOS Safari protocol and attach evidence.
+3. Keep Public Widget API unpublished until product/legal authorization.
+4. Optionally expand Actions WebKit job to the full Docker allowlisted suite set (quality + developer + datafeed + multichart).
 
 ## 18. Commits and remote delivery status
 
@@ -214,8 +214,9 @@ No CSP weakening (`unsafe-inline` style exceptions) was introduced.
 | Starting SHA | `246c5d087132de2fcbfcfa6a7f6f398b67b21e3a` |
 | Implementation | `b30ad577ffed13682df015d2966144bda044a867` |
 | Documentation | `e7d5ee808d04f60130eb41f72cbe325569d1dd7c` |
-| Final tip | `e6a3e2155908b0bcf2846b016c0985f921370027` |
-| Remote | `origin/main` |
+| Final tip (pre-Actions evidence) | `4977335bd8159df52957a1b683087ae3ca3ca337` |
+| Actions WebKit evidence | https://github.com/yuzaiakira/OpenKline/actions/runs/41396937108 |
+| Remote | `origin/main` (synced) |
 | Author | `Akira Yuzai <yuzai.akira@gmail.com>` |
 
 ## Outcome classification
