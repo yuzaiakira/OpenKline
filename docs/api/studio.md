@@ -56,6 +56,26 @@ changed. Drawing selection itself is transient runtime state and is cleared on
 workspace restore; style, visibility, and lock persist inside each panel's
 nested `WorkspaceDocument`.
 
+## Workspace import and local storage
+
+The reference Studio Export/Import buttons exchange validated
+`StudioWorkspaceDocument` JSON. Import helpers
+(`prepareStudioWorkspaceImport`, `finalizeStudioWorkspaceImport`,
+`normalizeStudioWorkspaceName`) validate untrusted files before any mutation:
+
+- Invalid JSON, unsupported versions, malformed panels, empty files, and
+  oversized payloads are rejected with an accessible status notice.
+- The current live workspace and existing localStorage collection are left
+  unchanged on rejection or cancel.
+- Successful import opens a naming dialog, assigns a **new** workspace id, and
+  appends to the local collection so imported ids cannot overwrite stored
+  workspaces.
+- Duplicate **names** are allowed (ids remain unique); the dialog warns when a
+  similar name already exists.
+- Multi-panel restore reports the workspace name, panel count, and panel ids
+  through the status region (`data-workspace-restore-*`). Drawing selection
+  remains transient after restore.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its

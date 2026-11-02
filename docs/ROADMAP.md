@@ -320,6 +320,12 @@ offline Studio Market Replay Lab are present.
   edit/switch/restore isolation. Public Widget API and public release remain
   NOT AUTHORIZED. See
   `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`.
+- [Implemented / Verified internally — Phase 16.5.2 Studio workspace import,
+  storage UX & multi-panel restore reliability]
+  Adds validated Export/Import naming dialog, non-destructive append-only
+  import ids, accessible reject/cancel paths, workspace catalog names, and
+  multi-panel restore status feedback while preserving panel-local drawings.
+  See `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`.
 
 ## Current milestone
 
@@ -990,18 +996,17 @@ Studio compatibility gates remain open**.
   append/correction equivalence are covered by the indicator tests and public
   API documentation. The advanced definitions reuse the existing registry,
   chart series, pane, scale, and filled-band architecture.
-- [In Progress] Phase 7.5.1 contextual drawing property editing is delivered
-  in the reference Studio Object Tree (Phase 16.5.0), and multi-panel
-  active-panel ownership / chart-local property isolation is delivered
-  (Phase 16.5.1) without inventing shared drawing synchronization.
-  Workspace import/storage UX polish and multi-chart performance/memory
-  evidence remain open. The accessible Indicator Explorer, professional
+- [In Progress] Phase 7.5.1 contextual drawing property editing (16.5.0),
+  multi-panel ownership (16.5.1), and workspace import/storage UX (16.5.2)
+  are delivered in the reference Studio. Multi-chart performance/memory
+  evidence remains open. The accessible Indicator Explorer, professional
   drawing toolbar, object tree, visible-OHLC snapping, source-tagged sync
   controller, and in-page dialogs were already implemented. No Phase 7.5
   acceptance claim is made until the remaining checks and inherited
   Firefox/WebKit/Mobile Safari/accessibility/device gates are verified. See
-  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md` and
-  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`.
+  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
+  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`, and
+  `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They
