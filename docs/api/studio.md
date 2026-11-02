@@ -35,6 +35,27 @@ active panel snapshot. Changes persist through the normal workspace
 serialize/restore path. Property controls are disabled while replay is active,
 matching other structural Studio mutations.
 
+## Multi-panel drawing ownership
+
+Drawings are **panel-local**. Each Studio chart panel owns an independent
+`Chart` instance and drawing document. `ChartSynchronizationController` (and
+Studio's host sync preferences) forward UTC crosshair and visible range only;
+they do not share drawing objects, selection, or style mutations.
+
+Studio property edits go through `applyScopedDrawingStyle` /
+`clearScopedDrawingSelection`, which require:
+
+- the edit's target `panelId` to match the active panel,
+- a live chart for that panel,
+- a chart-local drawing with the given id,
+- and (for style edits) that drawing to be the chart's current selection.
+
+Matching drawing IDs across panels are not global identity. Stale edits from a
+previously rendered property control are rejected when the active panel has
+changed. Drawing selection itself is transient runtime state and is cleared on
+workspace restore; style, visibility, and lock persist inside each panel's
+nested `WorkspaceDocument`.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its

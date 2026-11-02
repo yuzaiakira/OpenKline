@@ -310,6 +310,16 @@ offline Studio Market Replay Lab are present.
   AT/physical/WCAG gates unchanged (new AT-S05b scenario documented for
   future external runs). See
   `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`.
+- [Implemented / Verified internally — Phase 16.5.1 Multi-panel drawing
+  synchronization & Studio workflow integration]
+  Establishes panel-local drawing ownership: property edits use
+  `applyScopedDrawingStyle` / `clearScopedDrawingSelection` so active-panel
+  identity is required and matching drawing IDs across panels are not treated
+  as shared objects. Chart sync remains crosshair/visible-range only. Object
+  Tree exposes active panel ownership; multi-panel Chromium E2E covers
+  edit/switch/restore isolation. Public Widget API and public release remain
+  NOT AUTHORIZED. See
+  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`.
 
 ## Current milestone
 
@@ -981,17 +991,17 @@ Studio compatibility gates remain open**.
   API documentation. The advanced definitions reuse the existing registry,
   chart series, pane, scale, and filled-band architecture.
 - [In Progress] Phase 7.5.1 contextual drawing property editing is delivered
-  in the reference Studio Object Tree (Phase 16.5.0): color, line width,
-  visibility, and lock call `setDrawingStyle` for the selected drawing, with
-  Chromium Studio browser coverage and DrawingEngine style-patch unit
-  coverage. Broader end-to-end drawing/synchronization coverage, workspace
-  import/storage, and multi-chart performance/memory evidence remain open.
-  The accessible Indicator Explorer, professional drawing toolbar, object
-  tree, visible-OHLC snapping, source-tagged sync controller, and in-page
-  dialogs were already implemented. No Phase 7.5 acceptance claim is made
-  until the remaining checks and inherited Firefox/WebKit/Mobile
-  Safari/accessibility/device gates are verified. See
-  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`.
+  in the reference Studio Object Tree (Phase 16.5.0), and multi-panel
+  active-panel ownership / chart-local property isolation is delivered
+  (Phase 16.5.1) without inventing shared drawing synchronization.
+  Workspace import/storage UX polish and multi-chart performance/memory
+  evidence remain open. The accessible Indicator Explorer, professional
+  drawing toolbar, object tree, visible-OHLC snapping, source-tagged sync
+  controller, and in-page dialogs were already implemented. No Phase 7.5
+  acceptance claim is made until the remaining checks and inherited
+  Firefox/WebKit/Mobile Safari/accessibility/device gates are verified. See
+  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md` and
+  `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They
