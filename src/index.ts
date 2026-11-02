@@ -732,6 +732,7 @@ export {
   WatchlistValidationError,
   chartCount,
   createDeterministicDemoQuoteProvider,
+  allocateStudioWorkspaceImportId,
   applyScopedDrawingStyle,
   clearScopedDrawingSelection,
   createStudioWorkspace,

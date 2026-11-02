@@ -119,6 +119,29 @@ export function prepareStudioWorkspaceImport(options: PrepareStudioWorkspaceImpo
 }
 
 /**
+ * Allocate an import id that cannot collide with existing stored ids even when
+ * multiple imports share the same wall-clock millisecond.
+ */
+export function allocateStudioWorkspaceImportId(
+  existingIds: readonly string[],
+  nowMs: number = Date.now(),
+): string {
+  if (!Number.isFinite(nowMs)) {
+    throw new StudioWorkspaceImportError("invalid-name", "Import id clock must be a finite number");
+  }
+  const occupied = new Set(existingIds);
+  const stamp = Math.trunc(nowMs);
+  for (let sequence = 0; sequence < 10_000; sequence += 1) {
+    const candidate = `imported-${stamp}-${sequence}`;
+    if (!occupied.has(candidate)) return candidate;
+  }
+  throw new StudioWorkspaceImportError(
+    "invalid-document",
+    "Could not allocate a unique imported workspace id",
+  );
+}
+
+/**
  * Assign a host-owned id/name for a validated import so existing stored ids are never overwritten.
  */
 export function finalizeStudioWorkspaceImport(

@@ -179,3 +179,21 @@ test("removal, chart destruction, invalid input, and repeated disposal are safe"
   controller.destroy();
   assert.throws(() => controller.addChart("after-destroy", new FakeChart([])), /destroyed/);
 });
+
+test("repeated create/dispose cycles return to an empty registration set without forwarding to disposed charts", () => {
+  const cycles = 8;
+  for (let cycle = 0; cycle < cycles; cycle += 1) {
+    const charts = Array.from({ length: 4 }, (_, index) => new FakeChart([1_000 + index, 2_000 + index]));
+    const controller = new ChartSynchronizationController({ crosshair: true, visibleRange: true });
+    charts.forEach((chart, index) => controller.addChart(`panel-${index}`, chart));
+    assert.deepEqual(controller.getChartIds(), ["panel-0", "panel-1", "panel-2", "panel-3"]);
+    charts[0]!.emit("crosshairMove", { time: 1_500 });
+    assert.equal(charts[1]!.crosshair.length, 1);
+    charts[3]!.destroy();
+    assert.equal(controller.hasChart("panel-3"), false);
+    controller.destroy();
+    assert.deepEqual(controller.getChartIds(), []);
+    charts[0]!.emit("crosshairMove", { time: 1_800 });
+    assert.equal(charts[1]!.crosshair.length, 1);
+  }
+});

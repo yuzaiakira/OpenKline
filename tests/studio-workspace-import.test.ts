@@ -4,6 +4,7 @@ import {
   STUDIO_WORKSPACE_IMPORT_MAX_BYTES,
   STUDIO_WORKSPACE_NAME_MAX_LENGTH,
   StudioWorkspaceImportError,
+  allocateStudioWorkspaceImportId,
   createStudioWorkspace,
   describeStudioWorkspaceImportError,
   finalizeStudioWorkspaceImport,
@@ -97,4 +98,18 @@ test("describeStudioWorkspaceImportError preserves current-workspace safety word
   const message = describeStudioWorkspaceImportError(new StudioWorkspaceImportError("invalid-json", "bad"));
   assert.match(message, /not changed/i);
   assert.match(message, /JSON/i);
+});
+
+test("allocateStudioWorkspaceImportId stays unique under identical timestamps and occupied ids", () => {
+  const stamp = 1_700_000_000_000;
+  const first = allocateStudioWorkspaceImportId([], stamp);
+  const second = allocateStudioWorkspaceImportId([first], stamp);
+  const third = allocateStudioWorkspaceImportId([first, second, `imported-${stamp}-2`], stamp);
+  assert.equal(first, `imported-${stamp}-0`);
+  assert.equal(second, `imported-${stamp}-1`);
+  assert.equal(third, `imported-${stamp}-3`);
+  assert.notEqual(first, second);
+  const finalized = finalizeStudioWorkspaceImport(sampleDocument(), "Collision Safe", first);
+  const sibling = finalizeStudioWorkspaceImport(sampleDocument(), "Collision Safe Twin", second);
+  assert.notEqual(finalized.id, sibling.id);
 });

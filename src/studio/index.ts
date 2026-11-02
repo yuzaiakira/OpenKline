@@ -31,6 +31,7 @@ export {
   STUDIO_WORKSPACE_IMPORT_MAX_BYTES,
   STUDIO_WORKSPACE_NAME_MAX_LENGTH,
   StudioWorkspaceImportError,
+  allocateStudioWorkspaceImportId,
   describeStudioWorkspaceImportError,
   finalizeStudioWorkspaceImport,
   normalizeStudioWorkspaceName,

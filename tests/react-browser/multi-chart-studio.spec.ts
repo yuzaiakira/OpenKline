@@ -784,3 +784,73 @@ test("Studio import validates names, rejects invalid files, and restores multi-p
 
   expect(errors).toEqual([]);
 });
+
+test("Studio multi-panel lifecycle cycles dispose cleanly and import ids never collide", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+  await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+
+  await test.step("layout create/dispose cycles keep panel and canvas counts aligned", async () => {
+    for (let cycle = 0; cycle < 4; cycle += 1) {
+      await page.getByLabel("Chart layout").selectOption("four-grid");
+      await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+      await expect(studioChartCanvas(page)).toHaveCount(4);
+      await page.getByLabel("Sync crosshair").check();
+      await page.getByLabel("Sync visible range").check();
+      await page.getByLabel("Active chart panel").selectOption("chart-3");
+      await page.getByLabel("Chart layout").selectOption("single");
+      await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+      await expect(studioChartCanvas(page)).toHaveCount(1);
+    }
+  });
+
+  await test.step("save and restore a four-panel workspace repeatedly", async () => {
+    await page.getByLabel("Chart layout").selectOption("four-grid");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+    await page.getByLabel("Workspace name").fill("Lifecycle Restore Desk");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    const workspaceId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await page.getByRole("button", { name: "New", exact: true }).first().click();
+      await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+      await page.getByLabel("Workspace", { exact: true }).selectOption(workspaceId);
+      await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+      await expect(page.locator('[data-workspace-restore-panels="4"]')).toBeVisible();
+    }
+  });
+
+  await test.step("rapid imports allocate distinct ids without overwriting", async () => {
+    const payload = await page.evaluate(() => window.localStorage.getItem("openkline-studio-workspaces-v1"));
+    expect(payload).not.toBeNull();
+    const source = JSON.parse(payload!).workspaces[0];
+    const ids: string[] = [];
+    for (let index = 0; index < 3; index += 1) {
+      await page.getByLabel("Workspace import file").setInputFiles({
+        name: `collision-${index}.json`,
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(source), "utf8"),
+      });
+      const dialog = page.getByRole("dialog", { name: "Import workspace" });
+      await expect(dialog).toBeVisible();
+      await dialog.getByLabel("Dialog value").fill(`Collision Import ${index}`);
+      await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+      await expect(page.getByText(/restored with/)).toBeVisible();
+      ids.push(await page.getByLabel("Workspace", { exact: true }).inputValue());
+    }
+    expect(new Set(ids).size).toBe(3);
+    const storedIds = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string }>;
+      };
+      return collection.workspaces.map((workspace) => workspace.id);
+    });
+    for (const id of ids) expect(storedIds).toContain(id);
+    expect(ids.every((id) => id.startsWith("imported-"))).toBe(true);
+  });
+
+  expect(errors).toEqual([]);
+});

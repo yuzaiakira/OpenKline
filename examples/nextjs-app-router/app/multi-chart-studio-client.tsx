@@ -10,6 +10,7 @@ import {
   InMemoryDatafeed,
   applyScopedDrawingStyle,
   clearScopedDrawingSelection,
+  allocateStudioWorkspaceImportId,
   describeStudioWorkspaceImportError,
   finalizeStudioWorkspaceImport,
   normalizeStudioWorkspaceName,
@@ -814,10 +815,15 @@ export default function MultiChartStudioClient() {
     syncControllerRef.current = new ChartSynchronizationController();
   }
   const serialRef = useRef(2);
+  const snapshotsRef = useRef<Record<string, PanelSnapshot>>({});
+  const activePanelIdRef = useRef("chart-1");
   const [layout, setLayout] = useState<StudioLayout>("single");
   const [panels, setPanels] = useState<PanelState[]>([{ panelId: "chart-1", symbol: "BTC-USD", timeframe: "1h" }]);
   const [activePanelId, setActivePanelId] = useState("chart-1");
-  const [snapshots, setSnapshots] = useState<Record<string, PanelSnapshot>>({});
+  // Only the active panel's snapshot is mirrored into React state so inactive
+  // panel publishes (drawing/viewport/indicator churn) do not re-render Studio.
+  const [activeSnapshotState, setActiveSnapshotState] = useState<PanelSnapshot>(() => emptySnapshot());
+  const [panelReadyEpoch, setPanelReadyEpoch] = useState(0);
   const [sync, setSync] = useState({ crosshair: false, visibleRange: false, symbol: false, timeframe: false });
   const [watchlistModel, setWatchlistModel] = useState(() => new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`));
   const [watchlists, setWatchlists] = useState<WatchlistDocument>(() => watchlistModel.getDocument());
@@ -965,9 +971,21 @@ export default function MultiChartStudioClient() {
 
   const activePanel = panels.find((panel) => panel.panelId === activePanelId) ?? panels[0]!;
   const activeHandle = panelRefs.current.get(activePanel.panelId) ?? null;
-  const activeSnapshot = snapshots[activePanel.panelId] ?? activeHandle?.getSnapshot() ?? emptySnapshot();
+  const activeSnapshot = activeSnapshotState;
   const replayActive = activeSnapshot.replayStatus.state !== "idle" && activeSnapshot.replayStatus.state !== "disposed";
   const chartReady = activeHandle !== null && activeHandle.getChart() !== null;
+
+  useEffect(() => {
+    activePanelIdRef.current = activePanelId;
+    const cached = snapshotsRef.current[activePanelId];
+    const live = panelRefs.current.get(activePanelId)?.getSnapshot();
+    setActiveSnapshotState(cached ?? live ?? emptySnapshot());
+  }, [activePanelId]);
+
+  useEffect(() => () => {
+    syncControllerRef.current?.destroy();
+    syncControllerRef.current = null;
+  }, []);
   const comparisonBaselineOptions = useMemo(() => {
     const candles = buildCandles(activePanel.symbol, activePanel.timeframe);
     const indexes = [0, Math.floor(candles.length * 0.25), Math.floor(candles.length * 0.5), Math.floor(candles.length * 0.75)];
@@ -1068,11 +1086,24 @@ export default function MultiChartStudioClient() {
     if (controller === null) return;
     if (controller.hasChart(panelId)) controller.removeChart(panelId);
     controller.addChart(panelId, chart);
+    setPanelReadyEpoch((value) => value + 1);
   }, []);
 
   useEffect(() => {
     syncControllerRef.current?.setOptions({ crosshair: sync.crosshair, visibleRange: sync.visibleRange });
   }, [sync.crosshair, sync.visibleRange]);
+
+  useEffect(() => {
+    const liveIds = new Set(panels.map((panel) => panel.panelId));
+    for (const id of Object.keys(snapshotsRef.current)) {
+      if (!liveIds.has(id)) delete snapshotsRef.current[id];
+    }
+    const controller = syncControllerRef.current;
+    if (controller === null) return;
+    for (const id of controller.getChartIds()) {
+      if (!liveIds.has(id)) controller.removeChart(id);
+    }
+  }, [panels]);
 
   useEffect(() => {
     if (!replayActive) return undefined;
@@ -1122,10 +1153,12 @@ export default function MultiChartStudioClient() {
     const panelIds = pending.charts.map((chart) => chart.panelId);
     setRestoreSummary({ name: pending.name, panelCount: panelIds.length, panelIds });
     setNotice(`Workspace “${pending.name}” restored with ${panelIds.length} chart panel${panelIds.length === 1 ? "" : "s"} (${panelIds.join(", ")}). Drawing selection remains transient until you select an object.`);
-  }, [panels, layout, snapshots]);
+  }, [panels, layout, panelReadyEpoch]);
 
   const applyDocument = (document: StudioWorkspaceDocument): void => {
     const firstChart = document.charts[0]?.workspace;
+    snapshotsRef.current = {};
+    setActiveSnapshotState(emptySnapshot());
     setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceEntries((current) => current.some((item) => item.id === document.id) ? current.map((item) => item.id === document.id ? { id: document.id, name: document.name } : item) : [...current, { id: document.id, name: document.name }]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setPortfolioConfiguration(document.portfolioBacktest ?? null); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
   };
 
@@ -1171,9 +1204,17 @@ export default function MultiChartStudioClient() {
   const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setComparisonSettings((current) => current.active ? { ...current, assetIds: [nextSymbol, ...current.assetIds.filter((id) => id !== nextSymbol)] } : current); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
   const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); setComparisonSettings((current) => ({ ...current, baselineTime: buildCandles(activePanel.symbol, nextTimeframe)[0]?.time ?? current.baselineTime, baselineMaxAgeMs: intervalFor(nextTimeframe) })); };
 
-  const onCrosshair = (panelId: string, event: CrosshairMoveEvent): void => { if (panelId === activePanelId) setCrosshair(event); };
+  const onCrosshair = (panelId: string, event: CrosshairMoveEvent): void => { if (panelId === activePanelIdRef.current) setCrosshair(event); };
   const onViewport = (_panelId: string, _range: { from: number; to: number }): void => undefined;
-  const onSnapshot = (panelId: string, snapshot: PanelSnapshot): void => { setSnapshots((current) => ({ ...current, [panelId]: snapshot })); if (panelId === activePanelId) { const visible = snapshot.series.find((series) => series.id.startsWith("studio-") && series.id !== "studio-volume" && series.style.visible !== false); const next: Partial<Record<string, Presentation>> = { "studio-price": "candles", "studio-ohlc": "ohlc", "studio-hollow": "hollow", "studio-heikin": "heikin-ashi", "studio-line": "line", "studio-area": "area", "studio-baseline": "baseline" }; const restored = visible === undefined ? undefined : next[visible.id]; if (restored !== undefined) setPresentation(restored); } };
+  const onSnapshot = useCallback((panelId: string, snapshot: PanelSnapshot): void => {
+    snapshotsRef.current[panelId] = snapshot;
+    if (panelId !== activePanelIdRef.current) return;
+    setActiveSnapshotState(snapshot);
+    const visible = snapshot.series.find((series) => series.id.startsWith("studio-") && series.id !== "studio-volume" && series.style.visible !== false);
+    const next: Partial<Record<string, Presentation>> = { "studio-price": "candles", "studio-ohlc": "ohlc", "studio-hollow": "hollow", "studio-heikin": "heikin-ashi", "studio-line": "line", "studio-area": "area", "studio-baseline": "baseline" };
+    const restored = visible === undefined ? undefined : next[visible.id];
+    if (restored !== undefined) setPresentation(restored);
+  }, []);
 
   useEffect(() => { if (scaleMode !== "linear") setNotice(`${scaleModes.find(([mode]) => mode === scaleMode)?.[1] ?? scaleMode} price scale applied without changing financial data.`); }, [scaleMode]);
   useEffect(() => { if (theme !== "dark") setNotice("Light theme applied without recreating the chart."); }, [theme]);
@@ -1596,7 +1637,15 @@ export default function MultiChartStudioClient() {
   const favoriteScreenerSymbol = (symbol: string): void => { const candidate = selectedList?.symbols.find((item) => item.displaySymbol === symbol); if (candidate !== undefined && selectedList !== undefined) { watchlistModel.setFavorite(selectedList.id, candidate.id, true); setNotice(`${symbol} was added to watchlist favorites.`); } };
   const createWatchlist = (): void => { const list = watchlistModel.create(`Watchlist ${watchlists.lists.length + 1}`); setNotice(`Created ${list.name}.`); };
   const addWatchlistSymbol = (): void => { if (selectedList === undefined) { createWatchlist(); return; } const candidate = symbols.find((symbol) => !selectedList.symbols.some((item) => item.displaySymbol === symbol)); if (candidate === undefined) return; watchlistModel.addSymbol(selectedList.id, { id: candidate, displaySymbol: candidate, name: candidate, exchange: "Demo", assetCategory: "Sample", quoteCurrency: "USD" }); };
-  const removePanelNow = (panelId: string): void => { setPanels((current) => current.filter((panel) => panel.panelId !== panelId)); archivedPanelsRef.current.delete(panelId); panelRefs.current.delete(panelId); if (activePanelId === panelId) setActivePanelId(panels.find((panel) => panel.panelId !== panelId)?.panelId ?? "chart-1"); setNotice(`${panelId} removed and its chart resources disposed.`); };
+  const removePanelNow = (panelId: string): void => {
+    syncControllerRef.current?.removeChart(panelId);
+    delete snapshotsRef.current[panelId];
+    setPanels((current) => current.filter((panel) => panel.panelId !== panelId));
+    archivedPanelsRef.current.delete(panelId);
+    panelRefs.current.delete(panelId);
+    if (activePanelId === panelId) setActivePanelId(panels.find((panel) => panel.panelId !== panelId)?.panelId ?? "chart-1");
+    setNotice(`${panelId} removed and its chart resources disposed.`);
+  };
   const removePanel = (panelId: string): void => { if (panels.length <= 1) return; showConfirm(`Remove ${panelId}`, "Its chart resources will be destroyed.", () => removePanelNow(panelId)); };
 
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -1619,16 +1668,17 @@ export default function MultiChartStudioClient() {
           ...collisionNotes,
         ].join(" ");
         showPrompt("Import workspace", message, prepared.suggestedName, (value) => {
-          const named = finalizeStudioWorkspaceImport(prepared.document, value, `imported-${Date.now()}`);
           const storageRaw = window.localStorage.getItem(WORKSPACES_KEY);
           let all: StudioWorkspaceDocument[] = [];
           if (storageRaw !== null) {
             try { all = [...parseStoredWorkspaces(JSON.parse(storageRaw)).workspaces]; }
             catch { all = []; }
           }
-          if (all.some((item) => item.id === named.id)) {
-            throw new Error("Generated import id collided; cancel and retry the import.");
-          }
+          const named = finalizeStudioWorkspaceImport(
+            prepared.document,
+            value,
+            allocateStudioWorkspaceImportId(all.map((item) => item.id)),
+          );
           all = [...all, named];
           if (!persist(named, all)) {
             throw new Error("Import validated but browser storage could not be updated. The current workspace was not changed.");
