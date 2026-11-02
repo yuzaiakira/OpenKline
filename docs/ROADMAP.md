@@ -224,35 +224,22 @@ offline Studio Market Replay Lab are present.
   Firefox/WebKit/Mobile Safari, physical-device, accessibility/legal/release,
   public API, publication, and Phase 16.4 gates remain open. See
   `docs/reports/phase-16-3-1-financial-comparability.md`.
-- [Implemented / Verified internally — Phase 16.4.0–16.4.5 Widget foundation
-  through release-gate stabilization]
-  Owner-authorized internal browser-side Widget work now provides
-  offline/datafeed construction, identity-safe lifecycle handling, scoped CSS
-  cleanup, modular controller architecture, single/two/four chart layouts with
-  active-chart targeting, opt-in ChartSynchronizationController reuse,
-  Watchlist/Comparison/Replay panels over existing Core contracts, and the
-  Phase 16.4.1 surfaces (Indicator Explorer, Drawing Toolbar, Object Tree,
-  Drawing Property Editor, Chart Settings). Phase 16.4.2.1 restores
-  ChartSlot→Chart.setDatafeed resolve/subscribe/realtime semantics, accurate
-  pending-request diagnostics, canonical Composition IDs, finite numeric
-  validation, and prevalidated import with best-effort rollback. Phase 16.4.3
-  adds validated construction options, richer lifecycle events, Composition
-  accessor/Proxy hardening, CSP external stylesheet mode, Vanilla/Next.js
-  fixtures, and the developer guide. Phase 16.4.4 hardens Widget landmarks,
-  honest modal semantics, contrast/reduced-motion/touch targets, enforced CSP
-  fixtures, Chromium+Firefox desktop matrices, Mobile Chrome touch hit-testing,
-  responsive screenshot evidence, and React accessibility serial stability.
-  Phase 16.4.5 recovers the additive-only public API baseline gate, stabilizes
-  default-parallel React/Studio tests via production Next.js serving, expands
-  Object Tree accessibility/mobile checks, and documents a WebKit Docker recipe
-  for hosts missing Playwright libraries. WebKit/Mobile Safari remain BLOCKED
-  on this host; physical devices, formal AT/WCAG certification, universal CSP,
-  Public Widget API, and public release remain open/not authorized. See
+- [Implemented / Verified internally — Phase 16.4.0–16.4.6 Widget foundation
+  through cross-platform release-gate verification]
+  Owner-authorized internal browser-side Widget work provides offline/datafeed
+  construction through professional Studio panels, Datafeed/Composition integrity,
+  developer fixtures, accessibility/CSP hardening, additive API baseline recovery,
+  and production Next.js parallel-test stability. Phase 16.4.6 adds executable
+  WebKit/Mobile Safari Docker evidence (12 passed / 16 skipped allowlisted), a
+  GitHub Actions `webkit-compat` workflow, axe-core Studio regressions with
+  ARIA/title/target-size fixes, independent API audit confirmation, and manual
+  AT/physical-device protocols. Host-native WebKit remains BLOCKED without ICU74/
+  flite; formal AT, physical devices, universal CSP, Public Widget API, and public
+  release remain OPEN/NOT AUTHORIZED. See
+  `docs/reports/phase-16-4-6-cross-platform-release-gate-closure.md`,
   `docs/reports/phase-16-4-5-release-gate-stabilization.md`,
-  `docs/reports/phase-16-4-4-cross-browser-accessibility-quality.md`,
-  `docs/reviews/public-api-baseline-adoption-phase-16-4-5.md`,
-  `docs/guides/widget-developer-integration.md`, and
-  `docs/architecture/widget-foundation.md`.
+  `docs/reviews/public-api-independent-audit-phase-16-4-6.md`, and
+  `docs/guides/wcag-assistive-technology-protocol.md`.
 
 ## Current milestone
 
