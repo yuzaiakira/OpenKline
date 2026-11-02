@@ -281,6 +281,16 @@ offline Studio Market Replay Lab are present.
   `docs/reports/phase-16-4-10-git-lineage-external-verification.md`,
   `docs/audits/git-lineage-reconciliation-phase-16-4-10.md`, and
   `docs/guides/external-at-physical-device-handoff.md`.
+- [Implemented / Verified internally — Phase 16.4.11 Test infrastructure
+  determinism and accessibility evidence]
+  Reproduced concurrent clean/`dist` race; added reentrant build lock and
+  lifecycle locking for browser/unit/package gates; suite-scoped Playwright
+  artifacts; Firefox managed-browser recovery; Docker WebKit + Mobile Safari
+  re-verification; WCAG 2.4.11 / 1.4.4 / 1.4.12 / dense-panel Playwright
+  engineering tests. React suite 63×5 PASS including fresh-start. Formal
+  AT/physical/WCAG claim remain OPEN. Local commits only. See
+  `docs/reports/phase-16-4-11-test-determinism-accessibility-evidence.md` and
+  `docs/audits/wcag-2-2-aa-assessment-phase-16-4-11.md`.
 
 ## Current milestone
 
