@@ -44,6 +44,19 @@ export type {
   StudioWorkspaceImportFailureReason,
 } from "./workspace-import.js";
 export {
+  StudioWorkspaceLibraryError,
+  allocateStudioWorkspaceId,
+  deleteStudioWorkspaceRecord,
+  duplicateStudioWorkspaceRecord,
+  parseStudioWorkspaceCollection,
+  renameStudioWorkspaceRecord,
+  studioWorkspaceSelectorLabel,
+} from "./workspace-library.js";
+export type {
+  DeleteStudioWorkspaceResult,
+  StudioWorkspaceCollection,
+} from "./workspace-library.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

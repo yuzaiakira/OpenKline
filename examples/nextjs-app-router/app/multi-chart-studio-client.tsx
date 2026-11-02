@@ -10,11 +10,17 @@ import {
   InMemoryDatafeed,
   applyScopedDrawingStyle,
   clearScopedDrawingSelection,
+  allocateStudioWorkspaceId,
   allocateStudioWorkspaceImportId,
+  deleteStudioWorkspaceRecord,
   describeStudioWorkspaceImportError,
   finalizeStudioWorkspaceImport,
   normalizeStudioWorkspaceName,
+  parseStudioWorkspaceCollection,
   prepareStudioWorkspaceImport,
+  renameStudioWorkspaceRecord,
+  studioWorkspaceSelectorLabel,
+  StudioWorkspaceLibraryError,
   type ComparisonAssetOutput,
   type ComparisonDatafeedState,
   type ComparisonNormalizationMode,
@@ -792,18 +798,6 @@ function defaultWatchlists(): WatchlistDocument {
   return { version: 1, selectedWatchlistId: "watchlist-favorites", lists: [{ id: "watchlist-favorites", name: "Favorites", symbols: symbols.map((displaySymbol, index) => ({ id: displaySymbol, displaySymbol, name: displaySymbol === "BTC-USD" ? "Bitcoin" : displaySymbol === "ETH-USD" ? "Ether" : "Apple Inc.", exchange: displaySymbol === "AAPL" ? "NASDAQ" : "Demo", assetCategory: displaySymbol === "AAPL" ? "Equity" : "Crypto", quoteCurrency: "USD", favorite: index === 0 })) }] };
 }
 
-interface StoredWorkspaces { readonly version: 1; readonly currentId: string; readonly workspaces: readonly StudioWorkspaceDocument[]; }
-
-function parseStoredWorkspaces(value: unknown): StoredWorkspaces {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid workspace collection");
-  const record = value as Record<string, unknown>;
-  if (record.version !== 1 || typeof record.currentId !== "string" || !Array.isArray(record.workspaces)) throw new Error("Invalid workspace collection");
-  const workspaces = record.workspaces.map((item) => parseStudioWorkspace(item));
-  if (workspaces.length === 0) throw new Error("Workspace collection is empty");
-  if (!workspaces.some((item) => item.id === record.currentId)) throw new Error("Current workspace is missing");
-  return { version: 1, currentId: record.currentId, workspaces };
-}
-
 export default function MultiChartStudioClient() {
   const panelRefs = useRef(new Map<string, ChartPanelHandle>());
   const strategyResultsRef = useRef(new Map<string, BacktestResult>());
@@ -1169,7 +1163,7 @@ export default function MultiChartStudioClient() {
     try {
       const stored = window.localStorage.getItem(WORKSPACES_KEY);
       if (stored !== null) {
-        const parsed = parseStoredWorkspaces(JSON.parse(stored));
+        const parsed = parseStudioWorkspaceCollection(JSON.parse(stored));
         const current = parsed.workspaces.find((item) => item.id === parsed.currentId)!;
         setWorkspaceId(current.id); setWorkspaceName(current.name); setWorkspaceEntries(parsed.workspaces.map((item) => ({ id: item.id, name: item.name }))); applyDocument(current);
       } else {
@@ -1219,14 +1213,15 @@ export default function MultiChartStudioClient() {
     let named: string;
     try { named = normalizeStudioWorkspaceName(workspaceName); }
     catch (error) { setNotice(error instanceof Error ? error.message : String(error)); return; }
-    const id = asNew ? `${workspaceId}-${Date.now()}` : workspaceId;
-    const document = collectDocument(id, named);
     const raw = window.localStorage.getItem(WORKSPACES_KEY);
     let all: StudioWorkspaceDocument[] = [];
-    if (raw !== null) { try { all = [...parseStoredWorkspaces(JSON.parse(raw)).workspaces]; } catch { all = []; } }
+    if (raw !== null) { try { all = [...parseStudioWorkspaceCollection(JSON.parse(raw)).workspaces]; } catch { all = []; } }
+    const id = asNew ? allocateStudioWorkspaceId(all.map((item) => item.id), "workspace") : workspaceId;
+    const document = collectDocument(id, named);
     const index = all.findIndex((item) => item.id === id);
     if (index >= 0) all[index] = document; else all.push(document);
-    setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceEntries(all.map((item) => ({ id: item.id, name: item.name }))); persist(document, all);
+    if (!persist(document, all)) return;
+    setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceEntries(all.map((item) => ({ id: item.id, name: item.name })));
   }, [collectDocument, persist, workspaceId, workspaceName]);
 
   const changeLayout = (nextLayout: StudioLayout): void => {
@@ -1709,7 +1704,7 @@ export default function MultiChartStudioClient() {
           const storageRaw = window.localStorage.getItem(WORKSPACES_KEY);
           let all: StudioWorkspaceDocument[] = [];
           if (storageRaw !== null) {
-            try { all = [...parseStoredWorkspaces(JSON.parse(storageRaw)).workspaces]; }
+            try { all = [...parseStudioWorkspaceCollection(JSON.parse(storageRaw)).workspaces]; }
             catch { all = []; }
           }
           const named = finalizeStudioWorkspaceImport(
@@ -1751,10 +1746,106 @@ export default function MultiChartStudioClient() {
     setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`));
     setNotice("New empty Studio workspace started.");
   };
-  const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
-  const deleteWorkspaceNow = (): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const remaining = stored.workspaces.filter((item) => item.id !== workspaceId); if (remaining.length === 0) { newWorkspace(); window.localStorage.removeItem(WORKSPACES_KEY); } else { const next = remaining[0]!; window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: next.id, workspaces: remaining })); applyDocument(next); } } catch { setNotice("Could not delete the workspace collection safely."); } };
-  const deleteWorkspace = (): void => { showConfirm(`Delete workspace “${workspaceName}"?`, "The saved workspace will be removed from this browser.", deleteWorkspaceNow); };
-  const duplicateWorkspace = (): void => { const id = `${workspaceId}-copy-${Date.now()}`; const document = collectDocument(id, `${workspaceName} copy`); const raw = window.localStorage.getItem(WORKSPACES_KEY); let all: StudioWorkspaceDocument[] = []; if (raw !== null) { try { all = [...parseStoredWorkspaces(JSON.parse(raw)).workspaces]; } catch { all = []; } } all.push(document); setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceEntries(all.map((item) => ({ id: item.id, name: item.name }))); persist(document, all); };
+  const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStudioWorkspaceCollection(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
+  const renameWorkspace = (trigger?: HTMLElement | null): void => {
+    const targetId = workspaceId;
+    const currentLabel = workspaceName;
+    showPrompt(
+      "Rename workspace",
+      `Choose a new display name for “${currentLabel}”. The workspace id stays the same; charts, drawings, and panels are not rebuilt.`,
+      currentLabel,
+      (value) => {
+        const raw = window.localStorage.getItem(WORKSPACES_KEY);
+        if (raw === null) throw new Error("No saved workspace library is available to rename.");
+        let stored;
+        try { stored = parseStudioWorkspaceCollection(JSON.parse(raw)); }
+        catch { throw new Error("Saved workspace collection is invalid; nothing was renamed."); }
+        const result = renameStudioWorkspaceRecord(stored, targetId, value);
+        try {
+          window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify(result.collection));
+        } catch {
+          throw new Error("Workspace could not be renamed. Browser storage may be unavailable or full.");
+        }
+        setWorkspaceEntries(result.collection.workspaces.map((item) => ({ id: item.id, name: item.name })));
+        if (workspaceId === targetId) setWorkspaceName(result.document.name);
+        setNotice(result.nameCollision
+          ? `Renamed workspace to “${result.document.name}”. Another saved workspace already uses a similar name; both remain available under different ids.`
+          : `Renamed workspace to “${result.document.name}”.`);
+      },
+      trigger,
+    );
+  };
+  const deleteWorkspaceNow = (targetId: string, targetName: string): void => {
+    const raw = window.localStorage.getItem(WORKSPACES_KEY);
+    if (raw === null) {
+      setNotice("No saved workspace library entry to delete.");
+      return;
+    }
+    try {
+      const stored = parseStudioWorkspaceCollection(JSON.parse(raw));
+      const result = deleteStudioWorkspaceRecord(stored, targetId);
+      if (result.collection === null) {
+        try { window.localStorage.removeItem(WORKSPACES_KEY); }
+        catch {
+          setNotice("Workspace could not be deleted. Browser storage may be unavailable or full.");
+          return;
+        }
+        setWorkspaceEntries([]);
+        if (result.detachLiveWorkspace) {
+          setWorkspaceId(allocateStudioWorkspaceId([], "workspace"));
+        }
+        setNotice(`Deleted saved workspace “${targetName}”. Live charts remain open as an unsaved desk.`);
+        return;
+      }
+      try {
+        window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify(result.collection));
+      } catch {
+        setNotice("Workspace could not be deleted. Browser storage may be unavailable or full.");
+        return;
+      }
+      setWorkspaceEntries(result.collection.workspaces.map((item) => ({ id: item.id, name: item.name })));
+      if (result.detachLiveWorkspace) {
+        setWorkspaceId(allocateStudioWorkspaceId(result.collection.workspaces.map((item) => item.id), "workspace"));
+        setNotice(`Deleted saved workspace “${targetName}”. Live charts remain open as an unsaved desk; no other workspace was loaded.`);
+      } else {
+        setNotice(`Deleted saved workspace “${targetName}” from this browser.`);
+      }
+    } catch (error) {
+      if (error instanceof StudioWorkspaceLibraryError && error.reason === "missing") {
+        setNotice(`Saved workspace “${targetName}” was not found; nothing was deleted.`);
+        return;
+      }
+      setNotice("Could not delete the workspace collection safely.");
+    }
+  };
+  const deleteWorkspace = (trigger?: HTMLElement | null): void => {
+    const targetId = workspaceId;
+    const targetName = workspaceName;
+    showConfirm(
+      `Delete workspace “${targetName}”?`,
+      `Removes only the saved library entry with id ending …${targetId.slice(-8)} from this browser. Live charts stay open. Deletion cannot be undone.`,
+      () => deleteWorkspaceNow(targetId, targetName),
+      trigger,
+    );
+  };
+  const duplicateWorkspace = (): void => {
+    let named: string;
+    try { named = normalizeStudioWorkspaceName(`${workspaceName} copy`); }
+    catch (error) { setNotice(error instanceof Error ? error.message : String(error)); return; }
+    const raw = window.localStorage.getItem(WORKSPACES_KEY);
+    let all: StudioWorkspaceDocument[] = [];
+    if (raw !== null) {
+      try { all = [...parseStudioWorkspaceCollection(JSON.parse(raw)).workspaces]; }
+      catch { all = []; }
+    }
+    const id = allocateStudioWorkspaceId(all.map((item) => item.id), "copy");
+    const document = collectDocument(id, named);
+    const next = [...all, document];
+    if (!persist(document, next)) return;
+    setWorkspaceId(id);
+    setWorkspaceName(document.name);
+    setWorkspaceEntries(next.map((item) => ({ id: item.id, name: item.name })));
+  };
 
   const initialWorkspaceFor = (panelId: string): WorkspaceDocument | undefined => pendingRestoreRef.current?.charts.find((chart) => chart.panelId === panelId)?.workspace ?? archivedPanelsRef.current.get(panelId)?.workspace;
   const strategyScopeKey = `${activePanel.panelId}|${activePanel.symbol}|${activePanel.timeframe}`;
@@ -1835,7 +1926,7 @@ export default function MultiChartStudioClient() {
       <label>Active chart<select aria-label="Active chart panel" value={activePanelId} onChange={(event) => setActivePanelId(event.target.value)}>{panels.map((panel) => <option key={panel.panelId} value={panel.panelId}>{panel.panelId} · {panel.symbol}</option>)}</select></label>
       <label>Active symbol<select aria-label="Active symbol" value={activePanel.symbol} disabled={replayActive} onChange={(event) => changeActiveSymbol(event.target.value)}>{symbols.map((symbol) => <option key={symbol}>{symbol}</option>)}</select></label>
       <label>Timeframe<select aria-label="Active timeframe" value={activePanel.timeframe} disabled={replayActive} onChange={(event) => changeActiveTimeframe(event.target.value as Timeframe)}>{timeframes.map((timeframe) => <option key={timeframe}>{timeframe}</option>)}</select></label>
-      <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={deleteWorkspace}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceId} onChange={(event) => loadWorkspace(event.target.value)}>{workspaceEntries.map((entry) => <option key={entry.id} value={entry.id}>{entry.id === workspaceId ? workspaceName : entry.name}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" aria-label="Export workspace" onClick={() => { try { const named = normalizeStudioWorkspaceName(workspaceName); const document = collectDocument(workspaceId, named); const file = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `openkline-${named.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); setNotice(`Exported “${named}” (${document.charts.length} panel${document.charts.length === 1 ? "" : "s"}).`); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }}>Export</button><button type="button" aria-label="Import workspace" onClick={(event) => { dialogTriggerRef.current = event.currentTarget; importInputRef.current?.click(); }}>Import</button><input ref={importInputRef} type="file" accept="application/json,.json" hidden aria-label="Workspace import file" onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file, dialogTriggerRef.current); event.currentTarget.value = ""; }} /></div>
+      <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={(event) => renameWorkspace(event.currentTarget)} disabled={replayActive}>Rename</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={(event) => deleteWorkspace(event.currentTarget)}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceEntries.some((entry) => entry.id === workspaceId) ? workspaceId : ""} onChange={(event) => { if (event.target.value !== "") loadWorkspace(event.target.value); }}>{workspaceEntries.some((entry) => entry.id === workspaceId) ? null : <option value="" disabled>{workspaceEntries.length === 0 ? "No saved workspaces" : "Unsaved desk"}</option>}{workspaceEntries.map((entry) => <option key={entry.id} value={entry.id}>{entry.id === workspaceId ? studioWorkspaceSelectorLabel({ id: entry.id, name: workspaceName }, workspaceEntries.map((candidate) => candidate.id === workspaceId ? { id: workspaceId, name: workspaceName } : candidate)) : studioWorkspaceSelectorLabel(entry, workspaceEntries)}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" aria-label="Export workspace" onClick={() => { try { const named = normalizeStudioWorkspaceName(workspaceName); const document = collectDocument(workspaceId, named); const file = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `openkline-${named.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); setNotice(`Exported “${named}” (${document.charts.length} panel${document.charts.length === 1 ? "" : "s"}).`); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }}>Export</button><button type="button" aria-label="Import workspace" onClick={(event) => { dialogTriggerRef.current = event.currentTarget; importInputRef.current?.click(); }}>Import</button><input ref={importInputRef} type="file" accept="application/json,.json" hidden aria-label="Workspace import file" onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file, dialogTriggerRef.current); event.currentTarget.value = ""; }} /></div>
     </header>
     <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
     <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button><button type="button" onClick={advanceComparisonStream} disabled={replayActive}>Advance demo stream</button><button type="button" onClick={disconnectComparisonStream} disabled={replayActive}>Simulate disconnect</button><button type="button" onClick={reconnectComparisonStream} disabled={replayActive}>Reconnect and recover</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>

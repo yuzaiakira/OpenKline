@@ -895,3 +895,127 @@ test("Studio multi-panel lifecycle cycles dispose cleanly and import ids never c
 
   expect(errors).toEqual([]);
 });
+
+test("Studio workspace library rename and delete preserve multi-panel content and identity", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  let primaryId = "";
+  let secondaryId = "";
+
+  await test.step("save a multi-panel workspace with panel-local drawings", async () => {
+    await page.getByLabel("Workspace name").fill("Library Primary");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await properties.getByLabel("Drawing color").fill("#ef4444");
+    await properties.getByLabel("Drawing line width").fill("4");
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Horizontal", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.42, 0.3, 'section[aria-label="OpenKline multi-chart workspace"] [data-panel-id="chart-2"] canvas');
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await properties.getByLabel("Drawing color").fill("#22c55e");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    primaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(primaryId.length).toBeGreaterThan(0);
+  });
+
+  await test.step("save a second workspace and cancel a rename without mutating storage", async () => {
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace name").fill("Library Secondary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    secondaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(secondaryId).not.toBe(primaryId);
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    const before = await page.evaluate(() => window.localStorage.getItem("openkline-studio-workspaces-v1"));
+    await page.getByRole("button", { name: "Rename", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Rename workspace" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Dialog value").fill("Should Not Persist");
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    const after = await page.evaluate(() => window.localStorage.getItem("openkline-studio-workspaces-v1"));
+    expect(after).toBe(before);
+    await expect(page.getByLabel("Workspace name")).toHaveValue("Library Primary");
+  });
+
+  await test.step("rename preserves workspace id and restores panel drawings", async () => {
+    await page.getByRole("button", { name: "Rename", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Rename workspace" });
+    await dialog.getByLabel("Dialog value").fill("Library Primary Renamed");
+    await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+    await expect(page.getByText(/Renamed workspace to “Library Primary Renamed”/)).toBeVisible();
+    await expect(page.getByLabel("Workspace name")).toHaveValue("Library Primary Renamed");
+    const renamedId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(renamedId).toBe(primaryId);
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(page.locator('[data-workspace-restore-panels="2"]')).toBeVisible();
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#ef4444");
+    await expect(properties.getByLabel("Drawing line width")).toHaveValue("4");
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+  });
+
+  await test.step("delete the other saved workspace without replacing live charts", async () => {
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
+    const confirm = page.getByRole("dialog", { name: /Delete workspace/ });
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole("button", { name: "Confirm", exact: true }).click();
+    await expect(page.getByText(/Live charts remain open as an unsaved desk/)).toBeVisible();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+
+    const stored = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string; name: string; charts: unknown[] }>;
+      };
+      return collection;
+    });
+    expect(stored.workspaces.map((item) => item.id)).toEqual([primaryId]);
+    expect(stored.workspaces[0]?.name).toBe("Library Primary Renamed");
+    expect(stored.workspaces[0]?.charts).toHaveLength(2);
+
+    const selectorValues = await page.getByLabel("Workspace", { exact: true }).locator("option").evaluateAll((options) =>
+      options.map((option) => (option as HTMLOptionElement).value).filter((value) => value.length > 0),
+    );
+    expect(selectorValues).toEqual([primaryId]);
+  });
+
+  await test.step("reload preserves library state after rename and delete", async () => {
+    await page.reload({ waitUntil: "load" });
+    const stored = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string; name: string }>;
+      };
+      return collection.workspaces.map((workspace) => ({ id: workspace.id, name: workspace.name }));
+    });
+    expect(stored).toEqual([{ id: primaryId, name: "Library Primary Renamed" }]);
+  });
+
+  expect(errors).toEqual([]);
+});
