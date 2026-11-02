@@ -735,15 +735,25 @@ export {
   applyScopedDrawingStyle,
   clearScopedDrawingSelection,
   createStudioWorkspace,
+  describeStudioWorkspaceImportError,
+  finalizeStudioWorkspaceImport,
   migrateLegacyWorkspace,
+  normalizeStudioWorkspaceName,
   parseStudioWorkspace,
+  parseStudioWorkspaceImportText,
   parseWatchlistDocument,
+  prepareStudioWorkspaceImport,
+  STUDIO_WORKSPACE_IMPORT_MAX_BYTES,
+  STUDIO_WORKSPACE_NAME_MAX_LENGTH,
   StudioSynchronizationController,
+  StudioWorkspaceImportError,
 } from "./studio/index.js";
 export type {
   ApplyScopedDrawingStyleArgs,
   ClearScopedDrawingSelectionArgs,
   LegacyWorkspaceMigrationOptions,
+  PreparedStudioWorkspaceImport,
+  PrepareStudioWorkspaceImportOptions,
   QuoteProvider,
   QuoteStatus,
   ScopedDrawingChart,
@@ -754,13 +764,15 @@ export type {
   StudioLayout,
   StudioSynchronizationPreferences,
   StudioWorkspaceDocument,
+  StudioWorkspaceImportFailureReason,
   Watchlist,
   WatchlistDocument,
   WatchlistIdFactory,
   WatchlistQuote,
   WatchlistSymbol,
 } from "./studio/index.js";
-export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";export {
+export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./studio/index.js";
+export {
   canonicalInstrumentIdentity,
   createDeterministicScreenerUniverse,
   createScreenerUniverse,

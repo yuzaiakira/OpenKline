@@ -28,6 +28,21 @@ export type {
   ScopedDrawingMutationResult,
 } from "./drawing-ownership.js";
 export {
+  STUDIO_WORKSPACE_IMPORT_MAX_BYTES,
+  STUDIO_WORKSPACE_NAME_MAX_LENGTH,
+  StudioWorkspaceImportError,
+  describeStudioWorkspaceImportError,
+  finalizeStudioWorkspaceImport,
+  normalizeStudioWorkspaceName,
+  parseStudioWorkspaceImportText,
+  prepareStudioWorkspaceImport,
+} from "./workspace-import.js";
+export type {
+  PreparedStudioWorkspaceImport,
+  PrepareStudioWorkspaceImportOptions,
+  StudioWorkspaceImportFailureReason,
+} from "./workspace-import.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

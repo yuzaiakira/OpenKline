@@ -692,3 +692,95 @@ test("multi-panel Studio keeps drawing property edits chart-local across panel s
 
   expect(errors).toEqual([]);
 });
+
+test("Studio import validates names, rejects invalid files, and restores multi-panel drawings safely", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  let exportPath = "";
+
+  await test.step("build and export a two-panel workspace", async () => {
+    await page.getByLabel("Workspace name").fill("Import Source Desk");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await properties.getByLabel("Drawing color").fill("#ef4444");
+    await properties.getByLabel("Drawing line width").fill("5");
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Horizontal", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.4, 0.3, 'section[aria-label="OpenKline multi-chart workspace"] [data-panel-id="chart-2"] canvas');
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await properties.getByLabel("Drawing color").fill("#22c55e");
+    await properties.getByLabel("Drawing visible").uncheck();
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export workspace", exact: true }).click();
+    const download = await downloadPromise;
+    exportPath = (await download.path()) ?? "";
+    expect(exportPath.length).toBeGreaterThan(0);
+  });
+
+  await test.step("reject an invalid import without mutating the live workspace", async () => {
+    await page.getByLabel("Workspace name").fill("Should Stay");
+    const before = await page.evaluate(() => window.localStorage.getItem("openkline-studio-workspaces-v1"));
+    await page.getByLabel("Workspace import file").setInputFiles({
+      name: "invalid-workspace.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{not-json", "utf8"),
+    });
+    await expect(page.getByText(/Import rejected: the file is not valid JSON/)).toBeVisible();
+    const after = await page.evaluate(() => window.localStorage.getItem("openkline-studio-workspaces-v1"));
+    expect(after).toBe(before);
+    await expect(page.getByLabel("Workspace name")).toHaveValue("Should Stay");
+  });
+
+  await test.step("import the exported workspace through the naming dialog", async () => {
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace import file").setInputFiles(exportPath);
+    const dialog = page.getByRole("dialog", { name: "Import workspace" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/Validated/)).toBeVisible();
+    await dialog.getByLabel("Dialog value").fill("Imported Multi Panel");
+    await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(page.locator('[data-workspace-restore-panels="2"]')).toBeVisible();
+    await expect(page.getByText(/restored with 2 chart panels/)).toBeVisible();
+
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(objectTree).toHaveAttribute("data-object-tree-panel-id", "chart-1");
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#ef4444");
+    await expect(properties.getByLabel("Drawing line width")).toHaveValue("5");
+
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+    await expect(objectTree.locator('[data-drawing-id="drawing-1"]')).toHaveAttribute("data-drawing-visible", "false");
+
+    const stored = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string; name: string }>;
+      };
+      return collection.workspaces.map((workspace) => workspace.name);
+    });
+    expect(stored).toContain("Imported Multi Panel");
+    expect(stored).toContain("Import Source Desk");
+  });
+
+  expect(errors).toEqual([]);
+});
