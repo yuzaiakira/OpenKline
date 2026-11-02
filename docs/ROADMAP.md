@@ -291,6 +291,15 @@ offline Studio Market Replay Lab are present.
   AT/physical/WCAG claim remain OPEN. Local commits only. See
   `docs/reports/phase-16-4-11-test-determinism-accessibility-evidence.md` and
   `docs/audits/wcag-2-2-aa-assessment-phase-16-4-11.md`.
+- [Blocked externally — Phase 16.4.12 Real-device & assistive-technology
+  verification execution]
+  Inventoried authorized AT/physical capability on the Manjaro execution host:
+  no Windows+NVDA, no macOS+VoiceOver, no attached Android/iOS devices, no
+  device-farm credentials. AT-S01–S12 and PM-S01–S11 remain
+  **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE**. No fabricated sessions;
+  no speculative product fixes. Formal WCAG remains OPEN. See
+  `docs/reports/phase-16-4-12-external-at-physical-verification.md` and
+  `docs/evidence/2026-11-02-phase-16-4-12-evidence-matrix.md`.
 
 ## Current milestone
 

@@ -18,14 +18,18 @@ Emulated Playwright mobile / Docker WebKit ≠ physical device evidence.
 
 ## Execution status (authoring environment)
 
+Updated by Phase **16.4.12** environment inventory against pin `7b4117f` (Manjaro Linux host). Protocols below remain the execution source of truth; statuses are not PASS without real sessions.
+
 | Gate | Status |
 | --- | --- |
-| NVDA (Windows) | **NOT TESTED** |
-| VoiceOver (macOS) | **NOT TESTED** |
-| VoiceOver (physical iOS) | **NOT TESTED** |
-| TalkBack (physical Android) | **NOT TESTED** |
-| Physical Android Chrome | **NOT TESTED** |
-| Physical iOS Safari | **NOT TESTED** |
+| NVDA (Windows) | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+| VoiceOver (macOS) | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+| VoiceOver (physical iOS) | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+| TalkBack (physical Android) | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+| Physical Android Chrome | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+| Physical iOS Safari | **NOT TESTED — REQUIRED ENVIRONMENT UNAVAILABLE** |
+
+Evidence: `docs/evidence/2026-11-02-phase-16-4-12-environment-inventory.md`, `docs/evidence/2026-11-02-phase-16-4-12-evidence-matrix.md`.
 
 ---
 
