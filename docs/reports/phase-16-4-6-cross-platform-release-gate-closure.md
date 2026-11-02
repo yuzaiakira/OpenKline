@@ -214,7 +214,7 @@ No CSP weakening (`unsafe-inline` style exceptions) was introduced.
 | Starting SHA | `246c5d087132de2fcbfcfa6a7f6f398b67b21e3a` |
 | Implementation | `b30ad577ffed13682df015d2966144bda044a867` |
 | Documentation | `e7d5ee808d04f60130eb41f72cbe325569d1dd7c` |
-| Final tip | `f5af897fcc351fa12fae892e5ec9cec141871952` |
+| Final tip | `e6a3e2155908b0bcf2846b016c0985f921370027` |
 | Remote | `origin/main` |
 | Author | `Akira Yuzai <yuzai.akira@gmail.com>` |
 
