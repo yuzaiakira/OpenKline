@@ -150,6 +150,7 @@ Environment: Manjaro Linux `7.2.9-1-MANJARO`, Node `v24.19.0`, npm `11.17.0`.
 | Delivery SHA record | `48801599aab3357031a15a905992e7c7ae9c5e61` |
 
 Starting HEAD for the phase: `e5bb9b3`. Backup: `refs/backup/phase-16-4-10-start`.
+Final local HEAD at end of Phase 16.4.10 documentation delivery: `85415b3eeabec3e6a79dff98b87aba050222d472` (authoritative if `HEAD` still matches; otherwise `git rev-parse HEAD`).
 
 ## Documentation paths
 
