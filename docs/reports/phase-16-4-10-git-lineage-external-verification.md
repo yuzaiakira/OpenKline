@@ -147,7 +147,7 @@ Environment: Manjaro Linux `7.2.9-1-MANJARO`, Node `v24.19.0`, npm `11.17.0`.
 | Mid-phase audit tip observed on remote | `f55f16fd89f96fcc778cd26ecd3acaa3e44392b0` |
 | Distribution-check chore (pre-existing mid-phase) | `9cdf7c39962376871fbf5479478ad2bafe3131a5` |
 | Handoff documentation tip | `804154e9af4adb69e0e6650cc6713fbbebf72a25` |
-| Delivery SHA record | *(this commit)* |
+| Delivery SHA record | `48801599aab3357031a15a905992e7c7ae9c5e61` |
 
 Starting HEAD for the phase: `e5bb9b3`. Backup: `refs/backup/phase-16-4-10-start`.
 
