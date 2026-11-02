@@ -122,3 +122,35 @@ test("Disabled Studio controls are exempt from WCAG 1.4.3 text contrast assertio
   }));
   expect(meta.disabled).toBe(true);
 });
+
+test("Hover and aria-pressed Studio toolbar controls keep AA text and border contrast", async ({ page }) => {
+  await page.goto("/");
+  const area = page.getByRole("button", { name: "Area", exact: true });
+  await area.hover();
+  const hoverSample = await area.evaluate((element, helpersSource) => {
+    // eslint-disable-next-line no-new-func
+    const helpers = new Function(`return ${helpersSource}`)() as {
+      sampleText: (name: string, element: Element | null) => { ratio: number; pass: boolean };
+      sampleNonText: (name: string, color: string, background: { r: number; g: number; b: number; a: number }) => { ratio: number; pass: boolean };
+      backgroundFor: (element: Element) => { r: number; g: number; b: number; a: number };
+    };
+    const style = getComputedStyle(element);
+    return {
+      text: helpers.sampleText("hover toolbar", element),
+      border: helpers.sampleNonText("hover border", style.borderTopColor, helpers.backgroundFor(element.parentElement ?? element)),
+    };
+  }, contrastPageHelpers);
+  expect(hoverSample.text.pass, JSON.stringify(hoverSample.text)).toBe(true);
+  expect(hoverSample.border.pass, JSON.stringify(hoverSample.border)).toBe(true);
+
+  await area.click();
+  await expect(area).toHaveAttribute("aria-pressed", "true");
+  const pressedSample = await area.evaluate((element, helpersSource) => {
+    // eslint-disable-next-line no-new-func
+    const helpers = new Function(`return ${helpersSource}`)() as {
+      sampleText: (name: string, element: Element | null) => { ratio: number; pass: boolean };
+    };
+    return helpers.sampleText("pressed toolbar", element);
+  }, contrastPageHelpers);
+  expect(pressedSample.pass, JSON.stringify(pressedSample)).toBe(true);
+});
