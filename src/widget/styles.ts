@@ -6,7 +6,8 @@ export const WIDGET_CSS = `
 [data-openkline-widget] {
   --openkline-widget-bg: #0f172a;
   --openkline-widget-panel: #111827;
-  --openkline-widget-border: #334155;
+  /* Border tokens target WCAG 2.2 AA 1.4.11 (≥3:1) against panel/bg surfaces. */
+  --openkline-widget-border: #64748b;
   --openkline-widget-text: #e2e8f0;
   --openkline-widget-muted: #cbd5e1;
   --openkline-widget-focus: #38bdf8;
@@ -30,7 +31,7 @@ export const WIDGET_CSS = `
 [data-openkline-widget][data-theme="light"] {
   --openkline-widget-bg: #f8fafc;
   --openkline-widget-panel: #ffffff;
-  --openkline-widget-border: #cbd5e1;
+  --openkline-widget-border: #64748b;
   --openkline-widget-text: #0f172a;
   --openkline-widget-muted: #334155;
   --openkline-widget-focus: #0369a1;
@@ -318,7 +319,8 @@ export const WIDGET_CSS = `
   gap: 5px;
   min-height: 32px;
   padding: 3px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--openkline-widget-border) 65%, transparent);
+  /* Keep ≥3:1 non-text contrast after compositing onto panel (WCAG 1.4.11). */
+  border-bottom: 1px solid color-mix(in srgb, var(--openkline-widget-border) 85%, transparent);
 }
 [data-openkline-widget] [data-openkline-object-row] > span,
 [data-openkline-widget] [data-openkline-watchlist-row] > span,

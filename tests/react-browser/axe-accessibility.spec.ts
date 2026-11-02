@@ -11,12 +11,12 @@ test("Studio home has no serious axe-core WCAG 2.2 AA violations in the initial 
   await expect(studioChartCanvas(page)).toHaveCount(1);
 
   const results = await new AxeBuilder({ page })
+    .include("header")
+    .include('[aria-label="Object tree"]')
+    .include('[aria-label="Watchlists"]')
+    .include('[aria-label="Watchlist actions"]')
+    .include('[aria-label="Active chart settings"]')
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .disableRules([
-      // Canvas chart summaries are provided via aria-label; color-contrast on
-      // decorative canvas pixels is not meaningful for this surface.
-      "color-contrast",
-    ])
     .analyze();
 
   const serious = results.violations.filter((item) => item.impact === "serious" || item.impact === "critical");

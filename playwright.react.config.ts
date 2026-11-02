@@ -9,6 +9,7 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "tests/react-browser",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "artifacts/playwright-results",
   timeout: 30_000,
   expect: { timeout: 10_000 },
   use: {
