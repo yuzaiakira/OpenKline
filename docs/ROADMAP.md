@@ -251,6 +251,14 @@ offline Studio Market Replay Lab are present.
   no remote push in this phase. See
   `docs/reports/phase-16-4-7-assistive-technology-physical-device-gates.md` and
   `docs/audits/wcag-2-2-aa-assessment-phase-16-4-7.md`.
+- [Implemented / Verified internally — Phase 16.4.8 Contrast compliance and
+  accessibility evidence]
+  Systematic WCAG 1.4.3/1.4.11 audit fixed Widget light/dark border tokens,
+  object-row separator mix, and KlineScript line-number text contrast; expanded
+  Playwright contrast regressions and axe chrome color-contrast scopes. Formal
+  WCAG/AT/physical gates remain OPEN. Local commits only; no remote push. See
+  `docs/reports/phase-16-4-8-contrast-accessibility-release-readiness.md` and
+  `docs/audits/contrast-wcag-2-2-aa-phase-16-4-8.md`.
 
 ## Current milestone
 

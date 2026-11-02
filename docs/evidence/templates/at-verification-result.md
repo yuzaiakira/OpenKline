@@ -33,6 +33,14 @@ Studio URL / host mode (production recommended):
 | --- | --- | --- | --- | --- |
 | | | | | |
 
+## Contrast perception checklist (manual AT complement)
+
+| Item | Expected | Actual | Classification |
+| --- | --- | --- | --- |
+| Focus ring discernible | Announced/visible focus not lost against chrome | | |
+| Selected / locked drawing state | Name communicates state without relying on color alone | | |
+| Error / warning text | Identified by wording + semantics | | |
+
 ## Session classification
 
 Overall: PASS / FAIL / BLOCKED / NOT TESTED
