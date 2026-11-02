@@ -9,6 +9,7 @@ resource counts.
 ```bash
 npm run benchmark:multi-chart-lifecycle
 npm run benchmark:studio-lifecycle
+npm run benchmark:studio-heap-retainers
 ```
 
 Optional workload knobs:
@@ -21,6 +22,9 @@ Optional workload knobs:
 | `OPENKLINE_MULTI_CHART_DISPOSE_CYCLES` | `10` | Mount/dispose loops |
 | `OPENKLINE_STUDIO_LIFECYCLE_CYCLES` | `6` | Studio layout cycles |
 | `OPENKLINE_STUDIO_RESTORE_ITERS` | `5` | Studio save/restore samples |
+| `OPENKLINE_HEAP_RETAINER_CYCLES` | `20` | Heap retainer restore/idle cycles |
+| `OPENKLINE_HEAP_RETAINER_SETTLE_MS` | `250` | Post-transition settle before GC/read |
+| `OPENKLINE_HEAP_SNAPSHOTS` | unset | Set `1` to write `.heapsnapshot` under `artifacts/` |
 
 ## Harnesses
 
@@ -43,6 +47,21 @@ Production Next.js Studio host (same distDir pattern as React Playwright).
 - Four-panel Save / restore readiness (`data-workspace-restore-panels`)
 - Layout dispose cycles back to a single panel
 - Chromium heap trend across restore cycles (engine-specific)
+
+### `benchmark:studio-heap-retainers`
+
+Phase 16.5.4 Chromium CDP investigation harness.
+
+- Forced GC via CDP before each `performance.memory` sample
+- Idle / restore / replacement / panel-lifecycle / teardown / fresh-context experiments
+- Opt-in Studio diagnostics (`__OPENKLINE_ENABLE_STUDIO_DIAGNOSTICS__`)
+- JSON summaries under `artifacts/studio-heap-retainers/` (gitignored)
+- Optional heap snapshots when `OPENKLINE_HEAP_SNAPSHOTS=1`
+
+Phase 16.5.4 conclusion: the restore heap climb is a Chromium canvas-churn /
+DOM-wrapper measurement signature with **verified Studio ownership cleanup** and
+**stable live DOM counts** — not a proven application retainer. See
+`docs/reports/phase-16-5-4-studio-restore-heap-retainers.md`.
 
 ## Memory classification vocabulary
 
