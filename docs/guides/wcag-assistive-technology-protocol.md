@@ -38,6 +38,16 @@ Record OS version, browser version, AT version, build SHA, and date for every ru
 
 ## Result recording format
 
+Use the durable template:
+
+`docs/evidence/templates/at-verification-result.md`
+
+Store completed sessions under `docs/evidence/` with a dated folder, for example:
+
+`docs/evidence/YYYY-MM-DD-at-<tool>/session.md`
+
+Inline fallback:
+
 ```text
 Date:
 Build SHA:
@@ -48,6 +58,15 @@ Actual:
 Classification: PASS | FAIL | BLOCKED | NOT TESTED
 Defect link (if FAIL):
 ```
+
+## Automated complements (not AT substitutes)
+
+| Suite | Command | Role |
+| --- | --- | --- |
+| Keyboard / focus / Object Tree | `npm run test:react:browser -- tests/react-browser/accessibility.spec.ts` | Keyboard-only and name/state regressions |
+| axe-core WCAG tags | `npm run test:react:browser -- tests/react-browser/axe-accessibility.spec.ts` | Detectable serious/critical violations |
+
+Passing automated suites **does not** authorize marking NVDA/VoiceOver/TalkBack rows as PASS.
 
 ## Defect criteria
 

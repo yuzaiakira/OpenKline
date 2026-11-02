@@ -240,6 +240,17 @@ offline Studio Market Replay Lab are present.
   `docs/reports/phase-16-4-5-release-gate-stabilization.md`,
   `docs/reviews/public-api-independent-audit-phase-16-4-6.md`, and
   `docs/guides/wcag-assistive-technology-protocol.md`.
+- [Implemented / Verified internally — Phase 16.4.7 Assistive-technology and
+  physical-device gate engineering]
+  Expanded keyboard/axe/target-size/focus/reflow automated WCAG evidence; fixed
+  Studio 320px document reflow overflow; added AT and physical-device evidence
+  templates plus host environment probe. Formal NVDA/VoiceOver/TalkBack and
+  physical Android/iOS remain NOT TESTED on this host. Formal WCAG 2.2 AA
+  conformance remains OPEN/NOT CLAIMED. Regression gates preserved (393/393,
+  React 46×5, Chromium 52/4sk, Docker WebKit quality PASS). Local commits only;
+  no remote push in this phase. See
+  `docs/reports/phase-16-4-7-assistive-technology-physical-device-gates.md` and
+  `docs/audits/wcag-2-2-aa-assessment-phase-16-4-7.md`.
 
 ## Current milestone
 

@@ -28,12 +28,25 @@ device evidence. Use this protocol before closing the physical-device release ga
 7. For Widget CSP external mode hosts, confirm styles load without console CSP errors.
 8. Capture pass/fail per step with evidence paths.
 
+## Result recording
+
+Use the durable template:
+
+`docs/evidence/templates/physical-mobile-result.md`
+
+Store completed sessions under `docs/evidence/` with a dated folder, for example:
+
+`docs/evidence/YYYY-MM-DD-physical-<android|ios>-<model>/session.md`
+
 ## Result classification
 
 - **PASS** — all procedure steps succeed on that device/browser.
 - **FAIL** — reproducible defect with evidence.
 - **BLOCKED** — device/browser unavailable or blocked by infrastructure.
 - **NOT TESTED** — no physical execution performed.
+
+Playwright `mobile-chrome` / `mobile-safari` projects and Docker WebKit runs are
+**emulation only**. They must never be copied into physical-device PASS rows.
 
 Until at least one Android and one iOS physical run are recorded against a
 known SHA, keep:
