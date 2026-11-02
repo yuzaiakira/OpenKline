@@ -87,8 +87,18 @@ export class CanvasRenderer {
     timeScale: TimeScale;
     scales: Map<string, PriceScale>;
   } | null = null;
+  private disposed = false;
 
   public constructor(private readonly canvas: HTMLCanvasElement) {}
+
+  /** Drop retained frame state and release the canvas backing store. */
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.overlayState = null;
+    this.canvas.width = 0;
+    this.canvas.height = 0;
+  }
 
   public render(
     data: VisibleChartData,
@@ -100,6 +110,7 @@ export class CanvasRenderer {
     selectedDrawingId: string | null = null,
     overlays: readonly PluginOverlayRenderItem[] = [],
   ): void {
+    if (this.disposed) return;
     const context = this.canvas.getContext("2d");
     if (context === null) throw new Error("CanvasRenderingContext2D is unavailable");
     const { width, height, devicePixelRatio } = size;

@@ -2796,6 +2796,10 @@ export class Chart {
     this.canvas.removeEventListener("touchcancel", this.handleTouchEnd);
     this.canvas.removeEventListener("wheel", this.handleWheel);
     this.canvas.removeEventListener("keydown", this.handleKeyDown);
+    // Release GPU/backing-store pixels and renderer frame caches before detach.
+    this.renderer.dispose();
+    this.canvas.width = 0;
+    this.canvas.height = 0;
     this.canvas.remove();
     this.listeners.clear();
   }

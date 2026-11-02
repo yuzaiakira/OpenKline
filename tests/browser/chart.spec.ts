@@ -731,6 +731,37 @@ test("corporate-action split adjustment remains causal through replay seek and r
   expect(result.restored.close).toBeCloseTo(result.sourceClose / 2, 8);
 });
 
+test("chart destroy detaches the canvas and releases its pixel backing store", async ({ page }) => {
+  await page.goto("/examples/vanilla/index.html");
+  const result = await page.evaluate(async () => {
+    const moduleUrl = new URL("/dist/src/index.js", location.href).href;
+    const { createChart } = await import(moduleUrl);
+    const host = document.createElement("div");
+    host.style.width = "640px";
+    host.style.height = "320px";
+    document.body.append(host);
+    const chart = createChart(host, { autoSize: false, width: 640, height: 320 });
+    const canvas = host.querySelector("canvas");
+    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("expected canvas");
+    chart.addCandlestickSeries({ id: "lifecycle-price" }).setData([
+      { time: Date.UTC(2026, 0, 1), open: 1, high: 2, low: 0.5, close: 1.5, volume: 10 },
+      { time: Date.UTC(2026, 0, 1) + 60_000, open: 1.5, high: 2.5, low: 1, close: 2, volume: 11 },
+    ]);
+    const before = { width: canvas.width, height: canvas.height, attached: document.contains(canvas) };
+    chart.destroy();
+    const after = { width: canvas.width, height: canvas.height, attached: document.contains(canvas), hostCanvasCount: host.querySelectorAll("canvas").length };
+    host.remove();
+    return { before, after };
+  });
+  expect(result.before.attached).toBe(true);
+  expect(result.before.width).toBeGreaterThan(0);
+  expect(result.before.height).toBeGreaterThan(0);
+  expect(result.after.attached).toBe(false);
+  expect(result.after.width).toBe(0);
+  expect(result.after.height).toBe(0);
+  expect(result.after.hostCanvasCount).toBe(0);
+});
+
 function sourceLengthForReplay(): number {
   return 80;
 }

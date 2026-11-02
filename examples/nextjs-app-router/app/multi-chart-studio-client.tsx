@@ -1098,12 +1098,50 @@ export default function MultiChartStudioClient() {
     for (const id of Object.keys(snapshotsRef.current)) {
       if (!liveIds.has(id)) delete snapshotsRef.current[id];
     }
+    for (const key of [...strategyResultsRef.current.keys()]) {
+      const panelId = key.split("|", 1)[0] ?? "";
+      if (!liveIds.has(panelId)) strategyResultsRef.current.delete(key);
+    }
+    for (const key of [...appliedStrategyParametersRef.current.keys()]) {
+      const panelId = key.split("|", 1)[0] ?? "";
+      if (!liveIds.has(panelId)) appliedStrategyParametersRef.current.delete(key);
+    }
     const controller = syncControllerRef.current;
     if (controller === null) return;
     for (const id of controller.getChartIds()) {
       if (!liveIds.has(id)) controller.removeChart(id);
     }
   }, [panels]);
+
+  useEffect(() => {
+    const host = window as Window & {
+      __OPENKLINE_ENABLE_STUDIO_DIAGNOSTICS__?: boolean;
+      __openklineStudioDiagnostics?: () => {
+        readonly panelIds: readonly string[];
+        readonly syncChartIds: readonly string[];
+        readonly snapshotKeys: readonly string[];
+        readonly archivedPanelCount: number;
+        readonly strategyResultCount: number;
+        readonly appliedStrategyParameterCount: number;
+        readonly pendingRestore: boolean;
+        readonly canvasCount: number;
+      };
+    };
+    if (host.__OPENKLINE_ENABLE_STUDIO_DIAGNOSTICS__ !== true) return undefined;
+    host.__openklineStudioDiagnostics = () => ({
+      panelIds: panels.map((panel) => panel.panelId),
+      syncChartIds: syncControllerRef.current?.getChartIds() ?? [],
+      snapshotKeys: Object.keys(snapshotsRef.current),
+      archivedPanelCount: archivedPanelsRef.current.size,
+      strategyResultCount: strategyResultsRef.current.size,
+      appliedStrategyParameterCount: appliedStrategyParametersRef.current.size,
+      pendingRestore: pendingRestoreRef.current !== null,
+      canvasCount: document.querySelectorAll("canvas").length,
+    });
+    return () => {
+      delete host.__openklineStudioDiagnostics;
+    };
+  }, [panels, panelReadyEpoch]);
 
   useEffect(() => {
     if (!replayActive) return undefined;
@@ -1694,7 +1732,25 @@ export default function MultiChartStudioClient() {
       }
     }, () => setNotice("Import rejected: the file could not be read. The current workspace was not changed."));
   };
-  const newWorkspace = (): void => { const panelId = `chart-${serialRef.current++}`; archivedPanelsRef.current.clear(); pendingRestoreRef.current = null; setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]); setActivePanelId(panelId); setLayout("single"); setPortfolioConfiguration(null); setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`); setWorkspaceName("New workspace"); setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`)); setNotice("New empty Studio workspace started."); };
+  const newWorkspace = (): void => {
+    const panelId = `chart-${serialRef.current++}`;
+    archivedPanelsRef.current.clear();
+    pendingRestoreRef.current = null;
+    snapshotsRef.current = {};
+    strategyResultsRef.current.clear();
+    appliedStrategyParametersRef.current.clear();
+    setActiveSnapshotState(emptySnapshot());
+    setRestoreSummary(null);
+    setQuotes({});
+    setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]);
+    setActivePanelId(panelId);
+    setLayout("single");
+    setPortfolioConfiguration(null);
+    setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`);
+    setWorkspaceName("New workspace");
+    setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`));
+    setNotice("New empty Studio workspace started.");
+  };
   const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
   const deleteWorkspaceNow = (): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStoredWorkspaces(JSON.parse(raw)); const remaining = stored.workspaces.filter((item) => item.id !== workspaceId); if (remaining.length === 0) { newWorkspace(); window.localStorage.removeItem(WORKSPACES_KEY); } else { const next = remaining[0]!; window.localStorage.setItem(WORKSPACES_KEY, JSON.stringify({ version: 1, currentId: next.id, workspaces: remaining })); applyDocument(next); } } catch { setNotice("Could not delete the workspace collection safely."); } };
   const deleteWorkspace = (): void => { showConfirm(`Delete workspace “${workspaceName}"?`, "The saved workspace will be removed from this browser.", deleteWorkspaceNow); };

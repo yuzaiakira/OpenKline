@@ -788,6 +788,9 @@ test("Studio import validates names, rejects invalid files, and restores multi-p
 test("Studio multi-panel lifecycle cycles dispose cleanly and import ids never collide", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    (window as Window & { __OPENKLINE_ENABLE_STUDIO_DIAGNOSTICS__?: boolean }).__OPENKLINE_ENABLE_STUDIO_DIAGNOSTICS__ = true;
+  });
   await page.goto("/");
   await page.evaluate(() => window.localStorage.clear());
   await page.reload({ waitUntil: "load" });
@@ -817,9 +820,47 @@ test("Studio multi-panel lifecycle cycles dispose cleanly and import ids never c
     for (let cycle = 0; cycle < 3; cycle += 1) {
       await page.getByRole("button", { name: "New", exact: true }).first().click();
       await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+      await expect.poll(async () => page.evaluate(() => {
+        const read = (window as Window & {
+          __openklineStudioDiagnostics?: () => {
+            panelIds: string[];
+            syncChartIds: string[];
+            snapshotKeys: string[];
+            strategyResultCount: number;
+            archivedPanelCount: number;
+          };
+        }).__openklineStudioDiagnostics;
+        if (typeof read !== "function") return null;
+        const diagnostics = read();
+        const orphanSnapshots = diagnostics.snapshotKeys.some((key) => !diagnostics.panelIds.includes(key));
+        const orphanSync = diagnostics.syncChartIds.some((id) => !diagnostics.panelIds.includes(id));
+        return {
+          panels: diagnostics.panelIds.length,
+          syncAligned: diagnostics.syncChartIds.length === diagnostics.panelIds.length && !orphanSync,
+          snapshotsAligned: !orphanSnapshots && diagnostics.snapshotKeys.length <= diagnostics.panelIds.length,
+          strategies: diagnostics.strategyResultCount,
+          archived: diagnostics.archivedPanelCount,
+        };
+      })).toEqual({ panels: 1, syncAligned: true, snapshotsAligned: true, strategies: 0, archived: 0 });
       await page.getByLabel("Workspace", { exact: true }).selectOption(workspaceId);
       await expect(page.locator("[data-panel-id]")).toHaveCount(4);
       await expect(page.locator('[data-workspace-restore-panels="4"]')).toBeVisible();
+      await expect.poll(async () => page.evaluate(() => {
+        const read = (window as Window & {
+          __openklineStudioDiagnostics?: () => {
+            panelIds: string[];
+            syncChartIds: string[];
+            snapshotKeys: string[];
+          };
+        }).__openklineStudioDiagnostics;
+        if (typeof read !== "function") return null;
+        const diagnostics = read();
+        return {
+          sync: diagnostics.syncChartIds.length,
+          syncAligned: diagnostics.syncChartIds.every((id) => diagnostics.panelIds.includes(id)),
+          snapshotsAligned: diagnostics.snapshotKeys.every((key) => diagnostics.panelIds.includes(key)),
+        };
+      })).toEqual({ sync: 4, syncAligned: true, snapshotsAligned: true });
     }
   });
 
