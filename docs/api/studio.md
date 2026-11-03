@@ -119,6 +119,23 @@ successfully persisted baseline (`studioWorkspaceContentFingerprint`,
 - Export does not mark the desk Saved. `beforeunload` may show the browser’s
   generic prompt when navigation away would lose unsaved work.
 
+## Indicator Explorer
+
+Helpers `buildStudioIndicatorCatalog`, `filterStudioIndicatorCatalog`,
+`listStudioIndicatorCategories`, and `studioIndicatorDefaultPane` build a
+Studio catalog from `IndicatorRegistry` metadata for the host-supported
+built-in ids (no invented definitions). The reference Studio Explorer:
+
+- Searches id, name, description, and category (case-insensitive).
+- Adds indicators to the **active** chart panel through `Chart.addIndicator`.
+- Lists, parameter-updates (remove+recreate same instance id), and removes
+  applied instances for that panel only.
+- Rejects stale actions when the active panel changes mid-interaction.
+- Marks the workspace dirty on add / remove / parameter mutation; catalog
+  search and favorites do not.
+- Keeps KlineScript on the existing Worker `addScriptIndicatorAsync` path
+  rather than promoting scripts into the built-in catalog.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its

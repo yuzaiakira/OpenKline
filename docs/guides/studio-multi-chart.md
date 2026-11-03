@@ -20,12 +20,18 @@ timeframe sync update the selected panel set. Replay remains private to each
 panel, and a replay cutoff prevents synchronized targets from seeing future
 bars.
 
-The Indicator Explorer is keyboard-accessible and exposes metadata categories,
-text search, favorites, and definition parameters. Selecting a definition
-feeds the existing Add control; the chart still owns parameter validation,
-pane assignment, output styles, and lifecycle cleanup. The toolbar exposes
-the built-in analysis drawings, including channels, Fibonacci extension,
-ranges, and long/short risk-reward annotations.
+The Indicator Explorer is keyboard-accessible and exposes registry-backed
+metadata (name, description, category), text search across id/name/description,
+favorites, and definition parameter overrides. It can add indicators to the
+active chart panel, list applied instances for that panel, apply parameter
+overrides to a selected instance, and remove instances. Search and catalog
+inspection do not dirty the workspace; add/remove/parameter mutations do and
+participate in the Save / Discard / Cancel navigation guard. The chart still
+owns parameter validation, pane assignment, output styles, and lifecycle
+cleanup. KlineScript programs remain a separate Worker path and are not listed
+as built-in catalog entries. The toolbar exposes the built-in analysis
+drawings, including channels, Fibonacci extension, ranges, and long/short
+risk-reward annotations.
 
 Workspace, watchlist, and panel destructive actions use an in-page ARIA dialog
 with explicit Cancel and Confirm/Apply controls. They do not call blocking
