@@ -60,7 +60,7 @@ test("Studio preserves chart type, price scale, indicator, and drawing state thr
   await page.getByLabel("Price scale").selectOption("logarithmic");
   await expect(page.getByText(/Log price scale applied/)).toBeVisible();
 
-  await page.getByLabel("Indicator").selectOption("EMA");
+  await page.getByLabel("Indicator", { exact: true }).selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
 
@@ -178,7 +178,7 @@ test("Studio exposes deterministic replay playback controls and restores the wor
   await page.goto("/");
   await expect(studioChartCanvas(page)).toHaveCount(1);
   const canvas = studioChartCanvas(page);
-  await page.getByLabel("Indicator").selectOption("EMA");
+  await page.getByLabel("Indicator", { exact: true }).selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));

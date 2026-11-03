@@ -23,7 +23,7 @@ test("multi-chart Studio preserves panel identity, isolated state, sync settings
   });
 
   await page.getByLabel("Active chart panel").selectOption("chart-2");
-  await page.getByLabel("Indicator").selectOption("EMA");
+  await page.getByLabel("Indicator", { exact: true }).selectOption("EMA");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.locator('[data-panel-id="chart-2"]').getByText("3 indicators", { exact: true })).toBeVisible();
   if (await page.evaluate(() => window.matchMedia("(max-width: 720px)").matches)) {
@@ -1119,6 +1119,129 @@ test("Studio dirty-state protects Load and New with Save, Discard, and Cancel", 
       return target?.charts[0]?.workspace.drawings.drawings[0]?.style.color ?? null;
     }, primaryId);
     expect(after).toBe("#a855f7");
+  });
+
+  expect(errors).toEqual([]);
+});
+
+test("Studio Indicator Explorer adds, scopes, dirty-tracks, and restores panel-local indicators", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  let primaryId = "";
+  let secondaryId = "";
+
+  await test.step("open Explorer, search, and add ATR to chart-1", async () => {
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(explorer).toHaveAttribute("data-indicator-explorer-panel", "chart-1");
+
+    await explorer.getByLabel("Search technical studies").fill("average true");
+    await expect(explorer.getByRole("option", { name: /Average True Range/i })).toHaveCount(1);
+    await explorer.getByRole("option", { name: /Average True Range/i }).click();
+    await expect(explorer.locator("[data-indicator-selected]")).toHaveAttribute("data-indicator-selected", "ATR");
+    await explorer.locator("[data-indicator-add]").click();
+    await expect(page.getByText(/Added ATR to chart-1/)).toBeVisible();
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+    await expect(page.locator('[data-panel-id="chart-1"]').getByText("3 indicators", { exact: true })).toBeVisible();
+  });
+
+  await test.step("empty search reports no results without mutating the chart", async () => {
+    const applied = explorer.locator("[data-applied-indicator-count]");
+    const before = await applied.getAttribute("data-applied-indicator-count");
+    await explorer.getByLabel("Search technical studies").fill("zzz-no-such-indicator");
+    await expect(explorer.getByRole("status")).toContainText("No indicators match");
+    await expect(applied).toHaveAttribute("data-applied-indicator-count", before ?? "");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+    await explorer.getByLabel("Search technical studies").fill("");
+  });
+
+  await test.step("save primary workspace then create a clean secondary", async () => {
+    await page.getByLabel("Workspace name").fill("Indicator Primary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    primaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace name").fill("Indicator Secondary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    secondaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(secondaryId).not.toBe(primaryId);
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+  });
+
+  await test.step("Panel B add leaves Panel A indicators intact and marks dirty", async () => {
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(explorer).toHaveAttribute("data-indicator-explorer-panel", "chart-2");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(0);
+    await explorer.getByLabel("Search technical studies").fill("MACD");
+    await explorer.locator('[data-indicator-id="MACD"]').click();
+    await explorer.locator("[data-indicator-add]").click();
+    await expect(page.getByText(/Added MACD to chart-2/)).toBeVisible();
+    await expect(explorer.locator('[data-applied-indicator-type="MACD"]')).toHaveCount(1);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+    await expect(explorer.locator('[data-applied-indicator-type="MACD"]')).toHaveCount(0);
+  });
+
+  await test.step("dirty Load Cancel preserves indicator edits", async () => {
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    const guard = page.getByRole("dialog", { name: "Load another workspace?" });
+    await expect(guard).toBeVisible();
+    await guard.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(guard).toHaveCount(0);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(explorer.locator('[data-applied-indicator-type="MACD"]')).toHaveCount(1);
+  });
+
+  await test.step("Save and restore keeps panel-local indicators", async () => {
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(explorer.locator('[data-applied-indicator-type="MACD"]')).toHaveCount(1);
+  });
+
+  await test.step("remove applied indicator updates chart and dirty state", async () => {
+    const macdId = await explorer.locator('[data-applied-indicator-type="MACD"]').first().getAttribute("data-applied-indicator-id");
+    expect(macdId).toBeTruthy();
+    await explorer.getByRole("button", { name: `Remove ${macdId}`, exact: true }).click();
+    await expect(explorer.locator('[data-applied-indicator-type="MACD"]')).toHaveCount(0);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1);
+  });
+
+  await test.step("keyboard reaches Explorer search and catalog selection", async () => {
+    await explorer.getByLabel("Search technical studies").focus();
+    await expect(explorer.getByLabel("Search technical studies")).toBeFocused();
+    await explorer.getByLabel("Search technical studies").fill("ema");
+    await explorer.getByRole("option", { name: /Exponential Moving Average/i }).focus();
+    await page.keyboard.press("Enter");
+    await expect(explorer.locator("[data-indicator-selected]")).toHaveAttribute("data-indicator-selected", "EMA");
   });
 
   expect(errors).toEqual([]);

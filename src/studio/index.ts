@@ -70,6 +70,16 @@ export type {
   StudioWorkspaceSaveStatus,
 } from "./workspace-dirty.js";
 export {
+  buildStudioIndicatorCatalog,
+  filterStudioIndicatorCatalog,
+  listStudioIndicatorCategories,
+  studioIndicatorDefaultPane,
+} from "./indicator-explorer.js";
+export type {
+  StudioIndicatorCatalogEntry,
+  StudioIndicatorCatalogFilter,
+} from "./indicator-explorer.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

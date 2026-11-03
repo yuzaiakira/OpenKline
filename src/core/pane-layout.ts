@@ -16,6 +16,8 @@ export class PaneLayout {
   public add(options: PaneOptions = {}): string {
     const id = options.id ?? `pane-${this.nextId++}`;
     if (this.panes.has(id)) throw new Error(`Pane id already exists: ${id}`);
+    const explicitNumber = /^pane-(\d+)$/.exec(id)?.[1];
+    if (explicitNumber !== undefined) this.nextId = Math.max(this.nextId, Number(explicitNumber) + 1);
     this.panes.set(id, {
       id,
       preferredHeight: options.height === undefined ? 160 : normalizeHeight(options.height),
