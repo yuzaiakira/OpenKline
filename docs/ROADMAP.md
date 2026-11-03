@@ -356,6 +356,14 @@ offline Studio Market Replay Lab are present.
   selector disambiguation for duplicate names, unit + Chromium E2E coverage.
   Public Widget API and public release remain NOT AUTHORIZED. See
   `docs/reports/phase-16-5-5-studio-workspace-library-management.md`.
+- [Implemented / Verified internally — Phase 16.5.6 Studio dirty-state tracking
+  & safe workspace navigation]
+  Adds content fingerprints, Saved/Unsaved status chrome, and a centralized
+  Save / Discard / Cancel guard for New, Load/selector, and Import activation.
+  Preserves detach-on-delete-current, ignores restore hydration drift without
+  user edits, and covers Cancel/Save-and-Continue/Discard with Chromium E2E.
+  Public Widget API and public release remain NOT AUTHORIZED. See
+  `docs/reports/phase-16-5-6-studio-dirty-state-safe-navigation.md`.
 
 ## Current milestone
 
@@ -1029,19 +1037,21 @@ Studio compatibility gates remain open**.
 - [In Progress] Phase 7.5.1 contextual drawing property editing (16.5.0),
   multi-panel ownership (16.5.1), workspace import/storage UX (16.5.2),
   multi-chart performance/lifecycle baselines (16.5.3), Studio restore heap
-  retainer characterization (16.5.4), and workspace library rename/delete
-  management (16.5.5) are delivered in the reference Studio. Managed
-  Firefox/WebKit lifecycle parity remains open. The accessible Indicator
-  Explorer, professional drawing toolbar, object tree, visible-OHLC snapping,
-  source-tagged sync controller, and in-page dialogs were already implemented.
-  No Phase 7.5 acceptance claim is made until the remaining checks and
-  inherited Firefox/WebKit/Mobile Safari/accessibility/device gates are
-  verified. See `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
+  retainer characterization (16.5.4), workspace library rename/delete
+  management (16.5.5), and dirty-state / safe navigation (16.5.6) are delivered
+  in the reference Studio. Managed Firefox/WebKit lifecycle parity remains
+  open. The accessible Indicator Explorer, professional drawing toolbar,
+  object tree, visible-OHLC snapping, source-tagged sync controller, and
+  in-page dialogs were already implemented. No Phase 7.5 acceptance claim is
+  made until the remaining checks and inherited Firefox/WebKit/Mobile
+  Safari/accessibility/device gates are verified. See
+  `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
   `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`,
   `docs/reports/phase-16-5-2-workspace-import-storage-ux.md`,
   `docs/reports/phase-16-5-3-multi-chart-performance-lifecycle.md`,
-  `docs/reports/phase-16-5-4-studio-restore-heap-retainers.md`, and
-  `docs/reports/phase-16-5-5-studio-workspace-library-management.md`.
+  `docs/reports/phase-16-5-4-studio-restore-heap-retainers.md`,
+  `docs/reports/phase-16-5-5-studio-workspace-library-management.md`, and
+  `docs/reports/phase-16-5-6-studio-dirty-state-safe-navigation.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They

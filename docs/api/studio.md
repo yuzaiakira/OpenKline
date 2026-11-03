@@ -100,6 +100,25 @@ validated collection documents:
 - The workspace selector shows display names and appends a short id suffix when
   duplicate names would otherwise be ambiguous.
 
+## Dirty-state and safe navigation
+
+Reference Studio tracks a content fingerprint of the live desk against the last
+successfully persisted baseline (`studioWorkspaceContentFingerprint`,
+`resolveStudioWorkspaceSaveStatus`):
+
+- Status chrome reports **Saved**, **Unsaved changes**, **Unsaved workspace**,
+  or **Save failed** as accessible text (not color-only).
+- Display name / id metadata are excluded from the content fingerprint so
+  rename does not false-dirty the desk.
+- New, Load/selector switching, and Import activation share
+  `requestDestructiveNavigation` with **Save and Continue**, **Discard Changes
+  and Continue**, and **Cancel**.
+- Save must succeed before destructive continuation; failed saves keep the live
+  desk and pending destination is not applied.
+- Pristine new/detached desks do not prompt until the user edits.
+- Export does not mark the desk Saved. `beforeunload` may show the browser’s
+  generic prompt when navigation away would lose unsaved work.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its
