@@ -57,6 +57,19 @@ export type {
   StudioWorkspaceCollection,
 } from "./workspace-library.js";
 export {
+  createStudioWorkspaceBaseline,
+  describeStudioWorkspaceSaveStatus,
+  resolveStudioWorkspaceSaveStatus,
+  stableStudioJsonFingerprint,
+  studioWorkspaceContentFingerprint,
+  studioWorkspaceNeedsNavigationGuard,
+  studioWorkspaceSaveStatusAnnouncement,
+} from "./workspace-dirty.js";
+export type {
+  StudioWorkspaceBaseline,
+  StudioWorkspaceSaveStatus,
+} from "./workspace-dirty.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

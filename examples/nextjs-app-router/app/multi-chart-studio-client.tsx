@@ -12,13 +12,18 @@ import {
   clearScopedDrawingSelection,
   allocateStudioWorkspaceId,
   allocateStudioWorkspaceImportId,
+  createStudioWorkspaceBaseline,
   deleteStudioWorkspaceRecord,
   describeStudioWorkspaceImportError,
+  describeStudioWorkspaceSaveStatus,
   finalizeStudioWorkspaceImport,
   normalizeStudioWorkspaceName,
   parseStudioWorkspaceCollection,
   prepareStudioWorkspaceImport,
   renameStudioWorkspaceRecord,
+  resolveStudioWorkspaceSaveStatus,
+  studioWorkspaceContentFingerprint,
+  studioWorkspaceNeedsNavigationGuard,
   studioWorkspaceSelectorLabel,
   StudioWorkspaceLibraryError,
   type ComparisonAssetOutput,
@@ -114,11 +119,18 @@ interface PanelSnapshot {
 }
 
 interface StudioDialog {
-  readonly kind: "confirm" | "prompt";
+  readonly kind: "confirm" | "prompt" | "navigate";
   readonly title: string;
   readonly message: string;
   readonly initialValue?: string;
   readonly onSubmit: (value: string) => void;
+  readonly onSaveContinue?: () => void;
+  readonly onDiscardContinue?: () => void;
+}
+
+interface PendingStudioNavigation {
+  readonly generation: number;
+  readonly proceed: () => void;
 }
 
 interface ChartPanelHandle {
@@ -804,6 +816,7 @@ export default function MultiChartStudioClient() {
   const appliedStrategyParametersRef = useRef(new Map<string, { readonly strategyId: string; readonly parameters: Readonly<Record<string, unknown>> }>());
   const archivedPanelsRef = useRef(new Map<string, { panel: PanelState; workspace?: WorkspaceDocument }>());
   const pendingRestoreRef = useRef<StudioWorkspaceDocument | null>(null);
+  const pendingBaselineAfterRestoreRef = useRef<StudioWorkspaceDocument | null>(null);
   const syncControllerRef = useRef<ChartSynchronizationController | null>(null);
   if (syncControllerRef.current === null) {
     syncControllerRef.current = new ChartSynchronizationController();
@@ -883,6 +896,16 @@ export default function MultiChartStudioClient() {
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
   const dialogWasOpenRef = useRef(false);
+  const [libraryBackingId, setLibraryBackingId] = useState<string | null>(null);
+  const [baselineFingerprint, setBaselineFingerprint] = useState<string | null>(null);
+  const [liveFingerprint, setLiveFingerprint] = useState<string | null>(null);
+  const [sessionOriginFingerprint, setSessionOriginFingerprint] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const navigationGenerationRef = useRef(0);
+  const pendingNavigationRef = useRef<PendingStudioNavigation | null>(null);
+  const navigationBusyRef = useRef(false);
+  /** True for brand-new / detached desks until the first meaningful user edit. */
+  const [pristineUnsaved, setPristineUnsaved] = useState(true);
 
   const showConfirm = (title: string, message: string, onConfirm: () => void, trigger?: HTMLElement | null): void => {
     dialogTriggerRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -914,6 +937,34 @@ export default function MultiChartStudioClient() {
       },
     });
   };
+  const clearPendingNavigation = (): void => {
+    pendingNavigationRef.current = null;
+    navigationBusyRef.current = false;
+  };
+  const showNavigateGuard = (title: string, message: string, onSaveContinue: () => void, onDiscardContinue: () => void, trigger?: HTMLElement | null): void => {
+    dialogTriggerRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    dialogWasOpenRef.current = true;
+    setDialogValue("");
+    setDialogError(null);
+    setDialog({
+      kind: "navigate",
+      title,
+      message,
+      onSubmit: () => undefined,
+      onSaveContinue: () => {
+        try {
+          onSaveContinue();
+        } catch (error) {
+          setDialogError(error instanceof Error ? error.message : String(error));
+        }
+      },
+      onDiscardContinue: () => {
+        setDialog(null);
+        setDialogError(null);
+        onDiscardContinue();
+      },
+    });
+  };
 
   useEffect(() => {
     if (dialog !== null) return undefined;
@@ -934,13 +985,17 @@ export default function MultiChartStudioClient() {
     const getFocusable = (): HTMLElement[] => Array.from(dialogElement.querySelectorAll<HTMLElement>(focusableSelector));
     const preferred = dialog.kind === "prompt"
       ? dialogElement.querySelector<HTMLElement>('input[aria-label="Dialog value"]')
-      : getFocusable()[0];
+      : dialog.kind === "navigate"
+        ? dialogElement.querySelector<HTMLElement>('button[data-studio-navigate-action="cancel"]')
+        : getFocusable()[0];
     preferred?.focus();
     if (preferred !== null && preferred !== undefined && document.activeElement !== preferred) getFocusable()[0]?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
+        clearPendingNavigation();
         setDialog(null);
+        setDialogError(null);
         return;
       }
       if (event.key !== "Tab") return;
@@ -1185,16 +1240,59 @@ export default function MultiChartStudioClient() {
     const panelIds = pending.charts.map((chart) => chart.panelId);
     setRestoreSummary({ name: pending.name, panelCount: panelIds.length, panelIds });
     setNotice(`Workspace “${pending.name}” restored with ${panelIds.length} chart panel${panelIds.length === 1 ? "" : "s"} (${panelIds.join(", ")}). Drawing selection remains transient until you select an object.`);
+    pendingBaselineAfterRestoreRef.current = pending;
   }, [panels, layout, panelReadyEpoch]);
 
-  const applyDocument = (document: StudioWorkspaceDocument): void => {
+  const adoptPersistedBaseline = useCallback((document: StudioWorkspaceDocument, libraryId: string = document.id): void => {
+    const baseline = createStudioWorkspaceBaseline(document, libraryId);
+    setLibraryBackingId(baseline.libraryId);
+    setBaselineFingerprint(baseline.fingerprint);
+    setLiveFingerprint(baseline.fingerprint);
+    setSessionOriginFingerprint(null);
+    userDirtyRef.current = false;
+    setPristineUnsaved(false);
+    setSaveFailed(false);
+  }, []);
+
+  const clearPersistedBaseline = useCallback((): void => {
+    setLibraryBackingId(null);
+    setBaselineFingerprint(null);
+    userDirtyRef.current = false;
+    setPristineUnsaved(true);
+    setSaveFailed(false);
+  }, []);
+
+  const markUnsavedSessionOrigin = useCallback((fingerprint: string | null): void => {
+    setSessionOriginFingerprint(fingerprint);
+    setPristineUnsaved(true);
+  }, []);
+
+  const userDirtyRef = useRef(false);
+  const markLiveDirty = useCallback((): void => {
+    userDirtyRef.current = true;
+    setPristineUnsaved(false);
+  }, []);
+
+  const applyDocument = (document: StudioWorkspaceDocument, options?: { readonly adoptBaseline?: boolean }): void => {
     const firstChart = document.charts[0]?.workspace;
     snapshotsRef.current = {};
     setActiveSnapshotState(emptySnapshot());
     setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceEntries((current) => current.some((item) => item.id === document.id) ? current.map((item) => item.id === document.id ? { id: document.id, name: document.name } : item) : [...current, { id: document.id, name: document.name }]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setPortfolioConfiguration(document.portfolioBacktest ?? null); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
+    if (options?.adoptBaseline !== false) adoptPersistedBaseline(document);
   };
 
   const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings, ...(portfolioConfiguration === null ? {} : { portfolioBacktest: portfolioConfiguration }) }), [comparisonSettings, layout, panels, portfolioConfiguration, sync, watchlistModel, workspaceId, workspaceName]);
+
+  const refreshLiveFingerprint = useCallback((): string | null => {
+    try {
+      const fingerprint = studioWorkspaceContentFingerprint(collectDocument());
+      setLiveFingerprint(fingerprint);
+      return fingerprint;
+    } catch {
+      setLiveFingerprint(null);
+      return null;
+    }
+  }, [collectDocument]);
 
   const persist = useCallback((document: StudioWorkspaceDocument, all: readonly StudioWorkspaceDocument[]): boolean => {
     try {
@@ -1202,27 +1300,177 @@ export default function MultiChartStudioClient() {
       const activeChart = document.charts[0]?.workspace;
       if (activeChart !== undefined) window.localStorage.setItem(LEGACY_WORKSPACE_KEY, JSON.stringify(activeChart));
       setNotice(`Workspace “${document.name}” saved locally.`);
+      adoptPersistedBaseline(document);
       return true;
     } catch {
+      setSaveFailed(true);
       setNotice("Workspace could not be saved. Browser storage may be unavailable or full.");
       return false;
     }
-  }, []);
+  }, [adoptPersistedBaseline]);
 
-  const saveWorkspace = useCallback((asNew = false): void => {
+  const saveWorkspace = useCallback((asNew = false): boolean => {
     let named: string;
     try { named = normalizeStudioWorkspaceName(workspaceName); }
-    catch (error) { setNotice(error instanceof Error ? error.message : String(error)); return; }
+    catch (error) { setNotice(error instanceof Error ? error.message : String(error)); return false; }
     const raw = window.localStorage.getItem(WORKSPACES_KEY);
     let all: StudioWorkspaceDocument[] = [];
     if (raw !== null) { try { all = [...parseStudioWorkspaceCollection(JSON.parse(raw)).workspaces]; } catch { all = []; } }
-    const id = asNew ? allocateStudioWorkspaceId(all.map((item) => item.id), "workspace") : workspaceId;
+    // Detached / new desks must create a record (current id if free, otherwise allocate) rather than overwrite an unrelated library id.
+    const hasBacking = libraryBackingId !== null && all.some((item) => item.id === libraryBackingId) && !asNew;
+    const id = asNew || !hasBacking
+      ? (asNew || all.some((item) => item.id === workspaceId)
+        ? allocateStudioWorkspaceId(all.map((item) => item.id), "workspace")
+        : workspaceId)
+      : libraryBackingId;
     const document = collectDocument(id, named);
     const index = all.findIndex((item) => item.id === id);
     if (index >= 0) all[index] = document; else all.push(document);
-    if (!persist(document, all)) return;
+    if (!persist(document, all)) return false;
     setWorkspaceId(id); setWorkspaceName(document.name); setWorkspaceEntries(all.map((item) => ({ id: item.id, name: item.name })));
-  }, [collectDocument, persist, workspaceId, workspaceName]);
+    return true;
+  }, [collectDocument, libraryBackingId, persist, workspaceId, workspaceName]);
+
+  const currentSaveStatus = resolveStudioWorkspaceSaveStatus({
+    libraryBackingId,
+    baselineFingerprint,
+    liveFingerprint,
+    saveFailed,
+  });
+  const pristineUnsavedWorkspace = libraryBackingId === null && pristineUnsaved;
+
+  const requestDestructiveNavigation = useCallback((args: {
+    readonly title: string;
+    readonly message: string;
+    readonly proceed: () => void;
+    readonly trigger?: HTMLElement | null;
+  }): void => {
+    let fingerprint = refreshLiveFingerprint();
+    let effectiveBaseline = baselineFingerprint;
+    // Chart serialization can drift after save/restore without a user edit.
+    // Only treat fingerprint mismatch as dirty when the user has edited.
+    if (
+      libraryBackingId !== null
+      && !userDirtyRef.current
+      && fingerprint !== null
+      && effectiveBaseline !== null
+      && fingerprint !== effectiveBaseline
+      && saveFailed !== true
+    ) {
+      try {
+        adoptPersistedBaseline(collectDocument(libraryBackingId, workspaceName), libraryBackingId);
+        effectiveBaseline = fingerprint;
+      } catch {
+        // Keep prior baseline when live serialize is temporarily invalid.
+      }
+    }
+    const status = resolveStudioWorkspaceSaveStatus({
+      libraryBackingId,
+      baselineFingerprint: effectiveBaseline,
+      liveFingerprint: fingerprint,
+      saveFailed,
+    });
+    const pristine = libraryBackingId === null && pristineUnsaved;
+    if (!studioWorkspaceNeedsNavigationGuard(status, { pristineUnsavedWorkspace: pristine })) {
+      args.proceed();
+      return;
+    }
+    const generation = navigationGenerationRef.current + 1;
+    navigationGenerationRef.current = generation;
+    pendingNavigationRef.current = { generation, proceed: args.proceed };
+    showNavigateGuard(
+      args.title,
+      args.message,
+      () => {
+        if (navigationBusyRef.current) return;
+        const pending = pendingNavigationRef.current;
+        if (pending === null || pending.generation !== generation) return;
+        navigationBusyRef.current = true;
+        if (!saveWorkspace(false)) {
+          navigationBusyRef.current = false;
+          setDialogError("Workspace could not be saved. Browser storage may be unavailable or full.");
+          return;
+        }
+        if (pendingNavigationRef.current?.generation !== generation) {
+          navigationBusyRef.current = false;
+          return;
+        }
+        clearPendingNavigation();
+        setDialog(null);
+        setDialogError(null);
+        pending.proceed();
+      },
+      () => {
+        const pending = pendingNavigationRef.current;
+        if (pending === null || pending.generation !== generation) return;
+        clearPendingNavigation();
+        pending.proceed();
+      },
+      args.trigger,
+    );
+  }, [adoptPersistedBaseline, baselineFingerprint, collectDocument, libraryBackingId, pristineUnsaved, refreshLiveFingerprint, saveFailed, saveWorkspace, workspaceName]);
+
+  useEffect(() => {
+    const pending = pendingBaselineAfterRestoreRef.current;
+    if (pending === null) return;
+    pendingBaselineAfterRestoreRef.current = null;
+    // Re-baseline from live serialization after restore so transient runtime
+    // differences (cleared selection, chart defaults) do not false-dirty the desk.
+    try {
+      adoptPersistedBaseline(collectDocument(pending.id, pending.name), pending.id);
+    } catch {
+      adoptPersistedBaseline(pending, pending.id);
+    }
+  }, [adoptPersistedBaseline, collectDocument, layout, panelReadyEpoch, panels]);
+
+  useEffect(() => {
+    refreshLiveFingerprint();
+  }, [
+    activeSnapshotState.alerts,
+    activeSnapshotState.drawings,
+    activeSnapshotState.indicators,
+    activeSnapshotState.anchoredVwaps,
+    activeSnapshotState.volumeProfiles,
+    comparisonSettings,
+    layout,
+    panels,
+    panelReadyEpoch,
+    portfolioConfiguration,
+    refreshLiveFingerprint,
+    sync,
+    watchlists,
+    workspaceName,
+  ]);
+
+  useEffect(() => {
+    if (!studioWorkspaceNeedsNavigationGuard(currentSaveStatus, { pristineUnsavedWorkspace })) return undefined;
+    const onBeforeUnload = (event: BeforeUnloadEvent): void => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [currentSaveStatus, pristineUnsavedWorkspace]);
+
+  useEffect(() => {
+    // While a new/detached desk remains pristine, track hydration into the session origin
+    // so chart readiness does not look like a user edit.
+    if (libraryBackingId !== null || !pristineUnsaved) return;
+    markUnsavedSessionOrigin(refreshLiveFingerprint());
+  }, [libraryBackingId, markUnsavedSessionOrigin, panelReadyEpoch, panels, layout, pristineUnsaved, refreshLiveFingerprint]);
+
+  useEffect(() => {
+    // After restore/load, chart serialization can settle across ready epochs without a user edit.
+    // Re-accept live content as the baseline until the user dirties the desk.
+    if (libraryBackingId === null || userDirtyRef.current) return;
+    const fingerprint = refreshLiveFingerprint();
+    if (fingerprint === null || baselineFingerprint === null || fingerprint === baselineFingerprint) return;
+    try {
+      adoptPersistedBaseline(collectDocument(libraryBackingId, workspaceName), libraryBackingId);
+    } catch {
+      // Keep prior baseline when live serialize is temporarily invalid.
+    }
+  }, [adoptPersistedBaseline, baselineFingerprint, collectDocument, libraryBackingId, panelReadyEpoch, panels, layout, refreshLiveFingerprint, workspaceName]);
 
   const changeLayout = (nextLayout: StudioLayout): void => {
     const desired = chartCount(nextLayout);
@@ -1231,11 +1479,12 @@ export default function MultiChartStudioClient() {
     while (next.length < desired) { const archived = [...archivedPanelsRef.current.values()][0]; if (archived !== undefined) { next.push(archived.panel); archivedPanelsRef.current.delete(archived.panel.panelId); } else { const panelId = `chart-${serialRef.current++}`; next.push({ panelId, symbol: next[0]?.symbol ?? "BTC-USD", timeframe: next[0]?.timeframe ?? "1h" }); } }
     setPanels(next);
     setLayout(nextLayout);
+    markLiveDirty();
     setNotice(`Layout changed to ${layoutChoices.find(([id]) => id === nextLayout)?.[1] ?? nextLayout}; hidden panel analysis is retained in this session.`);
   };
 
-  const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setComparisonSettings((current) => current.active ? { ...current, assetIds: [nextSymbol, ...current.assetIds.filter((id) => id !== nextSymbol)] } : current); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
-  const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); setComparisonSettings((current) => ({ ...current, baselineTime: buildCandles(activePanel.symbol, nextTimeframe)[0]?.time ?? current.baselineTime, baselineMaxAgeMs: intervalFor(nextTimeframe) })); };
+  const changeActiveSymbol = (nextSymbol: string): void => { const nextPanels = sync.symbol ? panels.map((panel) => ({ ...panel, symbol: nextSymbol })) : panels.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, symbol: nextSymbol } : panel); setPanels(nextPanels); setComparisonSettings((current) => current.active ? { ...current, assetIds: [nextSymbol, ...current.assetIds.filter((id) => id !== nextSymbol)] } : current); markLiveDirty(); setNotice(`Loaded deterministic ${nextSymbol}${sync.symbol ? " across synchronized panels" : " in the active panel"}.`); };
+  const changeActiveTimeframe = (nextTimeframe: Timeframe): void => { setPanels((current) => sync.timeframe ? current.map((panel) => ({ ...panel, timeframe: nextTimeframe })) : current.map((panel) => panel.panelId === activePanel.panelId ? { ...panel, timeframe: nextTimeframe } : panel)); setComparisonSettings((current) => ({ ...current, baselineTime: buildCandles(activePanel.symbol, nextTimeframe)[0]?.time ?? current.baselineTime, baselineMaxAgeMs: intervalFor(nextTimeframe) })); markLiveDirty(); };
 
   const onCrosshair = (panelId: string, event: CrosshairMoveEvent): void => { if (panelId === activePanelIdRef.current) setCrosshair(event); };
   const onViewport = (_panelId: string, _range: { from: number; to: number }): void => undefined;
@@ -1262,7 +1511,7 @@ export default function MultiChartStudioClient() {
     setScaleMode("linear");
     activeHandle?.getChart()?.setPriceScaleOptions({ mode: "linear" });
   }, [activeHandle, replayActive]);
-  const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); };
+  const updatePresentation = (next: Presentation): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const ids: Record<Presentation, string> = { candles: "studio-price", ohlc: "studio-ohlc", hollow: "studio-hollow", "heikin-ashi": "studio-heikin", line: "studio-line", area: "studio-area", baseline: "studio-baseline" }; for (const [kind, id] of Object.entries(ids)) if (target.getSeriesIds().includes(id)) target.setSeriesStyle(id, { visible: kind === next }); setPresentation(next); activeHandle?.refresh(); markLiveDirty(); };
   const analyticsDisabled = replayActive || comparisonSettings.active || !chartReady;
   const multiTimeframeTargetOptions = timeframes.filter((candidate) => intervalFor(candidate) > intervalFor(activePanel.timeframe));
   const activeMultiTimeframeIndicator = activeSnapshot.multiTimeframeIndicators[0];
@@ -1345,7 +1594,7 @@ export default function MultiChartStudioClient() {
     const range = { ...current, [field]: time };
     try { api.setRange(range); activeHandle?.refresh(); } catch (error) { setNotice(`Could not set Volume Profile range: ${error instanceof Error ? error.message : String(error)}`); }
   };
-  const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { const period = indicatorPeriodOverride.trim() === "" ? undefined : Number(indicatorPeriodOverride); const constant = indicatorConstant.trim() === "" ? undefined : Number(indicatorConstant); const multiplier = indicatorMultiplier.trim() === "" ? undefined : Number(indicatorMultiplier); target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd, { period, constant, multiplier }) }); activeHandle?.refresh(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
+  const addIndicator = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; try { const period = indicatorPeriodOverride.trim() === "" ? undefined : Number(indicatorPeriodOverride); const constant = indicatorConstant.trim() === "" ? undefined : Number(indicatorConstant); const multiplier = indicatorMultiplier.trim() === "" ? undefined : Number(indicatorMultiplier); target.addIndicator(indicatorToAdd, { id: `studio-${indicatorToAdd.toLowerCase()}-${serialRef.current++}`, pane: ["SMA", "EMA", "BOLLINGER_BANDS", "VWAP", "DONCHIAN_CHANNELS", "KELTNER_CHANNELS"].includes(indicatorToAdd) ? "main" : "new", parameters: indicatorParameters(indicatorToAdd, { period, constant, multiplier }) }); activeHandle?.refresh(); markLiveDirty(); setNotice(`Added ${indicatorToAdd} to ${activePanel.panelId}.`); } catch (error) { setNotice(`Could not add indicator: ${error instanceof Error ? error.message : String(error)}`); } };
   const toggleMultiTimeframeIndicator = (): void => {
     const target = activeHandle?.getChart();
     if (target === null || target === undefined || analyticsDisabled) return;
@@ -1499,7 +1748,7 @@ export default function MultiChartStudioClient() {
       setNotice(`Added previous session levels to ${activePanel.panelId}.`);
     } catch (error) { setNotice(`Could not add session levels: ${error instanceof Error ? error.message : String(error)}`); }
   };
-  const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
+  const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); markLiveDirty(); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
   const selectedDrawing = activeSnapshot.drawings.find((drawing) => drawing.id === activeSnapshot.selectedDrawingId) ?? null;
   const chartForPanel = (panelId: string): Chart | null => panelRefs.current.get(panelId)?.getChart() ?? null;
   const applyDrawingStyle = (targetPanelId: string, drawingId: string, patch: DrawingStyle): void => {
@@ -1526,6 +1775,7 @@ export default function MultiChartStudioClient() {
       return;
     }
     panelRefs.current.get(targetPanelId)?.refresh();
+    markLiveDirty();
     setNotice(`Updated ${drawingId} on ${targetPanelId}.`);
   };
   const clearActiveDrawingSelection = (targetPanelId: string): void => {
@@ -1712,22 +1962,40 @@ export default function MultiChartStudioClient() {
             value,
             allocateStudioWorkspaceImportId(all.map((item) => item.id)),
           );
-          all = [...all, named];
-          if (!persist(named, all)) {
-            throw new Error("Import validated but browser storage could not be updated. The current workspace was not changed.");
-          }
-          setWorkspaceId(named.id);
-          setWorkspaceName(named.name);
-          setWorkspaceEntries(all.map((item) => ({ id: item.id, name: item.name })));
-          applyDocument(named);
-          setNotice(`Imported “${named.name}” with ${named.charts.length} panel${named.charts.length === 1 ? "" : "s"} into local storage without overwriting existing workspaces.`);
+          const commitImport = (): void => {
+            const storageRawNow = window.localStorage.getItem(WORKSPACES_KEY);
+            let nextAll: StudioWorkspaceDocument[] = [];
+            if (storageRawNow !== null) {
+              try { nextAll = [...parseStudioWorkspaceCollection(JSON.parse(storageRawNow)).workspaces]; }
+              catch { nextAll = []; }
+            }
+            if (nextAll.some((item) => item.id === named.id)) {
+              throw new Error("Import aborted: the allocated workspace id collided before commit. The current workspace was not changed.");
+            }
+            nextAll = [...nextAll, named];
+            if (!persist(named, nextAll)) {
+              throw new Error("Import validated but browser storage could not be updated. The current workspace was not changed.");
+            }
+            setWorkspaceEntries(nextAll.map((item) => ({ id: item.id, name: item.name })));
+            applyDocument(named);
+            setNotice(`Imported “${named.name}” with ${named.charts.length} panel${named.charts.length === 1 ? "" : "s"} into local storage without overwriting existing workspaces.`);
+          };
+          // Close the naming prompt first, then optionally open the navigation guard.
+          queueMicrotask(() => {
+            requestDestructiveNavigation({
+              title: "Replace workspace with import?",
+              message: `Importing “${named.name}” replaces the current live workspace. Save your unsaved work first, discard it, or cancel to keep the current desk. The import is not written until you continue.`,
+              proceed: commitImport,
+              trigger,
+            });
+          });
         }, trigger);
       } catch (error) {
         setNotice(describeStudioWorkspaceImportError(error));
       }
     }, () => setNotice("Import rejected: the file could not be read. The current workspace was not changed."));
   };
-  const newWorkspace = (): void => {
+  const newWorkspaceNow = (): void => {
     const panelId = `chart-${serialRef.current++}`;
     archivedPanelsRef.current.clear();
     pendingRestoreRef.current = null;
@@ -1744,9 +2012,48 @@ export default function MultiChartStudioClient() {
     setWorkspaceId(`${DEFAULT_WORKSPACE_ID}-${Date.now()}`);
     setWorkspaceName("New workspace");
     setWatchlistModel(new WatchlistModel(defaultWatchlists(), (prefix) => `${prefix}-studio-${serialRef.current++}`));
+    clearPersistedBaseline();
+    setPristineUnsaved(true);
+    setSessionOriginFingerprint(null);
+    setLiveFingerprint(null);
     setNotice("New empty Studio workspace started.");
+    queueMicrotask(() => {
+      const fingerprint = refreshLiveFingerprint();
+      markUnsavedSessionOrigin(fingerprint);
+    });
   };
-  const loadWorkspace = (id: string): void => { const raw = window.localStorage.getItem(WORKSPACES_KEY); if (raw === null) return; try { const stored = parseStudioWorkspaceCollection(JSON.parse(raw)); const document = stored.workspaces.find((item) => item.id === id); if (document !== undefined) applyDocument(document); } catch { setNotice("Saved workspace collection is invalid; nothing was changed."); } };
+  const newWorkspace = (trigger?: HTMLElement | null): void => {
+    requestDestructiveNavigation({
+      title: "Start a new workspace?",
+      message: `“${workspaceName}” has unsaved content. Save and continue, discard changes and continue, or cancel to keep the current desk.`,
+      proceed: newWorkspaceNow,
+      trigger,
+    });
+  };
+  const loadWorkspaceNow = (id: string): void => {
+    const raw = window.localStorage.getItem(WORKSPACES_KEY);
+    if (raw === null) return;
+    try {
+      const stored = parseStudioWorkspaceCollection(JSON.parse(raw));
+      const document = stored.workspaces.find((item) => item.id === id);
+      if (document !== undefined) applyDocument(document);
+    } catch {
+      setNotice("Saved workspace collection is invalid; nothing was changed.");
+    }
+  };
+  const loadWorkspace = (id: string, trigger?: HTMLElement | null): void => {
+    if (id === workspaceId && libraryBackingId === id && !studioWorkspaceNeedsNavigationGuard(currentSaveStatus, { pristineUnsavedWorkspace })) {
+      loadWorkspaceNow(id);
+      return;
+    }
+    const destination = workspaceEntries.find((entry) => entry.id === id)?.name ?? id;
+    requestDestructiveNavigation({
+      title: "Load another workspace?",
+      message: `Loading “${destination}” replaces the current live workspace “${workspaceName}”. Save and continue, discard changes and continue, or cancel to keep your unsaved work.`,
+      proceed: () => loadWorkspaceNow(id),
+      trigger,
+    });
+  };
   const renameWorkspace = (trigger?: HTMLElement | null): void => {
     const targetId = workspaceId;
     const currentLabel = workspaceName;
@@ -1793,6 +2100,9 @@ export default function MultiChartStudioClient() {
         setWorkspaceEntries([]);
         if (result.detachLiveWorkspace) {
           setWorkspaceId(allocateStudioWorkspaceId([], "workspace"));
+          clearPersistedBaseline();
+          setSessionOriginFingerprint(null);
+          queueMicrotask(() => { markUnsavedSessionOrigin(refreshLiveFingerprint()); });
         }
         setNotice(`Deleted saved workspace “${targetName}”. Live charts remain open as an unsaved desk.`);
         return;
@@ -1806,6 +2116,9 @@ export default function MultiChartStudioClient() {
       setWorkspaceEntries(result.collection.workspaces.map((item) => ({ id: item.id, name: item.name })));
       if (result.detachLiveWorkspace) {
         setWorkspaceId(allocateStudioWorkspaceId(result.collection.workspaces.map((item) => item.id), "workspace"));
+        clearPersistedBaseline();
+        setSessionOriginFingerprint(null);
+        queueMicrotask(() => { markUnsavedSessionOrigin(refreshLiveFingerprint()); });
         setNotice(`Deleted saved workspace “${targetName}”. Live charts remain open as an unsaved desk; no other workspace was loaded.`);
       } else {
         setNotice(`Deleted saved workspace “${targetName}” from this browser.`);
@@ -1926,7 +2239,7 @@ export default function MultiChartStudioClient() {
       <label>Active chart<select aria-label="Active chart panel" value={activePanelId} onChange={(event) => setActivePanelId(event.target.value)}>{panels.map((panel) => <option key={panel.panelId} value={panel.panelId}>{panel.panelId} · {panel.symbol}</option>)}</select></label>
       <label>Active symbol<select aria-label="Active symbol" value={activePanel.symbol} disabled={replayActive} onChange={(event) => changeActiveSymbol(event.target.value)}>{symbols.map((symbol) => <option key={symbol}>{symbol}</option>)}</select></label>
       <label>Timeframe<select aria-label="Active timeframe" value={activePanel.timeframe} disabled={replayActive} onChange={(event) => changeActiveTimeframe(event.target.value as Timeframe)}>{timeframes.map((timeframe) => <option key={timeframe}>{timeframe}</option>)}</select></label>
-      <div className={styles.topActions}><button type="button" onClick={newWorkspace}>New</button><button type="button" onClick={() => saveWorkspace(false)} disabled={replayActive}>Save</button><button type="button" onClick={() => saveWorkspace(true)} disabled={replayActive}>Save As</button><button type="button" onClick={(event) => renameWorkspace(event.currentTarget)} disabled={replayActive}>Rename</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={(event) => deleteWorkspace(event.currentTarget)}>Delete</button><button type="button" onClick={() => loadWorkspace(workspaceId)}>Load</button><select aria-label="Workspace" value={workspaceEntries.some((entry) => entry.id === workspaceId) ? workspaceId : ""} onChange={(event) => { if (event.target.value !== "") loadWorkspace(event.target.value); }}>{workspaceEntries.some((entry) => entry.id === workspaceId) ? null : <option value="" disabled>{workspaceEntries.length === 0 ? "No saved workspaces" : "Unsaved desk"}</option>}{workspaceEntries.map((entry) => <option key={entry.id} value={entry.id}>{entry.id === workspaceId ? studioWorkspaceSelectorLabel({ id: entry.id, name: workspaceName }, workspaceEntries.map((candidate) => candidate.id === workspaceId ? { id: workspaceId, name: workspaceName } : candidate)) : studioWorkspaceSelectorLabel(entry, workspaceEntries)}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><button type="button" aria-label="Export workspace" onClick={() => { try { const named = normalizeStudioWorkspaceName(workspaceName); const document = collectDocument(workspaceId, named); const file = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `openkline-${named.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); setNotice(`Exported “${named}” (${document.charts.length} panel${document.charts.length === 1 ? "" : "s"}).`); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }}>Export</button><button type="button" aria-label="Import workspace" onClick={(event) => { dialogTriggerRef.current = event.currentTarget; importInputRef.current?.click(); }}>Import</button><input ref={importInputRef} type="file" accept="application/json,.json" hidden aria-label="Workspace import file" onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file, dialogTriggerRef.current); event.currentTarget.value = ""; }} /></div>
+      <div className={styles.topActions}><button type="button" onClick={(event) => newWorkspace(event.currentTarget)}>New</button><button type="button" onClick={() => { void saveWorkspace(false); }} disabled={replayActive}>Save</button><button type="button" onClick={() => { void saveWorkspace(true); }} disabled={replayActive}>Save As</button><button type="button" onClick={(event) => renameWorkspace(event.currentTarget)} disabled={replayActive}>Rename</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={(event) => deleteWorkspace(event.currentTarget)}>Delete</button><button type="button" onClick={(event) => loadWorkspace(workspaceId, event.currentTarget)}>Load</button><select aria-label="Workspace" value={workspaceEntries.some((entry) => entry.id === workspaceId) ? workspaceId : ""} onChange={(event) => { if (event.target.value !== "") loadWorkspace(event.target.value, event.currentTarget); }}>{workspaceEntries.some((entry) => entry.id === workspaceId) ? null : <option value="" disabled>{workspaceEntries.length === 0 ? "No saved workspaces" : "Unsaved desk"}</option>}{workspaceEntries.map((entry) => <option key={entry.id} value={entry.id}>{entry.id === workspaceId ? studioWorkspaceSelectorLabel({ id: entry.id, name: workspaceName }, workspaceEntries.map((candidate) => candidate.id === workspaceId ? { id: workspaceId, name: workspaceName } : candidate)) : studioWorkspaceSelectorLabel(entry, workspaceEntries)}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><output aria-label="Workspace save status" data-workspace-save-status={currentSaveStatus} data-workspace-library-id={libraryBackingId ?? ""} data-workspace-save-failed={saveFailed ? "true" : "false"}>{describeStudioWorkspaceSaveStatus(currentSaveStatus, workspaceName)}</output><button type="button" aria-label="Export workspace" onClick={() => { try { const named = normalizeStudioWorkspaceName(workspaceName); const document = collectDocument(workspaceId, named); const file = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `openkline-${named.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); setNotice(`Exported “${named}” (${document.charts.length} panel${document.charts.length === 1 ? "" : "s"}).`); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }}>Export</button><button type="button" aria-label="Import workspace" onClick={(event) => { dialogTriggerRef.current = event.currentTarget; importInputRef.current?.click(); }}>Import</button><input ref={importInputRef} type="file" accept="application/json,.json" hidden aria-label="Workspace import file" onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file, dialogTriggerRef.current); event.currentTarget.value = ""; }} /></div>
     </header>
     <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
     <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button><button type="button" onClick={advanceComparisonStream} disabled={replayActive}>Advance demo stream</button><button type="button" onClick={disconnectComparisonStream} disabled={replayActive}>Simulate disconnect</button><button type="button" onClick={reconnectComparisonStream} disabled={replayActive}>Reconnect and recover</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>
@@ -1934,11 +2247,11 @@ export default function MultiChartStudioClient() {
     {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
     <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer"><div className={styles.panelHeading}><h2>Indicator Explorer</h2><span>{filteredIndicatorCatalog.length} definitions</span></div><div className={styles.indicatorExplorerFilters}><label>Search<input aria-label="Library search" placeholder="Search indicators" value={indicatorSearch} onChange={(event) => setIndicatorSearch(event.target.value)} /></label><label>Category<select aria-label="Category filter" value={indicatorCategory} onChange={(event) => setIndicatorCategory(event.target.value)}>{indicatorCategories.map((category) => <option key={category} value={category}>{category === "all" ? "All categories" : category}</option>)}</select></label><label className={styles.check}><input aria-label="Favorites only" type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} />Favorites only</label></div><div className={styles.indicatorExplorerItems}>{filteredIndicatorCatalog.map((item) => <button type="button" key={item.id} aria-pressed={indicatorToAdd === item.id} onClick={() => setIndicatorToAdd(item.id)}>{favoriteIndicatorIds.includes(item.id) ? "★" : "☆"} {item.label}<small>{item.category}</small></button>)}</div><div className={styles.indicatorParameters}><strong>{indicatorToAdd} parameters</strong>{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "period") ? <label>Period<input aria-label="Period override" type="number" min="1" value={indicatorPeriodOverride} placeholder="definition default" disabled={replayActive} onChange={(event) => setIndicatorPeriodOverride(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "constant") ? <label>CCI constant<input aria-label="CCI constant" type="number" min="0" step="0.001" value={indicatorConstant} disabled={replayActive} onChange={(event) => setIndicatorConstant(event.target.value)} /></label> : null}{selectedIndicatorMetadata.parameters.some((parameter) => parameter.name === "multiplier") ? <label>Channel multiplier<input aria-label="Channel multiplier" type="number" min="0" step="0.1" value={indicatorMultiplier} disabled={replayActive} onChange={(event) => setIndicatorMultiplier(event.target.value)} /></label> : null}<button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button></div></section>
     <section className={styles.workspace}>
-      <aside className={styles.objectTree} aria-label="Object tree" data-object-tree-ready={activeHandle === null ? "false" : "true"} data-object-tree-panel-id={activePanel.panelId}><h2>Objects</h2><p className={styles.objectTreePanel}>Active panel · {activePanel.panelId}</p><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id} data-drawing-id={drawing.id} data-drawing-selected={drawing.id === activeSnapshot.selectedDrawingId ? "true" : "false"} data-drawing-visible={drawing.style.visible === false ? "false" : "true"} data-drawing-locked={drawing.style.locked === true ? "true" : "false"}><button type="button" className={styles.objectName} aria-current={drawing.id === activeSnapshot.selectedDrawingId ? "true" : undefined} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details><section className={styles.drawingProperties} aria-label="Drawing properties" data-drawing-properties-ready={selectedDrawing === null ? "false" : "true"} data-selected-drawing-id={selectedDrawing?.id ?? ""} data-drawing-owner-panel={activePanel.panelId}><h3>Drawing properties</h3>{selectedDrawing === null ? <p>Select a drawing on {activePanel.panelId} in the Object Tree or on that chart to edit color, width, visibility, and lock. Drawings stay panel-local; chart sync does not share drawing objects.</p> : <><p><strong>{selectedDrawing.type}</strong> · {selectedDrawing.id}<small> · {activePanel.panelId}</small></p><label>Color<input aria-label="Drawing color" type="color" value={toStudioColorInput(selectedDrawing.style.color)} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { color: event.target.value })} /></label><label>Width<input aria-label="Drawing line width" type="number" min={1} max={8} value={selectedDrawing.style.lineWidth ?? 2} disabled={replayActive} onChange={(event) => { const width = Number(event.target.value); if (!Number.isFinite(width) || width < 1 || width > 8) return; applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { lineWidth: Math.round(width) }); }} /></label><label className={styles.check}><input aria-label="Drawing visible" type="checkbox" checked={selectedDrawing.style.visible !== false} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { visible: event.target.checked })} />Visible</label><label className={styles.check}><input aria-label="Drawing locked" type="checkbox" checked={selectedDrawing.style.locked === true} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { locked: event.target.checked })} />Locked</label><button type="button" aria-label={`Clear selection for ${selectedDrawing.id}`} disabled={replayActive} onClick={() => clearActiveDrawingSelection(activePanel.panelId)}>Clear selection</button></>}</section></aside>
+      <aside className={styles.objectTree} aria-label="Object tree" data-object-tree-ready={activeHandle === null ? "false" : "true"} data-object-tree-panel-id={activePanel.panelId}><h2>Objects</h2><p className={styles.objectTreePanel}>Active panel · {activePanel.panelId}</p><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id} data-drawing-id={drawing.id} data-drawing-selected={drawing.id === activeSnapshot.selectedDrawingId ? "true" : "false"} data-drawing-visible={drawing.style.visible === false ? "false" : "true"} data-drawing-locked={drawing.style.locked === true ? "true" : "false"}><button type="button" className={styles.objectName} aria-current={drawing.id === activeSnapshot.selectedDrawingId ? "true" : undefined} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details><section className={styles.drawingProperties} aria-label="Drawing properties" data-drawing-properties-ready={selectedDrawing === null ? "false" : "true"} data-selected-drawing-id={selectedDrawing?.id ?? ""} data-drawing-owner-panel={activePanel.panelId}><h3>Drawing properties</h3>{selectedDrawing === null ? <p>Select a drawing on {activePanel.panelId} in the Object Tree or on that chart to edit color, width, visibility, and lock. Drawings stay panel-local; chart sync does not share drawing objects.</p> : <><p><strong>{selectedDrawing.type}</strong> · {selectedDrawing.id}<small> · {activePanel.panelId}</small></p><label>Color<input aria-label="Drawing color" type="color" value={toStudioColorInput(selectedDrawing.style.color)} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { color: event.target.value })} /></label><label>Width<input aria-label="Drawing line width" type="number" min={1} max={8} value={selectedDrawing.style.lineWidth ?? 2} disabled={replayActive} onChange={(event) => { const width = Number(event.target.value); if (!Number.isFinite(width) || width < 1 || width > 8) return; applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { lineWidth: Math.round(width) }); }} /></label><label className={styles.check}><input aria-label="Drawing visible" type="checkbox" checked={selectedDrawing.style.visible !== false} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { visible: event.target.checked })} />Visible</label><label className={styles.check}><input aria-label="Drawing locked" type="checkbox" checked={selectedDrawing.style.locked === true} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { locked: event.target.checked })} />Locked</label><button type="button" aria-label={`Clear selection for ${selectedDrawing.id}`} disabled={replayActive} onClick={() => clearActiveDrawingSelection(activePanel.panelId)}>Clear selection</button></>}</section></aside>
       <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={(event) => showPrompt("Rename watchlist", "Choose a name for this watchlist.", selectedList.name, (name) => { watchlistModel.rename(selectedList.id, name); }, event.currentTarget)}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={(event) => showConfirm(`Delete watchlist “${selectedList.name}”?`, "The list and its symbols will be removed from this browser.", () => watchlistModel.delete(selectedList.id), event.currentTarget)}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
       <aside className={`${styles.sidebar} ${styles.watchlistSidebar}`} aria-label="Watchlists"><div className={styles.panelHeading}><h2>Watchlists</h2><button type="button" onClick={createWatchlist}>New</button></div><label>List<select aria-label="Watchlist" value={watchlists.selectedWatchlistId ?? ""} onChange={(event) => watchlistModel.select(event.target.value)}>{watchlists.lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label><input aria-label="Search watchlist" placeholder="Search symbols" value={watchlistSearch} onChange={(event) => setWatchlistSearch(event.target.value)} /><button type="button" onClick={addWatchlistSymbol}>Add sample symbol</button><ul className={styles.watchlistRows}>{filteredSymbols.map((symbol) => { const quote = quotes[symbol.id]; return <li key={symbol.id} className={symbol.displaySymbol === activePanel.symbol ? styles.watchlistActive : ""}><button type="button" onClick={() => selectedSymbol(symbol.id)}>{symbol.favorite ? "★" : "☆"} {symbol.displaySymbol}<small>{symbol.name}</small></button><span className={quote?.status === "ready" ? "" : styles.quoteStale}>{quote?.last?.toFixed(2) ?? "—"}<small>{quote === undefined ? "Loading" : quote.demo ? "Demo" : quote.status}</small></span><button type="button" aria-label={`Remove ${symbol.displaySymbol}`} onClick={() => watchlistModel.removeSymbol(selectedList!.id, symbol.id)}>×</button></li>; })}</ul><small>Quotes are deterministic demo data, not exchange prices.</small></aside>
       <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={onChartReady} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} comparison={panel.panelId === activePanelId ? comparisonPanel : null} />)}</div><div className={styles.status} aria-live="polite" data-workspace-restore-name={restoreSummary?.name ?? ""} data-workspace-restore-panels={restoreSummary?.panelCount ?? ""} data-workspace-restore-panel-ids={(restoreSummary?.panelIds ?? []).join(",")}><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
-      <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => setSync((current) => ({ ...current, crosshair: event.target.checked }))} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => setSync((current) => ({ ...current, visibleRange: event.target.checked }))} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => setSync((current) => ({ ...current, symbol: event.target.checked }))} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => setSync((current) => ({ ...current, timeframe: event.target.checked }))} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { activeHandle?.getChart()?.removeIndicator(indicator.id); activeHandle?.refresh(); }}>×</button></li>)}</ul></details><details open data-alert-input-value={alertNameInputRef.current?.value ?? alertName} data-alert-last-created-name={lastAlertDiagnostic?.createdName ?? ""} data-alert-last-outcome={lastAlertDiagnostic?.outcome ?? ""}><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input ref={alertNameInputRef} aria-label="Alert name" defaultValue={alertName} disabled={replayActive} onInput={(event) => setAlertName(event.currentTarget.value)} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
+      <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => { setSync((current) => ({ ...current, crosshair: event.target.checked })); markLiveDirty(); }} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => { setSync((current) => ({ ...current, visibleRange: event.target.checked })); markLiveDirty(); }} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => { setSync((current) => ({ ...current, symbol: event.target.checked })); markLiveDirty(); }} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => { setSync((current) => ({ ...current, timeframe: event.target.checked })); markLiveDirty(); }} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value as typeof indicatorToAdd)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={addIndicator}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => { activeHandle?.getChart()?.removeIndicator(indicator.id); activeHandle?.refresh(); }}>×</button></li>)}</ul></details><details open data-alert-input-value={alertNameInputRef.current?.value ?? alertName} data-alert-last-created-name={lastAlertDiagnostic?.createdName ?? ""} data-alert-last-outcome={lastAlertDiagnostic?.outcome ?? ""}><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input ref={alertNameInputRef} aria-label="Alert name" defaultValue={alertName} disabled={replayActive} onInput={(event) => setAlertName(event.currentTarget.value)} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); markLiveDirty(); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); markLiveDirty(); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
     </section>
     <ScreenerPanel watchlists={watchlists} onOpenChart={openScreenerChart} onFavorite={favoriteScreenerSymbol} onSelectWatchlist={(id) => { try { watchlistModel.select(id); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }} onNotice={setNotice} />
     <StrategyOptimizer key={`optimizer-${strategyScopeKey}`} panelId={activePanel.panelId} symbol={activePanel.symbol} timeframe={activePanel.timeframe} chart={activeHandle?.getChart() ?? null} onApplyParameters={applyStrategyParameters} onNotice={setNotice} />
@@ -1947,7 +2260,7 @@ export default function MultiChartStudioClient() {
     <CorporateActionsPanel chart={activeHandle?.getChart() ?? null} symbol={activePanel.symbol} timeframe={activePanel.timeframe} replayActive={replayActive} onNotice={setNotice} />
     <PortfolioBacktestingPanel initialConfiguration={portfolioConfiguration} onConfigurationChange={setPortfolioConfiguration} onNotice={setNotice} />
     <MarketReplayLab />
-    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation" data-studio-dialog-open="true" data-studio-dialog-kind={dialog.kind}><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby={dialogError === null ? "studio-dialog-message" : "studio-dialog-message studio-dialog-error"} data-studio-dialog-title={dialog.title}><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" aria-invalid={dialogError !== null ? "true" : undefined} value={dialogValue} onChange={(event) => { setDialogValue(event.target.value); if (dialogError !== null) setDialogError(null); }} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}{dialogError === null ? null : <p id="studio-dialog-error" className={styles.strategyError} role="alert">{dialogError}</p>}<div className={styles.dialogActions}><button type="button" onClick={() => { setDialog(null); setDialogError(null); }}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></div></section></div>}
+    {dialog === null ? null : <div className={styles.dialogBackdrop} role="presentation" data-studio-dialog-open="true" data-studio-dialog-kind={dialog.kind}><section ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" aria-describedby={dialogError === null ? "studio-dialog-message" : "studio-dialog-message studio-dialog-error"} data-studio-dialog-title={dialog.title}><h2 id="studio-dialog-title">{dialog.title}</h2><p id="studio-dialog-message">{dialog.message}</p>{dialog.kind === "prompt" ? <label>Value<input autoFocus aria-label="Dialog value" aria-invalid={dialogError !== null ? "true" : undefined} value={dialogValue} onChange={(event) => { setDialogValue(event.target.value); if (dialogError !== null) setDialogError(null); }} onKeyDown={(event) => { if (event.key === "Enter") dialog.onSubmit(dialogValue); }} /></label> : null}{dialogError === null ? null : <p id="studio-dialog-error" className={styles.strategyError} role="alert">{dialogError}</p>}<div className={styles.dialogActions}>{dialog.kind === "navigate" ? <><button type="button" data-studio-navigate-action="cancel" onClick={() => { clearPendingNavigation(); setDialog(null); setDialogError(null); }}>Cancel</button><button type="button" data-studio-navigate-action="discard" onClick={() => dialog.onDiscardContinue?.()}>Discard Changes and Continue</button><button type="button" data-studio-navigate-action="save" onClick={() => dialog.onSaveContinue?.()}>Save and Continue</button></> : <><button type="button" onClick={() => { clearPendingNavigation(); setDialog(null); setDialogError(null); }}>Cancel</button><button type="button" autoFocus={dialog.kind === "confirm"} onClick={() => dialog.onSubmit(dialogValue)}>{dialog.kind === "prompt" ? "Apply" : "Confirm"}</button></>}</div></section></div>}
   </main>;
 }
 

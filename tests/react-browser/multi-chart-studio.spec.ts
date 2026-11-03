@@ -1019,3 +1019,107 @@ test("Studio workspace library rename and delete preserve multi-panel content an
 
   expect(errors).toEqual([]);
 });
+
+test("Studio dirty-state protects Load and New with Save, Discard, and Cancel", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  let primaryId = "";
+  let secondaryId = "";
+
+  await test.step("save two workspaces and confirm clean status", async () => {
+    await page.getByLabel("Workspace name").fill("Dirty Primary");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await properties.getByLabel("Drawing color").fill("#ef4444");
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    primaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace name").fill("Dirty Secondary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    secondaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(secondaryId).not.toBe(primaryId);
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+  });
+
+  await test.step("drawing edit marks unsaved changes and Cancel preserves them", async () => {
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await properties.getByLabel("Drawing color").fill("#a855f7");
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    const guard = page.getByRole("dialog", { name: "Load another workspace?" });
+    await expect(guard).toBeVisible();
+    await guard.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(guard).toHaveCount(0);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#a855f7");
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  });
+
+  await test.step("Save and Continue persists edits then loads the destination", async () => {
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    const guard = page.getByRole("dialog", { name: "Load another workspace?" });
+    await expect(guard).toBeVisible();
+    await guard.getByRole("button", { name: "Save and Continue", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#a855f7");
+  });
+
+  await test.step("Discard and Continue starts New without rewriting the saved record", async () => {
+    await properties.getByLabel("Drawing color").fill("#14b8a6");
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    const before = await page.evaluate((id) => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string; charts: Array<{ workspace: { drawings: { drawings: Array<{ style: { color: string } }> } } }> }>;
+      };
+      const target = collection.workspaces.find((workspace) => workspace.id === id);
+      return target?.charts[0]?.workspace.drawings.drawings[0]?.style.color ?? null;
+    }, primaryId);
+    expect(before).toBe("#a855f7");
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    const guard = page.getByRole("dialog", { name: "Start a new workspace?" });
+    await expect(guard).toBeVisible();
+    await guard.getByRole("button", { name: "Discard Changes and Continue", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-workspace");
+
+    const after = await page.evaluate((id) => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{ id: string; charts: Array<{ workspace: { drawings: { drawings: Array<{ style: { color: string } }> } } }> }>;
+      };
+      const target = collection.workspaces.find((workspace) => workspace.id === id);
+      return target?.charts[0]?.workspace.drawings.drawings[0]?.style.color ?? null;
+    }, primaryId);
+    expect(after).toBe("#a855f7");
+  });
+
+  expect(errors).toEqual([]);
+});
