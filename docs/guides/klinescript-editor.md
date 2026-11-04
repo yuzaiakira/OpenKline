@@ -50,9 +50,14 @@ attempt to transfer or persist executable program closures.
 The private Next.js Studio includes a dependency-free editor surface built for
 the current restricted grammar. It provides syntax highlighting, line numbers,
 precise compiler diagnostics, implemented-language autocomplete, starter
-templates, browser-local script save/delete, Worker runtime status, and an
-AbortController-backed Cancel action. It intentionally does not add Monaco or
-CodeMirror: neither dependency is present in the repository, and the current
-surface keeps the Next.js client bundle and SSR boundary small. A future editor
-replacement can adopt a maintained package after measuring bundle and SSR
-impact without changing the compiler contract.
+templates, browser-local script save/delete, explicit Compile with generation
+gating, Worker runtime status, AbortController-backed Cancel, and an applied
+script list for the active panel. Studio helpers in `openkline` keep user
+scripts out of the built-in Indicator Explorer registry while wiring apply to
+`Chart.addScriptIndicatorAsync` with active-panel stale-completion protection.
+It intentionally does not add Monaco or CodeMirror: neither dependency is
+present in the repository, and the current surface keeps the Next.js client
+bundle and SSR boundary small. A future editor replacement can adopt a
+maintained package after measuring bundle and SSR impact without changing the
+compiler contract. See
+`docs/reports/phase-16-5-9-klinescript-studio-integration.md`.

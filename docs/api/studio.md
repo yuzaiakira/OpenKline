@@ -149,6 +149,23 @@ built-in ids (no invented definitions). The reference Studio Explorer:
 - Keeps KlineScript on the existing Worker `addScriptIndicatorAsync` path
   rather than promoting scripts into the built-in catalog.
 
+## KlineScript Studio helpers
+
+Helpers `buildStudioUserScriptCatalog`, `filterStudioUserScriptCatalog`,
+`compileStudioKlineScript`, `gateStudioKlineScriptCompile`,
+`resolveStudioScriptApplyTarget`, `applyStudioKlineScriptIndicator`,
+`partitionStudioAppliedIndicators`, `STUDIO_KLINESCRIPT_TEMPLATES`, and related
+identity allocators support the reference Studio custom-indicator workflow:
+
+- User scripts are catalogued separately from built-in Indicator Explorer entries.
+- Compile gates stamp a generation token so stale editor responses are ignored.
+- Apply resolves the active panel, uses Worker-backed `addScriptIndicatorAsync`,
+  and rejects/removes stale completions after panel switches.
+- Applied script instances are distinguishable from built-ins for remove/UI.
+- Apply/remove mark the workspace dirty; Compile-only and local library save do not.
+- Workspace restore continues to recompile embedded `script.source` through Chart
+  (DSL-restricted; not an OS sandbox). Public Widget API remains unauthorized.
+
 ## Multi-timeframe workflows
 
 The reference Studio uses each panel's own public `Chart` instance. Its

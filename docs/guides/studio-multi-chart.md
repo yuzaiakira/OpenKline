@@ -29,9 +29,13 @@ inspection do not dirty the workspace; add/remove/parameter mutations do and
 participate in the Save / Discard / Cancel navigation guard. The chart still
 owns parameter validation, pane assignment, output styles, and lifecycle
 cleanup. KlineScript programs remain a separate Worker path and are not listed
-as built-in catalog entries. The toolbar exposes the built-in analysis
-drawings, including channels, Fibonacci extension, ranges, and long/short
-risk-reward annotations.
+as built-in catalog entries. The Explorer **My Scripts** section searches
+templates and browser-local saved scripts, opens the KlineScript editor, and
+can apply a listed script to the active panel through
+`addScriptIndicatorAsync`. Applied script rows are tagged separately from
+built-ins; Compile-only does not dirty the desk, while Worker apply and remove
+do. The toolbar exposes the built-in analysis drawings, including channels,
+Fibonacci extension, ranges, and long/short risk-reward annotations.
 
 The Professional Drawing Toolbar groups those built-in tools, shows the active
 tool through `aria-pressed` (synced from Chart `toolActivation`), provides

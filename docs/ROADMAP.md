@@ -1039,8 +1039,9 @@ Studio compatibility gates remain open**.
   multi-chart performance/lifecycle baselines (16.5.3), Studio restore heap
   retainer characterization (16.5.4), workspace library rename/delete
   management (16.5.5), dirty-state / safe navigation (16.5.6), Indicator
-  Explorer active-panel workflow integration (16.5.7), and Professional
-  Drawing Toolbar interaction workflow (16.5.8) are delivered in the reference
+  Explorer active-panel workflow integration (16.5.7), Professional
+  Drawing Toolbar interaction workflow (16.5.8), and KlineScript Studio
+  custom-indicator management (16.5.9) are delivered in the reference
   Studio. Managed Firefox/WebKit lifecycle parity remains open. The object
   tree, visible-OHLC snapping, source-tagged sync controller, and in-page
   dialogs were already implemented. No Phase 7.5 acceptance claim is made
@@ -1053,8 +1054,9 @@ Studio compatibility gates remain open**.
   `docs/reports/phase-16-5-4-studio-restore-heap-retainers.md`,
   `docs/reports/phase-16-5-5-studio-workspace-library-management.md`,
   `docs/reports/phase-16-5-6-studio-dirty-state-safe-navigation.md`,
-  `docs/reports/phase-16-5-7-studio-indicator-explorer.md`, and
-  `docs/reports/phase-16-5-8-professional-drawing-toolbar.md`.
+  `docs/reports/phase-16-5-7-studio-indicator-explorer.md`,
+  `docs/reports/phase-16-5-8-professional-drawing-toolbar.md`, and
+  `docs/reports/phase-16-5-9-klinescript-studio-integration.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They
