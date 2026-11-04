@@ -1511,3 +1511,101 @@ test("Studio KlineScript compiles, applies via Worker, dirty-tracks, and restore
 
   expect(errors).toEqual([]);
 });
+
+test("Studio Applied Script Inspector reapplies parameters and preserves failed revisions", async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const saveStatus = page.getByLabel("Workspace save status");
+
+  await page.getByLabel("Workspace name").fill("Script Inspector Desk");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+  await expect(page.getByText(/saved locally/)).toBeVisible();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+  await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+  const editor = page.getByRole("region", { name: "KlineScript editor" });
+  await editor.getByLabel("KlineScript template").selectOption({ label: "EMA overlay" });
+  await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+  await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+  await explorer.locator('[data-applied-indicator-kind="klinescript"] button').first().click();
+  const inspector = page.getByRole("region", { name: "Applied Script Inspector" });
+  await expect(inspector).toBeVisible();
+  await expect(inspector.getByText("Studio EMA", { exact: true })).toBeVisible();
+  await inspector.getByLabel("Script parameter Period").fill("34");
+  await inspector.getByRole("button", { name: /Reapply to chart-/ }).click();
+  await expect(page.getByText(/Reapplied Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+  await expect(inspector).toHaveAttribute("data-script-inspector-instance", /studio-script-/);
+
+  await editor.getByLabel("KlineScript source").fill('indicator("Broken")\nplot(eval(close))');
+  await inspector.getByRole("button", { name: /Reapply to chart-/ }).click();
+  await expect(page.getByText(/Reapply failed|compile-failed|eval|unknown|not valid/i).first()).toBeVisible();
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  expect(errors).toEqual([]);
+});
+
+test("Studio import quarantines embedded KlineScript until explicit activation", async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  let exportPath = "";
+
+  await test.step("author a workspace with an applied script and export it", async () => {
+    await page.getByLabel("Workspace name").fill("Script Export Desk");
+    await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+    const editor = page.getByRole("region", { name: "KlineScript editor" });
+    await editor.getByLabel("KlineScript source").fill('indicator("Imported Close")\nplot(close, title="Close", color="#fbbf24")');
+    await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+    await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export workspace", exact: true }).click();
+    const download = await downloadPromise;
+    exportPath = (await download.path()) ?? "";
+    expect(exportPath.length).toBeGreaterThan(0);
+  });
+
+  await test.step("import quarantines scripts without executing them", async () => {
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace import file").setInputFiles(exportPath);
+    const dialog = page.getByRole("dialog", { name: "Import workspace" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Dialog value").fill("Imported Script Desk");
+    await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+    const replace = page.getByRole("dialog", { name: "Replace workspace with import?" });
+    if (await replace.isVisible().catch(() => false)) {
+      await replace.getByRole("button", { name: /Discard/ }).click();
+    }
+    const pending = page.getByRole("region", { name: "Pending imported KlineScript activation" });
+    await expect(pending).toBeVisible({ timeout: 15_000 });
+    await expect(pending).toHaveAttribute("data-pending-imported-script-count", "1");
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+    await expect(pending.getByText(/quarantined · not executed/)).toBeVisible();
+  });
+
+  await test.step("explicit Activate executes the quarantined script on the intended panel", async () => {
+    const pending = page.getByRole("region", { name: "Pending imported KlineScript activation" });
+    await pending.getByRole("button", { name: /Activate imported script/ }).click();
+    await expect(page.getByText(/Activated imported KlineScript/)).toBeVisible({ timeout: 15_000 });
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+    await expect(page.getByRole("region", { name: "Pending imported KlineScript activation" })).toHaveCount(0);
+  });
+
+  expect(errors).toEqual([]);
+});

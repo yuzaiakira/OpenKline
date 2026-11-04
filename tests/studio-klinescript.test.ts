@@ -5,16 +5,22 @@ import {
   allocateStudioScriptInstanceId,
   allocateStudioUserScriptId,
   applyStudioKlineScriptIndicator,
+  buildStudioAppliedScriptInspector,
   buildStudioUserScriptCatalog,
   compileStudioKlineScript,
   createStudioWorkspaceBaseline,
+  discoverStudioScriptInputs,
+  dismissStudioPendingImportedScript,
   filterStudioUserScriptCatalog,
   gateStudioKlineScriptCompile,
   isStudioAppliedScriptIndicator,
   parseStudioWorkspace,
   partitionStudioAppliedIndicators,
+  quarantineStudioImportedScripts,
+  reapplyStudioKlineScriptIndicator,
   resolveStudioScriptApplyTarget,
   studioWorkspaceContentFingerprint,
+  validateStudioScriptParameters,
   type StudioScriptTargetChart,
   type WorkspaceDocument,
 } from "../src/index.js";
@@ -249,3 +255,113 @@ function chartWorkspace(indicators: WorkspaceDocument["indicators"] = []): Works
     plugins: [],
   };
 }
+
+test("discoverStudioScriptInputs exposes int/float/bool metadata from the compiler", () => {
+  const discovered = discoverStudioScriptInputs(STUDIO_KLINESCRIPT_TEMPLATES[0]!.source);
+  assert.equal(discovered.success, true);
+  assert.equal(discovered.inputs.length, 1);
+  assert.equal(discovered.inputs[0]?.name, "period");
+  assert.equal(discovered.inputs[0]?.type, "int");
+  const valid = validateStudioScriptParameters(discovered.inputs, { period: 34 });
+  assert.equal(valid.ok, true);
+  const invalid = validateStudioScriptParameters(discovered.inputs, { period: 0.5 });
+  assert.equal(invalid.ok, false);
+  const inspector = buildStudioAppliedScriptInspector({
+    panelId: "chart-1",
+    indicator: {
+      id: "studio-script-1",
+      indicatorId: discovered.programId!,
+      paneId: "main",
+      parameters: { period: 21 },
+      script: { programId: discovered.programId!, source: STUDIO_KLINESCRIPT_TEMPLATES[0]!.source },
+    },
+  });
+  assert.ok(inspector);
+  assert.equal(inspector.displayName, "Studio EMA");
+  assert.equal(inspector.inputs[0]?.name, "period");
+});
+
+test("quarantineStudioImportedScripts strips executable scripts and preserves pending activation records", () => {
+  const source = 'indicator("Imported")\nplot(close)';
+  const compiled = compileStudioKlineScript({ source, generation: 1 });
+  assert.equal(compiled.success, true);
+  const document = parseStudioWorkspace({
+    version: 1,
+    id: "imported-desk",
+    name: "Imported desk",
+    layout: "single",
+    charts: [{
+      panelId: "chart-1",
+      symbol: "BTC-USD",
+      timeframe: "1h",
+      workspace: chartWorkspace([{
+        id: "studio-script-1",
+        indicatorId: compiled.programId!,
+        paneId: "main",
+        parameters: {},
+        outputStyles: {},
+        script: { programId: compiled.programId!, source },
+      }]),
+    }],
+    synchronization: { crosshair: false, visibleRange: false, symbol: false, timeframe: false },
+    watchlists: { version: 1, selectedWatchlistId: null, lists: [] },
+  });
+  const { document: stripped, pending } = quarantineStudioImportedScripts(document);
+  assert.equal(stripped.charts[0]!.workspace.indicators.length, 0);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0]?.source, source);
+  const parsed = parseStudioWorkspace(stripped);
+  assert.equal(parsed.pendingImportedScripts?.length, 1);
+  assert.equal(dismissStudioPendingImportedScript(parsed.pendingImportedScripts ?? [], pending[0]!.pendingId).length, 0);
+});
+
+test("reapplyStudioKlineScriptIndicator restores previous revision when the next Worker apply fails", async () => {
+  const removed: string[] = [];
+  const applied: string[] = [];
+  const chart: StudioScriptTargetChart = {
+    addScriptIndicatorAsync: async (source, options) => {
+      applied.push(source);
+      if (source.includes("Broken")) throw new Error("worker failed");
+      return { id: options?.id ?? "x", indicatorId: "KLINESCRIPT-ok" };
+    },
+    removeIndicator: (id) => { removed.push(id); },
+  };
+  const previous = 'indicator("Ok")\nplot(close)';
+  const result = await reapplyStudioKlineScriptIndicator({
+    previousSource: previous,
+    previousPaneId: "main",
+    nextSource: 'indicator("Broken")\nplot(close)\nthis is not valid!!!!',
+    instanceId: "studio-script-1",
+    activePanelId: "chart-1",
+    targetPanelId: "chart-1",
+    requestGeneration: 1,
+    getCurrentGeneration: () => 1,
+    getActivePanelId: () => "chart-1",
+    getChart: () => chart,
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.reason, "compile-failed");
+    assert.equal(result.restoredPrevious, false);
+  }
+  assert.equal(removed.length, 0);
+
+  const runtimeFail = await reapplyStudioKlineScriptIndicator({
+    previousSource: previous,
+    previousPaneId: "main",
+    nextSource: 'indicator("Broken")\nplot(close)',
+    instanceId: "studio-script-1",
+    activePanelId: "chart-1",
+    targetPanelId: "chart-1",
+    requestGeneration: 2,
+    getCurrentGeneration: () => 2,
+    getActivePanelId: () => "chart-1",
+    getChart: () => chart,
+  });
+  assert.equal(runtimeFail.ok, false);
+  if (!runtimeFail.ok) {
+    assert.equal(runtimeFail.restoredPrevious, true);
+  }
+  assert.ok(removed.includes("studio-script-1"));
+  assert.ok(applied.some((source) => source === previous));
+});

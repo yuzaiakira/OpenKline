@@ -31,6 +31,19 @@ export interface StudioComparisonDocument {
   readonly dataSource?: string;
 }
 
+/** Imported KlineScript awaiting explicit Studio activation (never auto-executed). */
+export interface StudioPendingImportedScriptDocument {
+  readonly pendingId: string;
+  readonly panelId: string;
+  readonly instanceId: string;
+  readonly indicatorId: string;
+  readonly paneId: string;
+  readonly programId: string;
+  readonly source: string;
+  readonly parameters: Readonly<Record<string, unknown>>;
+  readonly displayName: string;
+}
+
 export interface StudioWorkspaceDocument {
   readonly version: typeof OPENKLINE_STUDIO_WORKSPACE_VERSION;
   readonly id: string;
@@ -43,6 +56,12 @@ export interface StudioWorkspaceDocument {
   readonly comparison?: StudioComparisonDocument;
   /** Optional Phase 12 portfolio tester configuration; data and runtime state are never persisted. */
   readonly portfolioBacktest?: PortfolioBacktestWorkspaceDocument;
+  /**
+   * Optional quarantined imported KlineScript sources. Presence does not grant
+   * execution; Studio requires an explicit Activate action. Never trust a
+   * self-declared "approved" flag from untrusted JSON.
+   */
+  readonly pendingImportedScripts?: readonly StudioPendingImportedScriptDocument[];
 }
 
 export interface LegacyWorkspaceMigrationOptions {
@@ -100,6 +119,9 @@ export function parseStudioWorkspace(value: unknown): StudioWorkspaceDocument {
     try { portfolioBacktest = parsePortfolioBacktestWorkspace(value.portfolioBacktest); }
     catch (error) { throw new StudioWorkspaceValidationError(`Invalid portfolio backtest configuration: ${error instanceof Error ? error.message : String(error)}`); }
   }
+  const pendingImportedScripts = value.pendingImportedScripts === undefined
+    ? undefined
+    : parsePendingImportedScripts(value.pendingImportedScripts);
   return {
     version: 1,
     id,
@@ -110,6 +132,7 @@ export function parseStudioWorkspace(value: unknown): StudioWorkspaceDocument {
     watchlists,
     ...(comparison === undefined ? {} : { comparison }),
     ...(portfolioBacktest === undefined ? {} : { portfolioBacktest }),
+    ...(pendingImportedScripts === undefined ? {} : { pendingImportedScripts }),
   };
 }
 
@@ -235,6 +258,40 @@ function parseComparison(value: unknown): StudioComparisonDocument {
     assetIds,
     ...(dataSource === undefined ? {} : { dataSource }),
   };
+}
+
+function parsePendingImportedScripts(value: unknown): readonly StudioPendingImportedScriptDocument[] {
+  if (!Array.isArray(value)) {
+    throw new StudioWorkspaceValidationError("Invalid pendingImportedScripts list");
+  }
+  const seen = new Set<string>();
+  return value.map((item, index) => {
+    if (!isPlainObject(item)) throw new StudioWorkspaceValidationError(`Invalid pending imported script at index ${index}`);
+    const pendingId = parseNonEmptyString(item.pendingId, "Pending imported script id");
+    if (seen.has(pendingId)) throw new StudioWorkspaceValidationError(`Duplicate pending imported script: ${pendingId}`);
+    seen.add(pendingId);
+    if (!isPlainObject(item.parameters)) {
+      throw new StudioWorkspaceValidationError(`Invalid parameters for pending imported script ${pendingId}`);
+    }
+    const parameters: Record<string, string | number | boolean | null> = {};
+    for (const [key, entry] of Object.entries(item.parameters)) {
+      if (typeof entry !== "string" && typeof entry !== "number" && typeof entry !== "boolean" && entry !== null) {
+        throw new StudioWorkspaceValidationError(`Unsupported parameter value for pending imported script ${pendingId}`);
+      }
+      parameters[key] = entry;
+    }
+    return {
+      pendingId,
+      panelId: parseNonEmptyString(item.panelId, "Pending imported script panel id"),
+      instanceId: parseNonEmptyString(item.instanceId, "Pending imported script instance id"),
+      indicatorId: parseNonEmptyString(item.indicatorId, "Pending imported script indicator id"),
+      paneId: parseNonEmptyString(item.paneId, "Pending imported script pane id"),
+      programId: parseNonEmptyString(item.programId, "Pending imported script program id"),
+      source: parseNonEmptyString(item.source, "Pending imported script source"),
+      parameters,
+      displayName: parseNonEmptyString(item.displayName, "Pending imported script display name"),
+    };
+  });
 }
 
 function parseNonEmptyString(value: unknown, label: string): string {

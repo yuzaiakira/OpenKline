@@ -96,16 +96,24 @@ export {
   allocateStudioScriptInstanceId,
   allocateStudioUserScriptId,
   applyStudioKlineScriptIndicator,
+  buildStudioAppliedScriptInspector,
   buildStudioUserScriptCatalog,
   compileStudioKlineScript,
+  discoverStudioScriptInputs,
+  dismissStudioPendingImportedScript,
   filterStudioUserScriptCatalog,
   gateStudioKlineScriptCompile,
   isStudioAppliedScriptIndicator,
   partitionStudioAppliedIndicators,
+  quarantineStudioImportedScripts,
+  reapplyStudioKlineScriptIndicator,
   resolveStudioScriptApplyTarget,
+  validateStudioScriptParameters,
 } from "./klinescript-studio.js";
 export type {
   StudioAppliedIndicatorRef,
+  StudioAppliedScriptInspectorModel,
+  StudioPendingImportedScript,
   StudioScriptApplyFailureReason,
   StudioScriptApplyTargetArgs,
   StudioScriptApplyTargetResult,
@@ -117,6 +125,7 @@ export type {
   StudioUserScriptCatalogFilter,
   StudioUserScriptDefinition,
 } from "./klinescript-studio.js";
+export type { StudioPendingImportedScriptDocument } from "./workspace.js";
 export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,

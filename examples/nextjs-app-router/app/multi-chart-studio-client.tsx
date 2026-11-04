@@ -10,6 +10,7 @@ import {
   InMemoryDatafeed,
   applyScopedDrawingStyle,
   applyStudioKlineScriptIndicator,
+  buildStudioAppliedScriptInspector,
   clearScopedDrawingSelection,
   allocateStudioScriptInstanceId,
   allocateStudioWorkspaceId,
@@ -23,6 +24,7 @@ import {
   deleteStudioWorkspaceRecord,
   describeStudioWorkspaceImportError,
   describeStudioWorkspaceSaveStatus,
+  dismissStudioPendingImportedScript,
   filterStudioIndicatorCatalog,
   filterStudioUserScriptCatalog,
   finalizeStudioWorkspaceImport,
@@ -32,6 +34,8 @@ import {
   parseStudioWorkspaceCollection,
   partitionStudioAppliedIndicators,
   prepareStudioWorkspaceImport,
+  quarantineStudioImportedScripts,
+  reapplyStudioKlineScriptIndicator,
   renameStudioWorkspaceRecord,
   resolveStudioWorkspaceSaveStatus,
   STUDIO_KLINESCRIPT_TEMPLATES,
@@ -41,6 +45,7 @@ import {
   studioWorkspaceNeedsNavigationGuard,
   studioWorkspaceSelectorLabel,
   StudioWorkspaceLibraryError,
+  type StudioPendingImportedScriptDocument,
   type ComparisonAssetOutput,
   type ComparisonDatafeedState,
   type ComparisonNormalizationMode,
@@ -110,7 +115,13 @@ interface PanelState {
 
 interface PanelSnapshot {
   readonly series: readonly ChartSeriesInfo[];
-  readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string; script?: { readonly programId: string; readonly source: string } }>;
+  readonly indicators: ReadonlyArray<{
+    id: string;
+    indicatorId: string;
+    paneId: string;
+    parameters?: Readonly<Record<string, unknown>>;
+    script?: { readonly programId: string; readonly source: string };
+  }>;
   readonly drawings: readonly DrawingSnapshot[];
   readonly selectedDrawingId: string | null;
   readonly activeDrawingTool: string | null;
@@ -550,6 +561,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
         id: indicator.id,
         indicatorId: indicator.indicatorId,
         paneId: indicator.paneId,
+        parameters: { ...indicator.parameters },
         ...(indicator.script === undefined ? {} : { script: { programId: indicator.script.programId, source: indicator.script.source } }),
       })),
       drawings: target.getDrawings(), selectedDrawingId: target.getSelectedDrawingId(), activeDrawingTool: activeDrawingToolRef.current, alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex, replayVisibleLatest,
@@ -895,6 +907,9 @@ export default function MultiChartStudioClient() {
   const [scriptSource, setScriptSource] = useState(defaultScript);
   const [scriptLibrarySearch, setScriptLibrarySearch] = useState("");
   const [localUserScripts, setLocalUserScripts] = useState<ReadonlyArray<{ readonly name: string; readonly source: string }>>([]);
+  const [pendingImportedScripts, setPendingImportedScripts] = useState<readonly StudioPendingImportedScriptDocument[]>([]);
+  const [scriptParameterDraft, setScriptParameterDraft] = useState<Record<string, string>>({});
+  const [scriptInspectorNotice, setScriptInspectorNotice] = useState<string | null>(null);
   const [indicatorToAdd, setIndicatorToAdd] = useState<string>("SMA");
   const [selectedAppliedIndicatorId, setSelectedAppliedIndicatorId] = useState<string | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState("");
@@ -1189,6 +1204,26 @@ export default function MultiChartStudioClient() {
   const appliedIndicators = activeSnapshot.indicators;
   const { builtIn: appliedBuiltInIndicators, scripts: appliedScriptIndicators } = partitionStudioAppliedIndicators(appliedIndicators);
   const selectedAppliedIndicator = appliedIndicators.find((indicator) => indicator.id === selectedAppliedIndicatorId) ?? null;
+  const selectedScriptInspector = selectedAppliedIndicator?.script === undefined
+    ? null
+    : buildStudioAppliedScriptInspector({ panelId: activePanel.panelId, indicator: selectedAppliedIndicator });
+  useEffect(() => {
+    if (selectedAppliedIndicator === null || selectedAppliedIndicator.script === undefined) {
+      setScriptParameterDraft({});
+      return;
+    }
+    const inspector = buildStudioAppliedScriptInspector({ panelId: activePanel.panelId, indicator: selectedAppliedIndicator });
+    if (inspector === null) {
+      setScriptParameterDraft({});
+      return;
+    }
+    const next: Record<string, string> = {};
+    for (const input of inspector.inputs) {
+      const current = inspector.parameters[input.name];
+      next[input.name] = current === undefined ? String(input.defaultValue) : String(current);
+    }
+    setScriptParameterDraft(next);
+  }, [activePanel.panelId, selectedAppliedIndicator]);
   const myScriptsCatalog = useMemo(() => {
     const saved = buildStudioUserScriptCatalog(localUserScripts);
     const templates = buildStudioUserScriptCatalog(STUDIO_KLINESCRIPT_TEMPLATES.map((item) => ({ id: item.id, name: item.name, source: item.source })));
@@ -1357,11 +1392,11 @@ export default function MultiChartStudioClient() {
     const firstChart = document.charts[0]?.workspace;
     snapshotsRef.current = {};
     setActiveSnapshotState(emptySnapshot());
-    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceEntries((current) => current.some((item) => item.id === document.id) ? current.map((item) => item.id === document.id ? { id: document.id, name: document.name } : item) : [...current, { id: document.id, name: document.name }]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setPortfolioConfiguration(document.portfolioBacktest ?? null); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
+    setWorkspaceId(document.id); setWorkspaceName(document.name); setWorkspaceEntries((current) => current.some((item) => item.id === document.id) ? current.map((item) => item.id === document.id ? { id: document.id, name: document.name } : item) : [...current, { id: document.id, name: document.name }]); setLayout(document.layout); setPanels(document.charts.map((chart) => ({ panelId: chart.panelId, symbol: chart.symbol, timeframe: chart.timeframe as Timeframe }))); setActivePanelId(document.charts[0]?.panelId ?? "chart-1"); setSync({ ...document.synchronization }); setComparisonSettings(document.comparison ?? { active: false, mode: "indexed", baselineTime: buildCandles(document.charts[0]?.symbol ?? "BTC-USD", (document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h")[0]?.time ?? null, baselineMaxAgeMs: intervalFor((document.charts[0]?.timeframe as Timeframe | undefined) ?? "1h"), assetIds: [document.charts[0]?.symbol ?? "BTC-USD", "ETH-USD"] }); setPortfolioConfiguration(document.portfolioBacktest ?? null); setWatchlistModel(new WatchlistModel(document.watchlists, (prefix) => `${prefix}-studio-${serialRef.current++}`)); setWatchlists(document.watchlists); setPendingImportedScripts(document.pendingImportedScripts ?? []); setScriptInspectorNotice(null); setSelectedAppliedIndicatorId(null); if (firstChart !== undefined) { setTheme(firstChart.chart.theme.background === "#ffffff" ? "light" : "dark"); setScaleMode(firstChart.chart.priceScale?.mode ?? "linear"); } pendingRestoreRef.current = document;
     if (options?.adoptBaseline !== false) adoptPersistedBaseline(document);
   };
 
-  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings, ...(portfolioConfiguration === null ? {} : { portfolioBacktest: portfolioConfiguration }) }), [comparisonSettings, layout, panels, portfolioConfiguration, sync, watchlistModel, workspaceId, workspaceName]);
+  const collectDocument = useCallback((id = workspaceId, name = workspaceName): StudioWorkspaceDocument => parseStudioWorkspace({ version: 1, id, name: name.trim() || "Workspace", layout, charts: panels.map((panel) => ({ panelId: panel.panelId, symbol: panel.symbol, timeframe: panel.timeframe, workspace: panelRefs.current.get(panel.panelId)?.serializeWorkspace({ symbol: panel.symbol, timeframe: panel.timeframe }) ?? emptyWorkspace(panel.symbol, panel.timeframe) })), synchronization: sync, watchlists: watchlistModel.getDocument(), comparison: comparisonSettings, ...(portfolioConfiguration === null ? {} : { portfolioBacktest: portfolioConfiguration }), ...(pendingImportedScripts.length === 0 ? {} : { pendingImportedScripts }) }), [comparisonSettings, layout, panels, pendingImportedScripts, portfolioConfiguration, sync, watchlistModel, workspaceId, workspaceName]);
 
   const refreshLiveFingerprint = useCallback((): string | null => {
     try {
@@ -2070,6 +2105,7 @@ export default function MultiChartStudioClient() {
         "replay-active": "KlineScript cannot be applied during replay.",
         "empty-source": "KlineScript source is empty.",
         "compile-failed": result.diagnostics?.map((item) => item.message).join(" · ") || "KlineScript compilation or Worker execution failed.",
+        "invalid-parameters": result.message ?? "KlineScript parameters are invalid.",
       };
       throw new Error(messages[result.reason]);
     }
@@ -2089,6 +2125,107 @@ export default function MultiChartStudioClient() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : String(error));
     }
+  };
+  const parseScriptParameterDraft = (inspector: NonNullable<typeof selectedScriptInspector>): Record<string, unknown> | null => {
+    const values: Record<string, unknown> = {};
+    for (const input of inspector.inputs) {
+      const raw = scriptParameterDraft[input.name];
+      if (input.type === "bool") {
+        values[input.name] = raw === "true";
+        continue;
+      }
+      const numeric = Number(raw);
+      if (!Number.isFinite(numeric)) {
+        setScriptInspectorNotice(`Parameter “${input.label}” must be a number.`);
+        return null;
+      }
+      values[input.name] = input.type === "int" ? Math.trunc(numeric) : numeric;
+    }
+    return values;
+  };
+  const reapplySelectedScript = async (): Promise<void> => {
+    if (selectedScriptInspector === null) return;
+    if (replayActive) {
+      setNotice("KlineScript cannot be reapplied during replay.");
+      return;
+    }
+    const sourcePanelId = selectedScriptInspector.panelId;
+    if (sourcePanelId !== activePanelIdRef.current) {
+      setNotice(`Skipped stale script reapply for ${sourcePanelId}; ${activePanelIdRef.current} is active.`);
+      return;
+    }
+    const parameters = parseScriptParameterDraft(selectedScriptInspector);
+    if (parameters === null) return;
+    scriptGenerationRef.current += 1;
+    const generation = scriptGenerationRef.current;
+    const result = await reapplyStudioKlineScriptIndicator({
+      previousSource: selectedScriptInspector.source,
+      previousParameters: selectedScriptInspector.parameters,
+      previousPaneId: selectedScriptInspector.paneId,
+      nextSource: scriptSource,
+      nextParameters: parameters,
+      instanceId: selectedScriptInspector.instanceId,
+      activePanelId: activePanelIdRef.current,
+      targetPanelId: sourcePanelId,
+      requestGeneration: generation,
+      getCurrentGeneration: () => generation,
+      getActivePanelId: () => activePanelIdRef.current,
+      replayActive,
+      getChart: (panelId) => panelRefs.current.get(panelId)?.getChart() ?? null,
+    });
+    if (!result.ok) {
+      panelRefs.current.get(sourcePanelId)?.refresh();
+      setScriptInspectorNotice(result.restoredPrevious
+        ? `Reapply failed (${result.reason}); previous working instance was restored.`
+        : result.message ?? result.diagnostics?.map((item) => item.message).join(" · ") ?? `Reapply failed: ${result.reason}`);
+      setNotice(result.restoredPrevious
+        ? `KlineScript reapply failed on ${sourcePanelId}; previous revision restored.`
+        : `KlineScript reapply failed on ${sourcePanelId}.`);
+      return;
+    }
+    panelRefs.current.get(result.panelId)?.refresh();
+    setSelectedAppliedIndicatorId(result.instanceId);
+    markLiveDirty();
+    setScriptInspectorNotice(`Reapplied ${result.indicatorId} on ${result.panelId}.`);
+    setNotice(`Reapplied Worker-backed KlineScript ${result.indicatorId} on ${result.panelId}.`);
+  };
+  const activatePendingImportedScript = async (pendingId: string): Promise<void> => {
+    const pending = pendingImportedScripts.find((item) => item.pendingId === pendingId);
+    if (pending === undefined) return;
+    if (replayActive) {
+      setNotice("Imported KlineScript cannot be activated during replay.");
+      return;
+    }
+    if (pending.panelId !== activePanelIdRef.current) {
+      setActivePanelId(pending.panelId);
+      setNotice(`Switched to ${pending.panelId}. Confirm Activate again to run the quarantined script.`);
+      return;
+    }
+    scriptGenerationRef.current += 1;
+    const generation = scriptGenerationRef.current;
+    const result = await applyStudioKlineScriptIndicator({
+      source: pending.source,
+      activePanelId: activePanelIdRef.current,
+      targetPanelId: pending.panelId,
+      requestGeneration: generation,
+      getCurrentGeneration: () => generation,
+      getActivePanelId: () => activePanelIdRef.current,
+      instanceId: pending.instanceId,
+      pane: pending.paneId,
+      parameters: pending.parameters,
+      replayActive,
+      getChart: (panelId) => panelRefs.current.get(panelId)?.getChart() ?? null,
+    });
+    if (!result.ok) {
+      setNotice(result.message ?? result.diagnostics?.map((item) => item.message).join(" · ") ?? `Could not activate imported script: ${result.reason}`);
+      return;
+    }
+    setPendingImportedScripts((current) => dismissStudioPendingImportedScript(current, pendingId));
+    panelRefs.current.get(result.panelId)?.refresh();
+    markLiveDirty();
+    setScriptSource(pending.source);
+    setSelectedAppliedIndicatorId(result.instanceId);
+    setNotice(`Activated imported KlineScript ${result.indicatorId} on ${result.panelId} after explicit approval.`);
   };
 
   const toggleComparison = (): void => {
@@ -2253,6 +2390,10 @@ export default function MultiChartStudioClient() {
             value,
             allocateStudioWorkspaceImportId(all.map((item) => item.id)),
           );
+          // Always quarantine embedded script indicators on import — never trust
+          // self-declared approval metadata from untrusted JSON.
+          const quarantined = quarantineStudioImportedScripts(named);
+          const importDocument = parseStudioWorkspace(quarantined.document);
           const commitImport = (): void => {
             const storageRawNow = window.localStorage.getItem(WORKSPACES_KEY);
             let nextAll: StudioWorkspaceDocument[] = [];
@@ -2260,16 +2401,19 @@ export default function MultiChartStudioClient() {
               try { nextAll = [...parseStudioWorkspaceCollection(JSON.parse(storageRawNow)).workspaces]; }
               catch { nextAll = []; }
             }
-            if (nextAll.some((item) => item.id === named.id)) {
+            if (nextAll.some((item) => item.id === importDocument.id)) {
               throw new Error("Import aborted: the allocated workspace id collided before commit. The current workspace was not changed.");
             }
-            nextAll = [...nextAll, named];
-            if (!persist(named, nextAll)) {
+            nextAll = [...nextAll, importDocument];
+            if (!persist(importDocument, nextAll)) {
               throw new Error("Import validated but browser storage could not be updated. The current workspace was not changed.");
             }
             setWorkspaceEntries(nextAll.map((item) => ({ id: item.id, name: item.name })));
-            applyDocument(named);
-            setNotice(`Imported “${named.name}” with ${named.charts.length} panel${named.charts.length === 1 ? "" : "s"} into local storage without overwriting existing workspaces.`);
+            applyDocument(importDocument);
+            const pendingCount = importDocument.pendingImportedScripts?.length ?? 0;
+            setNotice(pendingCount === 0
+              ? `Imported “${importDocument.name}” with ${importDocument.charts.length} panel${importDocument.charts.length === 1 ? "" : "s"} into local storage without overwriting existing workspaces.`
+              : `Imported “${importDocument.name}” with ${pendingCount} KlineScript indicator${pendingCount === 1 ? "" : "s"} quarantined pending explicit activation. Source is preserved; nothing executed yet.`);
           };
           // Close the naming prompt first, then optionally open the navigation guard.
           queueMicrotask(() => {
@@ -2294,6 +2438,8 @@ export default function MultiChartStudioClient() {
     strategyResultsRef.current.clear();
     appliedStrategyParametersRef.current.clear();
     setActiveSnapshotState(emptySnapshot());
+    setPendingImportedScripts([]);
+    setScriptInspectorNotice(null);
     setRestoreSummary(null);
     setQuotes({});
     setPanels([{ panelId, symbol: "BTC-USD", timeframe: "1h" }]);
@@ -2631,8 +2777,53 @@ export default function MultiChartStudioClient() {
             <button type="button" aria-label={`Remove ${indicator.id}`} disabled={replayActive} onClick={() => removeAppliedIndicator(indicator.id, activePanel.panelId)}>×</button>
           </li>
         ))}</ul>}
-        {selectedAppliedIndicator === null ? null : <small>Selected instance {selectedAppliedIndicator.id} on {activePanel.panelId}. {selectedAppliedIndicator.script === undefined ? "Parameter overrides apply only after Add or Apply params." : "KlineScript instances use the editor to recompile and reapply."}</small>}
+        {selectedAppliedIndicator === null ? null : <small>Selected instance {selectedAppliedIndicator.id} on {activePanel.panelId}. {selectedAppliedIndicator.script === undefined ? "Parameter overrides apply only after Add or Apply params." : "KlineScript instances use the Applied Script Inspector below."}</small>}
       </div>
+      {selectedScriptInspector === null ? null : (
+        <div className={styles.indicatorApplied} role="region" aria-label="Applied Script Inspector" data-script-inspector-instance={selectedScriptInspector.instanceId} data-script-inspector-panel={selectedScriptInspector.panelId}>
+          <div className={styles.panelHeading}>
+            <h3>Applied Script Inspector</h3>
+            <span>{selectedScriptInspector.displayName} · {selectedScriptInspector.panelId}</span>
+          </div>
+          <p><strong>{selectedScriptInspector.displayName}</strong><small> · {selectedScriptInspector.instanceId} · {selectedScriptInspector.paneId} · {selectedScriptInspector.programId}</small></p>
+          <small>Source revision is edited in the KlineScript editor. Compile validates; Reapply replaces this instance after a successful compile gate.</small>
+          {selectedScriptInspector.inputs.length === 0 ? <p role="status">This script declares no input parameters.</p> : selectedScriptInspector.inputs.map((input) => (
+            <label key={input.name}>{input.label}
+              {input.type === "bool" ? (
+                <select aria-label={`Script parameter ${input.label}`} value={scriptParameterDraft[input.name] ?? String(input.defaultValue)} disabled={replayActive} onChange={(event) => setScriptParameterDraft((current) => ({ ...current, [input.name]: event.target.value }))}>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              ) : (
+                <input aria-label={`Script parameter ${input.label}`} type="number" value={scriptParameterDraft[input.name] ?? String(input.defaultValue)} disabled={replayActive} min={input.min} max={input.max} step={input.type === "int" ? 1 : "any"} onChange={(event) => setScriptParameterDraft((current) => ({ ...current, [input.name]: event.target.value }))} />
+              )}
+            </label>
+          ))}
+          <div className={styles.indicatorParameters}>
+            <button type="button" disabled={replayActive} onClick={() => { setScriptSource(selectedScriptInspector.source); scriptGenerationRef.current += 1; setScriptOpen(true); setScriptInspectorNotice("Loaded applied source into the editor."); }}>Open in Editor</button>
+            <button type="button" disabled={replayActive} onClick={() => void reapplySelectedScript()}>Reapply to {selectedScriptInspector.panelId}</button>
+            <button type="button" disabled={replayActive} onClick={() => removeAppliedIndicator(selectedScriptInspector.instanceId, selectedScriptInspector.panelId)}>Remove instance</button>
+          </div>
+          {scriptInspectorNotice === null ? null : <p role="status">{scriptInspectorNotice}</p>}
+          {selectedScriptInspector.compileSuccess ? null : <div role="alert">{selectedScriptInspector.diagnostics.map((item) => <div key={`${item.code}-${item.span.start.offset}`}><strong>{item.code}</strong> L{item.span.start.line}:{item.span.start.column} {item.message}</div>)}</div>}
+        </div>
+      )}
+      {pendingImportedScripts.length === 0 ? null : (
+        <div className={styles.indicatorApplied} role="region" aria-label="Pending imported KlineScript activation" data-pending-imported-script-count={pendingImportedScripts.length}>
+          <div className={styles.panelHeading}>
+            <h3>Imported scripts pending activation</h3>
+            <span>{pendingImportedScripts.length} quarantined · not executed</span>
+          </div>
+          <p>Imported workspace JSON preserved these KlineScript sources without running them. Inspect the source, then Activate explicitly. The Worker is a resource boundary, not an OS sandbox.</p>
+          <ul>{pendingImportedScripts.map((item) => (
+            <li key={item.pendingId} data-pending-imported-script-id={item.pendingId} data-pending-imported-script-panel={item.panelId}>
+              <button type="button" className={styles.objectName} onClick={() => { setScriptSource(item.source); scriptGenerationRef.current += 1; setScriptOpen(true); setActivePanelId(item.panelId); }}>{item.displayName}<small>{item.panelId} · {item.instanceId}</small></button>
+              <button type="button" aria-label={`Activate imported script ${item.displayName} on ${item.panelId}`} disabled={replayActive} onClick={() => void activatePendingImportedScript(item.pendingId)}>Activate</button>
+              <button type="button" aria-label={`Dismiss imported script ${item.displayName}`} onClick={() => { setPendingImportedScripts((current) => dismissStudioPendingImportedScript(current, item.pendingId)); markLiveDirty(); }}>Dismiss</button>
+            </li>
+          ))}</ul>
+        </div>
+      )}
     </section>
 <section className={styles.workspace}>
       <aside className={styles.objectTree} aria-label="Object tree" data-object-tree-ready={activeHandle === null ? "false" : "true"} data-object-tree-panel-id={activePanel.panelId}><h2>Objects</h2><p className={styles.objectTreePanel}>Active panel · {activePanel.panelId}</p><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id} data-drawing-id={drawing.id} data-drawing-selected={drawing.id === activeSnapshot.selectedDrawingId ? "true" : "false"} data-drawing-visible={drawing.style.visible === false ? "false" : "true"} data-drawing-locked={drawing.style.locked === true ? "true" : "false"}><button type="button" className={styles.objectName} aria-current={drawing.id === activeSnapshot.selectedDrawingId ? "true" : undefined} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details><section className={styles.drawingProperties} aria-label="Drawing properties" data-drawing-properties-ready={selectedDrawing === null ? "false" : "true"} data-selected-drawing-id={selectedDrawing?.id ?? ""} data-drawing-owner-panel={activePanel.panelId}><h3>Drawing properties</h3>{selectedDrawing === null ? <p>Select a drawing on {activePanel.panelId} in the Object Tree or on that chart to edit color, width, visibility, and lock. Drawings stay panel-local; chart sync does not share drawing objects.</p> : <><p><strong>{selectedDrawing.type}</strong> · {selectedDrawing.id}<small> · {activePanel.panelId}</small></p><label>Color<input aria-label="Drawing color" type="color" value={toStudioColorInput(selectedDrawing.style.color)} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { color: event.target.value })} /></label><label>Width<input aria-label="Drawing line width" type="number" min={1} max={8} value={selectedDrawing.style.lineWidth ?? 2} disabled={replayActive} onChange={(event) => { const width = Number(event.target.value); if (!Number.isFinite(width) || width < 1 || width > 8) return; applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { lineWidth: Math.round(width) }); }} /></label><label className={styles.check}><input aria-label="Drawing visible" type="checkbox" checked={selectedDrawing.style.visible !== false} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { visible: event.target.checked })} />Visible</label><label className={styles.check}><input aria-label="Drawing locked" type="checkbox" checked={selectedDrawing.style.locked === true} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { locked: event.target.checked })} />Locked</label><button type="button" aria-label={`Clear selection for ${selectedDrawing.id}`} disabled={replayActive} onClick={() => clearActiveDrawingSelection(activePanel.panelId)}>Clear selection</button></>}</section></aside>
