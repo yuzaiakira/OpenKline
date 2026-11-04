@@ -364,6 +364,15 @@ offline Studio Market Replay Lab are present.
   user edits, and covers Cancel/Save-and-Continue/Discard with Chromium E2E.
   Public Widget API and public release remain NOT AUTHORIZED. See
   `docs/reports/phase-16-5-6-studio-dirty-state-safe-navigation.md`.
+- [Implemented / Verified internally — Phase 16.5.10 KlineScript applied
+  indicator settings, diagnostics & safe activation]
+  Adds Applied Script Inspector (instance/panel identity, int/float/bool
+  parameters, Open in Editor, Reapply, Remove), safe reapply with best-effort
+  previous-revision restore on Worker failure, and import quarantine so
+  embedded script source requires explicit Activate before Worker execution.
+  Unit + Chromium Studio E2E coverage. Public Widget API and public release
+  remain NOT AUTHORIZED. See
+  `docs/reports/phase-16-5-10-klinescript-settings-diagnostics-activation.md`.
 
 ## Current milestone
 
@@ -1040,12 +1049,13 @@ Studio compatibility gates remain open**.
   retainer characterization (16.5.4), workspace library rename/delete
   management (16.5.5), dirty-state / safe navigation (16.5.6), Indicator
   Explorer active-panel workflow integration (16.5.7), Professional
-  Drawing Toolbar interaction workflow (16.5.8), and KlineScript Studio
-  custom-indicator management (16.5.9) are delivered in the reference
-  Studio. Managed Firefox/WebKit lifecycle parity remains open. The object
-  tree, visible-OHLC snapping, source-tagged sync controller, and in-page
-  dialogs were already implemented. No Phase 7.5 acceptance claim is made
-  until the remaining checks and inherited Firefox/WebKit/Mobile
+  Drawing Toolbar interaction workflow (16.5.8), KlineScript Studio
+  custom-indicator management (16.5.9), and KlineScript applied-script
+  settings/diagnostics/safe import activation (16.5.10) are delivered in the
+  reference Studio. Managed Firefox/WebKit lifecycle parity remains open. The
+  object tree, visible-OHLC snapping, source-tagged sync controller, and
+  in-page dialogs were already implemented. No Phase 7.5 acceptance claim is
+  made until the remaining checks and inherited Firefox/WebKit/Mobile
   Safari/accessibility/device gates are verified. See
   `docs/reports/phase-16-5-0-roadmap-product-feature-delivery.md`,
   `docs/reports/phase-16-5-1-multi-panel-drawing-sync.md`,
@@ -1055,8 +1065,9 @@ Studio compatibility gates remain open**.
   `docs/reports/phase-16-5-5-studio-workspace-library-management.md`,
   `docs/reports/phase-16-5-6-studio-dirty-state-safe-navigation.md`,
   `docs/reports/phase-16-5-7-studio-indicator-explorer.md`,
-  `docs/reports/phase-16-5-8-professional-drawing-toolbar.md`, and
-  `docs/reports/phase-16-5-9-klinescript-studio-integration.md`.
+  `docs/reports/phase-16-5-8-professional-drawing-toolbar.md`,
+  `docs/reports/phase-16-5-9-klinescript-studio-integration.md`, and
+  `docs/reports/phase-16-5-10-klinescript-settings-diagnostics-activation.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They

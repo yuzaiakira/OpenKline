@@ -164,7 +164,15 @@ identity allocators support the reference Studio custom-indicator workflow:
 - Applied script instances are distinguishable from built-ins for remove/UI.
 - Apply/remove mark the workspace dirty; Compile-only and local library save do not.
 - Workspace restore continues to recompile embedded `script.source` through Chart
-  (DSL-restricted; not an OS sandbox). Public Widget API remains unauthorized.
+  for already-applied local scripts (DSL-restricted; not an OS sandbox).
+- `buildStudioAppliedScriptInspector`, `discoverStudioScriptInputs`,
+  `validateStudioScriptParameters`, and `reapplyStudioKlineScriptIndicator`
+  support applied-instance inspection, int/float/bool parameter editing, and
+  safe reapply with best-effort restore of the previous revision on failure.
+- `quarantineStudioImportedScripts` strips executable script indicators from
+  imported Studio documents into additive `pendingImportedScripts`. Import never
+  auto-executes embedded source; Studio requires explicit Activate. Public
+  Widget API remains unauthorized.
 
 ## Multi-timeframe workflows
 

@@ -55,9 +55,13 @@ gating, Worker runtime status, AbortController-backed Cancel, and an applied
 script list for the active panel. Studio helpers in `openkline` keep user
 scripts out of the built-in Indicator Explorer registry while wiring apply to
 `Chart.addScriptIndicatorAsync` with active-panel stale-completion protection.
-It intentionally does not add Monaco or CodeMirror: neither dependency is
-present in the repository, and the current surface keeps the Next.js client
-bundle and SSR boundary small. A future editor replacement can adopt a
-maintained package after measuring bundle and SSR impact without changing the
-compiler contract. See
-`docs/reports/phase-16-5-9-klinescript-studio-integration.md`.
+Applied instances can be inspected for compiler-declared inputs, recompiled,
+and reapplied with best-effort restoration if Worker replacement fails.
+Imported workspace JSON that embeds script source is quarantined until explicit
+activation; valid JSON is not treated as execution permission. It intentionally
+does not add Monaco or CodeMirror: neither dependency is present in the
+repository, and the current surface keeps the Next.js client bundle and SSR
+boundary small. A future editor replacement can adopt a maintained package
+after measuring bundle and SSR impact without changing the compiler contract.
+See `docs/reports/phase-16-5-9-klinescript-studio-integration.md` and
+`docs/reports/phase-16-5-10-klinescript-settings-diagnostics-activation.md`.

@@ -30,3 +30,13 @@ not an OS or browser security sandbox: Workers may still access the origin's
 ambient capabilities unless the host's deployment policy prevents them, and
 the language restrictions and runtime budgets remain required.
 
+Studio workspace import treats embedded KlineScript source as untrusted
+executable content even when the JSON document parses successfully.
+`quarantineStudioImportedScripts` strips chart script indicators into
+`pendingImportedScripts` so import never auto-compiles or Worker-executes
+embedded source. Explicit Activate is required; self-declared trust flags
+inside imported JSON are ignored. Locally authored scripts that the user
+already applied and saved continue to restore through the Chart workspace
+contract. See
+`docs/reports/phase-16-5-10-klinescript-settings-diagnostics-activation.md`.
+

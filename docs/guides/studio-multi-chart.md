@@ -33,9 +33,13 @@ as built-in catalog entries. The Explorer **My Scripts** section searches
 templates and browser-local saved scripts, opens the KlineScript editor, and
 can apply a listed script to the active panel through
 `addScriptIndicatorAsync`. Applied script rows are tagged separately from
-built-ins; Compile-only does not dirty the desk, while Worker apply and remove
-do. The toolbar exposes the built-in analysis drawings, including channels,
-Fibonacci extension, ranges, and long/short risk-reward annotations.
+built-ins; selecting one opens the Applied Script Inspector for parameters
+(int/float/bool), Open in Editor, Reapply, and Remove. Compile-only does not
+dirty the desk, while Worker apply/reapply/remove do. Imported workspaces
+quarantine embedded KlineScript into a pending-activation list until the user
+explicitly Activates a script. The toolbar exposes the built-in analysis
+drawings, including channels, Fibonacci extension, ranges, and long/short
+risk-reward annotations.
 
 The Professional Drawing Toolbar groups those built-in tools, shows the active
 tool through `aria-pressed` (synced from Chart `toolActivation`), provides
