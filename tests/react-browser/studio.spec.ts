@@ -285,7 +285,7 @@ test("Studio provides KlineScript templates, diagnostics, autocomplete, local sa
   await page.getByRole("button", { name: "Save local", exact: true }).click();
   await expect(page.getByText("My KlineScript", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Run in Worker", exact: true }).click();
-  await expect(page.getByText("Runtime: ready", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Runtime: ready/)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("Indicators (3)", { exact: true })).toBeVisible();
   await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible();
   await page.getByRole("button", { name: "Delete My KlineScript", exact: true }).click();

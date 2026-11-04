@@ -9,11 +9,14 @@ import {
   ComparisonDatafeedController,
   InMemoryDatafeed,
   applyScopedDrawingStyle,
+  applyStudioKlineScriptIndicator,
   clearScopedDrawingSelection,
+  allocateStudioScriptInstanceId,
   allocateStudioWorkspaceId,
   allocateStudioWorkspaceImportId,
   buildStudioDrawingToolbarCatalog,
   buildStudioIndicatorCatalog,
+  buildStudioUserScriptCatalog,
   builtInDrawingTools,
   cancelStudioInteractiveDrawing,
   createStudioWorkspaceBaseline,
@@ -21,14 +24,17 @@ import {
   describeStudioWorkspaceImportError,
   describeStudioWorkspaceSaveStatus,
   filterStudioIndicatorCatalog,
+  filterStudioUserScriptCatalog,
   finalizeStudioWorkspaceImport,
   listStudioDrawingToolGroups,
   listStudioIndicatorCategories,
   normalizeStudioWorkspaceName,
   parseStudioWorkspaceCollection,
+  partitionStudioAppliedIndicators,
   prepareStudioWorkspaceImport,
   renameStudioWorkspaceRecord,
   resolveStudioWorkspaceSaveStatus,
+  STUDIO_KLINESCRIPT_TEMPLATES,
   studioDrawingToolGroupLabel,
   studioIndicatorDefaultPane,
   studioWorkspaceContentFingerprint,
@@ -104,7 +110,7 @@ interface PanelState {
 
 interface PanelSnapshot {
   readonly series: readonly ChartSeriesInfo[];
-  readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string }>;
+  readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string; script?: { readonly programId: string; readonly source: string } }>;
   readonly drawings: readonly DrawingSnapshot[];
   readonly selectedDrawingId: string | null;
   readonly activeDrawingTool: string | null;
@@ -219,7 +225,7 @@ const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
   ["candles", "Candles"], ["ohlc", "OHLC"], ["hollow", "Hollow"], ["heikin-ashi", "Heikin-Ashi"], ["line", "Line"], ["area", "Area"], ["baseline", "Baseline"],
 ];
 const scaleModes: ReadonlyArray<readonly [PriceScaleMode, string]> = [["linear", "Linear"], ["logarithmic", "Log"], ["percentage", "%"], ["indexed", "Index 100"]];
-const defaultScript = ['indicator("Studio EMA")', 'period = input.int("Period", default=21, min=1, max=200)', "value = ta.ema(close, period)", 'plot(value, title="EMA", color="#a78bfa")'].join("\n");
+const defaultScript = STUDIO_KLINESCRIPT_TEMPLATES[0]!.source;
 const IDLE_REPLAY_STATUS: ReplayStatus = { state: "idle", currentIndex: null, currentTimestamp: null, totalBars: 0, speed: 1 };
 const studioTradingCalendar = new TradingCalendarEngine({
   id: "openkline-studio-demo-market",
@@ -540,7 +546,12 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     }, null);
     const next: PanelSnapshot = {
       series: target.getSeriesInfo(),
-      indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
+      indicators: workspace.indicators.map((indicator) => ({
+        id: indicator.id,
+        indicatorId: indicator.indicatorId,
+        paneId: indicator.paneId,
+        ...(indicator.script === undefined ? {} : { script: { programId: indicator.script.programId, source: indicator.script.source } }),
+      })),
       drawings: target.getDrawings(), selectedDrawingId: target.getSelectedDrawingId(), activeDrawingTool: activeDrawingToolRef.current, alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex, replayVisibleLatest,
       anchoredVwaps: target.getAnchoredVwaps().map((item) => ({ id: item.id, ...item.getOptions() })),
       volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
@@ -858,6 +869,7 @@ export default function MultiChartStudioClient() {
     syncControllerRef.current = new ChartSynchronizationController();
   }
   const serialRef = useRef(2);
+  const scriptGenerationRef = useRef(0);
   const snapshotsRef = useRef<Record<string, PanelSnapshot>>({});
   const activePanelIdRef = useRef("chart-1");
   const [layout, setLayout] = useState<StudioLayout>("single");
@@ -881,6 +893,8 @@ export default function MultiChartStudioClient() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [scriptOpen, setScriptOpen] = useState(false);
   const [scriptSource, setScriptSource] = useState(defaultScript);
+  const [scriptLibrarySearch, setScriptLibrarySearch] = useState("");
+  const [localUserScripts, setLocalUserScripts] = useState<ReadonlyArray<{ readonly name: string; readonly source: string }>>([]);
   const [indicatorToAdd, setIndicatorToAdd] = useState<string>("SMA");
   const [selectedAppliedIndicatorId, setSelectedAppliedIndicatorId] = useState<string | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState("");
@@ -1173,7 +1187,23 @@ export default function MultiChartStudioClient() {
   const selectedIndicatorEntry = indicatorCatalog.find((item) => item.id === indicatorToAdd) ?? indicatorCatalog[0]!;
   const selectedIndicatorMetadata = indicatorRegistry.getMetadata(selectedIndicatorEntry.id);
   const appliedIndicators = activeSnapshot.indicators;
+  const { builtIn: appliedBuiltInIndicators, scripts: appliedScriptIndicators } = partitionStudioAppliedIndicators(appliedIndicators);
   const selectedAppliedIndicator = appliedIndicators.find((indicator) => indicator.id === selectedAppliedIndicatorId) ?? null;
+  const myScriptsCatalog = useMemo(() => {
+    const saved = buildStudioUserScriptCatalog(localUserScripts);
+    const templates = buildStudioUserScriptCatalog(STUDIO_KLINESCRIPT_TEMPLATES.map((item) => ({ id: item.id, name: item.name, source: item.source })));
+    return filterStudioUserScriptCatalog([...templates, ...saved], { query: scriptLibrarySearch });
+  }, [localUserScripts, scriptLibrarySearch]);
+  useEffect(() => {
+    try {
+      const parsed: unknown = JSON.parse(window.localStorage.getItem("openkline-studio-klinescripts-v1") ?? "[]");
+      if (Array.isArray(parsed)) {
+        setLocalUserScripts(parsed.filter((item): item is { name: string; source: string } => typeof item === "object" && item !== null && typeof (item as { name?: unknown }).name === "string" && typeof (item as { source?: unknown }).source === "string"));
+      }
+    } catch {
+      setLocalUserScripts([]);
+    }
+  }, [scriptOpen]);
   useEffect(() => {
     if (selectedAppliedIndicatorId === null) return;
     if (appliedIndicators.some((indicator) => indicator.id === selectedAppliedIndicatorId)) return;
@@ -2016,7 +2046,50 @@ export default function MultiChartStudioClient() {
     setNotice(`Cleared drawing selection on ${targetPanelId}.`);
   };
   const addAlert = (): void => { const target = activeHandle?.getChart(); if (target === null || target === undefined) return; const inputName = alertNameInputRef.current?.value ?? alertName; const normalizedName = inputName.trim() || "Price alert"; try { target.addAlert({ id: `studio-alert-${serialRef.current++}`, name: normalizedName, condition: { type: "price-cross-above", field: "close", value: alertThreshold }, frequency: alertFrequency }); setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: normalizedName.slice(0, 120), outcome: "accepted" }); activeHandle?.refresh(); setNotice(`Alert created in ${activePanel.panelId}; events remain local.`); } catch (error) { setLastAlertDiagnostic({ inputValue: inputName.slice(0, 120), createdName: "", outcome: "rejected" }); setNotice(`Could not create alert: ${error instanceof Error ? error.message : String(error)}`); } };
-  const addScript = async (source: string, signal: AbortSignal): Promise<void> => { const target = activeHandle?.getChart(); if (target === null || target === undefined) throw new Error("Chart is not ready"); await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal }); activeHandle?.refresh(); setNotice(`Added Worker-backed KlineScript to ${activePanel.panelId}.`); };
+  const addScript = async (source: string, signal: AbortSignal, generation: number, sourcePanelId = activePanelIdRef.current): Promise<void> => {
+    const instanceId = allocateStudioScriptInstanceId(serialRef.current++);
+    // Generation is frozen to the request token from the editor/catalog call site.
+    // Panel ownership is re-validated after the Worker await inside the helper.
+    const result = await applyStudioKlineScriptIndicator({
+      source,
+      activePanelId: activePanelIdRef.current,
+      targetPanelId: sourcePanelId,
+      requestGeneration: generation,
+      getCurrentGeneration: () => generation,
+      getActivePanelId: () => activePanelIdRef.current,
+      instanceId,
+      replayActive,
+      signal,
+      getChart: (panelId) => panelRefs.current.get(panelId)?.getChart() ?? null,
+    });
+    if (!result.ok) {
+      const messages: Record<typeof result.reason, string> = {
+        "stale-panel": `Skipped stale KlineScript apply for ${sourcePanelId}; ${activePanelIdRef.current} is active.`,
+        "stale-request": "Skipped stale KlineScript apply; editor source changed.",
+        "missing-chart": `Chart for ${sourcePanelId} is unavailable.`,
+        "replay-active": "KlineScript cannot be applied during replay.",
+        "empty-source": "KlineScript source is empty.",
+        "compile-failed": result.diagnostics?.map((item) => item.message).join(" · ") || "KlineScript compilation or Worker execution failed.",
+      };
+      throw new Error(messages[result.reason]);
+    }
+    panelRefs.current.get(result.panelId)?.refresh();
+    markLiveDirty();
+    setNotice(`Added Worker-backed KlineScript ${result.indicatorId} to ${result.panelId}.`);
+  };
+  const applyCatalogScript = async (source: string, sourcePanelId = activePanelIdRef.current): Promise<void> => {
+    if (replayActive) {
+      setNotice("KlineScript cannot be applied during replay.");
+      return;
+    }
+    scriptGenerationRef.current += 1;
+    const generation = scriptGenerationRef.current;
+    try {
+      await addScript(source, new AbortController().signal, generation, sourcePanelId);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   const toggleComparison = (): void => {
     setComparisonSettings((current) => {
@@ -2492,7 +2565,16 @@ export default function MultiChartStudioClient() {
     </section>
     <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button><button type="button" onClick={advanceComparisonStream} disabled={replayActive}>Advance demo stream</button><button type="button" onClick={disconnectComparisonStream} disabled={replayActive}>Simulate disconnect</button><button type="button" onClick={reconnectComparisonStream} disabled={replayActive}>Reconnect and recover</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>
     <section className={styles.replayBar} aria-label="Chart replay controls"><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label><label className={styles.check}><input aria-label="Snap drawings to visible OHLC" type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} />Snap drawings to visible OHLC</label></section>
-    {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
+    {scriptOpen ? <KlineScriptStudioEditor
+      source={scriptSource}
+      disabled={replayActive}
+      activePanelId={activePanel.panelId}
+      appliedScripts={appliedScriptIndicators}
+      onSourceChange={(next) => { setScriptSource(next); scriptGenerationRef.current += 1; }}
+      onAdd={addScript}
+      onRemoveApplied={(instanceId) => removeAppliedIndicator(instanceId, activePanel.panelId)}
+      onClose={() => setScriptOpen(false)}
+    /> : null}
         <section className={styles.indicatorExplorerPanel} aria-label="Technical analysis explorer" data-indicator-explorer="true" data-indicator-explorer-panel={activePanel.panelId}>
       <div className={styles.panelHeading}>
         <h2>Indicator Explorer</h2>
@@ -2522,16 +2604,34 @@ export default function MultiChartStudioClient() {
         <button type="button" aria-label={`Add ${selectedIndicatorEntry.name} to ${activePanel.panelId}`} data-indicator-add="" disabled={replayActive} onClick={() => addIndicator(selectedIndicatorEntry.id, activePanel.panelId)}>Add to {activePanel.panelId}</button>
         <button type="button" aria-label={`${favoriteIndicatorIds.includes(indicatorToAdd) ? "Remove" : "Add"} ${indicatorToAdd} favorite`} onClick={() => setFavoriteIndicatorIds((current) => current.includes(indicatorToAdd) ? current.filter((id) => id !== indicatorToAdd) : [...current, indicatorToAdd])}>{favoriteIndicatorIds.includes(indicatorToAdd) ? "Unfavorite" : "Favorite"}</button>
       </div>
-      <div className={styles.indicatorApplied} aria-label={`Applied studies on ${activePanel.panelId}`} data-applied-indicator-count={appliedIndicators.length}>
-        <div className={styles.panelHeading}><h3>Applied on {activePanel.panelId}</h3><span>{appliedIndicators.length}</span></div>
+      <div className={styles.indicatorApplied} aria-label="My Scripts catalog" data-my-scripts-count={myScriptsCatalog.length}>
+        <div className={styles.panelHeading}>
+          <h3>My Scripts</h3>
+          <span>{myScriptsCatalog.length} · KlineScript · not built-in registry</span>
+        </div>
+        <label>Search scripts<input aria-label="Search My Scripts catalog" placeholder="Template or saved script" value={scriptLibrarySearch} onChange={(event) => setScriptLibrarySearch(event.target.value)} /></label>
+        <div className={styles.indicatorExplorerItems} role="listbox" aria-label="My Scripts">
+          {myScriptsCatalog.length === 0 ? <p className={styles.indicatorExplorerEmpty} role="status">No scripts match the current search.</p> : myScriptsCatalog.map((item) => (
+            <button type="button" role="option" key={item.id} data-user-script-id={item.id} onClick={() => { setScriptSource(item.source); scriptGenerationRef.current += 1; setScriptOpen(true); }}>
+              {item.name}<small>KlineScript · open editor</small>
+            </button>
+          ))}
+        </div>
+        <div className={styles.indicatorParameters}>
+          <button type="button" disabled={replayActive} onClick={() => setScriptOpen(true)}>Open KlineScript editor</button>
+          <button type="button" aria-label={`Apply selected script template to ${activePanel.panelId}`} disabled={replayActive || myScriptsCatalog[0] === undefined} onClick={() => { const first = myScriptsCatalog[0]; if (first !== undefined) void applyCatalogScript(first.source, activePanel.panelId); }}>Apply first listed script to {activePanel.panelId}</button>
+        </div>
+      </div>
+      <div className={styles.indicatorApplied} aria-label={`Applied studies on ${activePanel.panelId}`} data-applied-indicator-count={appliedIndicators.length} data-applied-script-count={appliedScriptIndicators.length} data-applied-builtin-count={appliedBuiltInIndicators.length}>
+        <div className={styles.panelHeading}><h3>Applied on {activePanel.panelId}</h3><span>{appliedIndicators.length} · {appliedScriptIndicators.length} scripts</span></div>
         {appliedIndicators.length === 0 ? <p role="status">No indicators on this panel yet.</p> : <ul>{appliedIndicators.map((indicator) => (
-          <li key={indicator.id} data-applied-indicator-id={indicator.id} data-applied-indicator-type={indicator.indicatorId} data-applied-indicator-pane={indicator.paneId}>
-            <button type="button" className={styles.objectName} aria-pressed={selectedAppliedIndicatorId === indicator.id} aria-label={`Select applied ${indicator.indicatorId} ${indicator.id}`} onClick={() => { setSelectedAppliedIndicatorId(indicator.id); setIndicatorToAdd(indicator.indicatorId); }}>{indicator.indicatorId}<small>{indicator.id} · {indicator.paneId}</small></button>
-            <button type="button" aria-label={`Apply explorer parameters to ${indicator.id}`} disabled={replayActive || selectedAppliedIndicatorId !== indicator.id} onClick={() => applyExplorerParametersToSelected(indicator.id, activePanel.panelId)}>Apply params</button>
+          <li key={indicator.id} data-applied-indicator-id={indicator.id} data-applied-indicator-type={indicator.indicatorId} data-applied-indicator-pane={indicator.paneId} data-applied-indicator-kind={indicator.script === undefined ? "built-in" : "klinescript"}>
+            <button type="button" className={styles.objectName} aria-pressed={selectedAppliedIndicatorId === indicator.id} aria-label={`Select applied ${indicator.indicatorId} ${indicator.id}`} onClick={() => { setSelectedAppliedIndicatorId(indicator.id); if (indicator.script === undefined) setIndicatorToAdd(indicator.indicatorId); else { setScriptSource(indicator.script.source); setScriptOpen(true); } }}>{indicator.indicatorId}<small>{indicator.id} · {indicator.paneId}{indicator.script === undefined ? "" : " · KlineScript"}</small></button>
+            <button type="button" aria-label={`Apply explorer parameters to ${indicator.id}`} disabled={replayActive || selectedAppliedIndicatorId !== indicator.id || indicator.script !== undefined} onClick={() => applyExplorerParametersToSelected(indicator.id, activePanel.panelId)}>Apply params</button>
             <button type="button" aria-label={`Remove ${indicator.id}`} disabled={replayActive} onClick={() => removeAppliedIndicator(indicator.id, activePanel.panelId)}>×</button>
           </li>
         ))}</ul>}
-        {selectedAppliedIndicator === null ? null : <small>Selected instance {selectedAppliedIndicator.id} on {activePanel.panelId}. Parameter overrides apply only after Add or Apply params.</small>}
+        {selectedAppliedIndicator === null ? null : <small>Selected instance {selectedAppliedIndicator.id} on {activePanel.panelId}. {selectedAppliedIndicator.script === undefined ? "Parameter overrides apply only after Add or Apply params." : "KlineScript instances use the editor to recompile and reapply."}</small>}
       </div>
     </section>
 <section className={styles.workspace}>

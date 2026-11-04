@@ -1377,3 +1377,137 @@ test("Studio Professional Drawing Toolbar creates, cancels, dirty-tracks, and re
 
   expect(errors).toEqual([]);
 });
+
+test("Studio KlineScript compiles, applies via Worker, dirty-tracks, and restores panel-local scripts", async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  let primaryId = "";
+  let secondaryId = "";
+  let panelAId = "chart-1";
+  let panelBId = "chart-2";
+  let panelAScriptId = "";
+
+  await test.step("expand layout first, then compile invalid source without mutating", async () => {
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    const panelIds = await page.locator("[data-panel-id]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-panel-id") ?? ""));
+    panelAId = panelIds[0] || "chart-1";
+    panelBId = panelIds[1] || "chart-2";
+    await page.getByLabel("Active chart panel").selectOption(panelAId);
+
+    await page.getByLabel("Workspace name").fill("KlineScript Primary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    primaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+    await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+    const editor = page.getByRole("region", { name: "KlineScript editor" });
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveAttribute("data-klinescript-panel", panelAId);
+    const source = editor.getByLabel("KlineScript source");
+    await editor.getByLabel("KlineScript template").selectOption({ label: "Pointwise close" });
+    await source.fill('indicator("Broken")\nplot(eval(close))');
+    await editor.getByRole("button", { name: "Compile", exact: true }).click();
+    await expect(editor.getByText("KS3063", { exact: false })).toBeVisible();
+    await expect(editor.getByRole("button", { name: "Run in Worker", exact: true })).toBeDisabled();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("2 indicators", { exact: true })).toBeVisible();
+  });
+
+  await test.step("compile and apply a valid script on Panel A", async () => {
+    const editor = page.getByRole("region", { name: "KlineScript editor" });
+    const source = editor.getByLabel("KlineScript source");
+    await source.fill('indicator("Studio Panel A")\nplot(close, title="Close A", color="#fbbf24")');
+    await editor.getByRole("button", { name: "Compile", exact: true }).click();
+    await expect(editor.getByText(/Compiled KLINESCRIPT-/)).toBeVisible();
+    await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+    await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+    await expect(editor.getByText(/Runtime: ready/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+    panelAScriptId = await explorer.locator('[data-applied-indicator-kind="klinescript"]').getAttribute("data-applied-indicator-id") ?? "";
+    expect(panelAScriptId.length).toBeGreaterThan(0);
+  });
+
+  await test.step("Panel B apply stays local and Load Cancel preserves edits", async () => {
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace name").fill("KlineScript Secondary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    secondaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(secondaryId).not.toBe(primaryId);
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption(panelBId);
+    await page.getByRole("button", { name: `Activate ${panelBId}`, exact: true }).click();
+
+    if (!(await page.getByRole("region", { name: "KlineScript editor" }).isVisible())) {
+      await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+    }
+    const editor = page.getByRole("region", { name: "KlineScript editor" });
+    await expect(editor).toHaveAttribute("data-klinescript-panel", panelBId);
+    await editor.getByLabel("KlineScript source").fill('indicator("Studio Panel B")\nplot(close, title="Close B", color="#60a5fa")');
+    await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+    await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+
+    await page.getByLabel("Active chart panel").selectOption(panelAId);
+    await expect(explorer.locator(`[data-applied-indicator-id="${panelAScriptId}"]`)).toHaveCount(1);
+    await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    const loadGuard = page.getByRole("dialog", { name: "Load another workspace?" });
+    await expect(loadGuard).toBeVisible();
+    await loadGuard.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  });
+
+  await test.step("save and restore keeps panel-local scripts", async () => {
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption(panelAId);
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+    await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    await page.getByLabel("Active chart panel").selectOption(panelBId);
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+    await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+  });
+
+  await test.step("remove applied script marks dirty and replay disables editor", async () => {
+    await page.getByLabel("Active chart panel").selectOption(panelAId);
+    const scriptRow = explorer.locator('[data-applied-indicator-kind="klinescript"]').first();
+    const removeId = await scriptRow.getAttribute("data-applied-indicator-id");
+    expect(removeId).toBeTruthy();
+    await explorer.getByRole("button", { name: `Remove ${removeId}`, exact: true }).click();
+    await expect(page.getByText(new RegExp(`Removed ${removeId}`))).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("2 indicators", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+    await expect(page.getByRole("button", { name: "KlineScript", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+  });
+
+  expect(errors).toEqual([]);
+});

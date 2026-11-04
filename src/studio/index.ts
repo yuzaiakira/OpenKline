@@ -92,6 +92,32 @@ export type {
   StudioDrawingToolbarFilter,
 } from "./drawing-toolbar.js";
 export {
+  STUDIO_KLINESCRIPT_TEMPLATES,
+  allocateStudioScriptInstanceId,
+  allocateStudioUserScriptId,
+  applyStudioKlineScriptIndicator,
+  buildStudioUserScriptCatalog,
+  compileStudioKlineScript,
+  filterStudioUserScriptCatalog,
+  gateStudioKlineScriptCompile,
+  isStudioAppliedScriptIndicator,
+  partitionStudioAppliedIndicators,
+  resolveStudioScriptApplyTarget,
+} from "./klinescript-studio.js";
+export type {
+  StudioAppliedIndicatorRef,
+  StudioScriptApplyFailureReason,
+  StudioScriptApplyTargetArgs,
+  StudioScriptApplyTargetResult,
+  StudioScriptCompileGateArgs,
+  StudioScriptCompileGateResult,
+  StudioScriptCompileRequest,
+  StudioScriptCompileSnapshot,
+  StudioScriptTargetChart,
+  StudioUserScriptCatalogFilter,
+  StudioUserScriptDefinition,
+} from "./klinescript-studio.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

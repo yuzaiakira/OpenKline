@@ -660,7 +660,7 @@ export default function StudioClient() {
     }
   };
 
-  const addScript = async (source: string, signal: AbortSignal): Promise<void> => {
+  const addScript = async (source: string, signal: AbortSignal, _generation: number): Promise<void> => {
     const target = chart();
     if (target === null) throw new Error("Chart is not ready");
     const indicator = await target.addScriptIndicatorAsync(source, { id: `studio-script-${serialRef.current++}`, pane: "new", signal });
@@ -748,7 +748,7 @@ export default function StudioClient() {
         </div>
       </section>
 
-      {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
+      {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} activePanelId="chart-1" onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
 
       <section className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="Chart object manager">
