@@ -119,6 +119,19 @@ successfully persisted baseline (`studioWorkspaceContentFingerprint`,
 - Export does not mark the desk Saved. `beforeunload` may show the browser’s
   generic prompt when navigation away would lose unsaved work.
 
+## Professional Drawing Toolbar
+
+Helpers `buildStudioDrawingToolbarCatalog`, `filterStudioDrawingToolbarCatalog`,
+`listStudioDrawingToolGroups`, `studioDrawingToolGroupLabel`, and
+`cancelStudioInteractiveDrawing` support the reference Studio toolbar:
+
+- Catalog entries are grounded in `builtInDrawingTools` for host-supported types.
+- Groups organize lines, shapes, Fibonacci, measure, trade, and annotate tools.
+- `cancelStudioInteractiveDrawing` invokes the internal Chart cancellation
+  bridge (not a public Chart method) so Studio can Cancel / Escape safely.
+- Tool selection must not mark the workspace dirty; committed drawing mutations
+  participate in the existing fingerprint dirty-state model.
+
 ## Indicator Explorer
 
 Helpers `buildStudioIndicatorCatalog`, `filterStudioIndicatorCatalog`,

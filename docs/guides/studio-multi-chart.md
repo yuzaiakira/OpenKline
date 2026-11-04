@@ -33,6 +33,13 @@ as built-in catalog entries. The toolbar exposes the built-in analysis
 drawings, including channels, Fibonacci extension, ranges, and long/short
 risk-reward annotations.
 
+The Professional Drawing Toolbar groups those built-in tools, shows the active
+tool through `aria-pressed` (synced from Chart `toolActivation`), provides
+Cursor and Cancel modes, and supports Escape cancellation of an in-progress
+drawing through the internal cancellation bridge. Selecting a tool does not
+dirty the workspace; completing, styling, undoing, or redoing a drawing does.
+Replay disables drawing-tool mutations.
+
 Workspace, watchlist, and panel destructive actions use an in-page ARIA dialog
 with explicit Cancel and Confirm/Apply controls. They do not call blocking
 browser `prompt()` or `confirm()` dialogs.
