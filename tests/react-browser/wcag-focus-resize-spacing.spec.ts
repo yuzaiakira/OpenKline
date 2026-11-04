@@ -81,7 +81,7 @@ test("2.4.11 focused Object Tree and dialog controls are not fully obscured by S
 test("1.4.4 Studio chrome remains operable under 200% CSS zoom", async ({ page }) => {
   await page.goto("/");
   await page.setViewportSize({ width: 1280, height: 800 });
-  // Drawing-tool "Trend" is not an aria-pressed control (chart-type buttons are).
+  // Drawing-tool "Trend" exposes aria-pressed when armed; chart-type buttons also use aria-pressed.
   // Apply CSS zoom after load to approximate text enlargement; not identical to browser page zoom.
   await page.evaluate(() => {
     document.documentElement.style.zoom = "2";

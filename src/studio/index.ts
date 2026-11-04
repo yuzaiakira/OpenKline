@@ -80,6 +80,18 @@ export type {
   StudioIndicatorCatalogFilter,
 } from "./indicator-explorer.js";
 export {
+  buildStudioDrawingToolbarCatalog,
+  cancelStudioInteractiveDrawing,
+  filterStudioDrawingToolbarCatalog,
+  listStudioDrawingToolGroups,
+  studioDrawingToolGroupLabel,
+} from "./drawing-toolbar.js";
+export type {
+  StudioDrawingToolEntry,
+  StudioDrawingToolGroup,
+  StudioDrawingToolbarFilter,
+} from "./drawing-toolbar.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,

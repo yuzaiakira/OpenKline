@@ -1246,3 +1246,134 @@ test("Studio Indicator Explorer adds, scopes, dirty-tracks, and restores panel-l
 
   expect(errors).toEqual([]);
 });
+
+test("Studio Professional Drawing Toolbar creates, cancels, dirty-tracks, and restores panel-local drawings", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const toolbar = page.getByRole("region", { name: "Professional drawing toolbar" });
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  let primaryId = "";
+  let secondaryId = "";
+
+  await test.step("arm Trend, cancel before completion without dirtying a saved desk", async () => {
+    await page.getByLabel("Workspace name").fill("Drawing Toolbar Primary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    primaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await toolbar.getByRole("button", { name: "Trend", exact: true }).click();
+    await expect(toolbar.getByRole("button", { name: "Trend", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-active-drawing-tool]")).toHaveAttribute("data-active-drawing-tool", "trend-line");
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    await page.keyboard.press("Escape");
+    await expect(toolbar.getByRole("button", { name: "Cursor selection mode", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-active-drawing-tool]")).toHaveAttribute("data-active-drawing-tool", "");
+    await expect(page.getByText("Drawings (0)", { exact: true })).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+  });
+
+  await test.step("complete a Trend on Panel A and mark dirty", async () => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await toolbar.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Completed drawing/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await expect(toolbar.getByRole("button", { name: "Cursor selection mode", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await properties.getByLabel("Drawing color").fill("#22c55e");
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+  });
+
+  await test.step("Panel B horizontal line stays local and Load Cancel preserves edits", async () => {
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    const discardGuard = page.getByRole("dialog", { name: "Start a new workspace?" });
+    await expect(discardGuard).toBeVisible();
+    await discardGuard.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace name").fill("Drawing Toolbar Secondary");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    secondaryId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    expect(secondaryId).not.toBe(primaryId);
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await toolbar.getByRole("button", { name: "Horizontal", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.4, 0.3, 'section[aria-label="OpenKline multi-chart workspace"] [data-panel-id="chart-2"] canvas');
+    await expect(page.locator('[data-panel-id="chart-2"]').getByText("1 drawings", { exact: true })).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-panel-id="chart-2"]').getByText("1 drawings", { exact: true })).toBeVisible();
+
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    const loadGuard = page.getByRole("dialog", { name: "Load another workspace?" });
+    await expect(loadGuard).toBeVisible();
+    await loadGuard.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  });
+
+  await test.step("save and restore keeps panel-local drawings and styles", async () => {
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+    await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+    await page.getByLabel("Workspace", { exact: true }).selectOption(primaryId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await expect(page.locator('[data-panel-id="chart-2"]').getByText("1 drawings", { exact: true })).toBeVisible();
+  });
+
+  await test.step("replay disables drawing tools", async () => {
+    await page.getByRole("button", { name: "Enter replay", exact: true }).click();
+    await expect(toolbar.getByRole("button", { name: "Trend", exact: true })).toBeDisabled();
+    await expect(toolbar.getByRole("button", { name: "Cursor selection mode", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "Exit replay", exact: true }).click();
+    await expect(toolbar.getByRole("button", { name: "Trend", exact: true })).toBeEnabled();
+  });
+
+  await test.step("keyboard reaches Cursor and Trend controls", async () => {
+    await toolbar.getByRole("button", { name: "Cursor selection mode", exact: true }).focus();
+    await expect(toolbar.getByRole("button", { name: "Cursor selection mode", exact: true })).toBeFocused();
+    await toolbar.getByRole("button", { name: "Trend", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(toolbar.getByRole("button", { name: "Trend", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+    await expect(toolbar.getByRole("button", { name: "Cursor selection mode", exact: true })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  expect(errors).toEqual([]);
+});

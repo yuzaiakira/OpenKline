@@ -12,19 +12,24 @@ import {
   clearScopedDrawingSelection,
   allocateStudioWorkspaceId,
   allocateStudioWorkspaceImportId,
+  buildStudioDrawingToolbarCatalog,
   buildStudioIndicatorCatalog,
+  builtInDrawingTools,
+  cancelStudioInteractiveDrawing,
   createStudioWorkspaceBaseline,
   deleteStudioWorkspaceRecord,
   describeStudioWorkspaceImportError,
   describeStudioWorkspaceSaveStatus,
   filterStudioIndicatorCatalog,
   finalizeStudioWorkspaceImport,
+  listStudioDrawingToolGroups,
   listStudioIndicatorCategories,
   normalizeStudioWorkspaceName,
   parseStudioWorkspaceCollection,
   prepareStudioWorkspaceImport,
   renameStudioWorkspaceRecord,
   resolveStudioWorkspaceSaveStatus,
+  studioDrawingToolGroupLabel,
   studioIndicatorDefaultPane,
   studioWorkspaceContentFingerprint,
   studioWorkspaceNeedsNavigationGuard,
@@ -102,6 +107,7 @@ interface PanelSnapshot {
   readonly indicators: ReadonlyArray<{ id: string; indicatorId: string; paneId: string }>;
   readonly drawings: readonly DrawingSnapshot[];
   readonly selectedDrawingId: string | null;
+  readonly activeDrawingTool: string | null;
   readonly alerts: readonly AlertDefinition[];
   readonly alertHistory: readonly AlertEvent[];
   readonly replayStatus: ReplayStatus;
@@ -159,6 +165,7 @@ interface ChartPanelProps {
   readonly onCrosshair: (panelId: string, event: CrosshairMoveEvent) => void;
   readonly onViewport: (panelId: string, range: { from: number; to: number }) => void;
   readonly onNotice: (message: string) => void;
+  readonly onDrawingCommitted?: (panelId: string, drawingId: string) => void;
   readonly comparison: ComparisonPanelState | null;
 }
 
@@ -199,12 +206,15 @@ const indicatorChoices = [
 const indicatorRegistry = createDefaultIndicatorRegistry();
 const indicatorCatalog = buildStudioIndicatorCatalog(indicatorRegistry, indicatorSupportedIds);
 const indicatorCategories = listStudioIndicatorCategories(indicatorCatalog);
-const drawingTools = [
-  ["trend-line", "Trend"], ["ray", "Ray"], ["extended-line", "Extended"], ["parallel-channel", "Channel"],
-  ["horizontal-line", "Horizontal"], ["vertical-line", "Vertical"], ["rectangle", "Rectangle"],
-  ["fibonacci-retracement", "Fib retrace"], ["fibonacci-extension", "Fib extend"], ["price-range", "Price range"],
-  ["date-range", "Date range"], ["long-position", "Long R:R"], ["short-position", "Short R:R"], ["text", "Text"],
+const drawingSupportedTypes = [
+  "trend-line", "ray", "extended-line", "parallel-channel",
+  "horizontal-line", "vertical-line", "rectangle",
+  "fibonacci-retracement", "fibonacci-extension", "price-range",
+  "date-range", "long-position", "short-position", "text",
 ] as const;
+const drawingToolbarCatalog = buildStudioDrawingToolbarCatalog(builtInDrawingTools, drawingSupportedTypes);
+const drawingToolGroups = listStudioDrawingToolGroups(drawingToolbarCatalog);
+const drawingTools = drawingToolbarCatalog.map((entry) => [entry.type, entry.label] as const);
 const presentationChoices: ReadonlyArray<readonly [Presentation, string]> = [
   ["candles", "Candles"], ["ohlc", "OHLC"], ["hollow", "Hollow"], ["heikin-ashi", "Heikin-Ashi"], ["line", "Line"], ["area", "Area"], ["baseline", "Baseline"],
 ];
@@ -453,7 +463,7 @@ function toStudioColorInput(value: string | undefined): string {
 
 function emptySnapshot(): PanelSnapshot {
   return {
-    series: [], indicators: [], drawings: [], selectedDrawingId: null, alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS,
+    series: [], indicators: [], drawings: [], selectedDrawingId: null, activeDrawingTool: null, alerts: [], alertHistory: [], replayStatus: IDLE_REPLAY_STATUS,
     replaySourceLength: 0, replayStartIndex: 84, replayVisibleLatest: null, anchoredVwaps: [], volumeProfiles: [],
     multiTimeframeIndicators: [], multiTimeframeReferences: [], tradingCalendar: null, sessionIndicators: [], sessionReferences: [],
     orderFlow: { tradeCount: 0, tradeCoverage: "empty", footprint: null, cvd: null, depth: null, depthMetrics: null },
@@ -493,7 +503,7 @@ function syncMainPaneDiagnostics(target: Chart, root: HTMLElement | null): void 
   }
 }
 
-const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice, comparison }, ref) {
+const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartPanel({ panel, active, initialWorkspace, onActivate, onReady, onSnapshot, onCrosshair, onViewport, onNotice, onDrawingCommitted, comparison }, ref) {
   const chartHandle = useRef<FinancialChartHandle>(null);
   const chartRef = useRef<Chart | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
@@ -511,6 +521,10 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
   const canonicalWorkspaceRef = useRef<WorkspaceDocument | null>(null);
   const comparisonStateRef = useRef<ComparisonPanelState | null>(comparison);
   const applyComparisonRef = useRef<(next: ComparisonPanelState | null) => void>(() => undefined);
+  const activeDrawingToolRef = useRef<string | null>(null);
+  const drawingCountRef = useRef(0);
+  const onDrawingCommittedRef = useRef(onDrawingCommitted);
+  onDrawingCommittedRef.current = onDrawingCommitted;
   comparisonStateRef.current = comparison;
   const [snapshot, setSnapshot] = useState<PanelSnapshot>(emptySnapshot);
   const [crosshairTime, setCrosshairTime] = useState<number | null>(null);
@@ -527,7 +541,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     const next: PanelSnapshot = {
       series: target.getSeriesInfo(),
       indicators: workspace.indicators.map((indicator) => ({ id: indicator.id, indicatorId: indicator.indicatorId, paneId: indicator.paneId })),
-      drawings: target.getDrawings(), selectedDrawingId: target.getSelectedDrawingId(), alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex, replayVisibleLatest,
+      drawings: target.getDrawings(), selectedDrawingId: target.getSelectedDrawingId(), activeDrawingTool: activeDrawingToolRef.current, alerts: target.getAlerts(), alertHistory: target.getAlertHistory(), replayStatus, replaySourceLength, replayStartIndex, replayVisibleLatest,
       anchoredVwaps: target.getAnchoredVwaps().map((item) => ({ id: item.id, ...item.getOptions() })),
       volumeProfiles: target.getVolumeProfiles().map((item) => item.getOptions()),
       multiTimeframeIndicators: target.getMultiTimeframeIndicators().map((item) => ({ id: item.id, indicatorId: item.indicatorId, targetTimeframe: item.getOptions().targetTimeframe, visible: item.getOptions().visible })),
@@ -590,7 +604,19 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       onViewport(panel.panelId, range);
       syncMainPaneDiagnostics(target, rootRef.current);
     });
+    drawingCountRef.current = target.getDrawings().length;
+    activeDrawingToolRef.current = null;
     target.subscribe("drawingSelection", () => publish());
+    target.subscribe("toolActivation", (event) => {
+      activeDrawingToolRef.current = event.active ? event.type : null;
+      const nextCount = target.getDrawings().length;
+      if (!event.active && nextCount > drawingCountRef.current) {
+        const committedId = target.getSelectedDrawingId() ?? target.getDrawings().at(-1)?.id;
+        if (committedId !== undefined && committedId !== null) onDrawingCommittedRef.current?.(panel.panelId, committedId);
+      }
+      drawingCountRef.current = nextCount;
+      publish();
+    });
     target.subscribe("indicatorChange", () => publish());
     target.subscribe("alertTriggered", (event) => { publish(); onNotice(`${event.simulated ? "Simulated" : "Live"} alert on ${panel.symbol}: ${event.alertName}`); });
     target.subscribe("alertError", (diagnostic) => onNotice(`Alert ${diagnostic.alertId} failed: ${diagnostic.message}`));
@@ -658,6 +684,8 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
     const target = chartRef.current;
     if (target === null) return;
     try {
+      cancelStudioInteractiveDrawing(target);
+      activeDrawingToolRef.current = null;
       const canonical = withoutComparisonSeries(document);
       target.restoreWorkspace(canonical, { tradingCalendarResolver: (id, version) => id === studioTradingCalendar.id && version === studioTradingCalendar.version ? studioTradingCalendar : undefined });
       seedStudioOrderFlow(target, panel.symbol, panel.timeframe, buildCandles(panel.symbol, panel.timeframe));
@@ -668,6 +696,7 @@ const ChartPanel = forwardRef<ChartPanelHandle, ChartPanelProps>(function ChartP
       comparisonNormalProfileVisibilityRef.current.clear();
       comparisonMultiTimeframeVisibilityRef.current.clear();
       comparisonNormalScaleRef.current = null;
+      drawingCountRef.current = target.getDrawings().length;
       publish(target, IDLE_REPLAY_STATUS, target.getData().length, Math.floor(target.getData().length * 0.35));
       if (comparisonStateRef.current?.active === true) queueMicrotask(() => applyComparisonRef.current(comparisonStateRef.current));
     }
@@ -1875,7 +1904,69 @@ export default function MultiChartStudioClient() {
       setNotice(`Added previous session levels to ${activePanel.panelId}.`);
     } catch (error) { setNotice(`Could not add session levels: ${error instanceof Error ? error.message : String(error)}`); }
   };
-  const activateDrawing = (type: string): void => { try { activeHandle?.getChart()?.startDrawing(type, { style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 }, snap: snapEnabled ? "visible-ohlc" : "none", ...(type === "text" ? { text: "Studio note" } : {}) }); markLiveDirty(); setNotice(`${type} is active in ${activePanel.panelId}${snapEnabled ? " with visible OHLC snapping" : ""}.`); } catch (error) { setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`); } };
+  const activateDrawing = (type: string, sourcePanelId = activePanelId): void => {
+    if (sourcePanelId !== activePanelIdRef.current) {
+      setNotice(`Skipped stale drawing tool for ${sourcePanelId}; ${activePanelIdRef.current} is active.`);
+      return;
+    }
+    if (replayActive) {
+      setNotice("Drawing tools stay read-only during replay.");
+      return;
+    }
+    const entry = drawingToolbarCatalog.find((tool) => tool.type === type);
+    if (entry === undefined) {
+      setNotice(`Drawing tool "${type}" is not available in the Studio toolbar.`);
+      return;
+    }
+    const handle = panelRefs.current.get(sourcePanelId);
+    const chart = handle?.getChart();
+    if (chart === null || chart === undefined) {
+      setNotice(`No active chart for panel ${sourcePanelId}.`);
+      return;
+    }
+    try {
+      chart.startDrawing(type, {
+        style: { color: "#fbbf24", fillColor: "#fbbf2433", lineWidth: 2 },
+        snap: snapEnabled ? "visible-ohlc" : "none",
+        ...(type === "text" ? { text: "Studio note" } : {}),
+      });
+      handle?.refresh();
+      setNotice(`${entry.label} is active on ${sourcePanelId}${snapEnabled ? " with visible OHLC snapping" : ""}. Place ${entry.minPoints} point${entry.minPoints === 1 ? "" : "s"} to complete.`);
+    } catch (error) {
+      setNotice(`Could not activate drawing: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  const cancelActiveDrawing = (sourcePanelId = activePanelId): void => {
+    if (sourcePanelId !== activePanelIdRef.current) {
+      setNotice(`Skipped stale drawing cancel for ${sourcePanelId}; ${activePanelIdRef.current} is active.`);
+      return;
+    }
+    const handle = panelRefs.current.get(sourcePanelId);
+    const chart = handle?.getChart();
+    if (chart === null || chart === undefined) return;
+    const hadTool = activeSnapshot.activeDrawingTool !== null;
+    cancelStudioInteractiveDrawing(chart);
+    handle?.refresh();
+    if (hadTool) setNotice(`Canceled drawing tool on ${sourcePanelId}.`);
+  };
+  const clearDrawingToolToCursor = (sourcePanelId = activePanelId): void => {
+    cancelActiveDrawing(sourcePanelId);
+  };
+  const onDrawingCommitted = useCallback((panelId: string, drawingId: string): void => {
+    markLiveDirty();
+    setNotice(`Completed drawing ${drawingId} on ${panelId}.`);
+  }, [markLiveDirty]);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      if (dialog !== null) return;
+      if (activeSnapshot.activeDrawingTool === null) return;
+      event.preventDefault();
+      cancelActiveDrawing(activePanelIdRef.current);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeSnapshot.activeDrawingTool, dialog]);
   const selectedDrawing = activeSnapshot.drawings.find((drawing) => drawing.id === activeSnapshot.selectedDrawingId) ?? null;
   const chartForPanel = (panelId: string): Chart | null => panelRefs.current.get(panelId)?.getChart() ?? null;
   const applyDrawingStyle = (targetPanelId: string, drawingId: string, patch: DrawingStyle): void => {
@@ -2368,7 +2459,37 @@ export default function MultiChartStudioClient() {
       <label>Timeframe<select aria-label="Active timeframe" value={activePanel.timeframe} disabled={replayActive} onChange={(event) => changeActiveTimeframe(event.target.value as Timeframe)}>{timeframes.map((timeframe) => <option key={timeframe}>{timeframe}</option>)}</select></label>
       <div className={styles.topActions}><button type="button" onClick={(event) => newWorkspace(event.currentTarget)}>New</button><button type="button" onClick={() => { void saveWorkspace(false); }} disabled={replayActive}>Save</button><button type="button" onClick={() => { void saveWorkspace(true); }} disabled={replayActive}>Save As</button><button type="button" onClick={(event) => renameWorkspace(event.currentTarget)} disabled={replayActive}>Rename</button><button type="button" onClick={duplicateWorkspace} disabled={replayActive}>Duplicate</button><button type="button" onClick={(event) => deleteWorkspace(event.currentTarget)}>Delete</button><button type="button" onClick={(event) => loadWorkspace(workspaceId, event.currentTarget)}>Load</button><select aria-label="Workspace" value={workspaceEntries.some((entry) => entry.id === workspaceId) ? workspaceId : ""} onChange={(event) => { if (event.target.value !== "") loadWorkspace(event.target.value, event.currentTarget); }}>{workspaceEntries.some((entry) => entry.id === workspaceId) ? null : <option value="" disabled>{workspaceEntries.length === 0 ? "No saved workspaces" : "Unsaved desk"}</option>}{workspaceEntries.map((entry) => <option key={entry.id} value={entry.id}>{entry.id === workspaceId ? studioWorkspaceSelectorLabel({ id: entry.id, name: workspaceName }, workspaceEntries.map((candidate) => candidate.id === workspaceId ? { id: workspaceId, name: workspaceName } : candidate)) : studioWorkspaceSelectorLabel(entry, workspaceEntries)}</option>)}</select><input aria-label="Workspace name" value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} /><output aria-label="Workspace save status" data-workspace-save-status={currentSaveStatus} data-workspace-library-id={libraryBackingId ?? ""} data-workspace-save-failed={saveFailed ? "true" : "false"}>{describeStudioWorkspaceSaveStatus(currentSaveStatus, workspaceName)}</output><button type="button" aria-label="Export workspace" onClick={() => { try { const named = normalizeStudioWorkspaceName(workspaceName); const document = collectDocument(workspaceId, named); const file = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(file); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `openkline-${named.toLowerCase().replace(/\s+/g, "-")}.json`; anchor.click(); URL.revokeObjectURL(url); setNotice(`Exported “${named}” (${document.charts.length} panel${document.charts.length === 1 ? "" : "s"}).`); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }}>Export</button><button type="button" aria-label="Import workspace" onClick={(event) => { dialogTriggerRef.current = event.currentTarget; importInputRef.current?.click(); }}>Import</button><input ref={importInputRef} type="file" accept="application/json,.json" hidden aria-label="Workspace import file" onChange={(event) => { const file = event.target.files?.[0]; if (file !== undefined) importWorkspace(file, dialogTriggerRef.current); event.currentTarget.value = ""; }} /></div>
     </header>
-    <section className={styles.toolbar} aria-label="Chart tools"><div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div><div className={styles.toolGroup} aria-label="Drawing tools">{drawingTools.map(([type, label]) => <button key={type} type="button" disabled={replayActive} onClick={() => activateDrawing(type)}>{label}</button>)}<button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) activeHandle.refresh(); }}>Undo</button><button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) activeHandle.refresh(); }}>Redo</button><button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button></div></section>
+        <section className={styles.toolbar} aria-label="Chart tools" data-drawing-toolbar-panel={activePanel.panelId} data-active-drawing-tool={activeSnapshot.activeDrawingTool ?? ""}>
+      <div className={styles.toolGroup} aria-label="Chart type">{presentationChoices.map(([kind, label]) => <button key={kind} type="button" aria-pressed={presentation === kind} onClick={() => updatePresentation(kind)}>{label}</button>)}<button type="button" onClick={() => activeHandle?.getChart()?.fitContent()}>Fit</button><button type="button" onClick={() => activeHandle?.getChart()?.resetView()}>Reset</button></div>
+      <div className={styles.drawingToolbar} role="region" aria-label="Professional drawing toolbar">
+        <div className={styles.toolGroup} aria-label="Drawing mode">
+          <button type="button" aria-label="Cursor selection mode" aria-pressed={activeSnapshot.activeDrawingTool === null} data-drawing-mode="cursor" disabled={replayActive} onClick={() => clearDrawingToolToCursor(activePanel.panelId)}>Cursor</button>
+          <button type="button" aria-label="Cancel active drawing tool" data-drawing-mode="cancel" disabled={replayActive || activeSnapshot.activeDrawingTool === null} onClick={() => cancelActiveDrawing(activePanel.panelId)}>Cancel</button>
+        </div>
+        {drawingToolGroups.map((group) => (
+          <div key={group} className={styles.toolGroup} aria-label={`${studioDrawingToolGroupLabel(group)} drawing tools`} data-drawing-tool-group={group}>
+            {drawingToolbarCatalog.filter((tool) => tool.group === group).map((tool) => (
+              <button
+                key={tool.type}
+                type="button"
+                title={tool.description}
+                aria-label={tool.label}
+                aria-pressed={activeSnapshot.activeDrawingTool === tool.type}
+                data-drawing-tool={tool.type}
+                data-drawing-min-points={tool.minPoints}
+                disabled={replayActive}
+                onClick={() => activateDrawing(tool.type, activePanel.panelId)}
+              >{tool.label}</button>
+            ))}
+          </div>
+        ))}
+        <div className={styles.toolGroup} aria-label="Drawing history">
+          <button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.undoDrawing()) { activeHandle.refresh(); markLiveDirty(); } }}>Undo</button>
+          <button type="button" disabled={replayActive} onClick={() => { if (activeHandle?.getChart()?.redoDrawing()) { activeHandle.refresh(); markLiveDirty(); } }}>Redo</button>
+          <button type="button" onClick={() => setScriptOpen((open) => !open)} disabled={replayActive}>KlineScript</button>
+        </div>
+      </div>
+    </section>
     <section className={styles.comparisonPanel} aria-label="Asset comparison"><div className={styles.panelHeading}><div><h2>Asset comparison</h2><small>Normalized display values; raw market prices remain unchanged.</small></div><button type="button" aria-label="Comparison mode" aria-pressed={comparisonSettings.active} onClick={toggleComparison}>{comparisonSettings.active ? "Exit comparison" : "Compare assets"}</button></div>{comparisonSettings.active ? <><div className={styles.comparisonControls}><label>Data source<select aria-label="Comparison data source" value={comparisonSettings.dataSource ?? "demo"} disabled={replayActive} onChange={(event) => setComparisonDataSource(event.target.value as StudioComparisonSource)}><option value="demo">Demo fixtures · offline</option><option value="binance">Binance public · optional</option></select></label><label>Normalization<select aria-label="Comparison normalization" value={comparisonSettings.mode} disabled={replayActive} onChange={(event) => setComparisonMode(event.target.value as ComparisonNormalizationMode)}><option value="percentage">Percentage change</option><option value="indexed">Indexed · base 100</option></select></label><label>Baseline<select aria-label="Comparison baseline" disabled={replayActive} value={String(comparisonSettings.baselineTime ?? "")} onChange={(event) => setComparisonBaseline(Number(event.target.value))}>{(comparisonSettings.dataSource ?? "demo") === "binance" ? <option value={String(comparisonSettings.baselineTime ?? "")}>Provider window start</option> : comparisonBaselineOptions.map((candle) => <option key={candle.time} value={String(candle.time)}>{new Date(candle.time).toISOString().slice(0, 16).replace("T", " ")} UTC</option>)}</select></label></div><fieldset className={styles.comparisonAssets}><legend>Assets</legend>{symbols.map((symbol) => <label key={symbol} className={styles.check}><input aria-label={`Compare ${symbol}`} type="checkbox" checked={comparisonSettings.assetIds.includes(symbol)} disabled={symbol === activePanel.symbol || replayActive} onChange={() => toggleComparisonAsset(symbol)} />{symbol}{symbol === activePanel.symbol ? " · primary" : ""}</label>)}</fieldset><div className={styles.comparisonStatus} data-comparison-feed-status={comparisonFeedState?.status ?? "idle"} data-comparison-visible-latest={comparisonVisibleLatest === null ? "" : String(comparisonVisibleLatest)} data-comparison-replay-cutoff={comparisonFeedState?.replayCutoff === null || comparisonFeedState === null ? "" : String(comparisonFeedState.replayCutoff)}><small>Historical data: {comparisonFeedState?.status ?? "idle"} · {comparisonFeedState?.assets.filter((asset) => asset.state === "ready").length ?? 0}/{comparisonSettings.assetIds.length} assets ready</small><small>Source: {(comparisonSettings.dataSource ?? "demo") === "demo" ? "deterministic demo; not live market data" : "optional public provider; freshness is not guaranteed"}</small>{comparisonFeedState?.assets.map((asset) => { const latest = latestComparisonTime(comparisonLines, asset.id, asset.coverage.observedTo, replayActive); return <small key={asset.id}>{asset.id}: {asset.state}/{asset.realtime} · coverage {asset.coverage.completeness} · recovery {asset.recovery.state} · latest {latest === null ? "—" : new Date(latest).toISOString()}{asset.error === null ? "" : ` · ${asset.error}`}</small>; })}<div><button type="button" onClick={recoverComparison} disabled={replayActive || comparisonFeedState?.status === "loading"}>Recover missing history</button>{(comparisonSettings.dataSource ?? "demo") === "demo" ? <><button type="button" onClick={simulateComparisonGap} disabled={replayActive || comparisonFeedState?.status === "loading"}>Simulate missing history</button><button type="button" onClick={simulateComparisonCorrection} disabled={replayActive}>Simulate realtime correction</button><button type="button" onClick={advanceComparisonStream} disabled={replayActive}>Advance demo stream</button><button type="button" onClick={disconnectComparisonStream} disabled={replayActive}>Simulate disconnect</button><button type="button" onClick={reconnectComparisonStream} disabled={replayActive}>Reconnect and recover</button></> : null}</div></div><ul className={styles.comparisonLegend} aria-label="Comparison legend">{comparisonLines.map((line) => <li key={line.id}><span aria-hidden="true" style={{ backgroundColor: line.color ?? "#60a5fa" }} />{line.label}<strong>{formatComparisonValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id)) === undefined ? null : comparisonPointValue(crosshair?.series.find((item) => item.id === comparisonSeriesId(line.id))?.value ?? null), comparisonSettings.mode)}</strong></li>)}</ul><small>Baseline uses the latest observation at or before the selected UTC time, within {comparisonSettings.baselineMaxAgeMs / 3_600_000}h. No future bar is used; recovery never fabricates candles.</small></> : <p>Compare BTC-USD, ETH-USD, and AAPL using deterministic offline fixtures or explicitly selected optional public provider data.</p>}</section>
     <section className={styles.replayBar} aria-label="Chart replay controls"><label>Replay speed<select aria-label="Replay speed" value={activeSnapshot.replayStatus.speed} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.setSpeed(Number(event.target.value)))}>{[0.5, 1, 2, 5, 10].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label><label className={styles.check}><input aria-label="Snap drawings to visible OHLC" type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} />Snap drawings to visible OHLC</label></section>
     {scriptOpen ? <KlineScriptStudioEditor source={scriptSource} disabled={replayActive} onSourceChange={setScriptSource} onAdd={addScript} onClose={() => setScriptOpen(false)} /> : null}
@@ -2417,7 +2538,7 @@ export default function MultiChartStudioClient() {
       <aside className={styles.objectTree} aria-label="Object tree" data-object-tree-ready={activeHandle === null ? "false" : "true"} data-object-tree-panel-id={activePanel.panelId}><h2>Objects</h2><p className={styles.objectTreePanel}>Active panel · {activePanel.panelId}</p><details open><summary>Series ({activeSnapshot.series.length})</summary><ul>{activeSnapshot.series.map((series) => <li key={series.id}><button type="button" className={styles.objectName} onClick={() => { activeHandle?.getChart()?.setSeriesStyle(series.id, { visible: series.style.visible === false }); activeHandle?.refresh(); }} aria-label={`${series.style.visible === false ? "Show" : "Hide"} ${series.id}`}>{series.style.visible === false ? "○" : "●"} {series.title ?? series.id}</button><small>{series.paneId}</small></li>)}</ul></details><details open><summary>Drawings ({activeSnapshot.drawings.length})</summary><ul>{activeSnapshot.drawings.map((drawing) => <li key={drawing.id} data-drawing-id={drawing.id} data-drawing-selected={drawing.id === activeSnapshot.selectedDrawingId ? "true" : "false"} data-drawing-visible={drawing.style.visible === false ? "false" : "true"} data-drawing-locked={drawing.style.locked === true ? "true" : "false"}><button type="button" className={styles.objectName} aria-current={drawing.id === activeSnapshot.selectedDrawingId ? "true" : undefined} onClick={() => activeHandle?.getChart()?.selectDrawing(drawing.id)} aria-label={`Select ${drawing.id}`}>{drawing.type}</button><button type="button" aria-label={`${drawing.style.visible === false ? "Show" : "Hide"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingVisibility(drawing.id, drawing.style.visible === false); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.visible === false ? "○" : "●"}</button><button type="button" aria-label={`${drawing.style.locked === true ? "Unlock" : "Lock"} ${drawing.id}`} onClick={() => { const chart = activeHandle?.getChart(); if (chart === null || chart === undefined) return; chart.setDrawingLocked(drawing.id, drawing.style.locked !== true); activeHandle?.refresh(); markLiveDirty(); }}>{drawing.style.locked === true ? "🔒" : "🔓"}</button></li>)}</ul></details><section className={styles.drawingProperties} aria-label="Drawing properties" data-drawing-properties-ready={selectedDrawing === null ? "false" : "true"} data-selected-drawing-id={selectedDrawing?.id ?? ""} data-drawing-owner-panel={activePanel.panelId}><h3>Drawing properties</h3>{selectedDrawing === null ? <p>Select a drawing on {activePanel.panelId} in the Object Tree or on that chart to edit color, width, visibility, and lock. Drawings stay panel-local; chart sync does not share drawing objects.</p> : <><p><strong>{selectedDrawing.type}</strong> · {selectedDrawing.id}<small> · {activePanel.panelId}</small></p><label>Color<input aria-label="Drawing color" type="color" value={toStudioColorInput(selectedDrawing.style.color)} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { color: event.target.value })} /></label><label>Width<input aria-label="Drawing line width" type="number" min={1} max={8} value={selectedDrawing.style.lineWidth ?? 2} disabled={replayActive} onChange={(event) => { const width = Number(event.target.value); if (!Number.isFinite(width) || width < 1 || width > 8) return; applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { lineWidth: Math.round(width) }); }} /></label><label className={styles.check}><input aria-label="Drawing visible" type="checkbox" checked={selectedDrawing.style.visible !== false} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { visible: event.target.checked })} />Visible</label><label className={styles.check}><input aria-label="Drawing locked" type="checkbox" checked={selectedDrawing.style.locked === true} disabled={replayActive} onChange={(event) => applyDrawingStyle(activePanel.panelId, selectedDrawing.id, { locked: event.target.checked })} />Locked</label><button type="button" aria-label={`Clear selection for ${selectedDrawing.id}`} disabled={replayActive} onClick={() => clearActiveDrawingSelection(activePanel.panelId)}>Clear selection</button></>}</section></aside>
       <div className={styles.watchlistActions} aria-label="Watchlist actions"><strong>Manage symbols</strong>{selectedList === undefined ? null : <div className={styles.watchlistListActions}><button type="button" aria-label="Rename watchlist" onClick={(event) => showPrompt("Rename watchlist", "Choose a name for this watchlist.", selectedList.name, (name) => { watchlistModel.rename(selectedList.id, name); }, event.currentTarget)}>Rename</button><button type="button" aria-label="Delete watchlist" onClick={(event) => showConfirm(`Delete watchlist “${selectedList.name}”?`, "The list and its symbols will be removed from this browser.", () => watchlistModel.delete(selectedList.id), event.currentTarget)}>Delete</button></div>}{selectedList?.symbols.map((symbol, index) => <div key={symbol.id}><span>{symbol.displaySymbol}</span><button type="button" aria-label={`${symbol.favorite ? "Unfavorite" : "Favorite"} ${symbol.displaySymbol}`} onClick={() => watchlistModel.setFavorite(selectedList.id, symbol.id, !symbol.favorite)}>{symbol.favorite ? "★" : "☆"}</button><button type="button" aria-label={`Move ${symbol.displaySymbol} up`} disabled={index === 0} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index - 1)}>↑</button><button type="button" aria-label={`Move ${symbol.displaySymbol} down`} disabled={index === selectedList.symbols.length - 1} onClick={() => watchlistModel.reorderSymbol(selectedList.id, symbol.id, index + 1)}>↓</button></div>)}</div>
       <aside className={`${styles.sidebar} ${styles.watchlistSidebar}`} aria-label="Watchlists"><div className={styles.panelHeading}><h2>Watchlists</h2><button type="button" onClick={createWatchlist}>New</button></div><label>List<select aria-label="Watchlist" value={watchlists.selectedWatchlistId ?? ""} onChange={(event) => watchlistModel.select(event.target.value)}>{watchlists.lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label><input aria-label="Search watchlist" placeholder="Search symbols" value={watchlistSearch} onChange={(event) => setWatchlistSearch(event.target.value)} /><button type="button" onClick={addWatchlistSymbol}>Add sample symbol</button><ul className={styles.watchlistRows}>{filteredSymbols.map((symbol) => { const quote = quotes[symbol.id]; return <li key={symbol.id} className={symbol.displaySymbol === activePanel.symbol ? styles.watchlistActive : ""}><button type="button" onClick={() => selectedSymbol(symbol.id)}>{symbol.favorite ? "★" : "☆"} {symbol.displaySymbol}<small>{symbol.name}</small></button><span className={quote?.status === "ready" ? "" : styles.quoteStale}>{quote?.last?.toFixed(2) ?? "—"}<small>{quote === undefined ? "Loading" : quote.demo ? "Demo" : quote.status}</small></span><button type="button" aria-label={`Remove ${symbol.displaySymbol}`} onClick={() => watchlistModel.removeSymbol(selectedList!.id, symbol.id)}>×</button></li>; })}</ul><small>Quotes are deterministic demo data, not exchange prices.</small></aside>
-      <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={onChartReady} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} comparison={panel.panelId === activePanelId ? comparisonPanel : null} />)}</div><div className={styles.status} aria-live="polite" data-workspace-restore-name={restoreSummary?.name ?? ""} data-workspace-restore-panels={restoreSummary?.panelCount ?? ""} data-workspace-restore-panel-ids={(restoreSummary?.panelIds ?? []).join(",")}><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
+      <section className={styles.multiChartArea} aria-label="OpenKline multi-chart workspace"><div className={`${styles.multiChartGrid} ${styles[`layout-${layout}`]}`}>{panels.map((panel) => <ChartPanel key={panel.panelId} ref={(handle) => { if (handle === null) panelRefs.current.delete(panel.panelId); else panelRefs.current.set(panel.panelId, handle); }} panel={panel} active={panel.panelId === activePanelId} initialWorkspace={initialWorkspaceFor(panel.panelId)} onActivate={setActivePanelId} onReady={onChartReady} onSnapshot={onSnapshot} onCrosshair={onCrosshair} onViewport={onViewport} onNotice={setNotice} onDrawingCommitted={onDrawingCommitted} comparison={panel.panelId === activePanelId ? comparisonPanel : null} />)}</div><div className={styles.status} aria-live="polite" data-workspace-restore-name={restoreSummary?.name ?? ""} data-workspace-restore-panels={restoreSummary?.panelCount ?? ""} data-workspace-restore-panel-ids={(restoreSummary?.panelIds ?? []).join(",")}><span>{textForCrosshair(crosshair)}</span><span>{notice}</span></div></section>
       <aside className={styles.sidebar} aria-label="Active chart settings"><div className={styles.panelHeading}><h2>Active chart</h2><button type="button" disabled={panels.length <= 1} onClick={() => removePanel(activePanel.panelId)}>Remove chart</button></div><p className={styles.activeChartBadge}>{activePanel.panelId} · {activePanel.symbol} · {activePanel.timeframe}</p><details open><summary>Synchronization</summary><label className={styles.check}><input aria-label="Sync crosshair" type="checkbox" checked={sync.crosshair} onChange={(event) => { setSync((current) => ({ ...current, crosshair: event.target.checked })); markLiveDirty(); }} />Crosshair</label><label className={styles.check}><input aria-label="Sync visible range" type="checkbox" checked={sync.visibleRange} onChange={(event) => { setSync((current) => ({ ...current, visibleRange: event.target.checked })); markLiveDirty(); }} />Visible range</label><label className={styles.check}><input aria-label="Sync symbols" type="checkbox" checked={sync.symbol} onChange={(event) => { setSync((current) => ({ ...current, symbol: event.target.checked })); markLiveDirty(); }} />Symbols</label><label className={styles.check}><input aria-label="Sync timeframes" type="checkbox" checked={sync.timeframe} onChange={(event) => { setSync((current) => ({ ...current, timeframe: event.target.checked })); markLiveDirty(); }} />Timeframes</label><small>Replay sessions remain independent.</small></details><details open><summary>Indicators ({activeSnapshot.indicators.length})</summary><div className={styles.addRow}><select aria-label="Indicator" value={indicatorToAdd} disabled={replayActive} onChange={(event) => setIndicatorToAdd(event.target.value)}>{indicatorChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button type="button" disabled={replayActive} onClick={() => addIndicator()}>Add</button></div><ul>{activeSnapshot.indicators.map((indicator) => <li key={indicator.id}><span>{indicator.indicatorId} <small>{indicator.paneId}</small></span><button type="button" disabled={replayActive} aria-label={`Remove ${indicator.id}`} onClick={() => removeAppliedIndicator(indicator.id)}>×</button></li>)}</ul></details><details open data-alert-input-value={alertNameInputRef.current?.value ?? alertName} data-alert-last-created-name={lastAlertDiagnostic?.createdName ?? ""} data-alert-last-outcome={lastAlertDiagnostic?.outcome ?? ""}><summary>Alerts ({activeSnapshot.alerts.length})</summary><div className={styles.alertForm}><label>Name<input ref={alertNameInputRef} aria-label="Alert name" defaultValue={alertName} disabled={replayActive} onInput={(event) => setAlertName(event.currentTarget.value)} onChange={(event) => setAlertName(event.target.value)} /></label><label>Close crosses above<input aria-label="Alert threshold" type="number" value={alertThreshold} disabled={replayActive} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label><label>Frequency<select aria-label="Alert frequency" value={alertFrequency} disabled={replayActive} onChange={(event) => setAlertFrequency(event.target.value as AlertFrequency)}><option value="once">Once</option><option value="every-event">Every event</option><option value="once-per-bar">Once per bar</option><option value="once-per-confirmed-bar">Confirmed bars</option></select></label><button type="button" disabled={replayActive} onClick={addAlert}>Create alert</button></div>{activeSnapshot.alerts.map((alert) => <div className={styles.alertItem} key={alert.id}><span>{alert.name}</span><button type="button" disabled={replayActive} onClick={() => { activeHandle?.getChart()?.updateAlert(alert.id, { enabled: alert.enabled === false }); activeHandle?.refresh(); }}>{alert.enabled === false ? "Enable" : "Pause"}</button><button type="button" aria-label={`Remove ${alert.name}`} disabled={replayActive} onClick={() => { activeHandle?.getChart()?.removeAlert(alert.id); activeHandle?.refresh(); }}>×</button></div>)}</details><details open><summary>Replay: {activeSnapshot.replayStatus.state}</summary><small>{textForReplay(activeSnapshot.replayStatus, timeZone)} · {activeSnapshot.replayStatus.currentIndex === null ? "No bars" : `${activeSnapshot.replayStatus.currentIndex + 1} / ${activeSnapshot.replayStatus.totalBars}`}</small><div className={styles.replayControls}><button type="button" onClick={() => activeHandle?.enterReplay()} disabled={replayActive}>Enter replay</button><button type="button" aria-label="Replay previous bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepBackward())}>◀</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => activeSnapshot.replayStatus.state === "playing" ? replay.pause() : replay.play())}>{activeSnapshot.replayStatus.state === "playing" ? "Pause" : "Play"}</button><button type="button" aria-label="Replay next bar" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.stepForward())}>▶</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToStart())}>Beginning</button><button type="button" disabled={!replayActive} onClick={() => activeHandle?.replayCommand((replay) => replay.jumpToLatest())}>Latest</button><button type="button" onClick={() => activeHandle?.exitReplay()} disabled={!replayActive}>Exit replay</button></div><label>Replay position<input aria-label="Replay position" type="range" min="0" max={Math.max(0, activeSnapshot.replayStatus.totalBars - 1)} value={activeSnapshot.replayStatus.currentIndex ?? 0} disabled={!replayActive} onChange={(event) => activeHandle?.replayCommand((replay) => replay.seekToBar(Number(event.target.value)))} /></label></details><details open><summary>Display</summary><label>Theme<select aria-label="Theme" value={theme} onChange={(event) => { const next = event.target.value as "dark" | "light"; activeHandle?.getChart()?.setOptions({ theme: next }); setTheme(next); markLiveDirty(); }}><option value="dark">Dark</option><option value="light">Light</option></select></label><label>Price scale<select aria-label="Price scale" value={scaleMode} onChange={(event) => { const next = event.target.value as PriceScaleMode; activeHandle?.getChart()?.setPriceScaleOptions({ mode: next }); setScaleMode(next); markLiveDirty(); }}>{scaleModes.map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}</select></label><label className={styles.check}><input aria-label="Auto scale" type="checkbox" checked={autoScale} onChange={(event) => { const next = event.target.checked; if (next) activeHandle?.getChart()?.resetPriceScale(); else activeHandle?.getChart()?.setPriceScaleOptions({ autoScale: false }); setAutoScale(next); }} />Auto scale</label><label className={styles.check}><input aria-label="Show price axis" type="checkbox" checked={axisVisible} onChange={(event) => { activeHandle?.getChart()?.setPriceScaleOptions({ axisVisible: event.target.checked }); setAxisVisible(event.target.checked); }} />Show price axis</label><label>Top margin<input aria-label="Top scale margin" type="number" step="0.01" value={marginTop} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginTop: value }); setMarginTop(value); }} /></label><label>Bottom margin<input aria-label="Bottom scale margin" type="number" step="0.01" value={marginBottom} onChange={(event) => { const value = Number(event.target.value); activeHandle?.getChart()?.setPriceScaleOptions({ marginBottom: value }); setMarginBottom(value); }} /></label></details><details><summary>Interaction</summary>{(Object.keys(interaction) as Array<keyof typeof interaction>).map((name) => <label key={name} className={styles.check}><input type="checkbox" checked={interaction[name]} onChange={() => { const next = { ...interaction, [name]: !interaction[name] }; activeHandle?.getChart()?.setOptions({ interaction: next }); setInteraction(next); }} />{name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</label>)}</details></aside>
     </section>
     <ScreenerPanel watchlists={watchlists} onOpenChart={openScreenerChart} onFavorite={favoriteScreenerSymbol} onSelectWatchlist={(id) => { try { watchlistModel.select(id); } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); } }} onNotice={setNotice} />

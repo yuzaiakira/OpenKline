@@ -155,7 +155,7 @@ test("Studio accepts drawing anchors from touch events without pointer compatibi
   await expect(studioChartCanvas(page)).toHaveCount(1);
   await expect.poll(() => page.evaluate((selector) => document.querySelector<HTMLCanvasElement>(selector)?.height ?? 0, STUDIO_CHART_CANVAS_SELECTOR)).toBeGreaterThan(200);
   await page.getByRole("button", { name: "Trend", exact: true }).click();
-  await expect(page.getByText(/trend-line is active in chart-1/)).toBeVisible();
+  await expect(page.getByText(/Trend is active on chart-1/)).toBeVisible();
   const canvas = studioChartCanvas(page);
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
