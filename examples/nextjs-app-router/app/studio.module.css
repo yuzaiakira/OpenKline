@@ -53,6 +53,8 @@
 .drawingProperties input[type="number"] { max-width: 100%; border: 1px solid var(--border); border-radius: .25rem; padding: .25rem; background: #132138; color: var(--text); }
 .drawingProperties .check { display: flex; align-items: center; gap: .4rem; color: var(--text); text-transform: none; }
 .drawingProperties button { justify-self: start; min-height: 28px; }
+.drawingLayerActions { display: flex; flex-wrap: wrap; gap: .3rem; }
+.drawingLayerActions button { min-width: 4.25rem; }
 .watchlistActions { position: absolute; z-index: 4; left: .65rem; bottom: .65rem; width: 205px; max-height: 190px; overflow: auto; padding: .45rem; border: 1px solid var(--border); border-radius: .35rem; background: #0d192bf2; color: var(--muted); font-size: .72rem; }
 .watchlistActions > strong { display: block; margin-bottom: .25rem; color: var(--text); }
 .watchlistListActions { display: flex !important; grid-template-columns: none !important; gap: .2rem; margin-bottom: .25rem; }

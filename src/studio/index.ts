@@ -18,15 +18,31 @@ export { StudioSynchronizationController } from "./synchronization.js";
 export type { StudioSynchronizationTarget, StudioSynchronizationTargets } from "./synchronization.js";
 export {
   applyScopedDrawingStyle,
+  applyScopedDrawingZIndex,
   clearScopedDrawingSelection,
 } from "./drawing-ownership.js";
 export type {
   ApplyScopedDrawingStyleArgs,
+  ApplyScopedDrawingZIndexArgs,
   ClearScopedDrawingSelectionArgs,
   ScopedDrawingChart,
   ScopedDrawingMutationFailure,
   ScopedDrawingMutationResult,
 } from "./drawing-ownership.js";
+export {
+  isStudioDrawingColorValue,
+  resolveStudioDrawingLayerZIndex,
+  resolveStudioDrawingPropertyCapabilities,
+  studioDrawingLayerActionLabel,
+  studioDrawingSupportsStyleField,
+  toStudioDrawingColorInput,
+} from "./drawing-properties.js";
+export type {
+  StudioDrawingLayerAction,
+  StudioDrawingLayerCandidate,
+  StudioDrawingPropertyCapabilities,
+  StudioDrawingStyleField,
+} from "./drawing-properties.js";
 export {
   STUDIO_WORKSPACE_IMPORT_MAX_BYTES,
   STUDIO_WORKSPACE_NAME_MAX_LENGTH,

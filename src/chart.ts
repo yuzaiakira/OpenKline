@@ -1931,6 +1931,15 @@ export class Chart {
     this.setDrawingStyle(id, { locked });
   }
 
+  /** Update drawing render/hit-test order. Locked drawings ignore the change. */
+  public setDrawingZIndex(id: string, zIndex: number): void {
+    this.assertAlive();
+    this.assertReplayStructureMutationAllowed();
+    this.drawingEngine.setZIndex(id, zIndex);
+    this.emit("drawingSelection", { id: this.selectedDrawingId });
+    this.render();
+  }
+
   public getDrawings(): DrawingSnapshot[] {
     this.assertAlive();
     return this.drawingEngine.getAll().filter((drawing) => this.isDrawingReplayVisible(drawing));

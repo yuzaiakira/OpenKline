@@ -1926,3 +1926,119 @@ test("mobile Studio active-panel workflow preserves drawings, indicators, script
 
   expect(errors).toEqual([]);
 });
+
+test("Studio advanced Drawing Properties edit fill, text color, and layer order with panel isolation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes("webkit"), "WebKit Studio host remains environment-blocked");
+  const firefoxProject = testInfo.project.name.includes("firefox");
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+  const saveStatus = page.getByLabel("Workspace save status");
+
+  await test.step("create overlapping drawings and edit advanced styles on chart-1", async () => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Rectangle", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.3, 0.22);
+    await placeVisibleChartPoint(page, 0.55, 0.4);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(properties).toHaveAttribute("data-drawing-type", "rectangle");
+    await expect(properties).toHaveAttribute("data-drawing-supports-fill", "true");
+    await expect(properties).toHaveAttribute("data-drawing-supports-text-color", "false");
+    await properties.getByLabel("Drawing fill color").fill("#ef4444");
+    await expect(page.getByText(/Updated drawing-1 on chart-1/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.32, 0.26);
+    await placeVisibleChartPoint(page, 0.7, 0.36);
+    await expect(page.getByText("Drawings (2)", { exact: true })).toBeVisible();
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties).toHaveAttribute("data-selected-drawing-id", "drawing-1");
+    const zBefore = await properties.getAttribute("data-drawing-z-index");
+    await properties.getByRole("button", { name: "Bring drawing to front", exact: true }).click();
+    await expect(page.getByText(/Updated layer order for drawing-1 on chart-1/)).toBeVisible();
+    await expect(properties).not.toHaveAttribute("data-drawing-z-index", zBefore ?? "");
+    // Never-saved Studio sessions report unsaved-workspace; dirty after first Save is unsaved-changes.
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", /unsaved/);
+  });
+
+  await test.step("text color on chart-2 stays panel-local", async () => {
+    await page.getByLabel("Chart layout").selectOption("two-horizontal");
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "Text", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.45, 0.3, 'section[aria-label="OpenKline multi-chart workspace"] [data-panel-id="chart-2"] canvas');
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+    await expect(properties).toHaveAttribute("data-drawing-type", "text");
+    await expect(properties).toHaveAttribute("data-drawing-supports-text-color", "true");
+    await expect(properties).toHaveAttribute("data-drawing-supports-fill", "false");
+    await properties.getByLabel("Drawing text color").fill("#22c55e");
+    await expect(page.getByText(/Updated drawing-1 on chart-2/)).toBeVisible();
+  });
+
+  await test.step("return to chart-1 and verify fill/layer persisted locally", async () => {
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties).toHaveAttribute("data-drawing-type", "rectangle");
+    await expect(properties.getByLabel("Drawing fill color")).toHaveValue("#ef4444");
+    await expect(properties.getByLabel("Drawing text color")).toHaveCount(0);
+  });
+
+  await test.step("save/restore preserves fill, text color, and zIndex", async () => {
+    await page.getByLabel("Workspace name").fill("Advanced Drawing Properties");
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    const workspaceId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    const saved = await page.evaluate(() => {
+      const collection = JSON.parse(window.localStorage.getItem("openkline-studio-workspaces-v1") ?? "null") as {
+        workspaces: Array<{
+          name: string;
+          charts: Array<{
+            panelId: string;
+            workspace: { drawings: { drawings: Array<{ id: string; type: string; zIndex: number; style: { fillColor?: string; textColor?: string } }> } };
+          }>;
+        }>;
+      };
+      return collection.workspaces.find((workspace) => workspace.name === "Advanced Drawing Properties");
+    });
+    const chartOne = saved?.charts.find((chart) => chart.panelId === "chart-1")?.workspace.drawings.drawings ?? [];
+    const chartTwo = saved?.charts.find((chart) => chart.panelId === "chart-2")?.workspace.drawings.drawings ?? [];
+    expect(chartOne.find((drawing) => drawing.type === "rectangle")?.style.fillColor).toBe("#ef4444");
+    expect(chartOne.find((drawing) => drawing.type === "rectangle")?.zIndex).toBeGreaterThan(
+      chartOne.find((drawing) => drawing.type === "trend-line")?.zIndex ?? -Infinity,
+    );
+    expect(chartTwo[0]).toMatchObject({ type: "text", style: { textColor: "#22c55e" } });
+
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await page.getByLabel("Workspace", { exact: true }).selectOption(workspaceId);
+    await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+    await page.getByLabel("Active chart panel").selectOption("chart-1");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing fill color")).toHaveValue("#ef4444");
+    await page.getByLabel("Active chart panel").selectOption("chart-2");
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    await expect(properties.getByLabel("Drawing text color")).toHaveValue("#22c55e");
+  });
+
+  if (!firefoxProject) {
+    await test.step("mobile active-panel preserves advanced style context", async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const workspace = page.getByRole("region", { name: "OpenKline multi-chart workspace" });
+      await expect(workspace).toHaveAttribute("data-studio-viewport-mode", "mobile-active-panel", { timeout: 10_000 });
+      await page.getByLabel("Active chart panel").selectOption("chart-1");
+      await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+      await expect(properties.getByLabel("Drawing fill color")).toHaveValue("#ef4444");
+      await page.getByRole("navigation", { name: "Mobile chart panels" }).getByRole("button", { name: /Show panel 2:/ }).click();
+      await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+      await expect(properties.getByLabel("Drawing text color")).toHaveValue("#22c55e");
+    });
+  }
+
+  expect(errors).toEqual([]);
+});

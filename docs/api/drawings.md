@@ -33,6 +33,8 @@ chart.restoreDrawings(document);
 - `setDrawingVisibility(id, visible)` and `setDrawingLocked(id, locked)`
   update object-tree presentation state without changing anchors.
 - `setDrawingStyle(id, style)` merges a validated style patch into the object.
+- `setDrawingZIndex(id, zIndex)` updates render and hit-test order. Locked
+  drawings ignore the change.
 - `registerDrawingTool(definition)` and `unregisterDrawingTool(type)` manage
   custom tools.
 - `undoDrawing()` and `redoDrawing()` return whether a state changed.
