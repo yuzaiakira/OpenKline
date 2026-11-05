@@ -11,3 +11,5 @@ playwright-report/
 *.tgz
 artifacts/
 .cache/
+.next-playwright/
+.next-playwright-compat/
