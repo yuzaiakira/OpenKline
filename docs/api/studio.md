@@ -28,12 +28,18 @@ quote provider is deterministic and is not exchange data.
 
 The reference Studio Object Tree includes a contextual Drawing properties
 region. When a drawing is selected (via the Object Tree, chart hit-testing, or
-interactive creation), Studio surfaces color, line width, visibility, and lock
-controls that call the existing Chart `setDrawingStyle` / `selectDrawing` APIs.
-Selection is published through the chart `drawingSelection` event into the
-active panel snapshot. Changes persist through the normal workspace
-serialize/restore path. Property controls are disabled while replay is active,
-matching other structural Studio mutations.
+interactive creation), Studio surfaces stroke color, line width, visibility,
+and lock controls, plus capability-gated fill color and text color where the
+DrawingEngine/renderer uses those fields. Layer actions (Bring Forward,
+Send Backward, Bring to Front, Send to Back) call Chart `setDrawingZIndex`
+through `applyScopedDrawingZIndex` so ordering matches render and hit-test
+semantics—not CSS stacking. Style edits use `applyScopedDrawingStyle` /
+`setDrawingStyle` / `selectDrawing`. Selection is published through the chart
+`drawingSelection` event into the active panel snapshot. Changes persist
+through the normal workspace serialize/restore path. Property and layer
+controls are disabled while replay is active, matching other structural Studio
+mutations. Helper exports such as `resolveStudioDrawingPropertyCapabilities`
+document which controls apply per drawing type.
 
 ## Multi-panel drawing ownership
 

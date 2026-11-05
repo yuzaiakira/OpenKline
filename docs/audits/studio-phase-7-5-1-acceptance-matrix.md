@@ -1,4 +1,4 @@
-# Studio Phase 7.5.1 — Acceptance Matrix (Phases 16.5.11–16.5.12)
+# Studio Phase 7.5.1 — Acceptance Matrix (Phases 16.5.11–16.5.13)
 
 Internal engineering matrix. External AT/physical-device/WCAG and Public Widget API
 remain OPEN and are not claimed here.
@@ -8,7 +8,7 @@ remain OPEN and are not claimed here.
 | Multi-chart layouts / panel ownership | Studio multi-chart client + mobile navigator | `multi-chart-studio.spec.ts` | PASS | PASS (subset) | BLOCKED | PASS (active-panel contract) | IMPLEMENTED AND VERIFIED (Chromium/Mobile Chrome); Firefox subset verified |
 | Chart synchronization | Sync prefs + controller | multi-chart + sync tests | PASS | NOT TESTED (depth) | BLOCKED | PASS (selector) | IMPLEMENTED — VERIFICATION INCOMPLETE (Firefox sync depth) |
 | Drawing Toolbar | Professional toolbar | Drawing Toolbar E2E | PASS | PASS (desktop) | BLOCKED | PASS (Chromium mobile); Firefox narrow drawing placement flaky | IMPLEMENTED AND VERIFIED (desktop + Chromium mobile) |
-| Drawing Properties / Object Tree | Chart-first mobile order | Drawing + property E2E | PASS | PASS (desktop) | BLOCKED | PASS (Chromium mobile) | IMPLEMENTED AND VERIFIED |
+| Drawing Properties / Object Tree | Fill/text/layer + chart-first mobile | Advanced property + ownership E2E (16.5.13) | PASS | PASS (advanced + ownership) | BLOCKED | PASS (Chromium mobile context) | IMPLEMENTED AND VERIFIED |
 | Indicator Explorer | Registry Explorer | Explorer E2E | PASS | PASS | BLOCKED | PASS (mobile workflow) | IMPLEMENTED AND VERIFIED |
 | KlineScript My Scripts / Worker apply | KlineScript Studio helpers | KlineScript E2E | PASS | PASS (subset) | BLOCKED | PASS (mobile workflow) | IMPLEMENTED AND VERIFIED |
 | Applied Script Inspector / reapply | Inspector + reapply helper | Inspector E2E | PASS | PASS | BLOCKED | NOT TESTED (narrow) | IMPLEMENTED AND VERIFIED (desktop) |
@@ -16,6 +16,7 @@ remain OPEN and are not claimed here.
 | Workspace library / Import/Export | Studio workspace APIs | Library + import E2E | PASS | PASS (subset) | BLOCKED | PASS (mobile Save/Load/Cancel) | IMPLEMENTED AND VERIFIED |
 | Dirty-state / navigation guard | Fingerprints + guard | Dirty E2E | PASS | PASS | BLOCKED | PASS | IMPLEMENTED AND VERIFIED |
 | Mobile active-panel UX | Navigator + resize recovery | Phase 16.5.12 E2E | PASS | PASS (navigator/ownership) | BLOCKED | PASS | IMPLEMENTED AND VERIFIED |
+| Advanced drawing style / layer order | Capability-gated fill/text + zIndex | Phase 16.5.13 unit + E2E | PASS | PASS | BLOCKED | PASS (Chromium) | IMPLEMENTED AND VERIFIED |
 | Lifecycle cleanup | Dispose / restore | Lifecycle E2E | PASS | NOT TESTED | BLOCKED | NOT TESTED | IMPLEMENTED — VERIFICATION INCOMPLETE |
 | Formal WCAG / physical AT | — | — | OPEN | OPEN | OPEN | OPEN | OPEN (external) |
 

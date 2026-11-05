@@ -390,6 +390,14 @@ offline Studio Market Replay Lab are present.
   Chrome + Firefox workflow evidence. WebKit/Mobile Safari remain BLOCKED.
   Phase 7.5.1 remains OPEN. See
   `docs/reports/phase-16-5-12-mobile-studio-workflows.md`.
+- [Implemented / Verified internally — Phase 16.5.13 Advanced Drawing Properties
+  & Object Tree organization]
+  Extends Studio Drawing Properties with capability-gated fill color, text
+  color, and real DrawingEngine z-index layer actions (forward/backward/front/
+  back) via Chart `setDrawingZIndex`. Panel-local ownership, dirty-state, and
+  Save/Restore preserved. Chromium + Firefox evidence recorded; WebKit remains
+  BLOCKED. Phase 7.5.1 remains OPEN. See
+  `docs/reports/phase-16-5-13-advanced-drawing-properties.md`.
 
 ## Current milestone
 
@@ -1069,10 +1077,11 @@ Studio compatibility gates remain open**.
   Drawing Toolbar interaction workflow (16.5.8), KlineScript Studio
   custom-indicator management (16.5.9), and KlineScript applied-script
   settings/diagnostics/safe import activation (16.5.10), Studio acceptance /
-  Firefox workflow parity evidence (16.5.11), and mobile active-panel UX /
-  responsive workflow completion (16.5.12) are delivered in the reference
+  Firefox workflow parity evidence (16.5.11), mobile active-panel UX /
+  responsive workflow completion (16.5.12), and advanced Drawing Properties /
+  Object Tree layer organization (16.5.13) are delivered in the reference
   Studio. Managed WebKit/Mobile Safari lifecycle parity remains open; Firefox
-  and Mobile Chrome Studio evidence is recorded in 16.5.11–16.5.12. The object
+  and Mobile Chrome Studio evidence is recorded in 16.5.11–16.5.13. The object
   tree, visible-OHLC snapping, source-tagged sync controller, and in-page
   dialogs were already implemented. No Phase 7.5 acceptance claim is made until
   remaining WebKit/Mobile Safari/accessibility/device gates are verified. See
@@ -1087,8 +1096,9 @@ Studio compatibility gates remain open**.
   `docs/reports/phase-16-5-8-professional-drawing-toolbar.md`,
   `docs/reports/phase-16-5-9-klinescript-studio-integration.md`,
   `docs/reports/phase-16-5-10-klinescript-settings-diagnostics-activation.md`,
-  `docs/reports/phase-16-5-11-studio-acceptance-browser-parity.md`, and
-  `docs/reports/phase-16-5-12-mobile-studio-workflows.md`.
+  `docs/reports/phase-16-5-11-studio-acceptance-browser-parity.md`,
+  `docs/reports/phase-16-5-12-mobile-studio-workflows.md`, and
+  `docs/reports/phase-16-5-13-advanced-drawing-properties.md`.
 - [Implemented / In Verification] Phase 7.5.1 adds framework-neutral drawing
   definitions for rays, extended lines, parallel channels, Fibonacci
   extensions, price/date ranges, and long/short risk-reward annotations. They

@@ -51,6 +51,14 @@ drawing through the internal cancellation bridge. Selecting a tool does not
 dirty the workspace; completing, styling, undoing, or redoing a drawing does.
 Replay disables drawing-tool mutations.
 
+The Object Tree **Drawing properties** region edits stroke color, width,
+visibility, and lock for any selected drawing. Fill color appears for shapes
+and zones that render fills (rectangle, ranges, positions). Text color appears
+for text notes and labeled tools (Fibonacci, ranges, positions). Layer Forward /
+Backward / Front / Back buttons change DrawingEngine `zIndex` so stacking and
+hit-testing follow the chart, not HTML order. Styles and order persist with the
+workspace and stay panel-local.
+
 Workspace, watchlist, and panel destructive actions use an in-page ARIA dialog
 with explicit Cancel and Confirm/Apply controls. They do not call blocking
 browser `prompt()` or `confirm()` dialogs.
