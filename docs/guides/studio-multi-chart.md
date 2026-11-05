@@ -5,9 +5,12 @@ selector: single chart, two side by side, two vertical, and four chart grid.
 
 Each panel has a stable ID, independent symbol/timeframe, Chart instance,
 indicators, drawings, alerts, replay session, and script lifecycle. Select a
-panel from its header or the accessible `Active chart panel` selector before
-using the toolbar and settings. On compact screens only the active panel is
-shown; the selector switches panels without recreating their state.
+panel from its header, the accessible `Active chart panel` selector, or the
+compact **Mobile chart panels** navigator before using the toolbar and
+settings. On compact screens (`max-width: 720px`) only the active panel is
+shown; switching panels reveals the selected chart without destroying hidden
+panels or recreating their Chart state. The mobile navigator states which
+panel is viewing and how many panels remain in the workspace.
 
 Reducing a layout archives removed panels in the current browser session so
 they can be restored when the layout is expanded again. Save a named workspace

@@ -174,7 +174,11 @@ identity allocators support the reference Studio custom-indicator workflow:
   auto-executes embedded source; Studio requires explicit Activate. Existing
   pending records are preserved across Save/Load/re-import; forged trust fields
   are ignored. Content fingerprints include pending scripts so Activate/Dismiss
-  mark the workspace dirty. Public Widget API remains unauthorized.
+  mark the workspace dirty.
+- `buildStudioMobilePanelSummaries`, `describeStudioMobileActivePanel`, and
+  `STUDIO_MOBILE_BREAKPOINT_PX` support the compact active-panel-only Studio
+  navigator (presentation helpers; they do not change Chart ownership). Public
+  Widget API remains unauthorized.
 
 ## Multi-timeframe workflows
 
