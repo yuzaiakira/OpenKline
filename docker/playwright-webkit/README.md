@@ -49,6 +49,27 @@ Pushing changes under the workflow path filters (or dispatching
 Playwright container. Inspect the Actions run logs and uploaded
 `webkit-playwright-report` artifact before claiming CI PASS.
 
+## Studio React compatibility (optional)
+
+When the daemon is available, the same image can run Studio React tests via
+`playwright.react.compat.config.ts` (production Next server on port 4175):
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD:/work" -w /work \
+  -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+  -e CI=true \
+  -e HOME=/tmp \
+  openkline-playwright-webkit:1.64.1 \
+  npx playwright test --config playwright.react.compat.config.ts \
+    --project=studio-webkit --project=studio-mobile-safari \
+    -g "import quarantines|dirty-state protects Load"
+```
+
+Host-native Firefox Studio evidence uses `npm run test:react:compat:firefox`
+with `PLAYWRIGHT_BROWSERS_PATH` pointing at a complete Playwright cache.
+
 ## Evidence boundary
 
 | Claim | Valid evidence |

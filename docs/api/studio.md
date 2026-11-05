@@ -171,8 +171,10 @@ identity allocators support the reference Studio custom-indicator workflow:
   safe reapply with best-effort restore of the previous revision on failure.
 - `quarantineStudioImportedScripts` strips executable script indicators from
   imported Studio documents into additive `pendingImportedScripts`. Import never
-  auto-executes embedded source; Studio requires explicit Activate. Public
-  Widget API remains unauthorized.
+  auto-executes embedded source; Studio requires explicit Activate. Existing
+  pending records are preserved across Save/Load/re-import; forged trust fields
+  are ignored. Content fingerprints include pending scripts so Activate/Dismiss
+  mark the workspace dirty. Public Widget API remains unauthorized.
 
 ## Multi-timeframe workflows
 
