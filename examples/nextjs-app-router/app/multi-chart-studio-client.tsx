@@ -1550,6 +1550,7 @@ export default function MultiChartStudioClient() {
     layout,
     panels,
     panelReadyEpoch,
+    pendingImportedScripts,
     portfolioConfiguration,
     refreshLiveFingerprint,
     sync,

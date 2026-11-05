@@ -78,6 +78,27 @@ test("content fingerprint is stable under key insertion order differences", () =
   assert.equal(studioWorkspaceContentFingerprint(document), studioWorkspaceContentFingerprint(shuffled));
 });
 
+test("content fingerprint changes when pending imported scripts are dismissed", () => {
+  const base = sampleDocument("desk", "Desk");
+  const pending = {
+    ...base,
+    pendingImportedScripts: [{
+      pendingId: "pending-chart-1-studio-script-1",
+      panelId: "chart-1",
+      instanceId: "studio-script-1",
+      indicatorId: "KLINESCRIPT-demo",
+      paneId: "main",
+      programId: "KLINESCRIPT-demo",
+      source: 'indicator("Demo")\nplot(close)',
+      parameters: {},
+      displayName: "Demo",
+    }],
+  };
+  assert.notEqual(studioWorkspaceContentFingerprint(base), studioWorkspaceContentFingerprint(pending));
+  const dismissed = { ...pending, pendingImportedScripts: [] as const };
+  assert.equal(studioWorkspaceContentFingerprint(base), studioWorkspaceContentFingerprint(dismissed));
+});
+
 test("resolveStudioWorkspaceSaveStatus covers saved, dirty, unsaved, and save-failed", () => {
   const document = sampleDocument("desk", "Desk");
   const baseline = createStudioWorkspaceBaseline(document);

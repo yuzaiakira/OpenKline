@@ -473,6 +473,12 @@ export async function reapplyStudioKlineScriptIndicator(args: {
 /**
  * Strip executable script indicators from an imported Studio document and return
  * pending activation records. Never trusts self-declared approval metadata.
+ *
+ * Already-quarantined `pendingImportedScripts` are preserved when charts no
+ * longer contain executable script indicators (save/export/re-import). Newly
+ * embedded chart scripts are always stripped into pending records. Prior
+ * pending entries with the same `pendingId` are replaced by the chart-derived
+ * record so source revisions cannot silently keep an older approval path.
  */
 export function quarantineStudioImportedScripts(
   document: StudioWorkspaceDocument,
@@ -480,7 +486,7 @@ export function quarantineStudioImportedScripts(
   readonly document: StudioWorkspaceDocument;
   readonly pending: readonly StudioPendingImportedScript[];
 } {
-  const pending: StudioPendingImportedScript[] = [];
+  const stripped: StudioPendingImportedScript[] = [];
   const charts = document.charts.map((chart) => {
     const kept: WorkspaceIndicator[] = [];
     for (const indicator of chart.workspace.indicators) {
@@ -489,7 +495,7 @@ export function quarantineStudioImportedScripts(
         continue;
       }
       const discovered = discoverStudioScriptInputs(indicator.script.source);
-      pending.push({
+      stripped.push({
         pendingId: `pending-${chart.panelId}-${indicator.id}`,
         panelId: chart.panelId,
         instanceId: indicator.id,
@@ -507,22 +513,45 @@ export function quarantineStudioImportedScripts(
     };
     return { ...chart, workspace };
   });
-  const pendingDocuments: StudioPendingImportedScriptDocument[] = pending.map((item) => ({
-    pendingId: item.pendingId,
-    panelId: item.panelId,
-    instanceId: item.instanceId,
-    indicatorId: item.indicatorId,
-    paneId: item.paneId,
-    programId: item.programId,
-    source: item.source,
-    parameters: item.parameters,
-    displayName: item.displayName,
-  }));
+
+  const byId = new Map<string, StudioPendingImportedScriptDocument>();
+  for (const existing of document.pendingImportedScripts ?? []) {
+    // Drop any self-declared trust/approval fields by projecting known keys only.
+    byId.set(existing.pendingId, {
+      pendingId: existing.pendingId,
+      panelId: existing.panelId,
+      instanceId: existing.instanceId,
+      indicatorId: existing.indicatorId,
+      paneId: existing.paneId,
+      programId: existing.programId,
+      source: existing.source,
+      parameters: { ...existing.parameters },
+      displayName: existing.displayName,
+    });
+  }
+  for (const item of stripped) {
+    byId.set(item.pendingId, {
+      pendingId: item.pendingId,
+      panelId: item.panelId,
+      instanceId: item.instanceId,
+      indicatorId: item.indicatorId,
+      paneId: item.paneId,
+      programId: item.programId,
+      source: item.source,
+      parameters: item.parameters,
+      displayName: item.displayName,
+    });
+  }
+
+  const pendingDocuments = [...byId.values()];
+  const pending: StudioPendingImportedScript[] = pendingDocuments.map((item) => ({ ...item }));
+  const { pendingImportedScripts: _dropTrustSurface, ...documentWithoutPending } = document;
+  void _dropTrustSurface;
   return {
     document: {
-      ...document,
+      ...documentWithoutPending,
       charts,
-      pendingImportedScripts: pendingDocuments,
+      ...(pendingDocuments.length === 0 ? {} : { pendingImportedScripts: pendingDocuments }),
     },
     pending,
   };

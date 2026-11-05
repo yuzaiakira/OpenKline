@@ -45,6 +45,9 @@ export function studioWorkspaceContentFingerprint(document: StudioWorkspaceDocum
     watchlists: document.watchlists,
     comparison: document.comparison ?? null,
     portfolioBacktest: document.portfolioBacktest ?? null,
+    // Quarantined imported scripts are persisted Studio content; Activate/Dismiss
+    // must dirty the desk even before chart indicators change.
+    pendingImportedScripts: document.pendingImportedScripts ?? [],
   });
 }
 

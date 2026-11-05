@@ -315,6 +315,75 @@ test("quarantineStudioImportedScripts strips executable scripts and preserves pe
   assert.equal(dismissStudioPendingImportedScript(parsed.pendingImportedScripts ?? [], pending[0]!.pendingId).length, 0);
 });
 
+test("quarantine preserves already-pending scripts and ignores forged trust metadata", () => {
+  const source = 'indicator("Pending Close")\nplot(close)';
+  const compiled = compileStudioKlineScript({ source, generation: 1 });
+  assert.equal(compiled.success, true);
+  const pendingId = "pending-chart-1-studio-script-1";
+  const forged = {
+    version: 1,
+    id: "forged-desk",
+    name: "Forged desk",
+    layout: "single",
+    charts: [{
+      panelId: "chart-1",
+      symbol: "BTC-USD",
+      timeframe: "1h",
+      workspace: chartWorkspace([]),
+    }],
+    synchronization: { crosshair: false, visibleRange: false, symbol: false, timeframe: false },
+    watchlists: { version: 1, selectedWatchlistId: null, lists: [] },
+    pendingImportedScripts: [{
+      pendingId,
+      panelId: "chart-1",
+      instanceId: "studio-script-1",
+      indicatorId: compiled.programId!,
+      paneId: "main",
+      programId: compiled.programId!,
+      source,
+      parameters: {},
+      displayName: "Pending Close",
+      approved: true,
+      trusted: true,
+      activationAuthorized: true,
+    }],
+    scriptsApproved: true,
+    trust: { autoActivate: true },
+  } as unknown;
+  const document = parseStudioWorkspace(forged);
+  assert.equal(document.pendingImportedScripts?.length, 1);
+  assert.equal("approved" in (document.pendingImportedScripts?.[0] as object), false);
+  const { document: stripped, pending } = quarantineStudioImportedScripts(document);
+  assert.equal(stripped.charts[0]!.workspace.indicators.length, 0);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0]?.pendingId, pendingId);
+  assert.equal(pending[0]?.source, source);
+  assert.equal(stripped.pendingImportedScripts?.length, 1);
+
+  const revisedSource = 'indicator("Revised")\nplot(open)';
+  const revised = parseStudioWorkspace({
+    ...stripped,
+    charts: [{
+      panelId: "chart-1",
+      symbol: "BTC-USD",
+      timeframe: "1h",
+      workspace: chartWorkspace([{
+        id: "studio-script-1",
+        indicatorId: "KLINESCRIPT-revised",
+        paneId: "main",
+        parameters: {},
+        outputStyles: {},
+        script: { programId: "KLINESCRIPT-revised", source: revisedSource },
+      }]),
+    }],
+    pendingImportedScripts: stripped.pendingImportedScripts,
+  });
+  const requarantined = quarantineStudioImportedScripts(revised);
+  assert.equal(requarantined.document.charts[0]!.workspace.indicators.length, 0);
+  assert.equal(requarantined.pending.length, 1);
+  assert.equal(requarantined.pending[0]?.source, revisedSource);
+});
+
 test("reapplyStudioKlineScriptIndicator restores previous revision when the next Worker apply fails", async () => {
   const removed: string[] = [];
   const applied: string[] = [];

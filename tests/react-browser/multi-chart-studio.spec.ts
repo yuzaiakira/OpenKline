@@ -1609,3 +1609,177 @@ test("Studio import quarantines embedded KlineScript until explicit activation",
 
   expect(errors).toEqual([]);
 });
+
+test("Studio keeps imported KlineScript quarantined across Save, Load, Dismiss, and forged trust metadata", async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  let exportPath = "";
+
+  await test.step("export a workspace containing applied KlineScript", async () => {
+    await page.getByLabel("Workspace name").fill("Quarantine Persist Source");
+    await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+    const editor = page.getByRole("region", { name: "KlineScript editor" });
+    await editor.getByLabel("KlineScript source").fill('indicator("Persist Close")\nplot(close, title="Close", color="#22d3ee")');
+    await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+    await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Save As", exact: true }).click();
+    await expect(page.getByText(/saved locally/)).toBeVisible();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export workspace", exact: true }).click();
+    exportPath = (await (await downloadPromise).path()) ?? "";
+    expect(exportPath.length).toBeGreaterThan(0);
+  });
+
+  await test.step("import quarantines, Save before Activate keeps scripts pending after Load", async () => {
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await page.getByLabel("Workspace import file").setInputFiles(exportPath);
+    const dialog = page.getByRole("dialog", { name: "Import workspace" });
+    await dialog.getByLabel("Dialog value").fill("Quarantine Persist Import");
+    await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+    const replace = page.getByRole("dialog", { name: "Replace workspace with import?" });
+    if (await replace.isVisible().catch(() => false)) {
+      await replace.getByRole("button", { name: /Discard/ }).click();
+    }
+    const pending = page.getByRole("region", { name: "Pending imported KlineScript activation" });
+    await expect(pending).toBeVisible({ timeout: 15_000 });
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+    const importedId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
+    await expect(page.getByRole("region", { name: "Pending imported KlineScript activation" })).toHaveCount(0);
+    await page.getByLabel("Workspace", { exact: true }).selectOption(importedId);
+    await expect(page.getByRole("region", { name: "Pending imported KlineScript activation" })).toBeVisible({ timeout: 15_000 });
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+  });
+
+  await test.step("Dismiss drops pending without Worker execution", async () => {
+    const pending = page.getByRole("region", { name: "Pending imported KlineScript activation" });
+    await pending.getByRole("button", { name: /Dismiss imported script/ }).click();
+    await expect(page.getByRole("region", { name: "Pending imported KlineScript activation" })).toHaveCount(0);
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  });
+
+  await test.step("forged trust metadata cannot bypass quarantine on import", async () => {
+    const forgedPath = test.info().outputPath("forged-trust-workspace.json");
+    const fs = await import("node:fs/promises");
+    const original = JSON.parse(await fs.readFile(exportPath, "utf8")) as {
+      version: number;
+      id: string;
+      name: string;
+      layout: string;
+      charts: Array<{
+        panelId: string;
+        symbol: string;
+        timeframe: string;
+        workspace: { indicators: Array<Record<string, unknown>> };
+      }>;
+      synchronization: Record<string, boolean>;
+      watchlists: Record<string, unknown>;
+    };
+    const forged = {
+      ...original,
+      id: "forged-trust-desk",
+      name: "Forged Trust Desk",
+      scriptsApproved: true,
+      trust: { autoActivate: true, approved: true },
+      charts: original.charts.map((chart) => ({
+        ...chart,
+        workspace: {
+          ...chart.workspace,
+          indicators: chart.workspace.indicators.map((indicator) => ({
+            ...indicator,
+            approved: true,
+            trusted: true,
+          })),
+        },
+      })),
+    };
+    await fs.writeFile(forgedPath, JSON.stringify(forged));
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByLabel("Workspace import file").setInputFiles(forgedPath);
+    const dialog = page.getByRole("dialog", { name: "Import workspace" });
+    await dialog.getByLabel("Dialog value").fill("Forged Trust Import");
+    await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+    const replace = page.getByRole("dialog", { name: "Replace workspace with import?" });
+    if (await replace.isVisible().catch(() => false)) {
+      await replace.getByRole("button", { name: /Discard/ }).click();
+    }
+    const pending = page.getByRole("region", { name: "Pending imported KlineScript activation" });
+    await expect(pending).toBeVisible({ timeout: 15_000 });
+    await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+  });
+
+  expect(errors).toEqual([]);
+});
+
+test("Studio multi-panel analysis workspace restores drawings, built-ins, and authorized scripts", async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const toolbar = page.getByRole("region", { name: "Professional drawing toolbar" });
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const saveStatus = page.getByLabel("Workspace save status");
+
+  await page.getByLabel("Workspace name").fill("Acceptance Multi Panel Desk");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+  await expect(page.getByText(/saved locally/)).toBeVisible();
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await toolbar.getByRole("button", { name: "Trend", exact: true }).click();
+  await placeVisibleChartPoint(page, 0.35, 0.24);
+  await placeVisibleChartPoint(page, 0.65, 0.32);
+  await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible();
+  await expect(objectTree.getByRole("button", { name: "Select drawing-1", exact: true })).toBeVisible();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+
+  await page.getByLabel("Chart layout").selectOption("two-horizontal");
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+  await page.getByLabel("Active chart panel").selectOption("chart-2");
+  await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+  await explorer.getByLabel("Search technical studies").fill("EMA");
+  await explorer.locator('[data-indicator-id="EMA"]').click();
+  await explorer.locator("[data-indicator-add]").click();
+  await expect(page.getByText(/Added EMA to chart-2/)).toBeVisible();
+  await expect(explorer.locator('[data-applied-indicator-type="EMA"]')).toHaveCount(1);
+
+  await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+  const editor = page.getByRole("region", { name: "KlineScript editor" });
+  await editor.getByLabel("KlineScript template").selectOption({ label: "EMA overlay" });
+  await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+  await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+  const savedId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+  await page.getByRole("button", { name: "New", exact: true }).first().click();
+  await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+  await page.getByLabel("Workspace", { exact: true }).selectOption(savedId);
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+
+  await page.getByLabel("Active chart panel").selectOption("chart-1");
+  await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+
+  await page.getByLabel("Active chart panel").selectOption("chart-2");
+  await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
+  await expect(explorer.locator('[data-applied-indicator-type="EMA"]')).toHaveCount(1, { timeout: 15_000 });
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  expect(errors).toEqual([]);
+});
