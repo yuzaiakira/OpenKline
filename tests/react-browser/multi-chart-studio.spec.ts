@@ -418,14 +418,23 @@ test("mobile multi-chart Studio switches the visible panel through the accessibl
   await page.goto("/");
   await page.getByLabel("Chart layout").selectOption("four-grid");
   await expect(page.locator("[data-panel-id]")).toHaveCount(4);
+  const workspace = page.getByRole("region", { name: "OpenKline multi-chart workspace" });
+  await expect(workspace).toHaveAttribute("data-studio-viewport-mode", "mobile-active-panel");
+  await expect(workspace).toHaveAttribute("data-studio-panel-count", "4");
+  await expect(workspace).toHaveAttribute("data-studio-visible-panel-count", "1");
   await expect(page.locator('[data-panel-id="chart-1"]')).toBeVisible();
   await expect(page.locator('[data-panel-id="chart-2"]')).toBeHidden();
+  const mobileNav = page.getByRole("navigation", { name: "Mobile chart panels" });
+  await expect(mobileNav).toBeVisible();
+  await expect(mobileNav).toHaveAttribute("data-mobile-panel-count", "4");
+  await expect(mobileNav.getByText(/Viewing panel 1 of 4/)).toBeVisible();
   const thirdPanelId = await page.locator("[data-panel-id]").nth(2).getAttribute("data-panel-id");
   expect(thirdPanelId).not.toBeNull();
   if (thirdPanelId === null) return;
-  await page.getByLabel("Active chart panel").selectOption(thirdPanelId);
+  await mobileNav.getByRole("button", { name: new RegExp(`Show panel 3:`) }).click();
   await expect(page.locator(`[data-panel-id="${thirdPanelId}"]`)).toBeVisible();
   await expect(page.locator('[data-panel-id="chart-1"]')).toBeHidden();
+  await expect(workspace).toHaveAttribute("data-studio-active-panel", thirdPanelId);
   await expect(page.getByRole("button", { name: "Fit", exact: true })).toBeVisible();
 });
 
@@ -1469,7 +1478,17 @@ test("Studio KlineScript compiles, applies via Worker, dirty-tracks, and restore
     await page.getByLabel("Active chart panel").selectOption(panelAId);
     await expect(explorer.locator(`[data-applied-indicator-id="${panelAScriptId}"]`)).toHaveCount(1);
     await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
-    await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    // Mobile active-panel-only layout hides inactive charts; assert presence + switch rather than simultaneous visibility.
+    await expect(page.locator(`[data-panel-id="${panelBId}"]`)).toHaveCount(1);
+    if (await page.evaluate(() => window.matchMedia("(max-width: 720px)").matches)) {
+      await expect(page.locator(`[data-panel-id="${panelBId}"]`)).toBeHidden();
+      await page.getByLabel("Active chart panel").selectOption(panelBId);
+      await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+      await page.getByLabel("Active chart panel").selectOption(panelAId);
+      await expect(page.locator(`[data-panel-id="${panelAId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    } else {
+      await expect(page.locator(`[data-panel-id="${panelBId}"]`).getByText("3 indicators", { exact: true })).toBeVisible();
+    }
 
     await page.getByLabel("Workspace", { exact: true }).selectOption(secondaryId);
     const loadGuard = page.getByRole("dialog", { name: "Load another workspace?" });
@@ -1780,6 +1799,130 @@ test("Studio multi-panel analysis workspace restores drawings, built-ins, and au
   await page.getByRole("button", { name: "Activate chart-2", exact: true }).click();
   await expect(explorer.locator('[data-applied-indicator-type="EMA"]')).toHaveCount(1, { timeout: 15_000 });
   await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  expect(errors).toEqual([]);
+});
+
+test("mobile Studio active-panel workflow preserves drawings, indicators, scripts, and dirty navigation", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: "load" });
+
+  const workspace = page.getByRole("region", { name: "OpenKline multi-chart workspace" });
+  const explorer = page.getByRole("region", { name: "Technical analysis explorer" });
+  const toolbar = page.getByRole("region", { name: "Professional drawing toolbar" });
+  const objectTree = page.getByRole("complementary", { name: "Object tree" });
+  const saveStatus = page.getByLabel("Workspace save status");
+  const mobileNav = page.getByRole("navigation", { name: "Mobile chart panels" });
+  const firefoxProject = testInfo.project.name.includes("firefox");
+
+  await page.getByLabel("Workspace name").fill("Mobile Active Panel Desk");
+  await page.getByRole("button", { name: "Save As", exact: true }).click();
+  await expect(page.getByText(/saved locally/)).toBeVisible();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+
+  await page.getByLabel("Chart layout").selectOption("two-horizontal");
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+  await expect(workspace).toHaveAttribute("data-studio-viewport-mode", "mobile-active-panel");
+  await expect(workspace).toHaveAttribute("data-studio-panel-count", "2");
+  await expect(workspace).toHaveAttribute("data-studio-visible-panel-count", "1");
+  await expect(mobileNav).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-1"]')).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-2"]')).toBeHidden();
+
+  if (!firefoxProject) {
+    // Chromium Mobile Chrome path: full drawing + properties under active-panel-only layout.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await toolbar.getByRole("button", { name: "Trend", exact: true }).click();
+    await placeVisibleChartPoint(page, 0.35, 0.24);
+    await placeVisibleChartPoint(page, 0.65, 0.32);
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+    await objectTree.scrollIntoViewIfNeeded();
+    await objectTree.getByRole("button", { name: "Select drawing-1", exact: true }).click();
+    const properties = objectTree.getByRole("region", { name: "Drawing properties" });
+    await expect(properties).toHaveAttribute("data-drawing-properties-ready", "true");
+    await properties.getByLabel("Drawing color").fill("#22c55e");
+    await expect(properties.getByLabel("Drawing color")).toHaveValue("#22c55e");
+  } else {
+    // Firefox managed mobile viewport: drawing placement remains flaky under narrow
+    // emulation; dirty via Explorer and continue with panel-ownership assertions.
+    await explorer.getByLabel("Search technical studies").fill("ATR");
+    await explorer.locator('[data-indicator-id="ATR"]').click();
+    await explorer.locator("[data-indicator-add]").click();
+    await expect(page.getByText(/Added ATR to chart-1/)).toBeVisible();
+    await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  }
+
+  await mobileNav.scrollIntoViewIfNeeded();
+  await mobileNav.getByRole("button", { name: /Show panel 2:/ }).click();
+  await expect(page.locator('[data-panel-id="chart-2"]')).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-1"]')).toBeHidden();
+  if (!firefoxProject) {
+    await expect(page.getByText("Drawings (0)", { exact: true })).toBeVisible();
+  }
+  await expect(workspace).toHaveAttribute("data-studio-active-panel", "chart-2");
+
+  await explorer.getByLabel("Search technical studies").fill("EMA");
+  await explorer.locator('[data-indicator-id="EMA"]').click();
+  await explorer.locator("[data-indicator-add]").click();
+  await expect(page.getByText(/Added EMA to chart-2/)).toBeVisible();
+  await expect(explorer.locator('[data-applied-indicator-type="EMA"]')).toHaveCount(1);
+
+  await page.getByRole("button", { name: "KlineScript", exact: true }).click();
+  const editor = page.getByRole("region", { name: "KlineScript editor" });
+  await editor.getByLabel("KlineScript template").selectOption({ label: "EMA overlay" });
+  await editor.getByRole("button", { name: "Run in Worker", exact: true }).click();
+  await expect(page.getByText(/Added Worker-backed KlineScript/)).toBeVisible({ timeout: 15_000 });
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "saved");
+  const savedId = await page.getByLabel("Workspace", { exact: true }).inputValue();
+
+  await page.getByRole("button", { name: "New", exact: true }).first().click();
+  await expect(page.locator("[data-panel-id]")).toHaveCount(1);
+  await page.getByLabel("Workspace", { exact: true }).selectOption(savedId);
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+  await expect(workspace).toHaveAttribute("data-studio-panel-count", "2");
+  await expect(mobileNav).toBeVisible();
+
+  await page.getByLabel("Active chart panel").selectOption("chart-1");
+  await expect(page.locator('[data-panel-id="chart-1"]')).toBeVisible();
+  if (!firefoxProject) {
+    await expect(page.getByText("Drawings (1)", { exact: true })).toBeVisible({ timeout: 15_000 });
+  } else {
+    await expect(explorer.locator('[data-applied-indicator-type="ATR"]')).toHaveCount(1, { timeout: 15_000 });
+  }
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(0);
+
+  await mobileNav.getByRole("button", { name: /Show panel 2:/ }).click();
+  await expect(page.locator('[data-panel-id="chart-2"]')).toBeVisible();
+  await expect(explorer.locator('[data-applied-indicator-type="EMA"]')).toHaveCount(1, { timeout: 15_000 });
+  await expect(explorer.locator('[data-applied-indicator-kind="klinescript"]')).toHaveCount(1);
+
+  await explorer.getByLabel("Search technical studies").fill("MACD");
+  await explorer.locator('[data-indicator-id="MACD"]').click();
+  await explorer.locator("[data-indicator-add]").click();
+  await expect(page.getByText(/Added MACD to chart-2/)).toBeVisible();
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  await page.getByLabel("Workspace", { exact: true }).selectOption(savedId);
+  const guard = page.getByRole("dialog", { name: "Load another workspace?" });
+  await expect(guard).toBeVisible();
+  await guard.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(guard).toHaveCount(0);
+  await expect(saveStatus).toHaveAttribute("data-workspace-save-status", "unsaved-changes");
+  await expect(page.locator("[data-panel-id]")).toHaveCount(2);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(workspace).toHaveAttribute("data-studio-viewport-mode", "desktop-multi-panel", { timeout: 10_000 });
+  await expect(workspace).toHaveAttribute("data-studio-panel-count", "2");
+  await expect(page.locator('[data-panel-id="chart-1"]')).toBeVisible();
+  await expect(page.locator('[data-panel-id="chart-2"]')).toBeVisible();
 
   expect(errors).toEqual([]);
 });

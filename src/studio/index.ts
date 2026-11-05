@@ -127,6 +127,15 @@ export type {
 } from "./klinescript-studio.js";
 export type { StudioPendingImportedScriptDocument } from "./workspace.js";
 export {
+  STUDIO_MOBILE_BREAKPOINT_PX,
+  buildStudioMobilePanelSummaries,
+  describeStudioMobileActivePanel,
+  formatStudioMobilePanelDetail,
+  formatStudioMobilePanelLabel,
+  isStudioMobileViewportWidth,
+} from "./mobile-panels.js";
+export type { StudioMobilePanelSummary } from "./mobile-panels.js";
+export {
   OPENKLINE_WATCHLIST_VERSION,
   WatchlistModel,
   WatchlistValidationError,
